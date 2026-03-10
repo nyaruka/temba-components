@@ -3,7 +3,7 @@ import { RapidElement } from '../RapidElement';
 import { FloatingWindow } from '../layout/FloatingWindow';
 import { css, PropertyValueMap, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
-import { postJSON, getCookie, setCookie, generateUUIDv7 } from '../utils';
+import { postJSON, cookieProperty, generateUUIDv7 } from '../utils';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { FlowDefinition } from '../store/flow-definition';
@@ -716,8 +716,8 @@ export class Simulator extends RapidElement {
   @property({ type: Number })
   animationTime = 200;
 
-  @property({ type: String })
-  size: 'small' | 'medium' | 'large' = 'small';
+  @cookieProperty('simulator', 'small', 'size', (v) => v in SIMULATOR_SIZES)
+  size: 'small' | 'medium' | 'large';
 
   @property({ type: Array })
   private events: ContactEvent[] = [];
@@ -748,11 +748,11 @@ export class Simulator extends RapidElement {
   @property({ type: String })
   private inputValue = '';
 
-  @property({ type: Boolean })
-  private following = true;
+  @cookieProperty('simulator', true, 'follow')
+  private following: boolean;
 
-  @property({ type: Boolean })
-  private contextExplorerOpen = false;
+  @cookieProperty('simulator', false, 'contextOpen')
+  private contextExplorerOpen: boolean;
 
   @property({ type: Object })
   private expandedPaths: Set<string> = new Set();
@@ -820,27 +820,6 @@ export class Simulator extends RapidElement {
 
   public connectedCallback() {
     super.connectedCallback();
-
-    const raw = getCookie('simulator');
-    if (raw) {
-      try {
-        const settings = JSON.parse(raw);
-        if (
-          typeof settings.size === 'string' &&
-          settings.size in SIMULATOR_SIZES
-        ) {
-          this.size = settings.size as typeof this.size;
-        }
-        if (typeof settings.follow === 'boolean') {
-          this.following = settings.follow;
-        }
-        if (typeof settings.contextOpen === 'boolean') {
-          this.contextExplorerOpen = settings.contextOpen;
-        }
-      } catch {
-        // ignore malformed cookie
-      }
-    }
   }
 
   protected firstUpdated(
@@ -962,21 +941,6 @@ export class Simulator extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
-
-    if (
-      changes.has('size') ||
-      changes.has('following') ||
-      changes.has('contextExplorerOpen')
-    ) {
-      setCookie(
-        'simulator',
-        JSON.stringify({
-          size: this.size,
-          follow: this.following,
-          contextOpen: this.contextExplorerOpen
-        })
-      );
-    }
 
     if (
       changes.has('currentQuickReplies') ||

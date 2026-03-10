@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
+import { property } from 'lit/decorators.js';
 import { Button } from './display/Button';
 import { Dialog } from './layout/Dialog';
 import { Attachment, ContactField, Shortcut, Ticket, User } from './interfaces';
@@ -689,6 +690,153 @@ export const getCookie = (name: string) => {
   }
   return cookieValue;
 };
+
+/**
+ * Property decorator that persists a Lit reactive property in a shared JSON
+ * cookie.  Multiple properties on the same component can share one cookie —
+ * each property becomes a key in the JSON object.
+ *
+ * Usage:
+ *   @cookieProperty('simulator', false)
+ *   private following: boolean;
+ *
+ * The cookie key defaults to the property name.  Pass a third argument to
+ * override it:
+ *   @cookieProperty('simulator', 'small', 'size')
+ *   private mySize: string;
+ *
+ * Values are validated on load: booleans must be boolean, strings must be
+ * strings, and numbers must be finite numbers.  Invalid values are silently
+ * ignored and the default is used instead.
+ */
+
+interface CookiePropertyEntry {
+  propertyName: string;
+  cookieKey: string;
+  defaultValue: any;
+  validate?: (value: any) => boolean;
+}
+
+const cookiePropertyRegistry = new WeakMap<
+  // constructor → cookieName → entries
+  object,
+  Map<string, CookiePropertyEntry[]>
+>();
+
+function getOrCreateRegistry(
+  proto: object,
+  cookieName: string
+): CookiePropertyEntry[] {
+  let classMap = cookiePropertyRegistry.get(proto);
+  if (!classMap) {
+    classMap = new Map();
+    cookiePropertyRegistry.set(proto, classMap);
+  }
+  let entries = classMap.get(cookieName);
+  if (!entries) {
+    entries = [];
+    classMap.set(cookieName, entries);
+  }
+  return entries;
+}
+
+export function cookieProperty(
+  cookieName: string,
+  defaultValue?: any,
+  cookieKey?: string,
+  validate?: (value: any) => boolean
+): PropertyDecorator {
+  return (proto: any, propertyName: string | symbol) => {
+    const propName = String(propertyName);
+    const key = cookieKey || propName;
+
+    // Register as a Lit reactive property, inferring type from the default
+    const litType =
+      typeof defaultValue === 'boolean'
+        ? Boolean
+        : typeof defaultValue === 'number'
+          ? Number
+          : String;
+    property({ type: litType })(proto, propName);
+
+    // Register this property in the cookie group
+    const entries = getOrCreateRegistry(proto, cookieName);
+    entries.push({
+      propertyName: propName,
+      cookieKey: key,
+      defaultValue,
+      validate
+    });
+
+    // Install lifecycle hooks once per cookie group per class.
+    // We use a sentinel on the prototype to avoid re-patching.
+    const sentinelKey = `__cookieHooked_${cookieName}`;
+    if (proto[sentinelKey]) return;
+    proto[sentinelKey] = true;
+
+    const origConnected = proto.connectedCallback;
+    proto.connectedCallback = function () {
+      // Load all properties for this cookie group
+      const groupEntries = getOrCreateRegistry(
+        Object.getPrototypeOf(this),
+        cookieName
+      );
+      const raw = getCookie(cookieName);
+      let parsed: Record<string, any> = {};
+      if (raw) {
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          // ignore malformed cookie
+        }
+      }
+
+      for (const entry of groupEntries) {
+        const cookieVal = parsed[entry.cookieKey];
+        if (cookieVal !== undefined) {
+          // Validate type matches the default value's type
+          if (
+            entry.defaultValue !== undefined &&
+            typeof cookieVal !== typeof entry.defaultValue
+          ) {
+            this[entry.propertyName] = entry.defaultValue;
+          } else if (
+            typeof cookieVal === 'number' &&
+            !Number.isFinite(cookieVal)
+          ) {
+            this[entry.propertyName] = entry.defaultValue;
+          } else if (entry.validate && !entry.validate(cookieVal)) {
+            this[entry.propertyName] = entry.defaultValue;
+          } else {
+            this[entry.propertyName] = cookieVal;
+          }
+        } else if (entry.defaultValue !== undefined) {
+          this[entry.propertyName] = entry.defaultValue;
+        }
+      }
+
+      if (origConnected) origConnected.call(this);
+    };
+
+    const origUpdated = proto.updated;
+    proto.updated = function (changes: Map<string, any>) {
+      if (origUpdated) origUpdated.call(this, changes);
+
+      const groupEntries = getOrCreateRegistry(
+        Object.getPrototypeOf(this),
+        cookieName
+      );
+      const hasChange = groupEntries.some((e) => changes.has(e.propertyName));
+      if (hasChange) {
+        const obj: Record<string, any> = {};
+        for (const entry of groupEntries) {
+          obj[entry.cookieKey] = this[entry.propertyName];
+        }
+        setCookie(cookieName, JSON.stringify(obj));
+      }
+    };
+  };
+}
 
 export enum COOKIE_KEYS {
   SETTINGS = 'settings',
