@@ -1425,9 +1425,13 @@ export class Editor extends RapidElement {
       // Restore saved zoom level on initial load
       if (!changes.get('definition') && this.definition) {
         const savedZoom = this.getFlowSetting<number>('zoom');
-        if (savedZoom !== undefined) {
-          this.zoom = savedZoom;
-          this.plumber.zoom = savedZoom;
+        if (typeof savedZoom === 'number' && Number.isFinite(savedZoom)) {
+          const clamped = Math.max(
+            0.1,
+            Math.min(1.0, Math.round(savedZoom * 100) / 100)
+          );
+          this.zoom = clamped;
+          this.plumber.zoom = clamped;
         }
       }
     }
@@ -2045,7 +2049,9 @@ export class Editor extends RapidElement {
     }
   }
 
-  // --- Flow settings cookie ---
+  // --- Flow settings cookie (LRU, max 50 flows) ---
+
+  static MAX_FLOW_SETTINGS = 50;
 
   private getFlowSettings(): Record<string, any> {
     try {
@@ -2058,8 +2064,22 @@ export class Editor extends RapidElement {
   private saveFlowSetting(key: string, value: any): void {
     if (!this.flow) return;
     const settings = this.getFlowSettings();
-    if (!settings[this.flow]) settings[this.flow] = {};
-    settings[this.flow][key] = value;
+
+    // Remove existing entry so re-inserting moves it to the end (most recent)
+    delete settings[this.flow];
+    settings[this.flow] = { ...(settings[this.flow] || {}), [key]: value };
+
+    // Evict oldest entries if over the limit
+    const keys = Object.keys(settings);
+    if (keys.length > Editor.MAX_FLOW_SETTINGS) {
+      for (const oldKey of keys.slice(
+        0,
+        keys.length - Editor.MAX_FLOW_SETTINGS
+      )) {
+        delete settings[oldKey];
+      }
+    }
+
     setCookie('flow-settings', JSON.stringify(settings));
   }
 

@@ -825,10 +825,18 @@ export class Simulator extends RapidElement {
     if (raw) {
       try {
         const settings = JSON.parse(raw);
-        if (settings.size) this.size = settings.size;
-        if (settings.follow !== undefined) this.following = settings.follow;
-        if (settings.contextOpen !== undefined)
+        if (
+          typeof settings.size === 'string' &&
+          settings.size in SIMULATOR_SIZES
+        ) {
+          this.size = settings.size as typeof this.size;
+        }
+        if (typeof settings.follow === 'boolean') {
+          this.following = settings.follow;
+        }
+        if (typeof settings.contextOpen === 'boolean') {
           this.contextExplorerOpen = settings.contextOpen;
+        }
       } catch {
         // ignore malformed cookie
       }

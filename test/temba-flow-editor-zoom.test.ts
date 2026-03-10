@@ -1,6 +1,7 @@
 import { expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { stub, restore, spy } from 'sinon';
+import { getCookie, setCookie } from '../src/utils';
 
 customElements.define('temba-flow-editor-zoom', Editor);
 
@@ -578,6 +579,157 @@ describe('Editor Zoom', () => {
       // targetScrollY = 1550 * 0.5 - 300 = 475
       expect(scrollToArgs.left).to.equal(650);
       expect(scrollToArgs.top).to.equal(475);
+    });
+  });
+
+  // --- F. Zoom persistence via flow-settings cookie ---
+
+  describe('zoom persistence', () => {
+    beforeEach(() => {
+      setCookie('flow-settings', '{}');
+    });
+
+    afterEach(() => {
+      setCookie('flow-settings', '{}');
+    });
+
+    it('saves zoom to flow-settings cookie on setZoom', () => {
+      const editor = createEditorWithMockPlumber();
+      (editor as any).flow = 'flow-abc';
+      (editor as any).zoom = 0.5;
+      stub(editor, 'querySelector').returns(null);
+
+      (editor as any).setZoom(0.75);
+
+      const settings = JSON.parse(getCookie('flow-settings') || '{}');
+      expect(settings['flow-abc']).to.exist;
+      expect(settings['flow-abc'].zoom).to.equal(0.75);
+    });
+
+    it('saves zoom to flow-settings cookie on zoomToFit', () => {
+      const editor = createEditorWithMockPlumber();
+      (editor as any).flow = 'flow-def';
+
+      const nodeUuid = 'fit-persist-node';
+      (editor as any).definition = {
+        nodes: [{ uuid: nodeUuid }],
+        _ui: {
+          nodes: {
+            [nodeUuid]: { position: { left: 0, top: 0 } }
+          },
+          stickies: {}
+        }
+      };
+
+      const el = document.createElement('div');
+      el.id = nodeUuid;
+      el.style.width = '50px';
+      el.style.height = '30px';
+      document.body.appendChild(el);
+
+      const mockEditor = document.createElement('div');
+      Object.defineProperty(mockEditor, 'clientWidth', { value: 800 });
+      Object.defineProperty(mockEditor, 'clientHeight', { value: 600 });
+      mockEditor.scrollLeft = 0;
+      mockEditor.scrollTop = 0;
+
+      stub(editor, 'querySelector').callsFake((selector: string) => {
+        if (selector === '#editor') return mockEditor;
+        if (selector.includes(nodeUuid)) return el;
+        return null;
+      });
+
+      stub(window, 'requestAnimationFrame').callsFake(
+        (cb: FrameRequestCallback) => {
+          cb(0);
+          return 0;
+        }
+      );
+
+      (editor as any).zoomToFit();
+
+      const settings = JSON.parse(getCookie('flow-settings') || '{}');
+      expect(settings['flow-def']).to.exist;
+      expect(settings['flow-def'].zoom).to.be.a('number');
+
+      el.remove();
+    });
+
+    it('restores zoom from cookie on initial definition load', () => {
+      setCookie(
+        'flow-settings',
+        JSON.stringify({ 'flow-ghi': { zoom: 0.65 } })
+      );
+
+      const editor = createEditorWithMockPlumber();
+      (editor as any).flow = 'flow-ghi';
+
+      // Simulate initial definition load: previous value is undefined
+      const changes = new Map();
+      changes.set('definition', undefined);
+      (editor as any).definition = { uuid: 'flow-ghi', nodes: [] };
+      (editor as any).updated(changes);
+
+      expect((editor as any).zoom).to.equal(0.65);
+      expect((editor as any).plumber.zoom).to.equal(0.65);
+    });
+
+    it('clamps invalid zoom values from cookie', () => {
+      setCookie('flow-settings', JSON.stringify({ 'flow-jkl': { zoom: 5.0 } }));
+
+      const editor = createEditorWithMockPlumber();
+      (editor as any).flow = 'flow-jkl';
+
+      const changes = new Map();
+      changes.set('definition', undefined);
+      (editor as any).definition = { uuid: 'flow-jkl', nodes: [] };
+      (editor as any).updated(changes);
+
+      expect((editor as any).zoom).to.equal(1.0);
+    });
+
+    it('ignores non-numeric zoom values from cookie', () => {
+      setCookie(
+        'flow-settings',
+        JSON.stringify({ 'flow-mno': { zoom: 'bad' } })
+      );
+
+      const editor = createEditorWithMockPlumber();
+      (editor as any).flow = 'flow-mno';
+      (editor as any).zoom = 1.0;
+
+      const changes = new Map();
+      changes.set('definition', undefined);
+      (editor as any).definition = { uuid: 'flow-mno', nodes: [] };
+      (editor as any).updated(changes);
+
+      // zoom should remain at default since 'bad' is not a number
+      expect((editor as any).zoom).to.equal(1.0);
+    });
+
+    it('evicts oldest entries when exceeding max flow settings', () => {
+      // Fill up the settings to the max
+      const settings: Record<string, any> = {};
+      for (let i = 0; i < Editor.MAX_FLOW_SETTINGS; i++) {
+        settings[`old-flow-${i}`] = { zoom: 0.5 };
+      }
+      setCookie('flow-settings', JSON.stringify(settings));
+
+      const editor = createEditorWithMockPlumber();
+      (editor as any).flow = 'new-flow';
+      (editor as any).zoom = 0.5;
+      stub(editor, 'querySelector').returns(null);
+
+      (editor as any).setZoom(0.8);
+
+      const result = JSON.parse(getCookie('flow-settings') || '{}');
+      const keys = Object.keys(result);
+
+      expect(keys.length).to.equal(Editor.MAX_FLOW_SETTINGS);
+      expect(result['new-flow']).to.exist;
+      expect(result['new-flow'].zoom).to.equal(0.8);
+      // oldest entry should have been evicted
+      expect(result['old-flow-0']).to.not.exist;
     });
   });
 });

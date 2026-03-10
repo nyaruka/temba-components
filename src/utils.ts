@@ -690,8 +690,6 @@ export const getCookie = (name: string) => {
   return cookieValue;
 };
 
-
-
 export enum COOKIE_KEYS {
   SETTINGS = 'settings',
   MENU_COLLAPSED = 'menu-collapsed',

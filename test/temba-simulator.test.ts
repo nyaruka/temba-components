@@ -1,5 +1,6 @@
 import { fixture, expect, assert } from '@open-wc/testing';
 import { Simulator } from '../src/simulator/Simulator';
+import { getCookie, setCookie } from '../src/utils';
 import {
   assertScreenshot,
   getClip,
@@ -36,6 +37,27 @@ const createSimulator = async (attrs: any = {}) => {
   (simulator as any).contextExplorerOpen = false;
   await simulator.updateComplete;
 
+  return simulator;
+};
+
+// create simulator without overriding cookie-restored properties
+const createSimulatorRaw = async (attrs: any = {}) => {
+  await loadStore();
+
+  const defaults = {
+    flow: FLOW_UUID,
+    animationTime: '0'
+  };
+  const mergedAttrs = { ...defaults, ...attrs };
+
+  const attrString = Object.entries(mergedAttrs)
+    .map(([key, value]) => `${key}="${value}"`)
+    .join(' ');
+
+  const simulator: Simulator = await fixture(
+    `<temba-simulator ${attrString}></temba-simulator>`
+  );
+  await simulator.updateComplete;
   return simulator;
 };
 
@@ -895,5 +917,80 @@ describe('temba-simulator', () => {
     await simulator.updateComplete;
 
     expect(simulator.endpoint).to.equal('/flow/simulate/different-flow-456/');
+  });
+
+  // --- Cookie persistence ---
+
+  describe('cookie persistence', () => {
+    afterEach(() => {
+      setCookie('simulator', '{}');
+    });
+
+    it('restores settings from simulator cookie', async () => {
+      setCookie(
+        'simulator',
+        JSON.stringify({
+          size: 'large',
+          follow: false,
+          contextOpen: true
+        })
+      );
+
+      const simulator = await createSimulatorRaw();
+      expect(simulator.size).to.equal('large');
+      expect((simulator as any).following).to.equal(false);
+      expect((simulator as any).contextExplorerOpen).to.equal(true);
+    });
+
+    it('ignores invalid size values from cookie', async () => {
+      setCookie(
+        'simulator',
+        JSON.stringify({
+          size: 'gigantic',
+          follow: true,
+          contextOpen: false
+        })
+      );
+
+      const simulator = await createSimulatorRaw();
+      // should keep default since 'gigantic' is not a valid size
+      expect(simulator.size).to.equal('small');
+    });
+
+    it('ignores non-boolean follow/contextOpen values from cookie', async () => {
+      setCookie(
+        'simulator',
+        JSON.stringify({
+          size: 'medium',
+          follow: 'yes',
+          contextOpen: 42
+        })
+      );
+
+      const simulator = await createSimulatorRaw();
+      expect(simulator.size).to.equal('medium');
+      // should keep defaults since values aren't booleans
+      expect((simulator as any).following).to.equal(true);
+      expect((simulator as any).contextExplorerOpen).to.equal(false);
+    });
+
+    it('saves settings to cookie when properties change', async () => {
+      setCookie('simulator', '{}');
+
+      const simulator = await createSimulatorRaw();
+      simulator.size = 'large';
+      await simulator.updateComplete;
+
+      const settings = JSON.parse(getCookie('simulator') || '{}');
+      expect(settings.size).to.equal('large');
+    });
+
+    it('handles malformed cookie gracefully', async () => {
+      setCookie('simulator', 'not-valid-json{');
+      const simulator = await createSimulatorRaw();
+      // should use defaults without throwing
+      expect(simulator.size).to.equal('small');
+      expect((simulator as any).following).to.equal(true);
+    });
   });
 });
