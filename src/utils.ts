@@ -669,12 +669,7 @@ export const getDialog = (button: Button): Dialog => {
   return (button.getRootNode() as ShadowRoot).host as Dialog;
 };
 
-export const setCookie = (name: string, value: any, path = undefined) => {
-  if (!path) {
-    // default path is the first word in the url
-    const url = document.location.pathname;
-    path = url.substring(0, url.indexOf('/', 1));
-  }
+export const setCookie = (name: string, value: any, path = '/') => {
   const now = new Date();
   now.setTime(now.getTime() + 60 * 1000 * 60 * 24 * 30);
   document.cookie = `${name}=${value};expires=${now.toUTCString()};path=${path}`;
@@ -696,58 +691,145 @@ export const getCookie = (name: string) => {
   return cookieValue;
 };
 
-export const getCookieBoolean = (name: string) => {
-  return (getCookie(name) || '') === 'true';
-};
-
 /**
- * Custom Lit property decorator that binds a property to a cookie.
- * The property value is loaded from the cookie on component connection
- * and automatically saved to the cookie whenever it changes.
+ * Property decorator that persists a Lit reactive property in a shared JSON
+ * cookie.  Multiple properties on the same component can share one cookie —
+ * each property becomes a key in the JSON object (keyed by property name).
  *
- * @param cookieName - The name of the cookie to use for storage.
- * @param defaultValue - Optional default value if cookie doesn't exist.
+ * Usage:
+ *   @cookieProperty('simulator', false)
+ *   private following: boolean;
+ *
+ *   @cookieProperty('simulator', 'small', { validate: (v) => v in SIZES })
+ *   size: string;
+ *
+ * Values are validated on load: the type must match the default value's type,
+ * numbers must be finite, and an optional validate function can further restrict
+ * accepted values.  Invalid values fall back to the default.
  */
-export function fromCookie<T = unknown>(
+
+interface CookiePropertyOptions {
+  validate?: (value: any) => boolean;
+}
+
+interface CookiePropertyEntry {
+  propertyName: string;
+  defaultValue: any;
+  validate?: (value: any) => boolean;
+}
+
+const cookiePropertyRegistry = new WeakMap<
+  object,
+  Map<string, CookiePropertyEntry[]>
+>();
+
+function getOrCreateEntries(
+  proto: object,
+  cookieName: string
+): CookiePropertyEntry[] {
+  let classMap = cookiePropertyRegistry.get(proto);
+  if (!classMap) {
+    classMap = new Map();
+    cookiePropertyRegistry.set(proto, classMap);
+  }
+  let entries = classMap.get(cookieName);
+  if (!entries) {
+    entries = [];
+    classMap.set(cookieName, entries);
+  }
+  return entries;
+}
+
+function validateCookieValue(
+  cookieVal: any,
+  entry: CookiePropertyEntry
+): boolean {
+  if (
+    entry.defaultValue !== undefined &&
+    typeof cookieVal !== typeof entry.defaultValue
+  ) {
+    return false;
+  }
+  if (typeof cookieVal === 'number' && !Number.isFinite(cookieVal)) {
+    return false;
+  }
+  if (entry.validate && !entry.validate(cookieVal)) {
+    return false;
+  }
+  return true;
+}
+
+export function cookieProperty(
   cookieName: string,
-  defaultValue?: T
+  defaultValue?: any,
+  options?: CookiePropertyOptions
 ): PropertyDecorator {
   return (proto: any, propertyName: string | symbol) => {
-    // register as a reactive property
-    property()(proto, propertyName as string);
+    const propName = String(propertyName);
+    const validate = options?.validate;
 
-    const connectedKey = 'connectedCallback';
-    const updatedKey = 'updated';
+    // Register as a Lit reactive property, inferring type from the default
+    const litType =
+      typeof defaultValue === 'boolean'
+        ? Boolean
+        : typeof defaultValue === 'number'
+          ? Number
+          : String;
+    property({ type: litType })(proto, propName);
 
-    const userConnected = proto[connectedKey];
-    const userUpdated = proto[updatedKey];
+    // Register this property in the cookie group
+    const entries = getOrCreateEntries(proto, cookieName);
+    entries.push({ propertyName: propName, defaultValue, validate });
 
-    // on connect, load value from cookie
-    proto[connectedKey] = function () {
-      const cookieValue = getCookie(cookieName);
-      if (cookieValue !== null) {
-        // parse boolean values
-        if (cookieValue === 'true') {
-          this[propertyName] = true;
-        } else if (cookieValue === 'false') {
-          this[propertyName] = false;
-        } else {
-          this[propertyName] = cookieValue;
+    // Install lifecycle hooks once per cookie group per class.
+    const sentinelKey = `__cookieHooked_${cookieName}`;
+    if (proto[sentinelKey]) return;
+    proto[sentinelKey] = true;
+
+    const origConnected = proto.connectedCallback;
+    proto.connectedCallback = function () {
+      const groupEntries = getOrCreateEntries(
+        Object.getPrototypeOf(this),
+        cookieName
+      );
+      let parsed: Record<string, any> = {};
+      const raw = getCookie(cookieName);
+      if (raw) {
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          // ignore malformed cookie
         }
-      } else if (defaultValue !== undefined) {
-        this[propertyName] = defaultValue;
       }
 
-      if (userConnected) userConnected.call(this);
+      for (const entry of groupEntries) {
+        const cookieVal = parsed[entry.propertyName];
+        if (cookieVal !== undefined && validateCookieValue(cookieVal, entry)) {
+          this[entry.propertyName] = cookieVal;
+        } else if (entry.defaultValue !== undefined) {
+          this[entry.propertyName] = entry.defaultValue;
+        }
+      }
+
+      if (origConnected) origConnected.call(this);
     };
 
-    // on property change, save to cookie
-    proto[updatedKey] = function (changedProperties: Map<string, any>) {
-      if (changedProperties.has(propertyName as string)) {
-        setCookie(cookieName, this[propertyName]);
-      }
+    const origUpdated = proto.updated;
+    proto.updated = function (changes: Map<string, any>) {
+      if (origUpdated) origUpdated.call(this, changes);
 
-      if (userUpdated) userUpdated.call(this, changedProperties);
+      const groupEntries = getOrCreateEntries(
+        Object.getPrototypeOf(this),
+        cookieName
+      );
+      const hasChange = groupEntries.some((e) => changes.has(e.propertyName));
+      if (!hasChange) return;
+
+      const obj: Record<string, any> = {};
+      for (const entry of groupEntries) {
+        obj[entry.propertyName] = this[entry.propertyName];
+      }
+      setCookie(cookieName, JSON.stringify(obj));
     };
   };
 }

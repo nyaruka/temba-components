@@ -1,6 +1,7 @@
 import { expect, assert } from '@open-wc/testing';
 import { FloatingWindow } from '../src/layout/FloatingWindow';
 import { assertScreenshot, getComponent } from './utils.test';
+import { setCookie } from '../src/utils';
 
 describe('temba-floating-window', () => {
   it('can be created', async () => {
@@ -435,6 +436,148 @@ describe('temba-floating-window', () => {
     const styles = getComputedStyle(windowElement);
     expect(styles.minHeight).to.equal('200px');
     expect(styles.maxHeight).to.equal('500px');
+  });
+
+  it('restores saved position from cookie on show', async () => {
+    // save a position to the cookie
+    setCookie(
+      'window-positions',
+      JSON.stringify({ 'test-win': { top: 200, left: 300 } })
+    );
+
+    const win = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Persist Test',
+        name: 'test-win',
+        width: 250,
+        maxHeight: 400,
+        top: 100,
+        left: 100
+      },
+      '<div>Content</div>',
+      300,
+      450
+    )) as FloatingWindow;
+
+    // show the window — should restore from cookie
+    win.show();
+    await win.updateComplete;
+
+    expect(win.top).to.equal(200);
+    expect(win.left).to.equal(300);
+
+    // clean up
+    setCookie('window-positions', '{}');
+  });
+
+  it('saves position to cookie after drag', async () => {
+    setCookie('window-positions', '{}');
+
+    const win = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Save Test',
+        name: 'drag-win',
+        width: 250,
+        maxHeight: 400,
+        top: 100,
+        left: 100
+      },
+      '<div>Content</div>',
+      300,
+      450
+    )) as FloatingWindow;
+
+    win.show();
+    await win.updateComplete;
+
+    // simulate drag via header mousedown + mousemove + mouseup
+    const header = win.shadowRoot.querySelector('.header') as HTMLElement;
+    header.dispatchEvent(
+      new MouseEvent('mousedown', { clientX: 150, clientY: 110, bubbles: true })
+    );
+    document.dispatchEvent(
+      new MouseEvent('mousemove', { clientX: 200, clientY: 160 })
+    );
+    document.dispatchEvent(new MouseEvent('mouseup'));
+    await win.updateComplete;
+
+    // cookie should now contain the position for this window
+    const raw = document.cookie
+      .split(';')
+      .find((c) => c.trim().startsWith('window-positions='));
+    expect(raw).to.exist;
+    const positions = JSON.parse(
+      decodeURIComponent(raw.split('=').slice(1).join('='))
+    );
+    expect(positions['drag-win']).to.exist;
+    expect(positions['drag-win'].top).to.be.a('number');
+    expect(positions['drag-win'].left).to.be.a('number');
+
+    setCookie('window-positions', '{}');
+  });
+
+  it('clamps restored position to viewport bounds', async () => {
+    // save a position that's way off screen
+    setCookie(
+      'window-positions',
+      JSON.stringify({ 'clamp-win': { top: 50000, left: 50000 } })
+    );
+
+    const win = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Clamp Test',
+        name: 'clamp-win',
+        width: 250,
+        maxHeight: 400,
+        top: 100,
+        left: 100
+      },
+      '<div style="height: 200px;">Content</div>',
+      300,
+      450
+    )) as FloatingWindow;
+
+    win.show();
+    await win.updateComplete;
+
+    const padding = 20;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // position should be clamped within viewport
+    expect(win.left).to.be.at.most(viewportWidth - win.width - padding);
+    expect(win.top).to.be.at.most(viewportHeight - padding);
+
+    setCookie('window-positions', '{}');
+  });
+
+  it('falls back to defaults when no saved position exists', async () => {
+    setCookie('window-positions', '{}');
+
+    const win = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Default Test',
+        name: 'no-saved',
+        width: 250,
+        maxHeight: 400,
+        top: 100,
+        left: 150
+      },
+      '<div>Content</div>',
+      300,
+      450
+    )) as FloatingWindow;
+
+    win.show();
+    await win.updateComplete;
+
+    // should use the default property values
+    expect(win.top).to.equal(100);
+    expect(win.left).to.equal(150);
   });
 
   it('stays on screen when browser is resized', async () => {

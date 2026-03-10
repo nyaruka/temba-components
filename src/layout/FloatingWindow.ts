@@ -8,7 +8,7 @@ import {
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
-import { getClasses } from '../utils';
+import { getClasses, getCookie, setCookie } from '../utils';
 import { FloatingTab } from '../display/FloatingTab';
 
 export class FloatingWindow extends RapidElement {
@@ -109,6 +109,9 @@ export class FloatingWindow extends RapidElement {
   }
 
   @property({ type: String })
+  name = '';
+
+  @property({ type: String })
   header = '';
 
   @property({ type: Number })
@@ -157,6 +160,57 @@ export class FloatingWindow extends RapidElement {
   private positionFromRight = false;
   private defaultTop = 100;
   private defaultLeft = -1;
+
+  private savePosition(): void {
+    if (!this.name) return;
+    try {
+      const all = JSON.parse(getCookie('window-positions') || '{}');
+      all[this.name] = { top: this.top, left: this.left };
+      setCookie('window-positions', JSON.stringify(all));
+    } catch {
+      // ignore
+    }
+  }
+
+  private getSavedPosition(): { top: number; left: number } | null {
+    if (!this.name) return null;
+    try {
+      const all = JSON.parse(getCookie('window-positions') || '{}');
+      const pos = all[this.name];
+      if (pos && typeof pos.top === 'number' && typeof pos.left === 'number') {
+        return pos;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  private clampPosition(): void {
+    const padding = 20;
+    const windowElement = this.shadowRoot?.querySelector(
+      '.window'
+    ) as HTMLElement;
+    const currentHeight =
+      windowElement?.offsetHeight || this.maxHeight || window.innerHeight;
+
+    this.left = Math.max(
+      padding - this.leftBoundaryMargin,
+      Math.min(
+        this.left,
+        window.innerWidth - this.width - padding + this.rightBoundaryMargin
+      )
+    );
+
+    const maxTop = Math.max(
+      padding - this.topBoundaryMargin,
+      window.innerHeight - currentHeight - padding + this.bottomBoundaryMargin
+    );
+    this.top = Math.max(
+      padding - this.topBoundaryMargin,
+      Math.min(this.top, maxTop)
+    );
+  }
 
   public firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -222,17 +276,22 @@ export class FloatingWindow extends RapidElement {
         }
       }
 
-      // reset to default position when showing
+      // restore position when showing
       if (!this.hidden && changes.get('hidden') === true) {
-        // reset top to default
-        this.top = this.defaultTop;
-
-        // if positioned from right, recalculate based on current viewport
-        if (this.positionFromRight) {
-          this.left = window.innerWidth - this.width - 20;
+        const saved = this.getSavedPosition();
+        if (saved) {
+          this.top = saved.top;
+          this.left = saved.left;
+          this.positionFromRight = false;
+          this.clampPosition();
         } else {
-          // reset left to default
-          this.left = this.defaultLeft;
+          // no saved position — use defaults
+          this.top = this.defaultTop;
+          if (this.positionFromRight) {
+            this.left = window.innerWidth - this.width - 20;
+          } else {
+            this.left = this.defaultLeft;
+          }
         }
       }
     }
@@ -316,6 +375,7 @@ export class FloatingWindow extends RapidElement {
 
     // once user drags the window, stop auto-positioning from right
     this.positionFromRight = false;
+    this.savePosition();
   };
 
   private handleResize = () => {

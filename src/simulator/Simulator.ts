@@ -3,7 +3,7 @@ import { RapidElement } from '../RapidElement';
 import { FloatingWindow } from '../layout/FloatingWindow';
 import { css, PropertyValueMap, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
-import { postJSON, fromCookie, generateUUIDv7 } from '../utils';
+import { postJSON, cookieProperty, generateUUIDv7 } from '../utils';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { FlowDefinition } from '../store/flow-definition';
@@ -716,7 +716,9 @@ export class Simulator extends RapidElement {
   @property({ type: Number })
   animationTime = 200;
 
-  @fromCookie('simulator-size', 'small')
+  @cookieProperty('simulator', 'small', {
+    validate: (v) => v in SIMULATOR_SIZES
+  })
   size: 'small' | 'medium' | 'large';
 
   @property({ type: Array })
@@ -748,10 +750,10 @@ export class Simulator extends RapidElement {
   @property({ type: String })
   private inputValue = '';
 
-  @fromCookie('simulator-follow', true)
+  @cookieProperty('simulator', true)
   private following: boolean;
 
-  @fromCookie('simulator-context-open', false)
+  @cookieProperty('simulator', false)
   private contextExplorerOpen: boolean;
 
   @property({ type: Object })
@@ -1781,6 +1783,7 @@ export class Simulator extends RapidElement {
       <temba-floating-window
         style="--transition-duration: ${this.animationTime}ms"
         id="phone-window"
+        name="simulator"
         width="${this.windowWidth}"
         leftBoundaryMargin="${this.leftBoundaryMargin}"
         bottomBoundaryMargin="${config.windowPadding}"
@@ -1971,7 +1974,7 @@ export class Simulator extends RapidElement {
         icon="simulator"
         label="Phone Simulator"
         color="#10b981"
-        order="4"
+        order="0"
         .hidden=${this.isVisible}
         @temba-button-clicked=${this.handleShow}
       ></temba-floating-tab>
