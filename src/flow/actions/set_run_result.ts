@@ -10,9 +10,9 @@ export const set_run_result: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetRunResult) => {
     return renderClamped(
-      html`Save ${renderHighlightedText(action.value, true)} as
-        <strong>${action.name}</strong>`,
-      `Save ${action.value} as ${action.name}`
+      html`Set <strong>${action.name}</strong> to
+        ${renderHighlightedText(action.value, true)}`,
+      `Set ${action.name} to ${action.value}`
     );
   },
   form: {
