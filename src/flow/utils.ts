@@ -211,13 +211,20 @@ export const renderStringList = (
   return itemElements;
 };
 
+export interface MixedListItem {
+  name: string;
+  icon: string;
+  content?: TemplateResult;
+  uuid?: string;
+  eventType?: CustomEventType;
+}
+
 /**
  * Renders a mixed list of items, each with its own icon, showing up to 3 items
- * with a "+X more" indicator if there are more items
+ * with a "+X more" indicator if there are more items.
+ * Items with uuid and eventType are rendered as clickable links.
  */
-export const renderMixedList = (
-  items: { name: string; icon: string; content?: TemplateResult }[]
-) => {
+export const renderMixedList = (items: MixedListItem[]) => {
   const itemElements = [];
   const maxDisplay = 3;
 
@@ -225,9 +232,18 @@ export const renderMixedList = (
     items.length === 4 ? 4 : Math.min(maxDisplay, items.length);
 
   for (let i = 0; i < displayCount; i++) {
-    itemElements.push(
-      renderLineItem(items[i].name, items[i].icon, items[i].content)
-    );
+    const item = items[i];
+    if (item.uuid && item.eventType) {
+      itemElements.push(
+        renderLinkedObject(
+          { uuid: item.uuid, name: item.name },
+          item.eventType,
+          item.icon
+        )
+      );
+    } else {
+      itemElements.push(renderLineItem(item.name, item.icon, item.content));
+    }
   }
 
   if (items.length > maxDisplay && items.length !== 4) {
@@ -243,18 +259,22 @@ export const renderMixedList = (
 };
 
 /**
- * Renders a single flow as a clickable link that fires a temba-flow-clicked event
+ * Renders a named object as a clickable link that fires a custom event
  */
-const renderFlowLink = (flow: NamedObject, icon?: string) => {
+const renderLinkedObject = (
+  obj: NamedObject,
+  eventType: CustomEventType,
+  icon?: string
+) => {
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     const target = e.currentTarget as HTMLElement;
     const editor = target.closest('temba-flow-editor') as any;
     if (editor) {
-      editor.fireCustomEvent(CustomEventType.FlowClicked, {
-        uuid: flow.uuid,
-        name: flow.name,
+      editor.fireCustomEvent(eventType, {
+        uuid: obj.uuid,
+        name: obj.name,
         metaKey: e.metaKey,
         ctrlKey: e.ctrlKey
       });
@@ -272,28 +292,32 @@ const renderFlowLink = (flow: NamedObject, icon?: string) => {
       @click=${handleClick}
       style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; text-decoration: underline; cursor: pointer;"
     >
-      ${flow.name}
+      ${obj.name}
     </div>
   </div>`;
 };
 
 /**
- * Renders a list of flows as clickable links, showing up to 3 items
+ * Renders a list of linked objects, showing up to 3 items
  * with a "+X more" indicator if there are more items
  */
-export const renderFlowLinks = (flows: NamedObject[], icon?: string) => {
+const renderLinkedObjects = (
+  objects: NamedObject[],
+  eventType: CustomEventType,
+  icon?: string
+) => {
   const itemElements = [];
   const maxDisplay = 3;
 
   const displayCount =
-    flows.length === 4 ? 4 : Math.min(maxDisplay, flows.length);
+    objects.length === 4 ? 4 : Math.min(maxDisplay, objects.length);
 
   for (let i = 0; i < displayCount; i++) {
-    itemElements.push(renderFlowLink(flows[i], icon));
+    itemElements.push(renderLinkedObject(objects[i], eventType, icon));
   }
 
-  if (flows.length > maxDisplay && flows.length !== 4) {
-    const remainingCount = flows.length - maxDisplay;
+  if (objects.length > maxDisplay && objects.length !== 4) {
+    const remainingCount = objects.length - maxDisplay;
     itemElements.push(
       html`<div style="display:flex;align-items:center;margin-top:0.2em;">
         ${icon
@@ -304,6 +328,30 @@ export const renderFlowLinks = (flows: NamedObject[], icon?: string) => {
     );
   }
   return itemElements;
+};
+
+/**
+ * Renders a list of flows as clickable links, showing up to 3 items
+ * with a "+X more" indicator if there are more items
+ */
+export const renderFlowLinks = (flows: NamedObject[], icon?: string) => {
+  return renderLinkedObjects(flows, CustomEventType.FlowClicked, icon);
+};
+
+/**
+ * Renders a list of groups as clickable links, showing up to 3 items
+ * with a "+X more" indicator if there are more items
+ */
+export const renderGroupLinks = (groups: NamedObject[], icon?: string) => {
+  return renderLinkedObjects(groups, CustomEventType.GroupClicked, icon);
+};
+
+/**
+ * Renders a list of contacts as clickable links, showing up to 3 items
+ * with a "+X more" indicator if there are more items
+ */
+export const renderContactLinks = (contacts: NamedObject[], icon?: string) => {
+  return renderLinkedObjects(contacts, CustomEventType.ContactClicked, icon);
 };
 
 export interface Scheme {
