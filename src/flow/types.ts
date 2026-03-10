@@ -331,6 +331,7 @@ export interface AccordionSection {
   items: LayoutItem[];
   collapsed?: boolean | ((formData: FormData) => boolean);
   getValueCount?: (formData: FormData) => number | boolean;
+  localizable?: boolean;
 }
 
 export interface AccordionLayoutConfig {

@@ -125,6 +125,7 @@ export const send_msg: ActionConfig = {
         {
           label: 'WhatsApp Template',
           collapsed: true,
+          localizable: false,
           getValueCount: (formData: FormData) => {
             return !!formData.template;
           },

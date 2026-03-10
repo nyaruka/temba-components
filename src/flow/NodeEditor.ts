@@ -2186,6 +2186,14 @@ export class NodeEditor extends RapidElement {
     const visibleSections = sections.filter((section) => {
       const fieldsInSection = this.collectFieldsFromItems(section.items);
       if (fieldsInSection.length === 0) return true;
+
+      // When translating, hide sections marked as not localizable
+      if (this.isTranslating && section.localizable === false) {
+        // Mark fields as rendered so they don't appear at top level
+        fieldsInSection.forEach((f) => renderedFields.add(f));
+        return false;
+      }
+
       return fieldsInSection.some((fieldName) => {
         const fieldConfig = config.form?.[fieldName];
         return fieldConfig ? this.isFieldVisible(fieldName, fieldConfig) : true;
