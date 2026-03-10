@@ -9,7 +9,6 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { getClasses, getCookie, setCookie } from '../utils';
-import { FloatingTab } from '../display/FloatingTab';
 
 export class FloatingWindow extends RapidElement {
   static get styles() {
@@ -288,7 +287,7 @@ export class FloatingWindow extends RapidElement {
           // no saved position — use defaults
           this.top = this.defaultTop;
           if (this.positionFromRight) {
-            this.left = window.innerWidth - this.width - 20;
+            this.left = window.innerWidth - this.width - 80;
           } else {
             this.left = this.defaultLeft;
           }
@@ -310,8 +309,6 @@ export class FloatingWindow extends RapidElement {
 
   public handleClose() {
     this.hidden = true;
-    // show all tabs when window is closed
-    FloatingTab.showAllTabs();
     this.fireCustomEvent(CustomEventType.DialogHidden);
   }
 
@@ -430,8 +427,6 @@ export class FloatingWindow extends RapidElement {
 
   public close() {
     this.hidden = true;
-    // show all tabs when window is closed
-    FloatingTab.showAllTabs();
     this.fireCustomEvent(CustomEventType.DialogHidden);
   }
 
