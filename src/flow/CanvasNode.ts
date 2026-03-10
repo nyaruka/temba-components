@@ -82,6 +82,9 @@ export class CanvasNode extends RapidElement {
   // Track the height of the action being dragged (captured at drag start)
   private draggedActionHeight: number = 0;
 
+  // ResizeObserver to revalidate plumbing when node size changes
+  private resizeObserver: ResizeObserver | null = null;
+
   // Track external action drag (action being dragged from another node)
   private externalDragInfo: {
     action: Action;
@@ -559,6 +562,14 @@ export class CanvasNode extends RapidElement {
       'action-hide-ghost',
       this.handleActionHideGhost as EventListener
     );
+
+    // Observe size changes to revalidate plumbing connections
+    this.resizeObserver = new ResizeObserver(() => {
+      if (this.plumber && this.node) {
+        this.plumber.revalidate([this.node.uuid]);
+      }
+    });
+    this.resizeObserver.observe(this);
   }
 
   protected updated(
@@ -630,6 +641,12 @@ export class CanvasNode extends RapidElement {
         this.connectionTimeout = null;
       }
       this.plumber.forgetNode(this.node.uuid);
+    }
+
+    // Clean up resize observer
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
     }
 
     // Remove the event listener when the component is removed
