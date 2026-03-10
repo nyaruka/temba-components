@@ -909,7 +909,7 @@ describe('Editor', () => {
       expect((editor as any).isSaving).to.be.true;
     });
 
-    it('renders save indicator with visible class when saving', async () => {
+    it('passes saving state to revisions tab when saving', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="canvas"></div>
@@ -917,15 +917,19 @@ describe('Editor', () => {
       `);
 
       (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).revisions = [
+        { id: 1, created_on: '2024-01-01', user: { name: 'A' } },
+        { id: 2, created_on: '2024-01-02', user: { name: 'B' } }
+      ];
       (editor as any).isSaving = true;
       await editor.updateComplete;
 
-      const indicator = editor.querySelector('.save-indicator');
-      expect(indicator).to.exist;
-      expect(indicator.classList.contains('visible')).to.be.true;
+      const tab = editor.querySelector('#revisions-tab') as any;
+      expect(tab).to.exist;
+      expect(tab.saving).to.be.true;
     });
 
-    it('save indicator is not visible when not saving', async () => {
+    it('revisions tab not saving when not saving', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="canvas"></div>
@@ -933,12 +937,16 @@ describe('Editor', () => {
       `);
 
       (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).revisions = [
+        { id: 1, created_on: '2024-01-01', user: { name: 'A' } },
+        { id: 2, created_on: '2024-01-02', user: { name: 'B' } }
+      ];
       (editor as any).isSaving = false;
       await editor.updateComplete;
 
-      const indicator = editor.querySelector('.save-indicator');
-      expect(indicator).to.exist;
-      expect(indicator.classList.contains('visible')).to.be.false;
+      const tab = editor.querySelector('#revisions-tab') as any;
+      expect(tab).to.exist;
+      expect(tab.saving).to.be.false;
     });
 
     it('clears isSaving after successful save', async () => {

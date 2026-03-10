@@ -8,11 +8,18 @@ export class FloatingTab extends RapidElement {
   static get styles() {
     return css`
       .tab.hidden {
-        transform: translateX(calc(100% + var(--floating-tab-right, 0px)));
+        transform: translateX(calc(100% + var(--floating-tab-clip, 0px)));
       }
+
+      .tab.active {
+        transform: translateX(calc(100% - 8px));
+        clip-path: inset(0 calc(100% - 8px) 0 0);
+        pointer-events: none;
+      }
+
       .tab {
         position: fixed;
-        right: var(--floating-tab-right, 0px);
+        right: var(--floating-tab-clip, 0px);
         z-index: 4998;
         display: flex;
         align-items: center;
@@ -22,16 +29,12 @@ export class FloatingTab extends RapidElement {
         cursor: pointer;
         box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
         transition:
-          transform calc(var(--transition-duration, 300ms) * 0.7) ease-in-out,
-          padding-right calc(var(--transition-duration, 300ms) * 0.7)
-            ease-in-out,
-          box-shadow calc(var(--transition-duration, 300ms) * 0.7) ease-in-out;
+          transform calc(var(--transition-duration, 300ms) * 0.7) ease-in-out;
         user-select: none;
       }
 
-      .tab:hover {
-        padding-right: 16px;
-        box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.3);
+      .tab:not(.subdued):hover .icon-container {
+        opacity: 1;
       }
 
       .icon-container {
@@ -40,10 +43,34 @@ export class FloatingTab extends RapidElement {
         justify-content: center;
         width: 16px;
         height: 16px;
+        opacity: 0.8;
+        transition: opacity 0.15s ease-in-out;
+      }
+
+      .tab.subdued .icon-container {
+        opacity: 0.8;
+        transition: opacity 0.15s ease-in-out;
+      }
+
+      .tab.subdued:hover .icon-container {
+        opacity: 1;
       }
 
       temba-icon {
         --icon-color: white;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .saving .icon-container {
+        animation: spin 1s linear infinite;
       }
 
       .label {
@@ -55,10 +82,14 @@ export class FloatingTab extends RapidElement {
         white-space: nowrap;
         margin-left: 0;
         opacity: 0;
-        transition: all var(--transition-duration, 300ms) ease-in-out;
+        transition: all var(--transition-duration, 300ms) ease-in-out 1s;
       }
 
-      .tab:hover .label {
+      .tab:not(:hover) .label {
+        transition-delay: 0ms;
+      }
+
+      .tab:not(.subdued):hover .label {
         max-width: 200px;
         margin-left: 12px;
         opacity: 1;
@@ -88,6 +119,12 @@ export class FloatingTab extends RapidElement {
 
   @property({ type: Boolean })
   hidden = false;
+
+  @property({ type: Boolean })
+  saving = false;
+
+  @property({ type: Boolean })
+  active = false;
 
   connectedCallback() {
     super.connectedCallback();
@@ -120,14 +157,17 @@ export class FloatingTab extends RapidElement {
     if (changes.has('hidden')) {
       this.classList.toggle('hidden', this.hidden);
     }
+    if (changes.has('active')) {
+      // re-render siblings so they pick up the subdued state
+      FloatingTab.allTabs.forEach((tab) => {
+        if (tab !== this) {
+          tab.requestUpdate();
+        }
+      });
+    }
   }
 
   private handleClick() {
-    // hide all tabs when one is clicked
-    FloatingTab.allTabs.forEach((tab) => {
-      tab.hidden = true;
-    });
-
     this.fireCustomEvent(CustomEventType.ButtonClicked, {
       action: 'toggle'
     });
@@ -151,16 +191,23 @@ export class FloatingTab extends RapidElement {
       top: ${this.top}px;
     `;
 
+    const anyActive = FloatingTab.allTabs.some((tab) => tab.active);
+
     const classes = getClasses({
       tab: true,
-      hidden: this.hidden
+      hidden: this.hidden,
+      saving: this.saving,
+      active: this.active,
+      subdued: anyActive
     });
+
+    const iconName = this.saving ? 'progress_spinner' : this.icon;
 
     return html`
       <div class="${classes}" style="${tabStyle}" @click=${this.handleClick}>
         <div class="icon-container">
-          ${this.icon
-            ? html`<temba-icon size="1.5" name="${this.icon}"></temba-icon>`
+          ${iconName
+            ? html`<temba-icon size="1.5" name="${iconName}"></temba-icon>`
             : ''}
         </div>
         <div class="label">${this.label}</div>

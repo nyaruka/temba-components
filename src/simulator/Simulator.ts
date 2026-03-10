@@ -150,10 +150,6 @@ const SIMULATOR_SIZES: Record<string, SimulatorSize> = {
 export class Simulator extends RapidElement {
   static get styles() {
     return css`
-      temba-floating-tab {
-        --floating-tab-right: 15px;
-      }
-
       :host {
         /* size-specific dimensions are set dynamically via inline styles */
         --phone-width: 300px;
@@ -1045,6 +1041,14 @@ export class Simulator extends RapidElement {
     }
   }
 
+  private handleTabClick() {
+    if (this.isVisible) {
+      this.handleClose();
+    } else {
+      this.handleShow();
+    }
+  }
+
   private async handleShow() {
     const phoneWindow = this.shadowRoot.getElementById(
       'phone-window'
@@ -1350,7 +1354,7 @@ export class Simulator extends RapidElement {
     }
   }
 
-  private handleClose() {
+  public handleClose() {
     const phoneWindow = this.shadowRoot.getElementById(
       'phone-window'
     ) as FloatingWindow;
@@ -1789,7 +1793,7 @@ export class Simulator extends RapidElement {
         bottomBoundaryMargin="${config.windowPadding}"
         topBoundaryMargin="${config.windowPadding}"
         height="${config.phoneTotalHeight}"
-        top="0"
+        top="80"
         chromeless
       >
         <div class="phone-simulator" style="${styleVars}">
@@ -1963,7 +1967,7 @@ export class Simulator extends RapidElement {
             </button>
 
             <button class="option-btn" @click=${this.handleReset} title="Reset">
-              <temba-icon name="refresh" size="1.5"></temba-icon>
+              <temba-icon name="reset" size="1.5"></temba-icon>
             </button>
           </div>
         </div>
@@ -1973,10 +1977,10 @@ export class Simulator extends RapidElement {
         id="phone-tab"
         icon="simulator"
         label="Phone Simulator"
-        color="#10b981"
-        order="0"
-        .hidden=${this.isVisible}
-        @temba-button-clicked=${this.handleShow}
+        color="#666"
+        order="1"
+        .active=${this.isVisible}
+        @temba-button-clicked=${this.handleTabClick}
       ></temba-floating-tab>
     `;
   }

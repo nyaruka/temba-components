@@ -567,9 +567,7 @@ export class Editor extends RapidElement {
         background: rgba(0, 0, 0, 0.05);
       }
 
-      temba-floating-tab {
-        --floating-tab-right: 15px;
-      }
+
 
       #grid {
         position: relative;
@@ -1096,21 +1094,6 @@ export class Editor extends RapidElement {
         opacity: 0.9;
       }
 
-      .save-indicator {
-        position: absolute;
-        top: 8px;
-        right: 240px;
-        padding: 6px 10px;
-        z-index: 4999;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.15s ease-in-out;
-      }
-
-      .save-indicator.visible {
-        opacity: 1;
-      }
-
       .zoom-controls {
         position: absolute;
         top: 8px;
@@ -1442,6 +1425,8 @@ export class Editor extends RapidElement {
 
     if (changes.has('simulatorActive')) {
       if (this.simulatorActive) {
+        // Close any open floating windows when simulator opens
+        this.closeFloatingWindows();
         // Stop polling when simulator becomes active
         this.stopActivityFetching();
       } else {
@@ -2267,6 +2252,12 @@ export class Editor extends RapidElement {
         // the scrollbar width
         const scrollbarWidth = editor.offsetWidth - editor.clientWidth;
         zoomControls.style.right = `${8 + scrollbarWidth}px`;
+
+        // Clip floating tabs so they appear to go under the scrollbar
+        document.documentElement.style.setProperty(
+          '--floating-tab-clip',
+          `${scrollbarWidth}px`
+        );
       }
       if (zoomControls) {
         const rect = zoomControls.getBoundingClientRect();
@@ -4748,9 +4739,13 @@ export class Editor extends RapidElement {
       return;
     }
 
+    if (!this.localizationWindowHidden) {
+      this.handleLocalizationWindowClosed();
+      return;
+    }
+
+    this.closeOpenWindows();
     this.localizationWindowHidden = false;
-    this.revisionsWindowHidden = true;
-    this.issuesWindowHidden = true;
 
     const alreadySelected = languages.some(
       (lang) => lang.code === this.languageCode
@@ -5013,10 +5008,41 @@ export class Editor extends RapidElement {
     this.autoTranslating = false;
   }
 
+  private closeOpenWindows(): void {
+    if (!this.issuesWindowHidden) {
+      this.handleIssuesWindowClosed();
+    }
+    if (!this.revisionsWindowHidden) {
+      this.handleRevisionsWindowClosed();
+    }
+    if (!this.localizationWindowHidden) {
+      this.handleLocalizationWindowClosed();
+    }
+    if (this.simulatorActive) {
+      const simulator = document.querySelector('temba-simulator') as any;
+      simulator?.handleClose();
+    }
+  }
+
+  private closeFloatingWindows(): void {
+    if (!this.issuesWindowHidden) {
+      this.handleIssuesWindowClosed();
+    }
+    if (!this.revisionsWindowHidden) {
+      this.handleRevisionsWindowClosed();
+    }
+    if (!this.localizationWindowHidden) {
+      this.handleLocalizationWindowClosed();
+    }
+  }
+
   private handleIssuesTabClick(): void {
+    if (!this.issuesWindowHidden) {
+      this.handleIssuesWindowClosed();
+      return;
+    }
+    this.closeOpenWindows();
     this.issuesWindowHidden = false;
-    this.revisionsWindowHidden = true;
-    this.localizationWindowHidden = true;
   }
 
   private handleIssuesWindowClosed(): void {
@@ -5049,12 +5075,13 @@ export class Editor extends RapidElement {
   }
 
   private handleRevisionsTabClick(): void {
-    if (this.revisionsWindowHidden) {
-      this.fetchRevisions();
-      this.revisionsWindowHidden = false;
-      this.issuesWindowHidden = true;
-      this.localizationWindowHidden = true;
+    if (!this.revisionsWindowHidden) {
+      this.handleRevisionsWindowClosed();
+      return;
     }
+    this.closeOpenWindows();
+    this.fetchRevisions();
+    this.revisionsWindowHidden = false;
   }
 
   private handleRevisionsWindowClosed(): void {
@@ -5168,15 +5195,15 @@ export class Editor extends RapidElement {
   }
 
   private renderIssuesTab(): TemplateResult | string {
-    if (!this.flowIssues?.length || !this.revisionsWindowHidden) return '';
+    if (!this.flowIssues?.length) return '';
     return html`
       <temba-floating-tab
         id="issues-tab"
         icon="alert_warning"
         label="Flow Issues"
         color="tomato"
-        order="1"
-        .hidden=${!this.issuesWindowHidden}
+        order="2"
+        .active=${!this.issuesWindowHidden}
         @temba-button-clicked=${this.handleIssuesTabClick}
       ></temba-floating-tab>
     `;
@@ -5191,7 +5218,7 @@ export class Editor extends RapidElement {
         header="Flow Issues"
         .width=${360}
         .maxHeight=${600}
-        .top=${75}
+        .top=${120}
         color="tomato"
         .hidden=${this.issuesWindowHidden}
         @temba-dialog-hidden=${this.handleIssuesWindowClosed}
@@ -5221,8 +5248,9 @@ export class Editor extends RapidElement {
         icon="revisions"
         label="Revisions"
         color="rgb(142, 94, 167)"
-        order="2"
-        .hidden=${!this.revisionsWindowHidden && this.localizationWindowHidden}
+        order="0"
+        .saving=${this.isSaving}
+        .active=${!this.revisionsWindowHidden}
         @temba-button-clicked=${this.handleRevisionsTabClick}
       ></temba-floating-tab>
     `;
@@ -5236,7 +5264,7 @@ export class Editor extends RapidElement {
         header="Revisions"
         .width=${240}
         .maxHeight=${400}
-        .top=${75}
+        .top=${120}
         color="rgb(142, 94, 167)"
         .hidden=${this.revisionsWindowHidden}
         @temba-dialog-hidden=${this.handleRevisionsWindowClosed}
@@ -5356,8 +5384,8 @@ export class Editor extends RapidElement {
         header="Translations"
         .width=${360}
         .maxHeight=${600}
-        .top=${75}
-        color="#6b7280"
+        .top=${120}
+        color="#5b7ea6"
         .hidden=${this.localizationWindowHidden}
         @temba-dialog-hidden=${this.handleLocalizationWindowClosed}
       >
@@ -5509,7 +5537,6 @@ export class Editor extends RapidElement {
   }
 
   private renderLocalizationTab(): TemplateResult | string {
-    if (!this.revisionsWindowHidden) return '';
     if (this.definition?.nodes.length === 0) return '';
     const languages = this.getLocalizationLanguages();
     if (!languages.length) {
@@ -5521,9 +5548,9 @@ export class Editor extends RapidElement {
         id="localization-tab"
         icon="language"
         label="Translate Flow"
-        color="#6b7280"
+        color="#5b7ea6"
         order="3"
-        .hidden=${!this.localizationWindowHidden}
+        .active=${!this.localizationWindowHidden}
         @temba-button-clicked=${this.handleLocalizationTabClick}
       ></temba-floating-tab>
     `;
@@ -5691,9 +5718,6 @@ export class Editor extends RapidElement {
               ${this.renderConnectionPlaceholder()}
             </div>
           </div>
-        </div>
-        <div class="save-indicator ${this.isSaving ? 'visible' : ''}">
-          <temba-loading units="3" size="8"></temba-loading>
         </div>
         <div class="zoom-controls">
           <button
