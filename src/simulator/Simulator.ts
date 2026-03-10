@@ -716,7 +716,9 @@ export class Simulator extends RapidElement {
   @property({ type: Number })
   animationTime = 200;
 
-  @cookieProperty('simulator', 'small', (v) => v in SIMULATOR_SIZES)
+  @cookieProperty('simulator', 'small', {
+    validate: (v) => v in SIMULATOR_SIZES
+  })
   size: 'small' | 'medium' | 'large';
 
   @property({ type: Array })

@@ -700,11 +700,24 @@ export const getCookie = (name: string) => {
  *   @cookieProperty('simulator', false)
  *   private following: boolean;
  *
- * Values are validated on load: booleans must be boolean, strings must be
- * strings, and numbers must be finite numbers.  An optional validate function
- * can further restrict accepted values.  Invalid values fall back to the
- * default.
+ *   @cookieProperty('simulator', 'small', { validate: (v) => v in SIZES })
+ *   size: string;
+ *
+ * With keyProperty, the cookie is keyed by a dynamic instance property:
+ *   @cookieProperty('flow-settings', 1.0, { keyProperty: 'flow', maxEntries: 50 })
+ *   private zoom: number;
+ *   // cookie: { "flow-uuid": { zoom: 0.75 }, ... }
+ *
+ * Values are validated on load: the type must match the default value's type,
+ * numbers must be finite, and an optional validate function can further restrict
+ * accepted values.  Invalid values fall back to the default.
  */
+
+interface CookiePropertyOptions {
+  validate?: (value: any) => boolean;
+  keyProperty?: string;
+  maxEntries?: number;
+}
 
 interface CookiePropertyEntry {
   propertyName: string;
@@ -712,36 +725,61 @@ interface CookiePropertyEntry {
   validate?: (value: any) => boolean;
 }
 
+interface CookieGroupConfig {
+  keyProperty?: string;
+  maxEntries?: number;
+  entries: CookiePropertyEntry[];
+}
+
 const cookiePropertyRegistry = new WeakMap<
-  // constructor → cookieName → entries
   object,
-  Map<string, CookiePropertyEntry[]>
+  Map<string, CookieGroupConfig>
 >();
 
-function getOrCreateRegistry(
+function getOrCreateGroup(
   proto: object,
   cookieName: string
-): CookiePropertyEntry[] {
+): CookieGroupConfig {
   let classMap = cookiePropertyRegistry.get(proto);
   if (!classMap) {
     classMap = new Map();
     cookiePropertyRegistry.set(proto, classMap);
   }
-  let entries = classMap.get(cookieName);
-  if (!entries) {
-    entries = [];
-    classMap.set(cookieName, entries);
+  let group = classMap.get(cookieName);
+  if (!group) {
+    group = { entries: [] };
+    classMap.set(cookieName, group);
   }
-  return entries;
+  return group;
+}
+
+function validateCookieValue(
+  cookieVal: any,
+  entry: CookiePropertyEntry
+): boolean {
+  if (
+    entry.defaultValue !== undefined &&
+    typeof cookieVal !== typeof entry.defaultValue
+  ) {
+    return false;
+  }
+  if (typeof cookieVal === 'number' && !Number.isFinite(cookieVal)) {
+    return false;
+  }
+  if (entry.validate && !entry.validate(cookieVal)) {
+    return false;
+  }
+  return true;
 }
 
 export function cookieProperty(
   cookieName: string,
   defaultValue?: any,
-  validate?: (value: any) => boolean
+  options?: CookiePropertyOptions
 ): PropertyDecorator {
   return (proto: any, propertyName: string | symbol) => {
     const propName = String(propertyName);
+    const { validate, keyProperty, maxEntries } = options || {};
 
     // Register as a Lit reactive property, inferring type from the default
     const litType =
@@ -753,28 +791,21 @@ export function cookieProperty(
     property({ type: litType })(proto, propName);
 
     // Register this property in the cookie group
-    const entries = getOrCreateRegistry(proto, cookieName);
-    entries.push({
-      propertyName: propName,
-      defaultValue,
-      validate
-    });
+    const group = getOrCreateGroup(proto, cookieName);
+    if (keyProperty) group.keyProperty = keyProperty;
+    if (maxEntries) group.maxEntries = maxEntries;
+    group.entries.push({ propertyName: propName, defaultValue, validate });
 
     // Install lifecycle hooks once per cookie group per class.
-    // We use a sentinel on the prototype to avoid re-patching.
     const sentinelKey = `__cookieHooked_${cookieName}`;
     if (proto[sentinelKey]) return;
     proto[sentinelKey] = true;
 
     const origConnected = proto.connectedCallback;
     proto.connectedCallback = function () {
-      // Load all properties for this cookie group
-      const groupEntries = getOrCreateRegistry(
-        Object.getPrototypeOf(this),
-        cookieName
-      );
-      const raw = getCookie(cookieName);
+      const grp = getOrCreateGroup(Object.getPrototypeOf(this), cookieName);
       let parsed: Record<string, any> = {};
+      const raw = getCookie(cookieName);
       if (raw) {
         try {
           parsed = JSON.parse(raw);
@@ -783,24 +814,17 @@ export function cookieProperty(
         }
       }
 
-      for (const entry of groupEntries) {
-        const cookieVal = parsed[entry.propertyName];
-        if (cookieVal !== undefined) {
-          if (
-            entry.defaultValue !== undefined &&
-            typeof cookieVal !== typeof entry.defaultValue
-          ) {
-            this[entry.propertyName] = entry.defaultValue;
-          } else if (
-            typeof cookieVal === 'number' &&
-            !Number.isFinite(cookieVal)
-          ) {
-            this[entry.propertyName] = entry.defaultValue;
-          } else if (entry.validate && !entry.validate(cookieVal)) {
-            this[entry.propertyName] = entry.defaultValue;
-          } else {
-            this[entry.propertyName] = cookieVal;
-          }
+      // Resolve the values object (top-level or nested under keyProperty)
+      let values = parsed;
+      if (grp.keyProperty) {
+        const key = this[grp.keyProperty];
+        values = key && parsed[key] ? parsed[key] : {};
+      }
+
+      for (const entry of grp.entries) {
+        const cookieVal = values[entry.propertyName];
+        if (cookieVal !== undefined && validateCookieValue(cookieVal, entry)) {
+          this[entry.propertyName] = cookieVal;
         } else if (entry.defaultValue !== undefined) {
           this[entry.propertyName] = entry.defaultValue;
         }
@@ -813,16 +837,47 @@ export function cookieProperty(
     proto.updated = function (changes: Map<string, any>) {
       if (origUpdated) origUpdated.call(this, changes);
 
-      const groupEntries = getOrCreateRegistry(
-        Object.getPrototypeOf(this),
-        cookieName
-      );
-      const hasChange = groupEntries.some((e) => changes.has(e.propertyName));
-      if (hasChange) {
-        const obj: Record<string, any> = {};
-        for (const entry of groupEntries) {
-          obj[entry.propertyName] = this[entry.propertyName];
+      const grp = getOrCreateGroup(Object.getPrototypeOf(this), cookieName);
+      const hasChange = grp.entries.some((e) => changes.has(e.propertyName));
+      if (!hasChange) return;
+
+      // Collect current values for all entries in the group
+      const obj: Record<string, any> = {};
+      for (const entry of grp.entries) {
+        obj[entry.propertyName] = this[entry.propertyName];
+      }
+
+      if (grp.keyProperty) {
+        const key = this[grp.keyProperty];
+        if (!key) return;
+
+        // Read existing cookie to merge, then write under the key
+        let all: Record<string, any> = {};
+        const existing = getCookie(cookieName);
+        if (existing) {
+          try {
+            all = JSON.parse(existing);
+          } catch {
+            // ignore
+          }
         }
+
+        // LRU: delete then re-insert to move to end
+        delete all[key];
+        all[key] = obj;
+
+        // Evict oldest entries if over the limit
+        if (grp.maxEntries) {
+          const keys = Object.keys(all);
+          if (keys.length > grp.maxEntries) {
+            for (const oldKey of keys.slice(0, keys.length - grp.maxEntries)) {
+              delete all[oldKey];
+            }
+          }
+        }
+
+        setCookie(cookieName, JSON.stringify(all));
+      } else {
         setCookie(cookieName, JSON.stringify(obj));
       }
     };
