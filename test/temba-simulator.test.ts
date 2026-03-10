@@ -931,8 +931,8 @@ describe('temba-simulator', () => {
         'simulator',
         JSON.stringify({
           size: 'large',
-          follow: false,
-          contextOpen: true
+          following: false,
+          contextExplorerOpen: true
         })
       );
 
@@ -947,8 +947,8 @@ describe('temba-simulator', () => {
         'simulator',
         JSON.stringify({
           size: 'gigantic',
-          follow: true,
-          contextOpen: false
+          following: true,
+          contextExplorerOpen: false
         })
       );
 
@@ -957,13 +957,13 @@ describe('temba-simulator', () => {
       expect(simulator.size).to.equal('small');
     });
 
-    it('ignores non-boolean follow/contextOpen values from cookie', async () => {
+    it('ignores non-boolean following/contextExplorerOpen values from cookie', async () => {
       setCookie(
         'simulator',
         JSON.stringify({
           size: 'medium',
-          follow: 'yes',
-          contextOpen: 42
+          following: 'yes',
+          contextExplorerOpen: 42
         })
       );
 

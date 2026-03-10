@@ -694,25 +694,20 @@ export const getCookie = (name: string) => {
 /**
  * Property decorator that persists a Lit reactive property in a shared JSON
  * cookie.  Multiple properties on the same component can share one cookie —
- * each property becomes a key in the JSON object.
+ * each property becomes a key in the JSON object (keyed by property name).
  *
  * Usage:
  *   @cookieProperty('simulator', false)
  *   private following: boolean;
  *
- * The cookie key defaults to the property name.  Pass a third argument to
- * override it:
- *   @cookieProperty('simulator', 'small', 'size')
- *   private mySize: string;
- *
  * Values are validated on load: booleans must be boolean, strings must be
- * strings, and numbers must be finite numbers.  Invalid values are silently
- * ignored and the default is used instead.
+ * strings, and numbers must be finite numbers.  An optional validate function
+ * can further restrict accepted values.  Invalid values fall back to the
+ * default.
  */
 
 interface CookiePropertyEntry {
   propertyName: string;
-  cookieKey: string;
   defaultValue: any;
   validate?: (value: any) => boolean;
 }
@@ -743,12 +738,10 @@ function getOrCreateRegistry(
 export function cookieProperty(
   cookieName: string,
   defaultValue?: any,
-  cookieKey?: string,
   validate?: (value: any) => boolean
 ): PropertyDecorator {
   return (proto: any, propertyName: string | symbol) => {
     const propName = String(propertyName);
-    const key = cookieKey || propName;
 
     // Register as a Lit reactive property, inferring type from the default
     const litType =
@@ -763,7 +756,6 @@ export function cookieProperty(
     const entries = getOrCreateRegistry(proto, cookieName);
     entries.push({
       propertyName: propName,
-      cookieKey: key,
       defaultValue,
       validate
     });
@@ -792,9 +784,8 @@ export function cookieProperty(
       }
 
       for (const entry of groupEntries) {
-        const cookieVal = parsed[entry.cookieKey];
+        const cookieVal = parsed[entry.propertyName];
         if (cookieVal !== undefined) {
-          // Validate type matches the default value's type
           if (
             entry.defaultValue !== undefined &&
             typeof cookieVal !== typeof entry.defaultValue
@@ -830,7 +821,7 @@ export function cookieProperty(
       if (hasChange) {
         const obj: Record<string, any> = {};
         for (const entry of groupEntries) {
-          obj[entry.cookieKey] = this[entry.propertyName];
+          obj[entry.propertyName] = this[entry.propertyName];
         }
         setCookie(cookieName, JSON.stringify(obj));
       }

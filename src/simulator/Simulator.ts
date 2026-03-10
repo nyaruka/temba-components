@@ -716,7 +716,7 @@ export class Simulator extends RapidElement {
   @property({ type: Number })
   animationTime = 200;
 
-  @cookieProperty('simulator', 'small', 'size', (v) => v in SIMULATOR_SIZES)
+  @cookieProperty('simulator', 'small', (v) => v in SIMULATOR_SIZES)
   size: 'small' | 'medium' | 'large';
 
   @property({ type: Array })
@@ -748,10 +748,10 @@ export class Simulator extends RapidElement {
   @property({ type: String })
   private inputValue = '';
 
-  @cookieProperty('simulator', true, 'follow')
+  @cookieProperty('simulator', true)
   private following: boolean;
 
-  @cookieProperty('simulator', false, 'contextOpen')
+  @cookieProperty('simulator', false)
   private contextExplorerOpen: boolean;
 
   @property({ type: Object })
