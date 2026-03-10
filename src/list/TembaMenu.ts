@@ -8,7 +8,6 @@ import { Dropdown } from '../display/Dropdown';
 import { NotificationList } from './NotificationList';
 import { ResizeElement } from '../ResizeElement';
 import { Store } from '../store/Store';
-import { Dialog } from '../layout/Dialog';
 
 export interface MenuItem {
   id?: string;
@@ -842,45 +841,20 @@ export class TembaMenu extends ResizeElement {
   ) {
     const store = document.querySelector('temba-store') as Store;
     if (store) {
-      const unsavedMessage = store.getDirtyMessage();
-      if (unsavedMessage) {
-        this.showUnsavedDialog(unsavedMessage, () => {
-          store.cleanAll();
-          this.executeNavigation(event, menuItem, parent);
-        });
+      if (store.getDirtyMessage()) {
+        store
+          .getState()
+          .flushSave?.()
+          .then(() => {
+            store.cleanAll();
+            this.executeNavigation(event, menuItem, parent);
+          });
         return;
       }
       store.cleanAll();
     }
 
     this.executeNavigation(event, menuItem, parent);
-  }
-
-  private showUnsavedDialog(message: string, onConfirm: () => void): void {
-    const dialog = document.createElement('temba-dialog') as Dialog;
-    dialog.header = 'Unsaved Changes';
-    dialog.primaryButtonName = 'Leave';
-    dialog.cancelButtonName = 'Stay';
-    dialog.destructive = true;
-
-    const content = document.createElement('div');
-    content.style.cssText = 'padding: 20px; font-size: 14px; line-height: 1.5;';
-    content.textContent = message;
-    dialog.appendChild(content);
-
-    dialog.addEventListener('temba-button-clicked', (event: any) => {
-      if (event.detail.button.name === 'Leave') {
-        dialog.open = false;
-        onConfirm();
-      }
-    });
-
-    document.body.appendChild(dialog);
-    dialog.open = true;
-
-    dialog.addEventListener('temba-dialog-hidden', () => {
-      document.body.removeChild(dialog);
-    });
   }
 
   private executeNavigation(

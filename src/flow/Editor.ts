@@ -371,6 +371,9 @@ export class Editor extends RapidElement {
   // call in updated() when the dirtyDate change comes from a reflow/copy
   private _suppressDirtySave = false;
 
+  // Tracks the in-flight save so disconnectedCallback can defer cleanup
+  private savePromise: Promise<void> | null = null;
+
   // --- Pending-changes timer (shared by reflow + copy) ---
 
   private pendingTimer = new PendingChangesTimer(
@@ -1517,25 +1520,31 @@ export class Editor extends RapidElement {
    * starting a simulation run.
    */
   private flushSave = async (): Promise<void> => {
-    // Wait for any in-flight save to finish first
-    if (this.isSaving) {
-      await new Promise<void>((resolve) => {
-        const check = () => {
-          if (!this.isSaving) {
-            resolve();
-          } else {
-            setTimeout(check, 50);
-          }
-        };
-        check();
-      });
+    // Capture the definition eagerly before any async gap so it
+    // survives even if the component unmounts and clearFlowData runs.
+    const snapshot = this.definition ? { ...this.definition } : null;
+
+    // Flush pending-changes timer (reflow/copy operations) if active
+    if (this.pendingTimer.unsaved) {
+      this.pendingPositions = null;
+      this.copiedItemUuids = [];
+      this.pendingTimer.dismiss();
     }
 
-    // Now flush any pending debounced save
+    // Cancel any pending debounce timer
     if (this.saveTimer !== null) {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
-      await this.saveChanges();
+    }
+
+    // Wait for any in-flight POST to finish first
+    if (this.savePromise) {
+      await this.savePromise;
+    }
+
+    // Save if there are unsaved changes
+    if (snapshot && this.dirtyDate) {
+      await this.saveChanges(snapshot);
     }
   };
 
@@ -1580,7 +1589,7 @@ export class Editor extends RapidElement {
     );
     this.isSaving = true;
 
-    return getStore()
+    const promise = getStore()
       .postJSON(`/flow/revisions/${this.flow}/`, definition)
       .then((response) => {
         if (response.status < 200 || response.status >= 300) {
@@ -1617,7 +1626,11 @@ export class Editor extends RapidElement {
       })
       .finally(() => {
         this.isSaving = false;
+        this.savePromise = null;
       });
+
+    this.savePromise = promise;
+    return promise;
   }
 
   private extractErrorMessage(response: WebResponse): string {
@@ -1748,7 +1761,13 @@ export class Editor extends RapidElement {
 
     // Clear all flow-specific data from the store so stale data
     // isn't briefly visible when a different flow is opened.
-    zustand.getState().clearFlowData();
+    // If a save is in-flight, wait for it to complete first so the
+    // definition isn't nulled out from under the POST.
+    if (this.savePromise) {
+      this.savePromise.then(() => zustand.getState().clearFlowData());
+    } else {
+      zustand.getState().clearFlowData();
+    }
   }
 
   private setupGlobalEventListeners(): void {
