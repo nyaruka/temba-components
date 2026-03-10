@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactName } from '../../store/flow-definition';
-import { renderClamped } from '../utils';
+import { renderClamped, renderHighlightedText } from '../utils';
 
 export const set_contact_name: ActionConfig = {
   name: 'Update Name',
@@ -9,7 +9,7 @@ export const set_contact_name: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactName) => {
     return renderClamped(
-      html`Set to <strong>${action.name}</strong>`,
+      html`Set to ${renderHighlightedText(action.name, true)}`,
       `Set to ${action.name}`
     );
   },

@@ -1,6 +1,7 @@
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, PlayAudio } from '../../store/flow-definition';
+import { renderHighlightedText } from '../utils';
 
 export const play_audio: ActionConfig = {
   name: 'Play Recording',
@@ -14,7 +15,7 @@ export const play_audio: ActionConfig = {
           style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;"
           title="${action.audio_url || ''}"
         >
-          ${action.audio_url || ''}
+          ${renderHighlightedText(action.audio_url || '', true)}
         </div>
       </div>
     `;

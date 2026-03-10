@@ -7,7 +7,7 @@ import {
   FlowTypes
 } from '../types';
 import { Node, AddContactUrn } from '../../store/flow-definition';
-import { SCHEMES, renderClamped } from '../utils';
+import { SCHEMES, renderClamped, renderHighlightedText } from '../utils';
 
 export const add_contact_urn: ActionConfig = {
   name: 'Add URN',
@@ -17,7 +17,7 @@ export const add_contact_urn: ActionConfig = {
     const schemeObj = SCHEMES.find((s) => s.scheme === action.scheme);
     const friendlyScheme = schemeObj?.path || action.scheme;
     return renderClamped(
-      html`Add ${friendlyScheme} <strong>${action.path}</strong>`,
+      html`Add ${friendlyScheme} ${renderHighlightedText(action.path, true)}`,
       `Add ${friendlyScheme} ${action.path}`
     );
   },
