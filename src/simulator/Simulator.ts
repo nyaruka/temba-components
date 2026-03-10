@@ -3,7 +3,7 @@ import { RapidElement } from '../RapidElement';
 import { FloatingWindow } from '../layout/FloatingWindow';
 import { css, PropertyValueMap, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
-import { postJSON, fromCookie, generateUUIDv7 } from '../utils';
+import { postJSON, getCookie, setCookie, generateUUIDv7 } from '../utils';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { FlowDefinition } from '../store/flow-definition';
@@ -716,8 +716,8 @@ export class Simulator extends RapidElement {
   @property({ type: Number })
   animationTime = 200;
 
-  @fromCookie('simulator-size', 'small')
-  size: 'small' | 'medium' | 'large';
+  @property({ type: String })
+  size: 'small' | 'medium' | 'large' = 'small';
 
   @property({ type: Array })
   private events: ContactEvent[] = [];
@@ -748,11 +748,11 @@ export class Simulator extends RapidElement {
   @property({ type: String })
   private inputValue = '';
 
-  @fromCookie('simulator-follow', true)
-  private following: boolean;
+  @property({ type: Boolean })
+  private following = true;
 
-  @fromCookie('simulator-context-open', false)
-  private contextExplorerOpen: boolean;
+  @property({ type: Boolean })
+  private contextExplorerOpen = false;
 
   @property({ type: Object })
   private expandedPaths: Set<string> = new Set();
@@ -820,6 +820,19 @@ export class Simulator extends RapidElement {
 
   public connectedCallback() {
     super.connectedCallback();
+
+    const raw = getCookie('simulator');
+    if (raw) {
+      try {
+        const settings = JSON.parse(raw);
+        if (settings.size) this.size = settings.size;
+        if (settings.follow !== undefined) this.following = settings.follow;
+        if (settings.contextOpen !== undefined)
+          this.contextExplorerOpen = settings.contextOpen;
+      } catch {
+        // ignore malformed cookie
+      }
+    }
   }
 
   protected firstUpdated(
@@ -941,6 +954,21 @@ export class Simulator extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
+
+    if (
+      changes.has('size') ||
+      changes.has('following') ||
+      changes.has('contextExplorerOpen')
+    ) {
+      setCookie(
+        'simulator',
+        JSON.stringify({
+          size: this.size,
+          follow: this.following,
+          contextOpen: this.contextExplorerOpen
+        })
+      );
+    }
 
     if (
       changes.has('currentQuickReplies') ||
@@ -1776,6 +1804,7 @@ export class Simulator extends RapidElement {
       <temba-floating-window
         style="--transition-duration: ${this.animationTime}ms"
         id="phone-window"
+        name="simulator"
         width="${this.windowWidth}"
         leftBoundaryMargin="${this.leftBoundaryMargin}"
         bottomBoundaryMargin="${config.windowPadding}"
@@ -1966,7 +1995,7 @@ export class Simulator extends RapidElement {
         icon="simulator"
         label="Phone Simulator"
         color="#10b981"
-        order="4"
+        order="0"
         .hidden=${this.isVisible}
         @temba-button-clicked=${this.handleShow}
       ></temba-floating-tab>

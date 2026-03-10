@@ -24,6 +24,8 @@ import {
   postJSON,
   fetchResults,
   getClasses,
+  getCookie,
+  setCookie,
   WebResponse
 } from '../utils';
 import { TEMBA_COMPONENTS_VERSION } from '../version';
@@ -1419,6 +1421,15 @@ export class Editor extends RapidElement {
       if (this.definition?.uuid) {
         this.startActivityFetching();
       }
+
+      // Restore saved zoom level on initial load
+      if (!changes.get('definition') && this.definition) {
+        const savedZoom = this.getFlowSetting<number>('zoom');
+        if (savedZoom !== undefined) {
+          this.zoom = savedZoom;
+          this.plumber.zoom = savedZoom;
+        }
+      }
     }
 
     if (changes.has('simulatorActive')) {
@@ -2034,6 +2045,29 @@ export class Editor extends RapidElement {
     }
   }
 
+  // --- Flow settings cookie ---
+
+  private getFlowSettings(): Record<string, any> {
+    try {
+      return JSON.parse(getCookie('flow-settings') || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  private saveFlowSetting(key: string, value: any): void {
+    if (!this.flow) return;
+    const settings = this.getFlowSettings();
+    if (!settings[this.flow]) settings[this.flow] = {};
+    settings[this.flow][key] = value;
+    setCookie('flow-settings', JSON.stringify(settings));
+  }
+
+  private getFlowSetting<T>(key: string): T | undefined {
+    if (!this.flow) return undefined;
+    return this.getFlowSettings()[this.flow]?.[key];
+  }
+
   // --- Zoom ---
 
   private setZoom(
@@ -2051,6 +2085,7 @@ export class Editor extends RapidElement {
     this.zoom = clamped;
     this.plumber.zoom = clamped;
     this.zoomFitted = false;
+    this.saveFlowSetting('zoom', clamped);
 
     if (editor && center) {
       const editorRect = editor.getBoundingClientRect();
@@ -2136,6 +2171,7 @@ export class Editor extends RapidElement {
     this.zoom = fitZoom;
     this.plumber.zoom = fitZoom;
     this.zoomFitted = true;
+    this.saveFlowSetting('zoom', fitZoom);
 
     // Center of content in canvas coordinates, plus grid/canvas margin offset
     const centerX = (minX + maxX) / 2 + 40;
@@ -5082,6 +5118,7 @@ export class Editor extends RapidElement {
     return html`
       <temba-floating-window
         id="issues-window"
+        name="issues"
         header="Flow Issues"
         .width=${360}
         .maxHeight=${600}
@@ -5126,6 +5163,7 @@ export class Editor extends RapidElement {
     return html`
       <temba-floating-window
         id="revisions-window"
+        name="revisions"
         header="Revisions"
         .width=${240}
         .maxHeight=${400}
@@ -5245,6 +5283,7 @@ export class Editor extends RapidElement {
     return html`
       <temba-floating-window
         id="localization-window"
+        name="localization"
         header="Translations"
         .width=${360}
         .maxHeight=${600}

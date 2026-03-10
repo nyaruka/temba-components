@@ -25,7 +25,6 @@ import {
   timeSince,
   isDate,
   getCookie,
-  getCookieBoolean,
   setCookie,
   serialize,
   renderIf,
@@ -798,38 +797,6 @@ describe('utils/index', () => {
       if (originalGetter) {
         Object.defineProperty(document, 'cookie', originalGetter);
       }
-    });
-  });
-
-  describe('getCookieBoolean', () => {
-    beforeEach(() => {
-      // clear all cookies
-      document.cookie.split(';').forEach((cookie) => {
-        const eqPos = cookie.indexOf('=');
-        const name =
-          eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-        document.cookie =
-          name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
-      });
-    });
-
-    it('returns true for cookie value "true"', () => {
-      setCookie('boolcookie', 'true');
-      expect(getCookieBoolean('boolcookie')).to.be.true;
-    });
-
-    it('returns false for cookie value "false"', () => {
-      setCookie('boolcookie', 'false');
-      expect(getCookieBoolean('boolcookie')).to.be.false;
-    });
-
-    it('returns false for non-existent cookie', () => {
-      expect(getCookieBoolean('nonexistent')).to.be.false;
-    });
-
-    it('returns false for non-boolean cookie values', () => {
-      setCookie('boolcookie', 'somevalue');
-      expect(getCookieBoolean('boolcookie')).to.be.false;
     });
   });
 
