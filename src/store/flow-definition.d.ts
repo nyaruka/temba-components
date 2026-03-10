@@ -150,6 +150,8 @@ export interface SendBroadcast extends Action {
   contacts: NamedObject[];
   legacy_vars?: string[];
   attachments?: string[];
+  template?: NamedObject;
+  template_variables?: string[];
 }
 
 export interface EnterFlow extends Action {
