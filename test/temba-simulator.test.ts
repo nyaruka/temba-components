@@ -369,6 +369,11 @@ describe('temba-simulator', () => {
     clearMockPosts();
   });
 
+  afterEach(() => {
+    // ensure flushSave is always cleaned up to prevent cascade failures
+    zustand.getState().setFlushSave(null);
+  });
+
   it('can be created', async () => {
     const simulator: Simulator = await createSimulator();
     assert.instanceOf(simulator, Simulator);
@@ -765,7 +770,7 @@ describe('temba-simulator', () => {
       simulator.shadowRoot.querySelectorAll('.option-btn')
     );
     const resetButton = optionButtons.find((btn) =>
-      btn.querySelector('temba-icon[name="refresh"]')
+      btn.querySelector('temba-icon[name="reset"]')
     ) as HTMLElement;
     expect(resetButton).to.exist;
     resetButton.click();
@@ -851,7 +856,7 @@ describe('temba-simulator', () => {
       simulator.shadowRoot.querySelectorAll('.option-btn')
     );
     const resetButton = optionButtons.find((btn) =>
-      btn.querySelector('temba-icon[name="refresh"]')
+      btn.querySelector('temba-icon[name="reset"]')
     ) as HTMLElement;
     expect(resetButton).to.exist;
     resetButton.click();
