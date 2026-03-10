@@ -1502,12 +1502,8 @@ export class Editor extends RapidElement {
    * starting a simulation run.
    */
   private flushSave = async (): Promise<void> => {
-    if (this.saveTimer !== null) {
-      clearTimeout(this.saveTimer);
-      this.saveTimer = null;
-      await this.saveChanges();
-    } else if (this.isSaving) {
-      // A save is already in flight — wait for it to finish
+    // Wait for any in-flight save to finish first
+    if (this.isSaving) {
       await new Promise<void>((resolve) => {
         const check = () => {
           if (!this.isSaving) {
@@ -1518,6 +1514,13 @@ export class Editor extends RapidElement {
         };
         check();
       });
+    }
+
+    // Now flush any pending debounced save
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+      await this.saveChanges();
     }
   };
 

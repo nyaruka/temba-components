@@ -9,6 +9,7 @@ import {
   waitForCondition,
   loadStore
 } from './utils.test';
+import { zustand } from '../src/store/AppState';
 
 const FLOW_UUID = 'test-flow-123';
 
@@ -758,6 +759,90 @@ describe('temba-simulator', () => {
       'simulator/after-reset',
       getSimulatorClip(simulator)
     );
+  });
+
+  it('flushes pending saves before starting simulation', async () => {
+    let flushResolved = false;
+    let flushCalled = false;
+
+    mockSimulatorStart();
+
+    const simulator: Simulator = await createSimulator();
+    await simulator.updateComplete;
+
+    // register a flushSave after the store is loaded but before opening
+    zustand.getState().setFlushSave(() => {
+      flushCalled = true;
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          flushResolved = true;
+          resolve();
+        }, 100);
+      });
+    });
+
+    // open the simulator — this triggers handleShow which calls flushSave
+    const tab = simulator.shadowRoot.querySelector('temba-floating-tab') as any;
+    tab.dispatchEvent(
+      new CustomEvent('temba-button-clicked', { bubbles: true })
+    );
+    await simulator.updateComplete;
+    await delay(200);
+
+    // flushSave should have been called and resolved before startFlow
+    expect(flushCalled).to.be.true;
+    expect(flushResolved).to.be.true;
+
+    // clean up
+    zustand.getState().setFlushSave(null);
+  });
+
+  it('flushes pending saves before resetting simulation', async () => {
+    mockSimulatorStart();
+
+    const simulator: Simulator = await createSimulator();
+    await simulator.updateComplete;
+    await openSimulator(simulator);
+
+    await delay(100);
+    await simulator.updateComplete;
+
+    // now register a flushSave we control for the reset path
+    let flushResolved = false;
+    let flushCalled = false;
+
+    zustand.getState().setFlushSave(() => {
+      flushCalled = true;
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          flushResolved = true;
+          resolve();
+        }, 100);
+      });
+    });
+
+    // mock the start response for reset
+    mockSimulatorStart();
+
+    // click the reset button
+    const optionButtons = Array.from(
+      simulator.shadowRoot.querySelectorAll('.option-btn')
+    );
+    const resetButton = optionButtons.find((btn) =>
+      btn.querySelector('temba-icon[name="refresh"]')
+    ) as HTMLElement;
+    expect(resetButton).to.exist;
+    resetButton.click();
+
+    await delay(200);
+    await simulator.updateComplete;
+
+    // flushSave should have been called and resolved before startFlow
+    expect(flushCalled).to.be.true;
+    expect(flushResolved).to.be.true;
+
+    // clean up
+    zustand.getState().setFlushSave(null);
   });
 
   it('displays event info messages', async () => {
