@@ -29,6 +29,17 @@ export const send_broadcast: ActionConfig = {
     return html`<div>
       <div>${renderMixedList(recipients)}</div>
       <div style="margin-top: 0.5em">
+        ${action.template
+          ? html`<div
+              style="border: 1px solid #7dc8bc;padding: 0.5em;margin-bottom: 0.5em;border-radius: 4px; display:flex;align-items: flex-start;background: #f0faf7;color: #128C7E;font-size: 0.85em;"
+            >
+              <temba-icon
+                name="channel_wac"
+                style="--icon-size: 14px;"
+              ></temba-icon>
+              <div style="margin-left:0.4em">${action.template.name}</div>
+            </div>`
+          : null}
         ${renderClamped(renderHighlightedText(action.text, true), action.text)}
       </div>
     </div>`;
@@ -63,10 +74,31 @@ export const send_broadcast: ActionConfig = {
       counter: 'temba-charcount',
       gsm: true,
       autogrow: true
+    },
+    template: {
+      type: 'template-editor',
+      endpoint: '/api/internal/templates.json'
     }
   },
 
-  layout: ['recipients', 'text'],
+  layout: [
+    'recipients',
+    'text',
+    {
+      type: 'accordion',
+      sections: [
+        {
+          label: 'WhatsApp Template',
+          collapsed: true,
+          localizable: false,
+          getValueCount: (formData: FormData) => {
+            return !!formData.template;
+          },
+          items: ['template']
+        }
+      ]
+    }
+  ],
 
   toFormData: (action: SendBroadcast) => {
     return {
@@ -89,7 +121,9 @@ export const send_broadcast: ActionConfig = {
         }))
       ],
       text: action.text || '',
-      attachments: action.attachments || []
+      attachments: action.attachments || [],
+      template: action.template || null,
+      template_variables: action.template_variables || []
     };
   },
 
@@ -123,6 +157,12 @@ export const send_broadcast: ActionConfig = {
     // Remove empty attachments array to match original format
     if (result.attachments.length === 0) {
       delete result.attachments;
+    }
+
+    // Add template and template_variables if a template is selected
+    if (formData.template) {
+      result.template = formData.template;
+      result.template_variables = formData.template_variables || [];
     }
 
     return result;

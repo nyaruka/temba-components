@@ -112,6 +112,19 @@ describe('send_broadcast action config', () => {
       } as SendBroadcast,
       'with-legacy-vars'
     );
+
+    helper.testAction(
+      {
+        uuid: 'test-action-8',
+        type: 'send_broadcast',
+        text: 'Hello {{1}}, your order {{2}} is ready.',
+        groups: [{ uuid: 'group-1', name: 'Customers' }],
+        contacts: [],
+        template: { uuid: 'template-1', name: 'order_ready' },
+        template_variables: ['@contact.name', '@results.order_id']
+      } as SendBroadcast,
+      'with-template'
+    );
   });
 
   describe('form data conversion', () => {
@@ -257,6 +270,61 @@ describe('send_broadcast action config', () => {
       const action = send_broadcast.fromFormData(formData) as SendBroadcast;
 
       expect(action.legacy_vars).to.be.undefined;
+    });
+
+    it('converts action to form data correctly with template', () => {
+      const action: SendBroadcast = {
+        uuid: 'test-uuid',
+        type: 'send_broadcast',
+        text: 'Hello {{1}}',
+        groups: [{ uuid: 'group-1', name: 'Test Group' }],
+        contacts: [],
+        template: { uuid: 'template-1', name: 'greeting' },
+        template_variables: ['@contact.name']
+      };
+
+      const formData = send_broadcast.toFormData(action);
+
+      expect(formData.template).to.deep.equal({
+        uuid: 'template-1',
+        name: 'greeting'
+      });
+      expect(formData.template_variables).to.deep.equal(['@contact.name']);
+    });
+
+    it('converts form data to action correctly with template', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        recipients: [{ id: 'group-1', name: 'Group 1', type: 'group' }],
+        text: 'Hello {{1}}',
+        attachments: [],
+        template: { uuid: 'template-1', name: 'greeting' },
+        template_variables: ['@contact.name']
+      };
+
+      const action = send_broadcast.fromFormData(formData) as SendBroadcast;
+
+      expect(action.template).to.deep.equal({
+        uuid: 'template-1',
+        name: 'greeting'
+      });
+      expect(action.template_variables).to.deep.equal(['@contact.name']);
+    });
+
+    it('omits template fields when no template selected', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        recipients: [{ id: 'group-1', name: 'Group 1', type: 'group' }],
+        text: 'Hello',
+        attachments: [],
+        template: null,
+        template_variables: []
+      };
+
+      const action = send_broadcast.fromFormData(formData) as SendBroadcast;
+
+      expect(action.template).to.be.undefined;
+      expect(action.template_variables).to.be.undefined;
     });
 
     it('should strip superfluous API metadata from contacts and groups', () => {
