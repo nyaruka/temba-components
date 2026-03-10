@@ -7,7 +7,7 @@ import {
   FlowTypes
 } from '../types';
 import { Node, RemoveFromGroup } from '../../store/flow-definition';
-import { renderNamedObjects } from '../utils';
+import { renderGroupLinks } from '../utils';
 
 export const remove_contact_groups: ActionConfig = {
   name: 'Remove from Group',
@@ -17,7 +17,7 @@ export const remove_contact_groups: ActionConfig = {
     if (action.all_groups) {
       return html`<div>Remove from all groups</div>`;
     }
-    return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
+    return html`<div>${renderGroupLinks(action.groups, 'group')}</div>`;
   },
   toFormData: (action: RemoveFromGroup) => {
     return {

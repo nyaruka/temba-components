@@ -7,6 +7,7 @@ import {
   renderHighlightedText
 } from '../utils';
 import { Icon } from '../../Icons';
+import { CustomEventType } from '../../interfaces';
 
 export const send_broadcast: ActionConfig = {
   name: 'Send Broadcast',
@@ -14,10 +15,17 @@ export const send_broadcast: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendBroadcast) => {
     const recipients = [
-      ...(action.groups || []).map((g) => ({ name: g.name, icon: Icon.group })),
+      ...(action.groups || []).map((g) => ({
+        name: g.name,
+        icon: Icon.group,
+        uuid: g.uuid,
+        eventType: CustomEventType.GroupClicked
+      })),
       ...(action.contacts || []).map((c) => ({
         name: c.name,
-        icon: Icon.contacts
+        icon: Icon.contacts,
+        uuid: c.uuid,
+        eventType: CustomEventType.ContactClicked
       })),
       ...(action.legacy_vars || []).map((v) => ({
         name: v,

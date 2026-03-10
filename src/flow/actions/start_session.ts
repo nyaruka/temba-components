@@ -9,6 +9,7 @@ import {
 import { Node, StartSession } from '../../store/flow-definition';
 import { renderMixedList, renderFlowLinks } from '../utils';
 import { Icon } from '../../Icons';
+import { CustomEventType } from '../../interfaces';
 
 export const start_session: ActionConfig = {
   name: 'Start Flow',
@@ -24,11 +25,15 @@ export const start_session: ActionConfig = {
       const recipients = [
         ...(action.groups || []).map((g) => ({
           name: g.name,
-          icon: Icon.group
+          icon: Icon.group,
+          uuid: g.uuid,
+          eventType: CustomEventType.GroupClicked
         })),
         ...(action.contacts || []).map((c) => ({
           name: c.name,
-          icon: Icon.contacts
+          icon: Icon.contacts,
+          uuid: c.uuid,
+          eventType: CustomEventType.ContactClicked
         }))
       ];
       recipientsDisplay = html`${renderMixedList(recipients)}`;

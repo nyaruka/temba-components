@@ -312,6 +312,7 @@ export enum CustomEventType {
   FollowSimulation = 'temba-follow-simulation',
   ContactClicked = 'temba-contact-clicked',
   FlowClicked = 'temba-flow-clicked',
+  GroupClicked = 'temba-group-clicked',
   ShowIssue = 'temba-show-issue',
   SizeChanged = 'temba-size-changed'
 }
