@@ -283,7 +283,7 @@ const renderLinkedObject = (
 
   return html`<div
     class="linked-name"
-    style="display:inline-flex;align-items:center;max-width:100%;"
+    style="display:flex;align-items:center;max-width:100%;"
   >
     ${icon
       ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
