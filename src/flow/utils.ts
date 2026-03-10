@@ -281,14 +281,12 @@ const renderLinkedObject = (
     }
   };
 
-  return html`<div
-    class="linked-name"
-    style="display:flex;align-items:center;max-width:100%;"
-  >
+  return html`<div style="display:flex;align-items:center;max-width:100%;">
     ${icon
       ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
       : null}
     <div
+      class="linked-name"
       @click=${handleClick}
       style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; text-decoration: underline; cursor: pointer;"
     >
