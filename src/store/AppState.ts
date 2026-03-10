@@ -223,6 +223,9 @@ export interface AppState {
   setDirtyDate: (date: Date) => void;
   expandCanvas: (width: number, height: number) => void;
 
+  flushSave: (() => Promise<void>) | null;
+  setFlushSave: (fn: (() => Promise<void>) | null) => void;
+
   updateNode(
     uuid: string,
     node: { actions: Action[]; uuid: string; exits: Exit[]; router?: Router }
@@ -273,6 +276,11 @@ export const zustand = createStore<AppState>()(
       simulatorActivity: null,
       activityEndpoint: null,
       simulatorActive: false,
+      flushSave: null,
+
+      setFlushSave: (fn: (() => Promise<void>) | null) => {
+        set({ flushSave: fn });
+      },
 
       setDirtyDate: (date: Date) => {
         set((state: AppState) => {
