@@ -1240,6 +1240,7 @@ export class Editor extends RapidElement {
     super.firstUpdated(changes);
     this.plumber = new Plumber(this.querySelector('#canvas'), this);
     this.setupGlobalEventListeners();
+    getStore()?.getState().setFlushSave(this.flushSave);
 
     // Eagerly detect touch capability so hover-only controls are visible
     // from the start and scrollbar/touch-action CSS is applied immediately.
@@ -1495,6 +1496,34 @@ export class Editor extends RapidElement {
     }
   }
 
+  /**
+   * If there's a pending debounced save, cancel the timer and save immediately.
+   * Called by the simulator to ensure the latest definition is persisted before
+   * starting a simulation run.
+   */
+  private flushSave = async (): Promise<void> => {
+    // Wait for any in-flight save to finish first
+    if (this.isSaving) {
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (!this.isSaving) {
+            resolve();
+          } else {
+            setTimeout(check, 50);
+          }
+        };
+        check();
+      });
+    }
+
+    // Now flush any pending debounced save
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+      await this.saveChanges();
+    }
+  };
+
   private debouncedSave(): void {
     // Clear any existing timer
     if (this.saveTimer !== null) {
@@ -1667,6 +1696,7 @@ export class Editor extends RapidElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    getStore()?.getState().setFlushSave(null);
     this.stopAutoScroll();
     window.removeEventListener('beforeunload', this.boundBeforeUnload);
     const store = document.querySelector('temba-store') as Store;

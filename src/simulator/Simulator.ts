@@ -1043,7 +1043,7 @@ export class Simulator extends RapidElement {
     }
   }
 
-  private handleShow() {
+  private async handleShow() {
     const phoneWindow = this.shadowRoot.getElementById(
       'phone-window'
     ) as FloatingWindow;
@@ -1058,6 +1058,8 @@ export class Simulator extends RapidElement {
 
     // start the simulation if we haven't already
     if (!this.session) {
+      // ensure any pending save completes before simulating
+      await getStore().getState().flushSave?.();
       this.startFlow();
     }
   }
@@ -1355,7 +1357,7 @@ export class Simulator extends RapidElement {
     getStore().getState().setSimulatorActive(false);
   }
 
-  private handleReset() {
+  private async handleReset() {
     // reset simulation state
     this.events = [];
     this.session = null;
@@ -1386,6 +1388,9 @@ export class Simulator extends RapidElement {
       status: 'active',
       created_on: new Date().toISOString()
     };
+
+    // ensure any pending save completes before simulating
+    await getStore().getState().flushSave?.();
 
     // restart the flow
     this.startFlow();
