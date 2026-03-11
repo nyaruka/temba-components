@@ -68,6 +68,15 @@ interface Event {
   [key: string]: any;
 }
 
+interface WebhookLog {
+  url?: string;
+  request?: any;
+  response?: any;
+  status?: string;
+  status_code?: number;
+  [key: string]: any;
+}
+
 interface RunContext {
   session: Session;
   events: Event[];
@@ -694,6 +703,88 @@ export class Simulator extends RapidElement {
       .attachment-menu-item temba-icon {
         color: #007aff;
       }
+
+      .webhook-details {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .webhook-summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #f3f4f6;
+        color: #4b5563;
+        font-size: 13px;
+      }
+
+      .webhook-summary strong {
+        color: #111827;
+      }
+
+      .webhook-log {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #f9fafb;
+        overflow: hidden;
+      }
+
+      .webhook-log-header {
+        background: #f3f4f6;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 10px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .webhook-log-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .webhook-log-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .webhook-log-section h4 {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: #4b5563;
+      }
+
+      .webhook-log-section pre {
+        margin: 0;
+        padding: 10px;
+        border-radius: 8px;
+        background: #111827;
+        color: #e5e7eb;
+        font-size: 12px;
+        line-height: 1.4;
+        max-height: 240px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .webhook-empty {
+        padding: 12px;
+        border-radius: 8px;
+        background: #f3f4f6;
+        color: #6b7280;
+        font-size: 13px;
+      }
     `;
   }
 
@@ -774,6 +865,12 @@ export class Simulator extends RapidElement {
 
   @property({ type: Boolean })
   private attachmentMenuOpen = false;
+
+  @property({ type: Boolean })
+  private webhookDetailsOpen = false;
+
+  @property({ attribute: false })
+  private webhookDetailsEvent: ContactEvent | null = null;
 
   private boundClickOutsideHandler: ((event: MouseEvent) => void) | null = null;
 
@@ -1347,8 +1444,26 @@ export class Simulator extends RapidElement {
     // try to render as a standard event
     const rendered = renderEvent(event, true);
     if (rendered) {
+      const renderedEvent =
+        event.type === Events.WEBHOOK_CALLED && this.hasWebhookDetails(event)
+          ? html`<div class="webhook-event">
+              <div class="webhook-event-text">${rendered}</div>
+              <button
+                type="button"
+                data-webhook-details="true"
+                class="webhook-event-log-link"
+                title="View webhook call details"
+                aria-label="View webhook call details"
+                @click=${(clickEvent: Event) =>
+                  this.handleWebhookDetailsClick(event, clickEvent)}
+              >
+                <temba-icon name="log" size="0.8"></temba-icon>
+              </button>
+            </div>`
+          : rendered;
+
       event._rendered = {
-        html: rendered,
+        html: renderedEvent,
         type: MessageType.Inline
       };
     }
@@ -1360,6 +1475,7 @@ export class Simulator extends RapidElement {
     ) as FloatingWindow;
     phoneWindow.handleClose();
     this.isVisible = false;
+    this.closeWebhookDetails();
     getStore().getState().setSimulatorActive(false);
   }
 
@@ -1372,6 +1488,7 @@ export class Simulator extends RapidElement {
     this.sprinting = false;
     this.previousEventCount = 0;
     this.currentQuickReplies = [];
+    this.closeWebhookDetails();
 
     // reset chat component
     if (this.chat) {
@@ -1587,6 +1704,262 @@ export class Simulator extends RapidElement {
         </div>
       `;
     })}`;
+  }
+
+  private getWebhookLogs(event: ContactEvent | null): WebhookLog[] {
+    if (!event) {
+      return [];
+    }
+
+    const source = event as any;
+
+    if (Array.isArray(source.http_logs)) {
+      return source.http_logs.filter(
+        (log: any) => log && typeof log === 'object'
+      );
+    }
+
+    if (source.http_logs && typeof source.http_logs === 'object') {
+      return [source.http_logs as WebhookLog];
+    }
+
+    if (
+      source.url !== undefined ||
+      source.request !== undefined ||
+      source.response !== undefined ||
+      source.status !== undefined ||
+      source.status_code !== undefined
+    ) {
+      return [source as WebhookLog];
+    }
+
+    return [];
+  }
+
+  private hasWebhookDetails(event: ContactEvent): boolean {
+    return this.getWebhookLogs(event).length > 0;
+  }
+
+  private formatWebhookValue(value: any): string {
+    if (value === undefined || value === null) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return '';
+      }
+
+      if (
+        (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))
+      ) {
+        try {
+          return JSON.stringify(JSON.parse(trimmed), null, 2);
+        } catch (_error) {
+          return value;
+        }
+      }
+
+      return value;
+    }
+
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch (_error) {
+        return String(value);
+      }
+    }
+
+    return String(value);
+  }
+
+  private parseWebhookDurationToMs(
+    value: any,
+    unit: 'ms' | 'seconds'
+  ): number | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    let numericValue: number | null = null;
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      numericValue = value;
+    } else if (typeof value === 'string') {
+      const trimmed = value.trim().toLowerCase();
+      if (!trimmed) {
+        return null;
+      }
+
+      const hhmmssMatch = trimmed.match(/^(\d+):(\d+):(\d+(?:\.\d+)?)$/);
+      if (hhmmssMatch) {
+        const hours = Number(hhmmssMatch[1]);
+        const minutes = Number(hhmmssMatch[2]);
+        const seconds = Number(hhmmssMatch[3]);
+        if (
+          Number.isFinite(hours) &&
+          Number.isFinite(minutes) &&
+          Number.isFinite(seconds)
+        ) {
+          numericValue = (hours * 3600 + minutes * 60 + seconds) * 1000;
+          unit = 'ms';
+        }
+      } else if (trimmed.endsWith('ms')) {
+        const parsed = Number.parseFloat(trimmed.slice(0, -2));
+        numericValue = Number.isFinite(parsed) ? parsed : null;
+        unit = 'ms';
+      } else if (trimmed.endsWith('s')) {
+        const parsed = Number.parseFloat(trimmed.slice(0, -1));
+        numericValue = Number.isFinite(parsed) ? parsed : null;
+        unit = 'seconds';
+      } else {
+        const parsed = Number.parseFloat(trimmed);
+        numericValue = Number.isFinite(parsed) ? parsed : null;
+      }
+    }
+
+    if (numericValue === null) {
+      return null;
+    }
+
+    return unit === 'seconds' ? numericValue * 1000 : numericValue;
+  }
+
+  private getWebhookElapsedMs(log: WebhookLog): number | null {
+    const durationFields: Array<{
+      key: string;
+      unit: 'ms' | 'seconds';
+    }> = [
+      { key: 'elapsed_ms', unit: 'ms' },
+      { key: 'duration_ms', unit: 'ms' },
+      { key: 'response_time_ms', unit: 'ms' },
+      { key: 'elapsed_seconds', unit: 'seconds' },
+      { key: 'duration_seconds', unit: 'seconds' },
+      { key: 'elapsed', unit: 'seconds' },
+      { key: 'duration', unit: 'seconds' }
+    ];
+
+    for (const field of durationFields) {
+      const elapsed = this.parseWebhookDurationToMs(log[field.key], field.unit);
+      if (elapsed !== null) {
+        return elapsed;
+      }
+    }
+
+    return null;
+  }
+
+  private getWebhookTotalElapsedMs(logs: WebhookLog[]): number | null {
+    let total = 0;
+    let hasElapsed = false;
+
+    logs.forEach((log) => {
+      const elapsed = this.getWebhookElapsedMs(log);
+      if (elapsed !== null) {
+        total += elapsed;
+        hasElapsed = true;
+      }
+    });
+
+    return hasElapsed ? total : null;
+  }
+
+  private formatWebhookDuration(ms: number): string {
+    if (ms < 1000) {
+      return `${Math.round(ms)} ms`;
+    }
+
+    if (ms < 60000) {
+      const seconds = ms / 1000;
+      const precision = seconds < 10 ? 2 : 1;
+      return `${seconds.toFixed(precision)} s`;
+    }
+
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.round((ms % 60000) / 1000);
+    return `${minutes}m ${seconds}s`;
+  }
+
+  private handleWebhookDetailsClick(event: ContactEvent, clickEvent: Event) {
+    clickEvent.preventDefault();
+    clickEvent.stopPropagation();
+    this.webhookDetailsEvent = event;
+    this.webhookDetailsOpen = true;
+  }
+
+  private closeWebhookDetails() {
+    this.webhookDetailsOpen = false;
+    this.webhookDetailsEvent = null;
+  }
+
+  private handleWebhookDialogClose() {
+    this.closeWebhookDetails();
+  }
+
+  private renderWebhookDetailsDialog(): TemplateResult | null {
+    if (!this.webhookDetailsOpen || !this.webhookDetailsEvent) {
+      return null;
+    }
+
+    const logs = this.getWebhookLogs(this.webhookDetailsEvent);
+    const attempts = logs.length;
+    const totalElapsedMs = this.getWebhookTotalElapsedMs(logs);
+    const elapsedLabel =
+      totalElapsedMs === null
+        ? 'n/a'
+        : this.formatWebhookDuration(totalElapsedMs);
+
+    return html`
+      <temba-dialog
+        .open=${this.webhookDetailsOpen}
+        header="Webhook Call Details"
+        size="large"
+        cancelButtonName="Close"
+        primaryButtonName=""
+        ?hideOnClick=${true}
+        @temba-button-clicked=${this.handleWebhookDialogClose}
+        @temba-dialog-hidden=${this.handleWebhookDialogClose}
+      >
+        <div class="webhook-details">
+          ${logs.length === 0
+            ? html`<div class="webhook-empty">No call details available.</div>`
+            : html`<div class="webhook-summary">
+                  <span
+                    ><strong>${attempts}</strong> ${attempts === 1
+                      ? 'attempt'
+                      : 'attempts'}</span
+                  >
+                  <span>&middot;</span>
+                  <span><strong>${elapsedLabel}</strong> total elapsed</span>
+                </div>
+                ${logs.map((log, index) => {
+                  const request =
+                    this.formatWebhookValue(log.request) || 'No request body';
+                  const response =
+                    this.formatWebhookValue(log.response) || 'No response body';
+
+                  return html`
+                    <div class="webhook-log">
+                      <div class="webhook-log-header">Attempt ${index + 1}</div>
+                      <div class="webhook-log-content">
+                        <div class="webhook-log-section">
+                          <h4>Request</h4>
+                          <pre>${request}</pre>
+                        </div>
+                        <div class="webhook-log-section">
+                          <h4>Response</h4>
+                          <pre>${response}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                })}`}
+        </div>
+      </temba-dialog>
+    `;
   }
 
   private async resume(text: string, attachment?: string) {
@@ -1972,6 +2345,8 @@ export class Simulator extends RapidElement {
           </div>
         </div>
       </temba-floating-window>
+
+      ${this.renderWebhookDetailsDialog()}
 
       <temba-floating-tab
         id="phone-tab"

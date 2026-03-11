@@ -586,6 +586,34 @@ export class Chat extends RapidElement {
         color: #8e8e93;
       }
 
+      .event .webhook-event {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .event .webhook-event-log-link {
+        all: unset;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        cursor: pointer;
+        line-height: 1;
+        border-radius: 4px;
+        transition: color var(--animation-time, 200ms) ease;
+      }
+
+      .event .webhook-event-log-link:hover,
+      .event .webhook-event-log-link:focus-visible {
+        color: var(--color-primary-dark, #007aff);
+      }
+
+      .event .webhook-event-log-link:focus-visible {
+        outline: 1px solid currentColor;
+        outline-offset: 2px;
+      }
+
       .event p {
         margin: 0;
         padding: 0;

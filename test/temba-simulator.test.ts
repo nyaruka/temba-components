@@ -955,6 +955,114 @@ describe('temba-simulator', () => {
     await assertScreenshot('simulator/event-info', getSimulatorClip(simulator));
   });
 
+  it('opens webhook call details dialog from webhook events', async () => {
+    const responseWithWebhookEvent = {
+      session: {
+        status: 'waiting',
+        trigger: {
+          type: 'manual',
+          flow: { uuid: FLOW_UUID, name: 'Test Flow' }
+        },
+        runs: [
+          {
+            uuid: 'run-1',
+            flow: { uuid: FLOW_UUID, name: 'Test Flow' },
+            status: 'waiting',
+            path: [
+              {
+                uuid: 'step-1',
+                node_uuid: 'node-1',
+                arrived_on: new Date().toISOString(),
+                exit_uuid: null
+              }
+            ]
+          }
+        ],
+        environment: {
+          date_format: 'YYYY-MM-DD',
+          time_format: 'HH:mm',
+          timezone: 'America/New_York',
+          allowed_languages: ['eng'],
+          default_country: 'US'
+        }
+      },
+      events: [
+        {
+          type: 'webhook_called',
+          created_on: new Date().toISOString(),
+          url: 'https://example.org/hooks/lead',
+          status: 'success',
+          status_code: 200,
+          elapsed_ms: 150,
+          request: {
+            contact: { name: 'Alice', urn: 'tel:+12065551212' },
+            payload: { source: 'simulator' }
+          },
+          response: {
+            ok: true,
+            id: 'response-1'
+          }
+        }
+      ],
+      contact: {
+        uuid: 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286',
+        urns: ['tel:+12065551212'],
+        fields: {},
+        groups: [],
+        language: 'eng',
+        status: 'active',
+        created_on: new Date().toISOString()
+      },
+      context: {
+        contact: {
+          uuid: 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286',
+          name: 'Alice'
+        }
+      }
+    };
+
+    mockPOST(/\/flow\/simulate\/.*\//, responseWithWebhookEvent);
+
+    const simulator: Simulator = await createSimulator();
+    await simulator.updateComplete;
+    await openSimulator(simulator);
+
+    const chat = simulator.shadowRoot.querySelector('temba-chat') as any;
+    expect(chat).to.exist;
+    await chat.updateComplete;
+
+    await waitForCondition(
+      () => !!chat.shadowRoot?.querySelector('[data-webhook-details]'),
+      40,
+      50
+    );
+
+    const webhookDetailsButton = chat.shadowRoot.querySelector(
+      '[data-webhook-details]'
+    ) as HTMLElement;
+    expect(webhookDetailsButton).to.exist;
+    webhookDetailsButton.click();
+
+    await simulator.updateComplete;
+    await waitForCondition(
+      () =>
+        !!simulator.shadowRoot.querySelector('temba-dialog') &&
+        (simulator.shadowRoot.querySelector('temba-dialog') as any).open,
+      40,
+      50
+    );
+
+    const dialog = simulator.shadowRoot.querySelector('temba-dialog') as any;
+    expect(dialog).to.exist;
+    expect(dialog.open).to.be.true;
+
+    const detailsText = dialog.textContent || '';
+    expect(detailsText).to.match(/1\s+attempt/);
+    expect(detailsText).to.contain('150 ms total elapsed');
+    expect(detailsText).to.contain('"name": "Alice"');
+    expect(detailsText).to.contain('"ok": true');
+  });
+
   it('displays different simulator sizes', async () => {
     mockSimulatorStart();
 
