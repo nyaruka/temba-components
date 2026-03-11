@@ -349,7 +349,7 @@ describe('temba-node-editor', () => {
       type: 'send_msg',
       text: 'Hello world',
       quick_replies: ['Yes', 'No', 'Maybe'],
-      attachments: ['image:@contact.photo', 'document:@contact.resume']
+      attachments: ['image:@contact.photo', 'application:@contact.resume']
     };
 
     const el = (await fixture(html`
