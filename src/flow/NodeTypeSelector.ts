@@ -49,6 +49,8 @@ export class NodeTypeSelector extends RapidElement {
   static get styles() {
     return css`
       :host {
+        --dialog-top-offset: clamp(16px, 6vh, 64px);
+        --dialog-bottom-offset: clamp(24px, 5vh, 56px);
         position: fixed;
         top: 0;
         left: 0;
@@ -60,8 +62,10 @@ export class NodeTypeSelector extends RapidElement {
 
       :host([open]) {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
+        padding-top: var(--dialog-top-offset);
+        box-sizing: border-box;
       }
 
       .overlay {
@@ -79,7 +83,9 @@ export class NodeTypeSelector extends RapidElement {
         border-radius: var(--curvature);
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         max-width: 740px;
-        max-height: 80vh;
+        max-height: calc(
+          100vh - var(--dialog-top-offset) - var(--dialog-bottom-offset)
+        );
         width: 90%;
         display: flex;
         flex-direction: column;
@@ -111,6 +117,7 @@ export class NodeTypeSelector extends RapidElement {
         overflow-y: auto;
         overflow-x: hidden;
         flex: 1;
+        min-height: 0;
         padding: 1.5em;
       }
 
