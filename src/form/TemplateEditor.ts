@@ -172,6 +172,9 @@ export class TemplateEditor extends FieldElement {
   @property({ type: Boolean })
   translating: boolean;
 
+  @property({ type: String, attribute: 'template-warning' })
+  templateWarning: string;
+
   pickersLoading: { [key: number]: boolean } = {};
 
   textInputAttachments: { [index: number]: boolean } = {};
@@ -482,6 +485,9 @@ export class TemplateEditor extends FieldElement {
           @change=${this.handleTemplateChanged}
         >
         </temba-select>
+        ${this.templateWarning && this.selectedTemplate
+          ? html`<temba-alert level="warning" style="margin-bottom: 0.5em; display: block;">${this.templateWarning}</temba-alert>`
+          : null}
         ${content ? html` <div class="template">${content}</div>` : null}
       </div>
     `;
