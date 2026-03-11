@@ -289,11 +289,9 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
               currentlyFocused === targetElement ||
               targetElement.contains(currentlyFocused);
 
-            if (targetAlreadyFocused) {
-              return;
+            if (!targetAlreadyFocused) {
+              targetElement.focus();
             }
-
-            targetElement.focus();
 
             // Restore selection if it's a text input
             if (selectionStart !== undefined && selectionEnd !== undefined) {
