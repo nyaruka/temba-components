@@ -41,6 +41,11 @@ export const start_session: ActionConfig = {
           icon: Icon.contacts,
           uuid: c.uuid,
           eventType: CustomEventType.ContactClicked
+        })),
+        ...(action.legacy_vars || []).map((v) => ({
+          name: v,
+          icon: Icon.contacts,
+          content: renderHighlightedText(v, true)
         }))
       ];
       recipientsDisplay = html`${renderMixedList(recipients)}`;
@@ -92,6 +97,11 @@ export const start_session: ActionConfig = {
           id: g.uuid,
           name: g.name,
           type: 'group'
+        })),
+        ...(action.legacy_vars || []).map((v) => ({
+          id: v,
+          name: v,
+          type: 'expression'
         }))
       ],
       startType: [startType],
@@ -135,6 +145,7 @@ export const start_session: ActionConfig = {
       valueKey: 'id',
       nameKey: 'name',
       placeholder: 'Search for contacts or groups...',
+      expressions: 'session',
       conditions: {
         visible: (formData: FormData) => {
           const startType = formData.startType?.[0]?.value;
@@ -221,14 +232,23 @@ export const start_session: ActionConfig = {
     } else if (startTypeValue === 'query') {
       action.contact_query = formData.contactQuery || '';
     } else {
-      // Manual selection - separate contacts and groups
+      // Manual selection - separate contacts, groups, and legacy vars
       const recipients = formData.recipients || [];
       action.contacts = recipients
-        .filter((r: any) => r.type !== 'group')
+        .filter(
+          (r: any) =>
+            r.type === 'contact' || (!r.type && !r.expression && r.id)
+        )
         .map((c: any) => ({ uuid: c.id, name: c.name }));
       action.groups = recipients
         .filter((r: any) => r.type === 'group')
         .map((g: any) => ({ uuid: g.id, name: g.name }));
+      const legacy_vars = recipients
+        .filter((r: any) => r.type === 'expression' || r.expression)
+        .map((e: any) => e.value || e.name || e.id);
+      if (legacy_vars.length > 0) {
+        action.legacy_vars = legacy_vars;
+      }
     }
 
     // Add exclusions if set

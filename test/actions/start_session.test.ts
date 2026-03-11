@@ -107,6 +107,18 @@ describe('start_session action config', () => {
       } as StartSession,
       'many-recipients'
     );
+
+    helper.testAction(
+      {
+        uuid: 'test-action-7',
+        type: 'start_session',
+        flow: { uuid: 'flow-1', name: 'Mother Flow' },
+        groups: [],
+        contacts: [],
+        legacy_vars: ['@results.phonenumbermother']
+      } as StartSession,
+      'with-legacy-vars'
+    );
   });
 
   it('validates manual selection requires recipients', async () => {
@@ -147,6 +159,65 @@ describe('start_session action config', () => {
     const result = start_session.validate(formData);
     expect(result.valid).to.be.true;
     expect(Object.keys(result.errors).length).to.equal(0);
+  });
+
+  describe('legacy_vars handling', () => {
+    it('converts action to form data correctly with legacy_vars', () => {
+      const action = {
+        uuid: 'test-uuid',
+        type: 'start_session',
+        flow: { uuid: 'flow-1', name: 'Test Flow' },
+        groups: [],
+        contacts: [],
+        legacy_vars: ['@parent', '@child']
+      } as StartSession;
+
+      const formData = start_session.toFormData(action);
+
+      expect(formData.recipients).to.have.lengthOf(2);
+      expect(formData.recipients[0]).to.deep.equal({
+        id: '@parent',
+        name: '@parent',
+        type: 'expression'
+      });
+      expect(formData.recipients[1]).to.deep.equal({
+        id: '@child',
+        name: '@child',
+        type: 'expression'
+      });
+    });
+
+    it('converts form data back to action with legacy_vars', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        flow: [{ uuid: 'flow-1', name: 'Test Flow' }],
+        startType: [{ value: 'manual', name: 'Select recipients manually' }],
+        recipients: [
+          { id: '@parent', name: '@parent', type: 'expression' },
+          { id: 'group-1', name: 'Subscribers', type: 'group' }
+        ]
+      };
+
+      const action = start_session.fromFormData(formData) as StartSession;
+
+      expect(action.legacy_vars).to.deep.equal(['@parent']);
+      expect(action.groups).to.have.lengthOf(1);
+    });
+
+    it('omits legacy_vars when no expressions present', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        flow: [{ uuid: 'flow-1', name: 'Test Flow' }],
+        startType: [{ value: 'manual', name: 'Select recipients manually' }],
+        recipients: [
+          { id: 'contact-1', name: 'Alice', type: 'contact' }
+        ]
+      };
+
+      const action = start_session.fromFormData(formData) as StartSession;
+
+      expect(action.legacy_vars).to.be.undefined;
+    });
   });
 
   describe('metadata stripping', () => {
