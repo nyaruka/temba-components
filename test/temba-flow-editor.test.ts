@@ -909,6 +909,71 @@ describe('Editor', () => {
       expect((editor as any).isSaving).to.be.true;
     });
 
+    it('shows revisions tab even with no revisions', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).revisions = [];
+      (editor as any).isSaving = false;
+      await editor.updateComplete;
+
+      const tab = editor.querySelector('#revisions-tab') as any;
+      expect(tab).to.exist;
+      expect(tab.saving).to.be.false;
+    });
+
+    it('clears viewingRevision state when exiting revision view', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      const flowInfo = {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 0, languages: 0 },
+        locals: []
+      } as any;
+
+      zustand.setState({
+        ...zustand.getState(),
+        flowInfo,
+        viewingRevision: true
+      });
+
+      const definition = {
+        language: 'eng',
+        localization: {},
+        name: 'Flow',
+        nodes: [],
+        uuid: 'flow-uuid',
+        type: 'messaging',
+        revision: 1,
+        spec_version: '13.1',
+        _ui: { nodes: {}, languages: [] }
+      } as any;
+
+      (editor as any).definition = definition;
+      (editor as any).preRevertState = {
+        definition,
+        dirtyDate: null
+      };
+      (editor as any).viewingRevision = {
+        id: 2,
+        created_on: '2024-01-02',
+        user: { id: 1, username: 'tester' }
+      };
+
+      (editor as any).handleCancelRevisionView();
+
+      expect(zustand.getState().viewingRevision).to.be.false;
+    });
+
     it('passes saving state to revisions tab when saving', async () => {
       editor = await fixture(html`
         <temba-flow-editor>

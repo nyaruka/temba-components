@@ -5241,7 +5241,6 @@ export class Editor extends RapidElement {
   }
 
   private renderRevisionsTab(): TemplateResult | string {
-    if (this.revisions.length <= 1) return '';
     return html`
       <temba-floating-tab
         id="revisions-tab"
