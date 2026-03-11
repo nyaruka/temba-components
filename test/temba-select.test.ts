@@ -571,6 +571,30 @@ describe('temba-select', () => {
       const itemText = selectedItems[0].textContent.trim();
       expect(itemText).to.not.contain('Red');
     });
+
+    it('shows enter hint when text is typed', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter tags',
+          multi: true,
+          searchable: true,
+          tags: true
+        })
+      );
+
+      // No hint before typing
+      let hint = select.shadowRoot.querySelector('.enter-hint');
+      expect(hint).to.be.null;
+
+      // Type some text — hint appears
+      await typeInto('temba-select', 'hello', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+      hint = select.shadowRoot.querySelector('.enter-hint');
+      expect(hint).to.not.be.null;
+      expect(hint.textContent).to.contain('to add');
+    });
   });
 
   describe('emails functionality', () => {
@@ -753,6 +777,38 @@ describe('temba-select', () => {
           ).to.equal(expectedCount);
         }
       }
+    });
+
+    it('shows enter hint when valid email is typed', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter email addresses',
+          searchable: true,
+          emails: true
+        })
+      );
+
+      // No hint before typing
+      let hint = select.shadowRoot.querySelector('.enter-hint');
+      expect(hint).to.be.null;
+
+      // Type an invalid email — no hint
+      await typeInto('temba-select', 'invalid', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+      hint = select.shadowRoot.querySelector('.enter-hint');
+      expect(hint).to.be.null;
+
+      // Clear and type a valid email — hint appears
+      select.input = '';
+      await select.updateComplete;
+      await typeInto('temba-select', 'test@example.com', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+      hint = select.shadowRoot.querySelector('.enter-hint');
+      expect(hint).to.not.be.null;
+      expect(hint.textContent).to.contain('to add');
     });
   });
 
