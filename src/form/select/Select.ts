@@ -831,15 +831,46 @@ export class Select<T extends SelectOption> extends FieldElement {
     return width;
   }
 
+  private hintRepositionHandler: (() => void) | null = null;
+
+  private addHintRepositionListeners() {
+    if (this.hintRepositionHandler) return;
+    this.hintRepositionHandler = () => this.updateEnterHintPosition();
+    window.addEventListener('scroll', this.hintRepositionHandler, {
+      capture: true,
+      passive: true
+    });
+    window.addEventListener('resize', this.hintRepositionHandler);
+  }
+
+  private removeHintRepositionListeners() {
+    if (!this.hintRepositionHandler) return;
+    window.removeEventListener('scroll', this.hintRepositionHandler, {
+      capture: true
+    });
+    window.removeEventListener('resize', this.hintRepositionHandler);
+    this.hintRepositionHandler = null;
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeHintRepositionListeners();
+  }
+
   private updateEnterHintPosition() {
     const hint = this.shadowRoot.querySelector(
       '.enter-hint'
     ) as HTMLElement;
-    if (!hint) return;
+    if (!hint) {
+      this.removeHintRepositionListeners();
+      return;
+    }
     const searchbox = this.shadowRoot.querySelector(
       '.searchbox'
     ) as HTMLElement;
     if (!searchbox) return;
+
+    this.addHintRepositionListeners();
 
     const searchboxRect = searchbox.getBoundingClientRect();
     const textWidth = this.measureInputTextWidth(searchbox);
