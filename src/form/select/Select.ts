@@ -277,8 +277,8 @@ export class Select<T extends SelectOption> extends FieldElement {
         margin-right: 2px !important;
         margin-top: 2px;
         margin-bottom: 2px;
-        flex-shrink: 0;
-        min-width: 100px;
+        min-width: 50px;
+        flex: 1 0 auto;
         align-self: center;
       }
 
@@ -291,7 +291,7 @@ export class Select<T extends SelectOption> extends FieldElement {
         flex-grow: 1;
       }
 
-      .searchable.search-input .input-wrapper {
+      .searchable.single.search-input .input-wrapper {
         flex-grow: 1;
         min-width: 1px !important;
       }
@@ -409,6 +409,19 @@ export class Select<T extends SelectOption> extends FieldElement {
         margin-bottom: 0px;
         pointer-events: none;
         padding: 0px;
+      }
+
+      .enter-hint {
+        position: fixed;
+        z-index: 10000;
+        font-size: 0.75em;
+        color: rgba(0, 0, 0, 0.4);
+        white-space: nowrap;
+        pointer-events: none;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(4px);
+        padding: 4px 10px;
+        border-radius: 2px;
       }
     `;
   }
@@ -799,8 +812,69 @@ export class Select<T extends SelectOption> extends FieldElement {
     super.willUpdate(changes);
   }
 
+  private measureInputTextWidth(searchbox: HTMLElement): number {
+    if (this.useExpressionInput) {
+      return searchbox.scrollWidth;
+    }
+    // Create a measuring span that inherits the searchbox's font styles
+    const span = document.createElement('span');
+    const style = getComputedStyle(searchbox);
+    span.style.font = style.font;
+    span.style.letterSpacing = style.letterSpacing;
+    span.style.visibility = 'hidden';
+    span.style.position = 'absolute';
+    span.style.whiteSpace = 'pre';
+    span.textContent = this.input;
+    this.shadowRoot.appendChild(span);
+    const width = span.offsetWidth;
+    span.remove();
+    return width;
+  }
+
+  private updateEnterHintPosition() {
+    const hint = this.shadowRoot.querySelector(
+      '.enter-hint'
+    ) as HTMLElement;
+    if (!hint) return;
+    const searchbox = this.shadowRoot.querySelector(
+      '.searchbox'
+    ) as HTMLElement;
+    if (!searchbox) return;
+
+    const searchboxRect = searchbox.getBoundingClientRect();
+    const textWidth = this.measureInputTextWidth(searchbox);
+
+    hint.style.left = `${searchboxRect.left + textWidth + 4}px`;
+    hint.style.top = `${searchboxRect.top + (searchboxRect.height - hint.offsetHeight) / 2}px`;
+  }
+
+  private updateInputWrapperWidth() {
+    if (!this.isMultiMode) return;
+    const wrapper = this.shadowRoot.querySelector(
+      '.input-wrapper'
+    ) as HTMLElement;
+    if (!wrapper) return;
+    const searchbox = this.shadowRoot.querySelector(
+      '.searchbox'
+    ) as HTMLElement;
+    if (!searchbox) return;
+
+    if (this.input) {
+      const textWidth = this.measureInputTextWidth(searchbox);
+      // Add some breathing room for the caret and padding
+      wrapper.style.minWidth = `${textWidth + 20}px`;
+    } else {
+      wrapper.style.minWidth = '';
+    }
+  }
+
   public updated(changes: Map<string, any>) {
     super.updated(changes);
+
+    if (changes.has('input') || changes.has('focused')) {
+      this.updateEnterHintPosition();
+      this.updateInputWrapperWidth();
+    }
 
     // Re-acquire anchor for expression completions (may not exist on first
     // render in multi mode since the input is only shown when focused)
@@ -2010,6 +2084,12 @@ export class Select<T extends SelectOption> extends FieldElement {
       ...(inputGrey ? { color: '#ccc' } : {})
     };
 
+    const showEnterHint =
+      (this.emails || this.tags) &&
+      this.focused &&
+      this.input &&
+      this.isAcceptableInput(this.input);
+
     const input = this.searchable
       ? html`
           <div
@@ -2216,8 +2296,7 @@ export class Select<T extends SelectOption> extends FieldElement {
               : null
           }
           </div>
-          
-        
+
         <div class="info-text ${!this.infoText ? 'hide' : ''} ${
           this.focused ? 'focused' : ''
         }">${this.infoText}</div></div></div>
@@ -2265,6 +2344,11 @@ export class Select<T extends SelectOption> extends FieldElement {
           : null
       }
     </temba-options>
+    ${showEnterHint
+      ? html`<div class="enter-hint">
+          <span style="position:relative;top:3px">↵</span> ${msg('to add')}
+        </div>`
+      : null}
     `;
   }
 

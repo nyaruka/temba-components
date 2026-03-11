@@ -11,6 +11,7 @@
     export const templates = {
       'scf1453991c986b25': `Tab para completar, enter para seleccionar`,
 's73b4d70c02f4b4e0': `No options`,
+'s2040ffc3fd3ca7b0': `Press Enter to add`,
 's8f02e3a18ffc083a': `Are not currently in a flow`,
 's638236250662c6b3': `Have sent a message in the last`,
 's4788ee206c4570c7': `Have not started this flow in the last 90 days`,
