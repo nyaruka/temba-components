@@ -419,6 +419,7 @@ export const zustand = createStore<AppState>()(
           // Reset to the flow's default language when loading a new flow
           state.languageCode = flowLang;
           state.isTranslating = false;
+          state.viewingRevision = false;
 
           reclassifyTerminalNodes(state.flowDefinition);
           reclassifyVoiceWaitNodes(state.flowDefinition);
