@@ -1,4 +1,4 @@
-import { TemplateResult, html, css, PropertyValues } from 'lit';
+import { TemplateResult, html, css, PropertyValues, nothing } from 'lit';
 import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { Attachment, CustomEventType, Language, Shortcut } from '../interfaces';
@@ -190,6 +190,9 @@ export class Compose extends FieldElement {
 
   @property({ type: Boolean })
   templates: boolean;
+
+  @property({ type: String, attribute: 'template-warning' })
+  templateWarning: string;
 
   @property({ type: Boolean })
   counter: boolean;
@@ -734,6 +737,7 @@ export class Compose extends FieldElement {
                 variables=${JSON.stringify(this.variables)}
                 url=${this.templateEndpoint}
                 lang=${this.currentLanguage}
+                template-warning=${this.templateWarning || nothing}
               >
               </temba-template-editor>
             </temba-tab>`
