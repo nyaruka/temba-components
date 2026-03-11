@@ -5216,6 +5216,7 @@ export class Editor extends RapidElement {
         id="issues-window"
         name="issues"
         header="Flow Issues"
+        icon="alert_warning"
         .width=${360}
         .maxHeight=${600}
         .top=${120}
@@ -5262,10 +5263,12 @@ export class Editor extends RapidElement {
         id="revisions-window"
         name="revisions"
         header="Revisions"
+        icon="revisions"
         .width=${240}
         .maxHeight=${400}
         .top=${120}
         color="rgb(142, 94, 167)"
+        .saving=${this.isSaving}
         .hidden=${this.revisionsWindowHidden}
         @temba-dialog-hidden=${this.handleRevisionsWindowClosed}
       >
@@ -5382,6 +5385,7 @@ export class Editor extends RapidElement {
         id="localization-window"
         name="localization"
         header="Translations"
+        icon="language"
         .width=${360}
         .maxHeight=${600}
         .top=${120}
