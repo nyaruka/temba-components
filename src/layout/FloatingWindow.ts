@@ -61,11 +61,35 @@ export class FloatingWindow extends RapidElement {
         user-select: none;
       }
 
+      .title-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        padding-left: 8px;
+      }
+
+      .title-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+      }
+
+      .title-icon temba-icon {
+        --icon-color: white;
+      }
+
       .title {
         font-weight: 600;
         font-size: 16px;
         color: white;
-        padding-left: 8px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .close-button {
@@ -87,6 +111,19 @@ export class FloatingWindow extends RapidElement {
 
       .close-button temba-icon {
         --icon-color: white;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .title-icon.saving {
+        animation: spin 1s linear infinite;
       }
 
       .body {
@@ -112,6 +149,9 @@ export class FloatingWindow extends RapidElement {
 
   @property({ type: String })
   header = '';
+
+  @property({ type: String })
+  icon = '';
 
   @property({ type: Number })
   width = 500;
@@ -139,6 +179,9 @@ export class FloatingWindow extends RapidElement {
 
   @property({ type: String })
   color = '#6B7280';
+
+  @property({ type: Boolean })
+  saving = false;
 
   @property({ type: Number })
   leftBoundaryMargin = 0;
@@ -453,13 +496,26 @@ export class FloatingWindow extends RapidElement {
       hidden: this.hidden,
       chromeless: this.chromeless
     });
+    const iconName = this.saving ? 'progress_spinner' : this.icon;
 
     return html`
       <div class="${windowClasses}" style="${windowStyle}">
         ${!this.chromeless
           ? html`
               <div class="header" @mousedown=${this.handleHeaderMouseDown}>
-                <div class="title">${this.header}</div>
+                <div class="title-group">
+                  ${iconName
+                    ? html`
+                        <div class="title-icon ${this.saving ? 'saving' : ''}">
+                          <temba-icon
+                            size="1.3"
+                            name="${iconName}"
+                          ></temba-icon>
+                        </div>
+                      `
+                    : ''}
+                  <div class="title">${this.header}</div>
+                </div>
                 <button class="close-button" @click=${this.handleClose}>
                   <temba-icon name="close" size="1.5"></temba-icon>
                 </button>

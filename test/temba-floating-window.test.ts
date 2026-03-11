@@ -139,6 +139,56 @@ describe('temba-floating-window', () => {
     await assertScreenshot('floating-window/with-header', clip);
   });
 
+  it('renders header icon when provided', async () => {
+    const window = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Revisions',
+        icon: 'revisions'
+      },
+      '<div>Content</div>',
+      300,
+      400
+    )) as FloatingWindow;
+
+    window.hidden = false;
+    await window.updateComplete;
+
+    const icon = window.shadowRoot.querySelector(
+      '.title-icon temba-icon'
+    ) as HTMLElement;
+    expect(icon).to.exist;
+    expect(icon.getAttribute('name')).to.equal('revisions');
+  });
+
+  it('shows spinner icon and animation while saving', async () => {
+    const window = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Revisions',
+        icon: 'revisions',
+        saving: true
+      },
+      '<div>Content</div>',
+      300,
+      400
+    )) as FloatingWindow;
+
+    window.hidden = false;
+    await window.updateComplete;
+
+    const iconContainer = window.shadowRoot.querySelector(
+      '.title-icon'
+    ) as HTMLElement;
+    expect(iconContainer).to.exist;
+    expect(iconContainer.classList.contains('saving')).to.be.true;
+
+    const icon = window.shadowRoot.querySelector(
+      '.title-icon temba-icon'
+    ) as HTMLElement;
+    expect(icon.getAttribute('name')).to.equal('progress_spinner');
+  });
+
   it('renders slot content', async () => {
     const window = (await getComponent(
       'temba-floating-window',

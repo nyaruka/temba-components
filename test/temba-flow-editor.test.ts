@@ -929,6 +929,27 @@ describe('Editor', () => {
       expect(tab.saving).to.be.true;
     });
 
+    it('passes saving state to revisions window when saving', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).revisions = [
+        { id: 1, created_on: '2024-01-01', user: { name: 'A' } },
+        { id: 2, created_on: '2024-01-02', user: { name: 'B' } }
+      ];
+      (editor as any).isSaving = true;
+      await editor.updateComplete;
+
+      const revisionsWindow = editor.querySelector('#revisions-window') as any;
+      expect(revisionsWindow).to.exist;
+      expect(revisionsWindow.getAttribute('icon')).to.equal('revisions');
+      expect(revisionsWindow.saving).to.be.true;
+    });
+
     it('revisions tab not saving when not saving', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
