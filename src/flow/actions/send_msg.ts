@@ -11,6 +11,13 @@ import { titleCase } from '../../utils';
 import { renderClamped, renderHighlightedText } from '../utils';
 import { splitSMS } from '../../display/sms';
 
+const ATTACHMENT_TYPE_NAMES: Record<string, string> = {
+  image: 'Image',
+  audio: 'Audio',
+  video: 'Video',
+  application: 'Document'
+};
+
 export const send_msg: ActionConfig = {
   name: 'Send Message',
   group: ACTION_GROUPS.send,
@@ -95,7 +102,7 @@ export const send_msg: ActionConfig = {
             { value: 'image', name: 'Image' },
             { value: 'audio', name: 'Audio' },
             { value: 'video', name: 'Video' },
-            { value: 'document', name: 'Document' }
+            { value: 'application', name: 'Document' }
           ],
           required: true,
           searchable: false
@@ -164,7 +171,7 @@ export const send_msg: ActionConfig = {
 
           if (!contentType.includes('/')) {
             runtimeAttachments.push({
-              type: { name: titleCase(contentType), value: contentType },
+              type: { name: ATTACHMENT_TYPE_NAMES[contentType] || titleCase(contentType), value: contentType },
               expression: value
             });
           } else {
@@ -311,7 +318,7 @@ export const send_msg: ActionConfig = {
 
           if (!contentType.includes('/')) {
             runtimeAttachments.push({
-              type: { name: titleCase(contentType), value: contentType },
+              type: { name: ATTACHMENT_TYPE_NAMES[contentType] || titleCase(contentType), value: contentType },
               expression: value
             });
           } else {
