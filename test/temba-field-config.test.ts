@@ -2,6 +2,48 @@ import { html, fixture, expect } from '@open-wc/testing';
 import '../src/form/KeyValueEditor';
 import '../src/form/ArrayEditor';
 
+if (!customElements.get('temba-rich-edit')) {
+  class TestRichEdit extends HTMLElement {
+    private editableDiv: HTMLDivElement;
+    private caretStart = 0;
+    private caretEnd = 0;
+
+    connectedCallback() {
+      if (this.shadowRoot) {
+        return;
+      }
+
+      const shadow = this.attachShadow({ mode: 'open' });
+      this.editableDiv = document.createElement('div');
+      this.editableDiv.className = 'highlight-editor';
+      this.editableDiv.setAttribute('contenteditable', 'true');
+      shadow.appendChild(this.editableDiv);
+
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = this.getAttribute('name') || '';
+      this.appendChild(hiddenInput);
+
+      Object.defineProperty(this.editableDiv, 'selectionStart', {
+        get: () => this.caretStart
+      });
+      Object.defineProperty(this.editableDiv, 'selectionEnd', {
+        get: () => this.caretEnd
+      });
+      (this.editableDiv as any).setSelectionRange = (start: number, end: number) => {
+        this.caretStart = start;
+        this.caretEnd = end;
+      };
+    }
+
+    focus() {
+      this.editableDiv?.focus();
+    }
+  }
+
+  customElements.define('temba-rich-edit', TestRichEdit);
+}
+
 describe('Field Configuration System', () => {
   describe('KeyValueEditor', () => {
     it('should render with empty value and always show one empty row', async () => {
@@ -218,6 +260,40 @@ describe('Field Configuration System', () => {
       // Should have regular list container instead
       const listContainer = el.shadowRoot?.querySelector('.list-items');
       expect(listContainer).to.exist;
+    });
+
+    it('should capture caret position for evaluated text fields', async () => {
+      const itemConfig = {
+        expression: { type: 'text', label: 'Expression', evaluated: true }
+      };
+
+      const el = await fixture(html`
+        <temba-array-editor
+          .value=${[{ expression: '@contact.name' }]}
+          .itemConfig=${itemConfig}
+        ></temba-array-editor>
+      `);
+
+      await (el as any).updateComplete;
+
+      const richEdit = el.shadowRoot?.querySelector('temba-rich-edit') as any;
+      expect(richEdit).to.exist;
+
+      richEdit.focus();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const editable = richEdit.shadowRoot?.querySelector(
+        '.highlight-editor'
+      ) as any;
+      expect(editable).to.exist;
+      editable.setSelectionRange(3, 3);
+
+      (el as any).captureFocus();
+
+      expect((el as any).focusInfo.itemIndex).to.equal(0);
+      expect((el as any).focusInfo.fieldName).to.equal('expression');
+      expect((el as any).focusInfo.selectionStart).to.equal(3);
+      expect((el as any).focusInfo.selectionEnd).to.equal(3);
     });
   });
 });

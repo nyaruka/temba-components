@@ -182,26 +182,21 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       return;
     }
 
-    // Capture selection for text inputs (try the actual input element inside temba components)
-    let inputForSelection = targetElement;
-    if (targetElement.tagName?.toLowerCase().startsWith('temba-')) {
-      // Look for the actual input element inside the temba component
-      const innerInput =
-        targetElement.shadowRoot?.querySelector('input, textarea') ||
-        targetElement.querySelector('input, textarea');
-      if (innerInput) {
-        inputForSelection = innerInput as HTMLElement;
-      }
-    }
-
+    const inputForSelection = this.getSelectionElement(targetElement);
     const selectionStart = (inputForSelection as any).selectionStart;
     const selectionEnd = (inputForSelection as any).selectionEnd;
 
     this.focusInfo = {
       itemIndex,
       fieldName,
-      selectionStart,
-      selectionEnd
+      selectionStart:
+        selectionStart === null || selectionStart === undefined
+          ? undefined
+          : selectionStart,
+      selectionEnd:
+        selectionEnd === null || selectionEnd === undefined
+          ? undefined
+          : selectionEnd
     };
   }
 
@@ -261,7 +256,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     if (fieldContainer) {
       // Look for temba components or input elements within the field container
       targetElement = fieldContainer.querySelector(
-        'temba-textinput, temba-completion, input, textarea'
+        'temba-textinput, temba-completion, temba-rich-edit, input, textarea'
       ) as HTMLElement;
     }
 
@@ -270,6 +265,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       const selectors = [
         `temba-textinput[name="${fieldName}"]`,
         `temba-completion[name="${fieldName}"]`,
+        `temba-rich-edit[name="${fieldName}"]`,
         `input[name="${fieldName}"]`,
         `textarea[name="${fieldName}"]`,
         `[name="${fieldName}"]`
@@ -286,20 +282,23 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           try {
+            // Avoid resetting cursor position if the target already has focus.
+            const currentlyFocused =
+              this.shadowRoot?.activeElement || document.activeElement;
+            const targetAlreadyFocused =
+              currentlyFocused === targetElement ||
+              targetElement.contains(currentlyFocused);
+
+            if (targetAlreadyFocused) {
+              return;
+            }
+
             targetElement.focus();
 
             // Restore selection if it's a text input
             if (selectionStart !== undefined && selectionEnd !== undefined) {
-              // For temba components, we need to focus the inner input
-              let inputForSelection = targetElement;
-              if (targetElement.tagName?.toLowerCase().startsWith('temba-')) {
-                const innerInput =
-                  targetElement.shadowRoot?.querySelector('input, textarea') ||
-                  targetElement.querySelector('input, textarea');
-                if (innerInput && 'setSelectionRange' in innerInput) {
-                  inputForSelection = innerInput as any;
-                }
-              }
+              // For temba components, we need to focus the actual editable node.
+              const inputForSelection = this.getSelectionElement(targetElement);
 
               if ('setSelectionRange' in inputForSelection) {
                 (inputForSelection as any).setSelectionRange(
@@ -315,6 +314,22 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         });
       });
     }
+  }
+
+  private getSelectionElement(targetElement: HTMLElement): HTMLElement {
+    if (!targetElement.tagName?.toLowerCase().startsWith('temba-')) {
+      return targetElement;
+    }
+
+    // Prefer the component's actual editable node and avoid hidden form mirrors.
+    const editableSelector =
+      'input:not([type="hidden"]), textarea, [contenteditable="true"]';
+
+    const innerInput =
+      targetElement.shadowRoot?.querySelector(editableSelector) ||
+      targetElement.querySelector(editableSelector);
+
+    return (innerInput as HTMLElement) || targetElement;
   }
 
   createEmptyItem(): ListItem {
