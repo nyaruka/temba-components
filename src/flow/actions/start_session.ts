@@ -7,7 +7,11 @@ import {
   FlowTypes
 } from '../types';
 import { Node, StartSession } from '../../store/flow-definition';
-import { renderMixedList, renderFlowLinks } from '../utils';
+import {
+  renderMixedList,
+  renderFlowLinks,
+  renderHighlightedText
+} from '../utils';
 import { Icon } from '../../Icons';
 import { CustomEventType } from '../../interfaces';
 
@@ -20,7 +24,10 @@ export const start_session: ActionConfig = {
     if (action.create_contact) {
       recipientsDisplay = html`Create a new contact`;
     } else if ((action as any).contact_query) {
-      recipientsDisplay = html`${(action as any).contact_query}`;
+      recipientsDisplay = html`${renderHighlightedText(
+        (action as any).contact_query,
+        true
+      )}`;
     } else {
       const recipients = [
         ...(action.groups || []).map((g) => ({
