@@ -1459,7 +1459,7 @@ export class Simulator extends RapidElement {
                 class="webhook-event-log-link"
                 title="View webhook call details"
                 aria-label="View webhook call details"
-                @click=${(clickEvent: Event) =>
+                @click=${(clickEvent: MouseEvent) =>
                   this.handleWebhookDetailsClick(event, clickEvent)}
               >
                 <temba-icon name="log" size="0.8"></temba-icon>
@@ -1883,12 +1883,16 @@ export class Simulator extends RapidElement {
       return `${seconds.toFixed(precision)} s`;
     }
 
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.round((ms % 60000) / 1000);
+    const totalSeconds = Math.round(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
     return `${minutes}m ${seconds}s`;
   }
 
-  private handleWebhookDetailsClick(event: ContactEvent, clickEvent: Event) {
+  private handleWebhookDetailsClick(
+    event: ContactEvent,
+    clickEvent: MouseEvent
+  ) {
     clickEvent.preventDefault();
     clickEvent.stopPropagation();
     this.webhookDetailsEvent = event;
