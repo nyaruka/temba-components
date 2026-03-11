@@ -2,10 +2,10 @@ import { assert } from '@open-wc/testing';
 import { ContactBadges } from '../src/live/ContactBadges';
 import {
   assertScreenshot,
-  delay,
   getClip,
   getComponent,
-  loadStore
+  loadStore,
+  waitForCondition
 } from './utils.test';
 
 const TAG = 'temba-contact-badges';
@@ -13,8 +13,14 @@ const getBadges = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
   const badges = (await getComponent(TAG, attrs, '', 400)) as ContactBadges;
 
-  // wait for our contact to load
-  await delay(100);
+  // wait for contact data and initial render to settle before screenshotting
+  await waitForCondition(() => !!badges.data, 40, 50);
+  await badges.updateComplete;
+  await waitForCondition(
+    () => !!badges.shadowRoot?.querySelector('.wrapper'),
+    20,
+    25
+  );
 
   return badges;
 };
