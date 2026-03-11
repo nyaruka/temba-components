@@ -164,6 +164,7 @@ export interface StartSession extends Action {
   groups: Group[];
   contacts: NamedObject[];
   create_contact?: boolean;
+  legacy_vars?: string[];
 }
 
 export interface TransferAirtime extends Action {
