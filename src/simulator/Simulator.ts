@@ -743,10 +743,14 @@ export class Simulator extends RapidElement {
       }
 
       .webhook-log-content {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
         padding: 12px;
+      }
+
+      .webhook-log-content.webhook-single-log {
+        padding: 0;
       }
 
       .webhook-log-section {
@@ -768,8 +772,9 @@ export class Simulator extends RapidElement {
         margin: 0;
         padding: 10px;
         border-radius: 8px;
-        background: #111827;
-        color: #e5e7eb;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        color: #1f2937;
         font-size: 12px;
         line-height: 1.4;
         max-height: 240px;
@@ -1911,6 +1916,25 @@ export class Simulator extends RapidElement {
       totalElapsedMs === null
         ? 'n/a'
         : this.formatWebhookDuration(totalElapsedMs);
+    const renderWebhookLogContent = (log: WebhookLog, singleAttempt = false) => {
+      const request = this.formatWebhookValue(log.request) || 'No request body';
+      const response = this.formatWebhookValue(log.response) || 'No response body';
+
+      return html`
+        <div
+          class="webhook-log-content ${singleAttempt ? 'webhook-single-log' : ''}"
+        >
+          <div class="webhook-log-section">
+            <h4>Request</h4>
+            <pre>${request}</pre>
+          </div>
+          <div class="webhook-log-section">
+            <h4>Response</h4>
+            <pre>${response}</pre>
+          </div>
+        </div>
+      `;
+    };
 
     return html`
       <temba-dialog
@@ -1935,28 +1959,18 @@ export class Simulator extends RapidElement {
                   <span>&middot;</span>
                   <span><strong>${elapsedLabel}</strong> total elapsed</span>
                 </div>
-                ${logs.map((log, index) => {
-                  const request =
-                    this.formatWebhookValue(log.request) || 'No request body';
-                  const response =
-                    this.formatWebhookValue(log.response) || 'No response body';
-
-                  return html`
-                    <div class="webhook-log">
-                      <div class="webhook-log-header">Attempt ${index + 1}</div>
-                      <div class="webhook-log-content">
-                        <div class="webhook-log-section">
-                          <h4>Request</h4>
-                          <pre>${request}</pre>
+                ${attempts > 1
+                  ? logs.map(
+                      (log, index) => html`
+                        <div class="webhook-log">
+                          <div class="webhook-log-header">
+                            Attempt ${index + 1}
+                          </div>
+                          ${renderWebhookLogContent(log)}
                         </div>
-                        <div class="webhook-log-section">
-                          <h4>Response</h4>
-                          <pre>${response}</pre>
-                        </div>
-                      </div>
-                    </div>
-                  `;
-                })}`}
+                      `
+                    )
+                  : renderWebhookLogContent(logs[0], true)}`}
         </div>
       </temba-dialog>
     `;
