@@ -365,7 +365,15 @@ export class Editor extends RapidElement {
   private zoom = 1.0;
 
   @state()
+  private zoomInitialized = false;
+
+  @state()
   private zoomFitted = false;
+
+  // Loupe magnifier state - tracked via direct DOM updates for performance
+  private loupeEl: HTMLElement | null = null;
+  private loupeContentEl: HTMLElement | null = null;
+  private loupeRAF: number | null = null;
 
   // Non-reactive flag set in willUpdate to suppress the debouncedSave
   // call in updated() when the dirtyDate change comes from a reflow/copy
@@ -566,8 +574,6 @@ export class Editor extends RapidElement {
       #editor.touch-device::-webkit-scrollbar-track {
         background: rgba(0, 0, 0, 0.05);
       }
-
-
 
       #grid {
         position: relative;
@@ -1151,6 +1157,130 @@ export class Editor extends RapidElement {
         margin: 0 2px;
       }
 
+      .loupe,
+      .loupe * {
+        pointer-events: none !important;
+      }
+
+      .loupe {
+        position: fixed;
+        width: 280px;
+        height: 280px;
+        border-radius: 50%;
+        overflow: hidden;
+        z-index: 10000;
+        border: 2px solid rgba(0, 0, 0, 0.25);
+        box-shadow:
+          0 4px 16px rgba(0, 0, 0, 0.35),
+          0 1px 4px rgba(0, 0, 0, 0.2),
+          inset 0 0 0 2px rgba(255, 255, 255, 0.3),
+          inset 0 0 8px rgba(0, 0, 0, 0.15);
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+        transition:
+          transform 0.15s ease-out,
+          opacity 0.15s ease-out;
+      }
+
+      .loupe.visible {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+
+      .loupe-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #f9f9f9;
+        background-image: radial-gradient(
+          circle,
+          rgba(61, 177, 255, 0.3) 1px,
+          transparent 1px
+        );
+      }
+
+      .loupe::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          transparent 45%,
+          rgba(0, 0, 0, 0.03) 58%,
+          rgba(0, 0, 0, 0.08) 68%,
+          rgba(0, 0, 0, 0.18) 80%,
+          rgba(0, 0, 0, 0.35) 90%,
+          rgba(0, 0, 0, 0.55) 100%
+        );
+        z-index: 1;
+      }
+
+      .loupe-crosshair-h,
+      .loupe-crosshair-v {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.15);
+      }
+
+      .loupe-crosshair-h {
+        width: 12px;
+        height: 1px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .loupe-crosshair-v {
+        width: 1px;
+        height: 12px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .loupe-clone {
+        position: absolute;
+        transform-origin: 0 0;
+        pointer-events: none;
+      }
+
+      .loupe-clone > .draggable {
+        position: absolute;
+        z-index: 100;
+      }
+
+      .loupe-clone > svg.plumb-connector {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      /* Force hovered appearance inside the loupe since :hover can't fire
+         through pointer-events:none */
+      .loupe-clone .action .cn-title .remove-button,
+      .loupe-clone .router .remove-button {
+        visibility: visible;
+        opacity: 0.7;
+      }
+
+      .loupe-clone .action .drag-handle {
+        visibility: visible;
+        opacity: 0.7;
+      }
+
+      .loupe-clone .exit.connected {
+        background-color: var(--color-connectors, #e6e6e6);
+      }
+
+      .loupe-clone .node.execute-actions .add-action-button {
+        opacity: 0.8;
+      }
+
       .reflow-card {
         position: absolute;
         top: 16px;
@@ -1236,6 +1366,9 @@ export class Editor extends RapidElement {
       this.markTouchDevice();
     }
     this.updateZoomControlPositioning();
+    this.loupeEl = this.querySelector('#loupe') as HTMLElement;
+    this.loupeContentEl = this.querySelector('#loupe-content') as HTMLElement;
+    this.initLoupe();
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
       this.fetchRevisions();
@@ -1410,16 +1543,17 @@ export class Editor extends RapidElement {
       }
 
       // Restore saved zoom level on initial load
-      if (!changes.get('definition') && this.definition) {
+      if (!this.zoomInitialized && this.definition) {
         const savedZoom = this.getFlowSetting<number>('zoom');
         if (typeof savedZoom === 'number' && Number.isFinite(savedZoom)) {
           const clamped = Math.max(
-            0.1,
+            0.3,
             Math.min(1.0, Math.round(savedZoom * 100) / 100)
           );
           this.zoom = clamped;
           this.plumber.zoom = clamped;
         }
+        this.zoomInitialized = true;
       }
     }
 
@@ -1709,6 +1843,7 @@ export class Editor extends RapidElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.teardownLoupe();
     getStore()?.getState().setFlushSave(null);
     this.stopAutoScroll();
     window.removeEventListener('beforeunload', this.boundBeforeUnload);
@@ -2129,7 +2264,7 @@ export class Editor extends RapidElement {
     center?: { clientX: number; clientY: number }
   ): void {
     const clamped = Math.max(
-      0.1,
+      0.3,
       Math.min(1.0, Math.round(newZoom * 100) / 100)
     );
     if (clamped === this.zoom) return;
@@ -2219,7 +2354,7 @@ export class Editor extends RapidElement {
     const scaleX = availWidth / contentWidth;
     const scaleY = availHeight / contentHeight;
     let fitZoom = Math.min(scaleX, scaleY, 1.0);
-    fitZoom = Math.max(fitZoom, 0.1);
+    fitZoom = Math.max(fitZoom, 0.3);
     fitZoom = Math.round(fitZoom * 20) / 20; // round to nearest 0.05
 
     this.zoom = fitZoom;
@@ -2276,6 +2411,280 @@ export class Editor extends RapidElement {
       clientX: event.clientX,
       clientY: event.clientY
     });
+  }
+
+  // --- Loupe magnifier ---
+
+  private static readonly LOUPE_DIAMETER = 280;
+
+  private readonly boundLoupeMouseMove = this.handleLoupeMouseMove.bind(this);
+  private readonly boundLoupeMouseDown = this.handleLoupeMouseDown.bind(this);
+  private readonly boundLoupeMouseUp = this.handleLoupeMouseUp.bind(this);
+  private readonly boundLoupeKeyDown = this.handleLoupeKeyDown.bind(this);
+  private readonly boundLoupeKeyUp = this.handleLoupeKeyUp.bind(this);
+  private loupeKeyHeld = false;
+  private loupeMouseIsDown = false;
+  private loupeLastMouse: { clientX: number; clientY: number } | null = null;
+
+  private initLoupe(): void {
+    document.addEventListener('mousemove', this.boundLoupeMouseMove);
+    document.addEventListener('keydown', this.boundLoupeKeyDown);
+    document.addEventListener('keyup', this.boundLoupeKeyUp);
+    document.addEventListener('mouseup', this.boundLoupeMouseUp);
+    // Capture-phase listener catches all mousedowns (including those where
+    // Plumber calls stopPropagation, e.g. exits and connection re-routing)
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (editor) {
+      editor.addEventListener('mousedown', this.boundLoupeMouseDown, true);
+    }
+  }
+
+  private teardownLoupe(): void {
+    document.removeEventListener('mousemove', this.boundLoupeMouseMove);
+    document.removeEventListener('keydown', this.boundLoupeKeyDown);
+    document.removeEventListener('keyup', this.boundLoupeKeyUp);
+    document.removeEventListener('mouseup', this.boundLoupeMouseUp);
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (editor) {
+      editor.removeEventListener('mousedown', this.boundLoupeMouseDown, true);
+    }
+    this.hideLoupe();
+  }
+
+  private handleLoupeKeyDown(event: KeyboardEvent): void {
+    if (event.key !== 'Alt') return;
+    this.loupeKeyHeld = true;
+    // Show loupe immediately at last known mouse position
+    if (this.loupeLastMouse) {
+      this.handleLoupeMouseMove(this.loupeLastMouse as MouseEvent);
+    }
+  }
+
+  private handleLoupeKeyUp(event: KeyboardEvent): void {
+    if (event.key !== 'Alt') return;
+    this.loupeKeyHeld = false;
+    this.hideLoupe();
+  }
+
+  private handleLoupeMouseDown(): void {
+    this.loupeMouseIsDown = true;
+    this.hideLoupe();
+  }
+
+  private handleLoupeMouseUp(): void {
+    this.loupeMouseIsDown = false;
+  }
+
+  private handleLoupeMouseMove(event: MouseEvent): void {
+    this.loupeLastMouse = { clientX: event.clientX, clientY: event.clientY };
+
+    // Require z key held, hide while mouse is down, during interactions, or with dialogs open
+    if (
+      !this.loupeKeyHeld ||
+      this.loupeMouseIsDown ||
+      this.isDragging ||
+      this.isSelecting ||
+      this.plumber?.connectionDragging ||
+      this.isDialogOrMenuOpen()
+    ) {
+      this.hideLoupe();
+      return;
+    }
+
+    // Check if cursor is within the editor bounds
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (!editor) return;
+    const rect = editor.getBoundingClientRect();
+    if (
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom
+    ) {
+      this.hideLoupe();
+      return;
+    }
+
+    if (this.loupeRAF) cancelAnimationFrame(this.loupeRAF);
+    this.loupeRAF = requestAnimationFrame(() => {
+      this.updateLoupe(event.clientX, event.clientY);
+    });
+  }
+
+  private isDialogOrMenuOpen(): boolean {
+    if (this.editingNode || this.editingAction) return true;
+    if (this.deleteDialog?.open) return true;
+    const canvasMenu = this.querySelector('temba-canvas-menu') as any;
+    if (canvasMenu?.open) return true;
+    return false;
+  }
+
+  private hideLoupe(): void {
+    if (this.loupeEl) {
+      this.loupeEl.classList.remove('visible');
+    }
+    if (this.loupeClone) {
+      this.loupeClone.remove();
+      this.loupeClone = null;
+    }
+    if (this.loupeRAF) {
+      cancelAnimationFrame(this.loupeRAF);
+      this.loupeRAF = null;
+    }
+  }
+
+  private loupeCloneTime = 0;
+  private loupeClone: HTMLElement | null = null;
+  private loupeCursorCanvas: { x: number; y: number } = { x: 0, y: 0 };
+  private static readonly LOUPE_CLONE_INTERVAL = 200;
+
+  private static readonly STICKY_COLORS: Record<
+    string,
+    { bg: string; border: string; text: string }
+  > = {
+    yellow: { bg: '#fef08a', border: '#facc15', text: '#451a03' },
+    blue: { bg: '#bfdbfe', border: '#3b82f6', text: '#1e3a8a' },
+    pink: { bg: '#fce7f3', border: '#ec4899', text: '#831843' },
+    green: { bg: '#d1fae5', border: '#10b981', text: '#064e3b' },
+    gray: { bg: '#f3f4f6', border: '#6b7280', text: '#374151' }
+  };
+
+  private rebuildLoupeClone(
+    canvas: HTMLElement,
+    canvasX: number,
+    canvasY: number,
+    visibleRadius: number
+  ): void {
+    const contentEl = this.loupeContentEl;
+    if (!contentEl) return;
+
+    if (this.loupeClone) {
+      this.loupeClone.remove();
+    }
+
+    const clone = document.createElement('div');
+    clone.className = 'loupe-clone';
+    clone.style.width = `${canvas.scrollWidth}px`;
+    clone.style.height = `${canvas.scrollHeight}px`;
+
+    const pad = 50; // extra padding for partially visible elements
+
+    // Clone only nearby nodes (light DOM — innerHTML captures rendered content)
+    const nodeEls = canvas.querySelectorAll('[data-node-uuid]');
+    for (const el of nodeEls) {
+      const htmlEl = el as HTMLElement;
+      const left = parseFloat(htmlEl.style.left) || 0;
+      const top = parseFloat(htmlEl.style.top) || 0;
+      const w = htmlEl.offsetWidth;
+      const h = htmlEl.offsetHeight;
+
+      // Bounding-box vs visible circle check
+      if (
+        left + w < canvasX - visibleRadius - pad ||
+        left > canvasX + visibleRadius + pad ||
+        top + h < canvasY - visibleRadius - pad ||
+        top > canvasY + visibleRadius + pad
+      )
+        continue;
+
+      // Wrap innerHTML in a plain div to avoid custom element upgrade
+      const div = document.createElement('div');
+      div.className = htmlEl.className;
+      div.style.cssText = htmlEl.style.cssText;
+      div.innerHTML = htmlEl.innerHTML;
+      clone.appendChild(div);
+    }
+
+    // Clone SVG connections (standard elements, no upgrade issue)
+    const svgs = canvas.querySelectorAll('svg.plumb-connector');
+    for (const svg of svgs) {
+      clone.appendChild(svg.cloneNode(true));
+    }
+
+    // Clone activity overlays
+    const overlays = canvas.querySelectorAll('.activity-overlay');
+    for (const overlay of overlays) {
+      clone.appendChild(overlay.cloneNode(true));
+    }
+
+    // Render simplified sticky notes (shadow DOM — can't clone rendered content)
+    const stickies = this.definition?._ui?.stickies || {};
+    for (const [uuid, sticky] of Object.entries(stickies)) {
+      if (!sticky.position) continue;
+      const stickyEl = canvas.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      const sw = stickyEl?.offsetWidth || sticky.width || 200;
+      const sh = stickyEl?.offsetHeight || sticky.height || 100;
+
+      if (
+        sticky.position.left + sw < canvasX - visibleRadius - pad ||
+        sticky.position.left > canvasX + visibleRadius + pad ||
+        sticky.position.top + sh < canvasY - visibleRadius - pad ||
+        sticky.position.top > canvasY + visibleRadius + pad
+      )
+        continue;
+
+      const colors =
+        Editor.STICKY_COLORS[sticky.color] || Editor.STICKY_COLORS.yellow;
+      const div = document.createElement('div');
+      div.className = 'draggable';
+      div.style.cssText = `left:${sticky.position.left}px;top:${sticky.position.top}px;width:${sw}px;height:${sh}px;background:${colors.bg};border:1px solid ${colors.border};border-radius:6px;padding:8px;color:${colors.text};font-size:13px;font-weight:600;overflow:hidden;box-sizing:border-box;`;
+      div.textContent = sticky.title || '';
+      clone.appendChild(div);
+    }
+
+    contentEl.appendChild(clone);
+    this.loupeClone = clone;
+  }
+
+  private updateLoupe(clientX: number, clientY: number): void {
+    const loupeEl = this.loupeEl;
+    const contentEl = this.loupeContentEl;
+    if (!loupeEl || !contentEl || !this.definition) return;
+
+    const canvas = this.querySelector('#canvas') as HTMLElement;
+    if (!canvas) return;
+    const canvasRect = canvas.getBoundingClientRect();
+
+    // Canvas coordinates under cursor
+    const canvasX = (clientX - canvasRect.left) / this.zoom;
+    const canvasY = (clientY - canvasRect.top) / this.zoom;
+
+    const D = Editor.LOUPE_DIAMETER;
+    const R = D / 2;
+    // Show content at a fixed comfortable scale inside the loupe
+    const loupeScale = Math.min(2.0, this.zoom * 3);
+    const visibleRadius = R / loupeScale;
+
+    // Position loupe at cursor
+    loupeEl.style.left = `${clientX}px`;
+    loupeEl.style.top = `${clientY}px`;
+    loupeEl.classList.add('visible');
+
+    // Grid background
+    const bgSize = 20 * loupeScale;
+    contentEl.style.backgroundSize = `${bgSize}px ${bgSize}px`;
+    contentEl.style.backgroundPosition = `${R - canvasX * loupeScale}px ${R - canvasY * loupeScale}px`;
+
+    // Rebuild clone periodically or when cursor has moved significantly
+    const now = performance.now();
+    const dx = canvasX - this.loupeCursorCanvas.x;
+    const dy = canvasY - this.loupeCursorCanvas.y;
+    const moved =
+      Math.abs(dx) > visibleRadius * 0.5 || Math.abs(dy) > visibleRadius * 0.5;
+
+    if (
+      !this.loupeClone ||
+      (now - this.loupeCloneTime > Editor.LOUPE_CLONE_INTERVAL && moved)
+    ) {
+      this.rebuildLoupeClone(canvas, canvasX, canvasY, visibleRadius);
+      this.loupeCloneTime = now;
+      this.loupeCursorCanvas = { x: canvasX, y: canvasY };
+    }
+
+    // Position the clone so the canvas point under the cursor is at the loupe center
+    if (this.loupeClone) {
+      this.loupeClone.style.transform = `translate(${R - canvasX * loupeScale}px, ${R - canvasY * loupeScale}px) scale(${loupeScale})`;
+    }
   }
 
   private showDeleteConfirmation(): void {
@@ -2761,7 +3170,7 @@ export class Editor extends RapidElement {
           <div class="empty-node-placeholder" style="height: 60px;"></div>
           <div class="action-exits">
             <div class="exit-wrapper">
-              <div class="exit"></div>
+              <div class="exit" style="pointer-events: none;"></div>
             </div>
           </div>
         </div>
@@ -5725,7 +6134,7 @@ export class Editor extends RapidElement {
         <div class="zoom-controls">
           <button
             @click=${this.zoomToFit}
-            ?disabled=${this.zoomFitted}
+            ?disabled=${!this.zoomInitialized || this.zoomFitted}
             title="Zoom to fit"
           >
             <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
@@ -5733,15 +6142,15 @@ export class Editor extends RapidElement {
           <div class="zoom-divider"></div>
           <button
             @click=${this.zoomOut}
-            ?disabled=${this.zoom <= 0.1}
+            ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
             title="Zoom out"
           >
             −
           </button>
-          <span class="zoom-level">${Math.round(this.zoom * 100)}%</span>
+          <span class="zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
           <button
             @click=${this.zoomIn}
-            ?disabled=${this.zoom >= 1.0}
+            ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
             title="Zoom in"
           >
             +
@@ -5749,13 +6158,18 @@ export class Editor extends RapidElement {
           <div class="zoom-divider"></div>
           <button
             @click=${this.zoomToFull}
-            ?disabled=${this.zoom >= 1.0}
+            ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
             title="Zoom to 100%"
           >
             <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
           </button>
         </div>
         ${this.renderPendingCard()}
+      </div>
+      <div class="loupe" id="loupe">
+        <div class="loupe-content" id="loupe-content"></div>
+        <div class="loupe-crosshair-h"></div>
+        <div class="loupe-crosshair-v"></div>
       </div>
 
       ${this.editingNode || this.editingAction
