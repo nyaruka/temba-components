@@ -15,7 +15,6 @@ import {
   RowLayoutConfig,
   GroupLayoutConfig,
   AccordionLayoutConfig,
-  AccordionSection,
   FormData,
   ACTION_GROUP_METADATA,
   SPLIT_GROUP_METADATA

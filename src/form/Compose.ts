@@ -5,7 +5,6 @@ import { Attachment, CustomEventType, Language, Shortcut } from '../interfaces';
 import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
 import { Select } from './select/Select';
 import { MessageEditor } from './MessageEditor';
-import { RichEditor } from './RichEditor';
 import { ShortcutList } from '../list/ShortcutList';
 import { setCaretOffset } from '../excellent/caret-utils';
 import { Icon } from '../Icons';
