@@ -28,11 +28,11 @@ describe('Editor Zoom', () => {
   // --- A. setZoom state management ---
 
   describe('setZoom', () => {
-    it('clamps to minimum of 0.1', () => {
+    it('clamps to minimum of 0.3', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
       (editor as any).setZoom(0.02);
-      expect((editor as any).zoom).to.equal(0.1);
+      expect((editor as any).zoom).to.equal(0.3);
     });
 
     it('clamps to maximum of 1.0', () => {
@@ -147,11 +147,11 @@ describe('Editor Zoom', () => {
       expect((editor as any).zoom).to.equal(0.45);
     });
 
-    it('stays at 0.1 when already at minimum', () => {
+    it('stays at 0.3 when already at minimum', () => {
       const editor = createEditorWithMockPlumber();
-      (editor as any).zoom = 0.1;
+      (editor as any).zoom = 0.3;
       (editor as any).zoomOut();
-      expect((editor as any).zoom).to.equal(0.1);
+      expect((editor as any).zoom).to.equal(0.3);
     });
   });
 
