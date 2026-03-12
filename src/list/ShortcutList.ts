@@ -1,6 +1,6 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Shortcut } from '../interfaces';
+import { CustomEventType, Shortcut } from '../interfaces';
 import { StoreMonitorElement } from '../store/StoreMonitorElement';
 import { Options } from '../display/Options';
 
@@ -28,11 +28,29 @@ export class ShortcutList extends StoreMonitorElement {
         padding: 0.1em 0.3em;
         border-radius: var(--curvature);
       }
+
+      .search-box {
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--color-widget-border, #e6e6e6);
+      }
+
+      .search-box input {
+        width: 100%;
+        border: none;
+        outline: none;
+        font-size: 0.9em;
+        padding: 4px 0;
+        background: transparent;
+        font-family: inherit;
+      }
     `;
   }
 
   @property({ type: String })
   filter: string;
+
+  @property({ type: Boolean })
+  showSearch = false;
 
   @property({ type: Array })
   filteredShortcuts = [];
@@ -110,8 +128,51 @@ export class ShortcutList extends StoreMonitorElement {
     return options.getSelection();
   }
 
+  private handleSearchInput(evt: Event) {
+    this.filter = (evt.target as HTMLInputElement).value;
+  }
+
+  private handleSearchKeyDown(evt: KeyboardEvent) {
+    if (evt.key === 'ArrowDown') {
+      evt.preventDefault();
+      this.cursorIndex = Math.min(
+        this.cursorIndex + 1,
+        this.filteredShortcuts.length - 1
+      );
+    } else if (evt.key === 'ArrowUp') {
+      evt.preventDefault();
+      this.cursorIndex = Math.max(this.cursorIndex - 1, 0);
+    } else if (evt.key === 'Enter') {
+      evt.preventDefault();
+      evt.stopPropagation();
+      if (this.filteredShortcuts.length > 0) {
+        const selected = this.filteredShortcuts[this.cursorIndex];
+        this.fireCustomEvent(CustomEventType.Selection, { selected });
+      }
+    }
+  }
+
+  public focusSearch() {
+    const input = this.shadowRoot?.querySelector(
+      '.search-box input'
+    ) as HTMLInputElement;
+    if (input) {
+      input.focus();
+    }
+  }
+
   public render(): TemplateResult {
     return html`
+      ${this.showSearch
+        ? html`<div class="search-box">
+            <input
+              type="text"
+              placeholder="Search shortcuts..."
+              @input=${this.handleSearchInput}
+              @keydown=${this.handleSearchKeyDown}
+            />
+          </div>`
+        : null}
       ${this.filteredShortcuts.length === 0
         ? html`<div class="no-match">
             ${this.filter

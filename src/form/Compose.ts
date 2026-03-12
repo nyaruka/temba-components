@@ -2,14 +2,13 @@ import { TemplateResult, html, css, PropertyValues, nothing } from 'lit';
 import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { Attachment, CustomEventType, Language, Shortcut } from '../interfaces';
-import { DEFAULT_MEDIA_ENDPOINT, getClasses } from '../utils';
-import { Completion } from './Completion';
+import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
 import { Select } from './select/Select';
-import { TabPane } from '../layout/TabPane';
-import { MediaPicker } from './MediaPicker';
-import { Tab } from '../layout/Tab';
-import { TextInput } from './TextInput';
+import { MessageEditor } from './MessageEditor';
+import { RichEditor } from './RichEditor';
 import { ShortcutList } from '../list/ShortcutList';
+import { setCaretOffset } from '../excellent/caret-utils';
+import { Icon } from '../Icons';
 
 export interface ComposeValue {
   text: string;
@@ -24,17 +23,8 @@ export class Compose extends FieldElement {
   static get styles() {
     return css`
       :host {
-        overflow: hidden;
         border-top-right-radius: var(--curvature);
         border-top-left-radius: var(--curvature);
-      }
-
-      .active-template .chatbox {
-        display: none;
-      }
-
-      .active-template .actions {
-        border: none;
       }
 
       .container {
@@ -42,47 +32,41 @@ export class Compose extends FieldElement {
         flex-direction: column;
         justify-content: space-between;
         position: relative;
-        overflow: hidden;
         border-radius: var(--compose-curvature, var(--curvature-widget));
         background: var(--color-widget-bg);
         border: var(--compose-border, 1px solid var(--color-widget-border));
         transition: all ease-in-out var(--transition-speed);
         box-shadow: var(--compose-shadow, var(--widget-box-shadow));
         caret-color: var(--input-caret);
-        --color-widget-bg-focused: transparent;
-        --color-widget-bg: transparent;
       }
 
-      .chatbox {
-        --color-widget-border: none;
-        --curvature-widget: var(
-          --compose-curvature,
-          var(--curvature) var(--curvature) 0px 0px
-        );
+      .container:focus-within {
+        border-color: var(--color-focus);
+        box-shadow: var(--widget-box-shadow-focused, 0 0 0 3px rgba(0, 123, 255, 0.25));
+      }
 
+      .editor-wrapper {
+        --color-widget-border: none;
         --widget-box-shadow: none;
-        display: block;
-        flex-grow: 1;
         --widget-box-shadow-focused: none;
         --temba-textinput-padding: 1em 1em;
-      }
-
-      .actions {
+        flex-grow: 1;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0em;
-        background: #f9f9f9;
+        flex-direction: column;
+        overflow: hidden;
       }
 
-      .actions-right {
-        display: flex;
-        align-items: center;
+      .editor-wrapper temba-message-editor {
+        flex-grow: 1;
+        --color-widget-border: transparent;
+        --widget-box-shadow: none;
+        --widget-box-shadow-focused: none;
+        --color-focus: transparent;
       }
 
-      temba-charcount {
-        margin-right: 5px;
-        --temba-charcount-counts-margin-top: 0px;
+      .language {
+        margin-bottom: 0.6em;
+        display: block;
       }
 
       .send-error {
@@ -91,76 +75,55 @@ export class Compose extends FieldElement {
         padding: 0.5em;
       }
 
-      .language {
-        margin-bottom: 0.6em;
-        display: block;
-      }
-
-      .top-right {
-        align-items: center;
-        display: flex;
-      }
-
-      .gutter {
-        align-items: center;
-        display: flex;
-        margin: 0.5em;
-      }
-
-      temba-tabs {
-        --temba-tabs-border-bottom: none;
-        --temba-tabs-border-left: none;
-        --temba-tabs-border-right: none;
-        --temba-tabs-options-padding: 0.25em 0 0 0.25em;
-      }
-
-      temba-completion {
-        --textarea-min-height: 8em;
-      }
-
       .quick-replies {
-        margin: 0.8em;
+        margin: 0.2em;
       }
 
       .optins {
-        margin: 0.8em;
+        margin: 0.2em;
       }
 
       .templates {
-        margin: 0.8em;
+        margin: 0.2em;
       }
 
-      .attachments {
-        min-height: 5em;
-        padding: 0.2em;
-        align-items: center;
-        display: flex;
-        background: #f9f9f9;
-        border-radius: var(--curvature);
-        margin: 0.6em;
-        margin-bottom: 0em;
+      temba-accordion {
+        margin-top: 0.5em;
       }
 
-      .pane-bottom {
-        border: 0px solid red;
-        --color-placeholder: rgba(0, 0, 0, 0.2);
-        flex-grow: 99;
-      }
-
-      .shortcut-wrapper {
-        max-height: var(--shortcuts-height, 12em);
+      .shortcut-overlay {
+        position: fixed;
+        margin-top: 4px;
         display: flex;
         flex-direction: row;
         align-items: stretch;
         --options-block-shadow: none;
         --curvature-widget: 0px;
         --color-options-bg: #fff;
-        border-bottom: 1px solid var(--color-widget-border);
+        border: 1px solid var(--color-widget-border);
+        border-radius: 6px;
+        background: var(--color-widget-bg, #fff);
+        box-shadow: var(--options-shadow);
+        z-index: 1000003;
+        overflow: hidden;
       }
 
       temba-shortcuts {
         flex-grow: 1;
       }
+
+      .shortcut-icon {
+        color: #888;
+        background: rgba(0, 0, 0, 0.04);
+        border-radius: 8px;
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+      }
+
+      .shortcut-icon:hover {
+        color: var(--color-text-dark);
+        background: rgba(0, 0, 0, 0.08);
+      }
+
     `;
   }
 
@@ -199,6 +162,9 @@ export class Compose extends FieldElement {
 
   @property({ type: Boolean })
   autogrow: boolean;
+
+  @property({ type: Number, attribute: 'min-height' })
+  minHeight = 150;
 
   @property({ type: Boolean })
   shortcuts: boolean;
@@ -274,14 +240,20 @@ export class Compose extends FieldElement {
   @property({ type: String })
   currentLanguage = 'und';
 
-  @property({ type: Object })
-  currentTab: Tab;
-
   @property({ type: Boolean })
   hasPendingText = false;
 
   @property({ type: Object })
   activeShortcut: Shortcut;
+
+  @property({ type: Boolean, attribute: false })
+  showShortcuts = false;
+
+  private shortcutAnchor: { top: number; left: number } = null;
+  private shortcutFilter: string = null;
+  private shortcutViaIcon = false;
+  private lastCaretPosition: number = 0;
+  private lastCaretScreenPosition: { top: number; left: number } = null;
 
   public constructor() {
     super();
@@ -292,18 +264,6 @@ export class Compose extends FieldElement {
       this.currentLanguage == 'und' ||
       this.currentLanguage == this.languages[0].iso
     );
-  }
-
-  private handleTabChanged() {
-    const tabs = this.shadowRoot.querySelector('temba-tabs') as TabPane;
-    this.currentTab = tabs.getCurrentTab();
-    if (this.currentTab && this.currentTab.name === 'Shortcuts') {
-      const shortcuts = this.shadowRoot.querySelector(
-        'temba-shortcuts'
-      ) as ShortcutList;
-      shortcuts.filter = '';
-    }
-    this.setFocusOnChatbox();
   }
 
   public willUpdate(changed: PropertyValues): void {
@@ -330,9 +290,9 @@ export class Compose extends FieldElement {
         langValue = this.langValues[this.currentLanguage];
       }
 
-      this.currentText = langValue.text;
-      this.initialText = langValue.text;
-      this.currentAttachments = langValue.attachments;
+      this.currentText = langValue.text || '';
+      this.initialText = langValue.text || '';
+      this.currentAttachments = langValue.attachments || [];
       this.currentQuickReplies = (langValue.quick_replies || []).map(
         (value) => {
           return { name: value, value };
@@ -357,6 +317,7 @@ export class Compose extends FieldElement {
         trimmed ||
         (this.currentAttachments || []).length > 0 ||
         this.currentQuickReplies.length > 0 ||
+        this.currentOptin.length > 0 ||
         this.variables.length > 0
       ) {
         this.langValues[this.currentLanguage] = {
@@ -375,22 +336,90 @@ export class Compose extends FieldElement {
     }
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    // Make the compose host focusable so clicks on it set activeElement
+    if (!this.hasAttribute('tabindex')) {
+      this.setAttribute('tabindex', '-1');
+    }
+    this.addEventListener('keydown', this.handleHostKeyDown as EventListener);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener('keydown', this.handleHostKeyDown as EventListener);
+  }
+
+  private handleShortcutIconClick() {
+    if (this.showShortcuts) {
+      this.showShortcuts = false;
+      return;
+    }
+
+    // Use saved caret screen position since clicking the icon steals focus
+    if (this.lastCaretScreenPosition) {
+      this.shortcutAnchor = this.lastCaretScreenPosition;
+    }
+    this.shortcutFilter = '';
+    this.shortcutViaIcon = true;
+    this.showShortcuts = true;
+    this.updateComplete.then(() => {
+      const shortcuts = this.shadowRoot.querySelector(
+        'temba-shortcuts'
+      ) as ShortcutList;
+      if (shortcuts) {
+        shortcuts.filter = '';
+        shortcuts.showSearch = true;
+        shortcuts.updateComplete.then(() => {
+          shortcuts.focusSearch();
+        });
+      }
+    });
+  }
+
+  private handleHostKeyDown = (evt: KeyboardEvent) => {
+    if (evt.key === 'Escape' && this.showShortcuts) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      this.showShortcuts = false;
+      return;
+    }
+
+    if (evt.key === 'Enter' && !evt.shiftKey) {
+      if (this.showShortcuts) {
+        return;
+      }
+      const editor = this.getMessageEditor();
+      if (editor) {
+        const richEdit = editor.getRichEditor();
+        if (richEdit && richEdit.hasVisibleOptions()) {
+          return;
+        }
+      }
+      evt.preventDefault();
+      evt.stopPropagation();
+      this.triggerSend();
+    }
+  };
+
   public firstUpdated(changes: PropertyValues): void {
     super.firstUpdated(changes);
-    this.setFocusOnChatbox();
+    this.setFocusOnEditor();
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
     if (changes.has('currentLanguage') && this.langValues) {
-      this.setFocusOnChatbox();
+      this.setFocusOnEditor();
 
-      const chatbox = this.shadowRoot.querySelector('.chatbox') as any;
-      if (chatbox) {
-        chatbox.value = this.initialText;
+      const editor = this.getMessageEditor();
+      if (editor) {
+        const richEdit = editor.getRichEditor();
+        if (richEdit) {
+          richEdit.value = this.initialText;
+        }
       }
-      this.resetTabs();
     }
 
     if (
@@ -406,31 +435,40 @@ export class Compose extends FieldElement {
     }
   }
 
+  private handleLoading(event: CustomEvent) {
+    this.uploading = event.detail.loading;
+  }
+
   private handleAttachmentsChanged(event: CustomEvent) {
-    const media = event.target as MediaPicker;
-    this.currentAttachments = media.attachments;
+    if (event.detail && event.detail.attachments) {
+      this.currentAttachments = event.detail.attachments;
+    }
     this.requestUpdate();
   }
 
-  private setFocusOnChatbox(): void {
-    const completion = this.shadowRoot.querySelector('.chatbox') as Completion;
-    if (completion) {
+  private setFocusOnEditor(): void {
+    const editor = this.getMessageEditor();
+    if (editor) {
       window.setTimeout(() => {
-        completion.focus();
+        editor.focus();
       }, 0);
     }
   }
 
   public reset(): void {
-    const completion = this.shadowRoot.querySelector('.chatbox') as Completion;
-    if (completion) {
-      completion.textInputElement.value = '';
-      completion.value = '';
+    const editor = this.getMessageEditor();
+    if (editor) {
+      const richEdit = editor.getRichEditor();
+      if (richEdit) {
+        const textInput = richEdit.getTextInput();
+        textInput.updateValue('');
+        richEdit.fireEvent('change');
+      }
       this.initialText = '';
       this.currentText = '';
       this.currentQuickReplies = [];
       this.currentAttachments = [];
-      this.resetTabs();
+      this.showShortcuts = false;
     }
   }
 
@@ -440,31 +478,52 @@ export class Compose extends FieldElement {
 
   private handleOptInChange(event: InputEvent) {
     this.currentOptin = (event.target as any).values;
-    this.requestUpdate('optIn');
+    this.requestUpdate('currentOptin');
   }
 
-  private handleChatboxChange(evt: Event) {
-    const chatbox = evt.target as Completion;
-    const inputElement = chatbox.getTextInput().inputElement;
+  private handleEditorChange(evt: Event) {
+    const richEdit = (evt.target as MessageEditor).getRichEditor();
+    if (!richEdit) return;
 
-    this.currentText = inputElement.value;
-    this.hasPendingText = inputElement.value.length > 0;
+    this.currentText = richEdit.value || '';
+    this.hasPendingText = this.currentText.length > 0;
 
-    // is the last character a / and is it at the beginning of the line
-    const cursor = inputElement.selectionStart;
-    const text = inputElement.value;
-    const lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
-    const line = text.substring(lineStart, cursor);
+    // Track caret for shortcut icon click
+    this.lastCaretPosition = richEdit.getCaretPosition();
+    const screenPos = richEdit.getCaretScreenPosition();
+    if (screenPos) {
+      this.lastCaretScreenPosition = screenPos;
+    }
 
-    if (line.startsWith('/')) {
-      // switch to the shortcuts tab
-      if (this.currentTab.name !== 'Shortcuts') {
-        this.getTabs().focusTab('Shortcuts');
+    // Detect / at beginning of line for shortcuts
+    if (this.shortcuts) {
+      const text = this.currentText;
+      const cursor = richEdit.getCaretPosition();
+      const lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+      const line = text.substring(lineStart, cursor);
+
+      if (line.startsWith('/')) {
+        if (!this.showShortcuts) {
+          const caretPos = richEdit.getCaretScreenPosition();
+          if (caretPos) {
+            this.shortcutAnchor = caretPos;
+          }
+          this.shortcutViaIcon = false;
+        }
+        this.shortcutFilter = line.substring(1);
+        this.showShortcuts = true;
+        this.updateComplete.then(() => {
+          const shortcuts = this.shadowRoot.querySelector(
+            'temba-shortcuts'
+          ) as ShortcutList;
+          if (shortcuts) {
+            shortcuts.showSearch = false;
+            shortcuts.filter = this.shortcutFilter;
+          }
+        });
+      } else {
+        this.showShortcuts = false;
       }
-      const shortcuts = this.shadowRoot.querySelector(
-        'temba-shortcuts'
-      ) as ShortcutList;
-      shortcuts.filter = line.substring(1);
     }
   }
 
@@ -478,68 +537,26 @@ export class Compose extends FieldElement {
     }
   }
 
-  private getCurrentLine(): { text: string; index: number } {
-    const chatbox = this.shadowRoot.querySelector('.chatbox') as Completion;
-
-    const cursor = chatbox.getTextInput().inputElement.selectionStart - 1;
-    const text = chatbox.value;
-    const start = text.substring(0, cursor).lastIndexOf('\n') + 1;
-
-    let end = chatbox.value.indexOf('\n', start);
-    if (end === -1) {
-      end = chatbox.value.length;
-    }
-
-    return { text: chatbox.value.substring(start, end), index: start };
-  }
-
   private handleKeyDown(evt: KeyboardEvent) {
-    const tabs = this.shadowRoot.querySelector('temba-tabs') as TabPane;
-    const num = parseInt(evt.key);
-    if (
-      !Number.isNaN(num) &&
-      num > 0 &&
-      evt.ctrlKey &&
-      evt.metaKey &&
-      num <= tabs.options.length
-    ) {
-      tabs.index = num - 1;
-    }
-
-    if (evt.key === 'Backspace') {
-      const line = this.getCurrentLine();
-      const text = line.text;
-      if (text === '/') {
-        tabs.focusTab('Reply');
-      }
-    }
-
-    if (this.currentTab.name === 'Shortcuts') {
-      if (evt.key === 'Enter' && !evt.shiftKey) {
-        return;
-      }
-    }
-
-    if (evt.key === 'Enter') {
-      if (!evt.shiftKey) {
-        evt.preventDefault();
-        if (this.completion) {
-          const chat = evt.target as Completion;
-          if (!chat.hasVisibleOptions()) {
-            this.triggerSend();
+    if (evt.key === 'Backspace' && this.shortcuts && this.showShortcuts) {
+      // Check if we're deleting the / trigger
+      const editor = this.getMessageEditor();
+      if (editor) {
+        const richEdit = editor.getRichEditor();
+        if (richEdit) {
+          const text = richEdit.getText();
+          const cursor = richEdit.getCaretPosition();
+          const lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+          const line = text.substring(lineStart, cursor);
+          if (line === '/') {
+            this.showShortcuts = false;
           }
-        } else {
-          this.triggerSend();
         }
       }
     }
   }
 
   public triggerSend() {
-    // Recompute empty synchronously since the Lit update cycle that normally
-    // calls checkIfEmpty() in updated() may not have flushed yet (currentText
-    // is set synchronously in handleChatboxChange, but empty is only updated
-    // in the async updated() callback).
     this.checkIfEmpty();
     if (!this.empty) {
       this.fireCustomEvent(CustomEventType.Submitted, {
@@ -553,43 +570,71 @@ export class Compose extends FieldElement {
     this.currentLanguage = select.values[0].iso;
   }
 
-  public resetTabs() {
-    this.getTabs().focusTab('Reply');
+  private getShortcutOverlayStyle(): string {
+    const container = this.shadowRoot?.querySelector('.container');
+    if (!container) return '';
+    const rect = container.getBoundingClientRect();
+    const margin = 16;
+    const top = this.shortcutAnchor
+      ? this.shortcutAnchor.top
+      : rect.top + 30;
+    const maxHeight = window.innerHeight - top - margin;
+    return `left: ${rect.left}px; top: ${top}px; width: ${rect.width}px; max-height: ${maxHeight}px;`;
   }
 
-  public getTabs(): TabPane {
-    return this.shadowRoot.querySelector('temba-tabs') as TabPane;
+  private getMessageEditor(): MessageEditor {
+    return this.shadowRoot.querySelector(
+      'temba-message-editor'
+    ) as MessageEditor;
   }
 
-  public render(): TemplateResult {
-    return this.renderField();
-  }
+  public handleShortcutSelection(event: CustomEvent) {
+    this.activeShortcut = event.detail.selected;
+    const editor = this.getMessageEditor();
+    if (!editor) return;
 
-  protected renderWidget(): TemplateResult {
-    return html`
-      <div
-        class=${getClasses({
-          'active-template':
-            !!this.currentTemplate &&
-            this.currentTab &&
-            this.currentTab.name === 'Template'
-        })}
-      >
-        ${this.languages.length > 1
-          ? html`<temba-select
-              @change=${this.handleLanguageChange}
-              class="language"
-              name="language"
-              .staticOptions=${this.languages}
-              valueKey="iso"
-            >
-            </temba-select>`
-          : null}
-        <div class="container">
-          <div class="items actions">${this.getActions()}</div>
-        </div>
-      </div>
-    `;
+    const richEdit = editor.getRichEditor();
+    if (!richEdit) return;
+
+    const text = richEdit.getText();
+    const cursor = richEdit.getCaretPosition() || this.lastCaretPosition;
+
+    // Find current line
+    const lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+    let lineEnd = text.indexOf('\n', lineStart);
+    if (lineEnd === -1) lineEnd = text.length;
+    const line = text.substring(lineStart, lineEnd);
+
+    // Build the new text with shortcut replacing the /command line
+    let newText: string;
+    let newCursor: number;
+    if (line.startsWith('/')) {
+      const before = text.substring(0, lineStart);
+      const after = text.substring(lineEnd);
+      newText = before + this.activeShortcut.text + after;
+      newCursor = lineStart + this.activeShortcut.text.length;
+    } else {
+      newText =
+        text.substring(0, cursor) +
+        this.activeShortcut.text +
+        text.substring(cursor);
+      newCursor = cursor + this.activeShortcut.text.length;
+    }
+
+    // Update the rendered content and fire change so the char counter
+    // and form value pick up the new text
+    const textInput = richEdit.getTextInput();
+    textInput.updateValue(newText);
+    richEdit.fireEvent('change');
+
+    // Restore focus and place cursor at end of inserted text
+    const editableDiv = richEdit.inputElement;
+    if (editableDiv) {
+      editableDiv.focus();
+      setCaretOffset(editableDiv, newCursor);
+    }
+
+    this.showShortcuts = false;
   }
 
   private handleTemplateChanged(evt: CustomEvent) {
@@ -602,198 +647,132 @@ export class Compose extends FieldElement {
     this.variables = [...evt.detail.variables];
   }
 
-  public getTextInput(): TextInput {
-    return (
-      this.shadowRoot.querySelector('.chatbox') as Completion
-    ).getTextInput();
+  public render(): TemplateResult {
+    return this.renderField();
   }
 
-  public handleShortcutSelection(event: CustomEvent) {
-    this.activeShortcut = event.detail.selected;
-    const line = this.getCurrentLine();
-    const chatbox = this.getTextInput();
-
-    const originalText = chatbox.value;
-
-    if (line.text.startsWith('/')) {
-      const newText =
-        originalText.substring(0, line.index) +
-        this.activeShortcut.text +
-        originalText.substring(line.index + line.text.length);
-
-      chatbox.updateValue(newText);
-
-      // set our cursor to the end of the shortcut
-      const cursor = line.index + this.activeShortcut.text.length;
-      chatbox.inputElement.setSelectionRange(cursor, cursor);
-    } else {
-      // add the text where the cursor is
-      const cursor = chatbox.inputElement.selectionStart;
-      const newText =
-        originalText.substring(0, cursor) +
-        this.activeShortcut.text +
-        originalText.substring(cursor);
-      chatbox.updateValue(newText);
-
-      // set the cursor to the end of the shortcut text
-      const newCursor = cursor + this.activeShortcut.text.length;
-      chatbox.inputElement.setSelectionRange(newCursor, newCursor);
-    }
-
-    const tabs = this.shadowRoot.querySelector('temba-tabs') as TabPane;
-    tabs.index = tabs.options.findIndex((tab) => tab.name === 'Reply');
-  }
-
-  private getActions(): TemplateResult {
+  protected renderWidget(): TemplateResult {
     const showOptins = this.optIns && this.isBaseLanguage();
     const showTemplates = this.templates && this.isBaseLanguage();
+    const hasAccordionSections =
+      this.quickReplies || showOptins || showTemplates;
+
     return html`
-      <temba-tabs
-        focusedname
-        @temba-context-changed=${this.handleTabChanged}
-        refresh="${(this.currentAttachments || []).length}|${this.index}|${this
-          .currentQuickReplies.length}|${showOptins}|${this
-          .currentOptin}|${showTemplates}|${this.currentTemplate}"
-      >
-        <temba-tab
-          name="Reply"
-          icon="message"
-          selectionBackground="#fff"
-        ></temba-tab>
-        ${this.attachments
-          ? html`<temba-tab
-              name="Attachments"
-              icon="attachment"
-              selectionBackground="#fff"
-              .count=${(this.currentAttachments || []).length}
+      <div>
+        ${this.languages.length > 1
+          ? html`<temba-select
+              @change=${this.handleLanguageChange}
+              class="language"
+              name="language"
+              .staticOptions=${this.languages}
+              valueKey="iso"
             >
-              <div class="items attachments">
-                <temba-media-picker
-                  accept=${this.accept}
-                  max=${this.maxAttachments}
-                  attachments=${JSON.stringify(this.currentAttachments || [])}
-                  @change=${this.handleAttachmentsChanged.bind(this)}
-                ></temba-media-picker>
-              </div>
-            </temba-tab>`
+            </temba-select>`
           : null}
-        ${this.quickReplies
-          ? html`<temba-tab
-              name="Quick Replies"
-              icon="quick_replies"
-              selectionBackground="#fff"
-              .count=${this.currentQuickReplies.length}
+        <div class="container">
+          <div class="editor-wrapper">
+            <temba-message-editor
+              .value=${this.initialText}
+              .attachments=${this.currentAttachments}
+              attachment-format="object"
+              accept=${this.accept}
+              max-attachments=${this.maxAttachments}
+              endpoint=${this.endpoint}
+              placeholder="Write something here"
+              gsm
+              textarea
+              minHeight=${this.minHeight}
+              ?autogrow=${this.autogrow}
+              ?disableCompletion=${!this.completion}
+              counter=${this.counter ? 'true' : nothing}
+              @change=${this.handleEditorChange}
+              @keydown=${this.handleKeyDown}
+              @temba-content-changed=${this.handleAttachmentsChanged}
+              @loading=${this.handleLoading}
             >
-              <temba-select
-                @change=${this.handleQuickReplyChange}
-                .values=${this.currentQuickReplies}
-                maxItems=${this.maxQuickReplies}
-                maxItemsText="You can only add ${this
-                  .maxQuickReplies} Quick Replies"
-                class="quick-replies"
-                tags
-                multi
-                searchable
-                expressions
-                placeholder="Add Quick Reply"
-              ></temba-select>
-            </temba-tab>`
-          : null}
-        ${showOptins
-          ? html`<temba-tab
-              name="Opt-in"
-              icon="channel_fba"
-              selectionBackground="#fff"
-              ?hidden=${!showOptins}
-              ?checked=${this.currentOptin.length > 0}
-            >
-              <temba-select
-                @change=${this.handleOptInChange}
-                .values=${this.currentOptin}
-                endpoint="${this.optinEndpoint}"
-                valueKey="uuid"
-                class="optins"
-                searchable
-                clearable
-                placeholder="Select an opt-in to use for Facebook (optional)"
-              ></temba-select>
-            </temba-tab>`
-          : null}
-        ${showTemplates
-          ? html`<temba-tab
-              name="Template"
-              icon="channel_wa"
-              selectionBackground="#fff"
-              ?alert=${this.errors &&
-              this.errors.find((error) => error.includes('template'))}
-              ?hidden=${!showTemplates}
-              ?checked=${this.currentTemplate}
-            >
-              <temba-template-editor
-                class="templates"
-                @temba-context-changed=${this.handleTemplateChanged}
-                @temba-content-changed=${this.handleTemplateVariablesChanged}
-                template=${this.template}
-                variables=${JSON.stringify(this.variables)}
-                url=${this.templateEndpoint}
-                lang=${this.currentLanguage}
-                template-warning=${this.templateWarning || nothing}
-              >
-              </temba-template-editor>
-            </temba-tab>`
-          : null}
+              ${this.shortcuts
+                ? html`<temba-icon
+                    slot="icons"
+                    class="shortcut-icon"
+                    name=${Icon.shortcut}
+                    size="1"
+                    @click=${this.handleShortcutIconClick}
+                  ></temba-icon>`
+                : null}
+            </temba-message-editor>
+          </div>
 
-        <!--temba-tab
-          name="Note"
-          icon="notes"
-          activityColor="#ffbd00"
-          selectionBackground="#fff9c2"
-          borderColor="#ebdf6f"
-        ></temba-tab-->
-
-        ${this.shortcuts
-          ? html`<temba-tab
-              name="Shortcuts"
-              icon="shortcut"
-              selectionBackground="#fff"
-            >
-              <div class="shortcut-wrapper">
+          ${this.shortcuts && this.showShortcuts
+            ? html`<div class="shortcut-overlay" style=${this.getShortcutOverlayStyle()}>
                 <temba-shortcuts
                   @temba-selection=${this.handleShortcutSelection}
                 ></temba-shortcuts>
-              </div>
-            </temba-tab>`
+              </div>`
+            : null}
+        </div>
+        ${hasAccordionSections
+          ? html`<temba-accordion>
+              ${this.quickReplies
+                ? html`<temba-accordion-section
+                    label="Quick Replies"
+                    .count=${this.currentQuickReplies.length}
+                  >
+                    <temba-select
+                      @change=${this.handleQuickReplyChange}
+                      .values=${this.currentQuickReplies}
+                      maxItems=${this.maxQuickReplies}
+                      maxItemsText="You can only add ${this
+                        .maxQuickReplies} Quick Replies"
+                      class="quick-replies"
+                      tags
+                      multi
+                      searchable
+                      expressions
+                      placeholder="Add Quick Reply"
+                    ></temba-select>
+                  </temba-accordion-section>`
+                : null}
+              ${showTemplates
+                ? html`<temba-accordion-section
+                    label="WhatsApp Template"
+                    ?checked=${!!this.currentTemplate}
+                    ?hasError=${this.errors &&
+                    !!this.errors.find((error) => error.includes('template'))}
+                  >
+                    <temba-template-editor
+                      class="templates"
+                      @temba-context-changed=${this.handleTemplateChanged}
+                      @temba-content-changed=${this
+                        .handleTemplateVariablesChanged}
+                      template=${this.template}
+                      variables=${JSON.stringify(this.variables)}
+                      url=${this.templateEndpoint}
+                      lang=${this.currentLanguage}
+                      template-warning=${this.templateWarning || nothing}
+                    >
+                    </temba-template-editor>
+                  </temba-accordion-section>`
+                : null}
+              ${showOptins
+                ? html`<temba-accordion-section
+                    label="Facebook Opt-in"
+                    ?checked=${this.currentOptin.length > 0}
+                  >
+                    <temba-select
+                      @change=${this.handleOptInChange}
+                      .values=${this.currentOptin}
+                      endpoint="${this.optinEndpoint}"
+                      valueKey="uuid"
+                      class="optins"
+                      searchable
+                      clearable
+                      placeholder="Select an opt-in to use for Facebook (optional)"
+                    ></temba-select>
+                  </temba-accordion-section>`
+                : null}
+            </temba-accordion>`
           : null}
-
-        <div slot="tab-right" class="top-right">
-          ${this.counter ? this.getCounter() : null}
-        </div>
-
-        <div
-          slot="pane-bottom"
-          class="pane-bottom ${this.hasPendingText ? 'pending' : ''}"
-        >
-          <temba-completion
-            class="chatbox"
-            .value=${this.initialText}
-            gsm
-            textarea
-            ?disableCompletion=${!this.completion}
-            ?autogrow=${this.autogrow}
-            maxlength=${this.maxLength}
-            @change=${this.handleChatboxChange}
-            @keydown=${this.handleKeyDown}
-            placeholder="Write something here"
-          >
-          </temba-completion>
-        </div>
-      </temba-tabs>
+      </div>
     `;
-  }
-
-  private getCounter(): TemplateResult {
-    return html`<temba-charcount
-      .text="${this.currentText}"
-    ></temba-charcount>`;
   }
 }

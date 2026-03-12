@@ -4,7 +4,7 @@ import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { FieldElement } from './FieldElement';
 import { RichEditor } from './RichEditor';
 import { MediaPicker } from './MediaPicker';
-import { Attachment } from '../interfaces';
+import { Attachment, CustomEventType } from '../interfaces';
 import { getClasses } from '../utils';
 import { Icon } from '../Icons';
 
@@ -56,6 +56,21 @@ export class MessageEditor extends FieldElement {
 
       .completion-wrapper {
         --temba-textinput-padding: 9px 9px 30px 9px;
+        position: relative;
+      }
+
+      ::slotted([slot="icons"]) {
+        position: absolute;
+        bottom: 4px;
+        left: 36px;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: var(--curvature);
+        z-index: 1;
+      }
+
+      .has-attachments ::slotted([slot="icons"]) {
+        left: 4px;
       }
 
       .media-wrapper {
@@ -135,15 +150,17 @@ export class MessageEditor extends FieldElement {
         position: absolute;
         bottom: 4px;
         left: 4px;
-        color: var(--color-text-dark);
+        color: #888;
         cursor: pointer;
         padding: 6px;
-        border-radius: var(--curvature);
-        transition: background-color 0.2s ease-in-out;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.04);
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
       }
 
       .attachment-icon:hover {
-        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--color-text-dark);
+        background: rgba(0, 0, 0, 0.08);
       }
     `;
   }
@@ -195,6 +212,9 @@ export class MessageEditor extends FieldElement {
 
   @property({ type: Boolean, attribute: false })
   pendingDrop = false;
+
+  @property({ type: String, attribute: 'attachment-format' })
+  attachmentFormat: 'string' | 'object' = 'string';
 
   @property({ type: Boolean, attribute: false })
   uploading = false;
@@ -288,9 +308,23 @@ export class MessageEditor extends FieldElement {
     this.fireEvent('change');
   }
 
+  private handleMediaLoading(event: CustomEvent) {
+    this.uploading = event.detail.loading;
+  }
+
   private handleMediaChange(event: Event) {
     event.stopPropagation();
     const mediaPicker = event.target as MediaPicker;
+
+    if (this.attachmentFormat === 'object') {
+      this.attachments = [...mediaPicker.attachments];
+      this.fireCustomEvent(CustomEventType.ContentChanged, {
+        attachments: this.attachments
+      });
+      this.fireEvent('change');
+      return;
+    }
+
     // Convert media picker attachments back to the format expected by the form
     const formattedAttachments = mediaPicker.attachments.map((attachment) => {
       return `${attachment.content_type}:${attachment.url}`;
@@ -376,6 +410,10 @@ export class MessageEditor extends FieldElement {
     }
   }
 
+  public getRichEditor(): RichEditor {
+    return this.completionElement;
+  }
+
   public focus() {
     super.focus();
     if (this.completionElement) {
@@ -402,7 +440,7 @@ export class MessageEditor extends FieldElement {
         class=${getClasses({
           'message-editor-container': true,
           highlight: this.pendingDrop,
-          'has-attachments': hasAttachments
+          'has-attachments': hasAttachments || this.uploading
         })}
         @dragenter=${this.handleDragEnter}
         @dragover=${this.handleDragOver}
@@ -425,6 +463,7 @@ export class MessageEditor extends FieldElement {
             widgetOnly
             @change=${this.handleCompletionChange}
           ></temba-rich-edit>
+          <slot name="icons"></slot>
         </div>
 
         <div class="media-wrapper ">
@@ -433,6 +472,7 @@ export class MessageEditor extends FieldElement {
             .max=${this.maxAttachments}
             .endpoint=${this.endpoint}
             @change=${this.handleMediaChange}
+            @temba-loading=${this.handleMediaLoading}
             ignoreDrops
           ></temba-media-picker>
         </div>
@@ -446,6 +486,7 @@ export class MessageEditor extends FieldElement {
           ${this.counter
             ? html`<temba-charcount
                 .text="${this.value || ''}"
+                ?no-expressions=${this.disableCompletion}
               ></temba-charcount>`
             : null}
         </div>
@@ -460,6 +501,7 @@ export class MessageEditor extends FieldElement {
               .max=${this.maxAttachments}
               .endpoint=${this.endpoint}
               @change=${this.handleMediaChange}
+              @temba-loading=${this.handleMediaLoading}
               ignoreDrops
             ></temba-media-picker>`
           : ''}
