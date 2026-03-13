@@ -310,6 +310,16 @@ export class Modax extends RapidElement {
           this.open = false;
           document.location = response.url;
         } else {
+          // apply header colors from response if provided
+          const headerBg = response.headers.get('X-Temba-Header-Bg');
+          const headerText = response.headers.get('X-Temba-Header-Text');
+          if (headerBg) {
+            this.style.setProperty('--header-bg', headerBg);
+          }
+          if (headerText) {
+            this.style.setProperty('--header-text', headerText);
+          }
+
           this.setBody(response.body);
           this.fetching = false;
           this.updateComplete.then(() => {
