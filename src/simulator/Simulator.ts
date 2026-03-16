@@ -595,9 +595,9 @@ export class Simulator extends RapidElement {
       .quick-reply-btn {
         padding: 4px 8px;
         border-radius: 18px;
-        border: 1px solid var(--color-primary, #007aff);
+        border: 1px solid var(--color-quick-reply, rgb(60, 146, 221));
         background: white;
-        color: var(--color-primary, #007aff);
+        color: var(--color-quick-reply, rgb(60, 146, 221));
         font-size: 11px;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -608,7 +608,7 @@ export class Simulator extends RapidElement {
       }
 
       .quick-reply-btn:hover:not(:disabled) {
-        background: var(--color-primary, #007aff);
+        background: var(--color-quick-reply, rgb(60, 146, 221));
         color: white;
       }
 
