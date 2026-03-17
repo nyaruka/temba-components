@@ -374,6 +374,7 @@ export class Editor extends RapidElement {
   private loupeEl: HTMLElement | null = null;
   private loupeContentEl: HTMLElement | null = null;
   private loupeRAF: number | null = null;
+  private hiddenTitles: { el: Element; title: string }[] = [];
 
   // Non-reactive flag set in willUpdate to suppress the debouncedSave
   // call in updated() when the dirtyDate change comes from a reflow/copy
@@ -1174,7 +1175,7 @@ export class Editor extends RapidElement {
           0 4px 16px rgba(0, 0, 0, 0.35),
           0 1px 4px rgba(0, 0, 0, 0.2),
           inset 0 0 0 2px rgba(255, 255, 255, 0.3),
-          inset 0 0 8px rgba(0, 0, 0, 0.15);
+          inset 0 0 20px rgba(0, 0, 0, 0.08);
         transform: translate(-50%, -50%) scale(0);
         opacity: 0;
         transition:
@@ -2523,6 +2524,7 @@ export class Editor extends RapidElement {
     if (this.loupeEl) {
       this.loupeEl.classList.remove('visible');
     }
+    this.restoreTitles();
     if (this.loupeClone) {
       this.loupeClone.remove();
       this.loupeClone = null;
@@ -2533,21 +2535,38 @@ export class Editor extends RapidElement {
     }
   }
 
+  private suppressTitles(): void {
+    this.hiddenTitles = [];
+    const canvas = this.querySelector('#canvas');
+    if (!canvas) return;
+    for (const el of canvas.querySelectorAll('[title]')) {
+      this.hiddenTitles.push({ el, title: el.getAttribute('title')! });
+      el.removeAttribute('title');
+    }
+    // Also check shadow DOMs of canvas nodes and sticky notes
+    for (const node of canvas.querySelectorAll(
+      'temba-canvas-node, temba-sticky-note'
+    )) {
+      if (node.shadowRoot) {
+        for (const el of node.shadowRoot.querySelectorAll('[title]')) {
+          this.hiddenTitles.push({ el, title: el.getAttribute('title')! });
+          el.removeAttribute('title');
+        }
+      }
+    }
+  }
+
+  private restoreTitles(): void {
+    for (const { el, title } of this.hiddenTitles) {
+      el.setAttribute('title', title);
+    }
+    this.hiddenTitles = [];
+  }
+
   private loupeCloneTime = 0;
   private loupeClone: HTMLElement | null = null;
   private loupeCursorCanvas: { x: number; y: number } = { x: 0, y: 0 };
   private static readonly LOUPE_CLONE_INTERVAL = 200;
-
-  private static readonly STICKY_COLORS: Record<
-    string,
-    { bg: string; border: string; text: string }
-  > = {
-    yellow: { bg: '#fef08a', border: '#facc15', text: '#451a03' },
-    blue: { bg: '#bfdbfe', border: '#3b82f6', text: '#1e3a8a' },
-    pink: { bg: '#fce7f3', border: '#ec4899', text: '#831843' },
-    green: { bg: '#d1fae5', border: '#10b981', text: '#064e3b' },
-    gray: { bg: '#f3f4f6', border: '#6b7280', text: '#374151' }
-  };
 
   private rebuildLoupeClone(
     canvas: HTMLElement,
@@ -2607,28 +2626,52 @@ export class Editor extends RapidElement {
       clone.appendChild(overlay.cloneNode(true));
     }
 
-    // Render simplified sticky notes (shadow DOM — can't clone rendered content)
-    const stickies = this.definition?._ui?.stickies || {};
-    for (const [uuid, sticky] of Object.entries(stickies)) {
-      if (!sticky.position) continue;
-      const stickyEl = canvas.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-      const sw = stickyEl?.offsetWidth || sticky.width || 200;
-      const sh = stickyEl?.offsetHeight || sticky.height || 100;
+    // Clone sticky notes from their shadow DOM
+    const stickyEls = canvas.querySelectorAll('temba-sticky-note');
+    for (const el of stickyEls) {
+      const stickyEl = el as HTMLElement;
+      const sw = stickyEl.offsetWidth;
+      const sh = stickyEl.offsetHeight;
+      const left = parseFloat(stickyEl.style.left) || 0;
+      const top = parseFloat(stickyEl.style.top) || 0;
 
       if (
-        sticky.position.left + sw < canvasX - visibleRadius - pad ||
-        sticky.position.left > canvasX + visibleRadius + pad ||
-        sticky.position.top + sh < canvasY - visibleRadius - pad ||
-        sticky.position.top > canvasY + visibleRadius + pad
+        left + sw < canvasX - visibleRadius - pad ||
+        left > canvasX + visibleRadius + pad ||
+        top + sh < canvasY - visibleRadius - pad ||
+        top > canvasY + visibleRadius + pad
       )
         continue;
 
-      const colors =
-        Editor.STICKY_COLORS[sticky.color] || Editor.STICKY_COLORS.yellow;
+      if (!stickyEl.shadowRoot) continue;
+
       const div = document.createElement('div');
-      div.className = 'draggable';
-      div.style.cssText = `left:${sticky.position.left}px;top:${sticky.position.top}px;width:${sw}px;height:${sh}px;background:${colors.bg};border:1px solid ${colors.border};border-radius:6px;padding:8px;color:${colors.text};font-size:13px;font-weight:600;overflow:hidden;box-sizing:border-box;`;
-      div.textContent = sticky.title || '';
+      div.className = stickyEl.className;
+      div.style.cssText = stickyEl.style.cssText;
+      // Extract adopted stylesheets from the shadow root (Lit uses these
+      // instead of inline <style> tags), scoping all rules under .loupe-sticky
+      // to prevent them from leaking into the light DOM
+      div.classList.add('loupe-sticky');
+      const sheets = stickyEl.shadowRoot.adoptedStyleSheets;
+      let cssText = '';
+      for (const sheet of sheets) {
+        for (const rule of sheet.cssRules) {
+          const ruleText = rule.cssText;
+          if (ruleText.startsWith(':host')) {
+            cssText += ruleText.replace(/:host/g, '.loupe-sticky') + '\n';
+          } else {
+            // Scope non-:host rules under .loupe-sticky
+            const braceIdx = ruleText.indexOf('{');
+            if (braceIdx !== -1) {
+              const selector = ruleText.substring(0, braceIdx).trim();
+              const body = ruleText.substring(braceIdx);
+              cssText += `.loupe-sticky ${selector} ${body}\n`;
+            }
+          }
+        }
+      }
+      div.innerHTML =
+        `<style>${cssText}</style>` + stickyEl.shadowRoot.innerHTML;
       clone.appendChild(div);
     }
 
@@ -2652,13 +2695,16 @@ export class Editor extends RapidElement {
     const D = Editor.LOUPE_DIAMETER;
     const R = D / 2;
     // Show content at a fixed comfortable scale inside the loupe
-    const loupeScale = Math.min(2.0, this.zoom * 3);
+    const loupeScale = Math.min(1.5, this.zoom * 2.5);
     const visibleRadius = R / loupeScale;
 
     // Position loupe at cursor
     loupeEl.style.left = `${clientX}px`;
     loupeEl.style.top = `${clientY}px`;
     loupeEl.classList.add('visible');
+    if (this.hiddenTitles.length === 0) {
+      this.suppressTitles();
+    }
 
     // Grid background
     const bgSize = 20 * loupeScale;
