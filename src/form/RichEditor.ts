@@ -546,10 +546,11 @@ export class RichEditor extends FieldElement {
       option
     );
 
-    // Sync value from the patched div
+    // Sync value from the patched div and notify consumers
     this.value = (this.editableDiv as any).value;
     this.query = '';
     this.options = [];
+    this.fireEvent('change');
 
     if (tabbed) {
       this.executeQuery();
