@@ -146,16 +146,6 @@ describe('temba-compose attachments', () => {
     });
     await updateComponent(compose, null, getValidAttachments());
     await assertScreenshot('compose/attachments-with-files', getClip(compose));
-
-    // click on tab
-    const tabs = compose.getTabs();
-    tabs.focusTab('Attachments');
-
-    // todo: this test is weirdly inconsistent
-    /* await assertScreenshot(
-      'compose/attachments-with-files-focused',
-      getClip(compose)
-    );*/
   });
 
   it('serializes attachments', async () => {
@@ -170,5 +160,86 @@ describe('temba-compose attachments', () => {
     expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
     // serialize
     expect(compose.value).to.equal(composeValue);
+  });
+});
+
+describe('temba-compose broadcast edit', () => {
+  it('initializes with languages and value like Django', async () => {
+    // Simulate Django broadcast edit: value keyed by language iso
+    const langValue = {
+      eng: {
+        text: 'Hello from broadcast',
+        attachments: [],
+        quick_replies: ['Yes', 'No'],
+        optin: null,
+        template: null,
+        variables: []
+      }
+    };
+    const languages = JSON.stringify([
+      { iso: 'eng', name: 'English' }
+    ]);
+
+    const compose: Compose = await getCompose({
+      counter: true,
+      attachments: true,
+      completion: true,
+      quickreplies: true,
+      optins: true,
+      templates: true,
+      maxlength: 4096,
+      languages: languages,
+      value: JSON.stringify(langValue)
+    });
+
+    // Verify the compose initialized correctly
+    expect(compose.currentLanguage).to.equal('eng');
+    expect(compose.currentText).to.equal('Hello from broadcast');
+    expect(compose.currentQuickReplies).to.have.length(2);
+
+    // Verify the message editor exists in shadow DOM and has content
+    const editor = compose.shadowRoot.querySelector('temba-message-editor');
+    expect(editor).to.not.be.null;
+    expect((editor as any).value).to.equal('Hello from broadcast');
+
+    // Verify accordion sections are rendered
+    const accordion = compose.shadowRoot.querySelector('temba-accordion');
+    expect(accordion).to.not.be.null;
+  });
+
+  it('initializes with template value missing attachments and quick_replies', async () => {
+    // Django may omit attachments/quick_replies when a template is set
+    const langValue = {
+      eng: {
+        text: 'Hello',
+        template: 'd6a73193-c31e-4943-bd2d-edf920fb82eb',
+        variables: ['world']
+      }
+    };
+    const languages = JSON.stringify([
+      { iso: 'eng', name: 'English' },
+      { iso: 'spa', name: 'Spanish' }
+    ]);
+
+    const compose: Compose = await getCompose({
+      counter: true,
+      attachments: true,
+      completion: true,
+      quickreplies: true,
+      optins: true,
+      templates: true,
+      maxlength: 4096,
+      languages: languages,
+      value: JSON.stringify(langValue)
+    });
+
+    expect(compose.currentLanguage).to.equal('eng');
+    expect(compose.currentText).to.equal('Hello');
+    expect(compose.currentAttachments).to.deep.equal([]);
+    expect(compose.currentQuickReplies).to.deep.equal([]);
+
+    // Verify the shadow DOM rendered (not empty)
+    const editor = compose.shadowRoot.querySelector('temba-message-editor');
+    expect(editor).to.not.be.null;
   });
 });

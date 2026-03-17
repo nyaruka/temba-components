@@ -15,7 +15,6 @@ import {
   RowLayoutConfig,
   GroupLayoutConfig,
   AccordionLayoutConfig,
-  AccordionSection,
   FormData,
   ACTION_GROUP_METADATA,
   SPLIT_GROUP_METADATA
@@ -342,134 +341,7 @@ export class NodeEditor extends RapidElement {
         align-items: center;
       }
 
-      /* Accordion styles */
-      .accordion {
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        overflow: hidden;
-      }
-
-      .accordion-section {
-        border-bottom: 1px solid #e0e0e0;
-      }
-
-      .accordion-section:last-child {
-        border-bottom: none;
-      }
-
-      .accordion-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 6px 10px;
-        cursor: pointer;
-        user-select: none;
-        background: #f8f9fa;
-        transition: background 0.15s ease;
-      }
-
-      .accordion-header:hover {
-        background: #f0f1f2;
-      }
-
-      .accordion-section.expanded > .accordion-header {
-        border-bottom: 1px solid #e0e0e0;
-      }
-
-      .accordion-title {
-        font-weight: 500;
-        font-size: 13px;
-        color: var(--color-label, #777);
-      }
-
-      .accordion-toggle-container {
-        position: relative;
-        display: flex;
-        align-items: center;
-      }
-
-      .accordion-toggle-icon {
-        color: #999;
-        transition:
-          transform 0.2s ease,
-          opacity 0.3s ease;
-      }
-
-      .accordion-toggle-icon.expanded {
-        transform: rotate(90deg);
-      }
-
-      .accordion-toggle-icon.faded {
-        opacity: 0;
-      }
-
-      .accordion-count-bubble {
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: 600;
-        padding: 3px;
-        min-width: 10px;
-        min-height: 10px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        line-height: 0px;
-        opacity: 1;
-        transition: opacity 0.3s ease;
-        background: var(--color-bubble-bg, #fff);
-        border: 1px solid var(--color-bubble-border, #777);
-        color: var(--color-bubble-text, #000);
-      }
-
-      .accordion-count-bubble.hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .accordion-checkmark-icon {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        opacity: 1;
-        transition: opacity 0.3s ease;
-        border-radius: 50%;
-        color: var(--color-bubble-text, #000);
-        background: var(--color-bubble-bg, #fff);
-        border: 1px solid var(--color-bubble-border, #777);
-        padding: 0.15em;
-      }
-
-      .accordion-checkmark-icon.hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .accordion-content {
-        padding: 8px 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        overflow: hidden;
-        transition: all 0.2s ease-in-out;
-        opacity: 1;
-      }
-
-      .accordion-content.collapsed {
-        max-height: 0;
-        padding-top: 0;
-        padding-bottom: 0;
-        opacity: 0;
-      }
-
-      .accordion-error-icon {
-        color: var(--color-error, tomato);
-        margin-right: 6px;
-      }
+      /* Accordion styles are now in temba-accordion-section component */
 
       .gutter-fields {
         display: flex;
@@ -2205,7 +2077,7 @@ export class NodeEditor extends RapidElement {
     }
 
     return html`
-      <div class="accordion">
+      <temba-accordion ?multi=${multi} @toggle=${this.handleAccordionSectionToggle}>
         ${visibleSections.map((section) => {
           const { label, collapsed = true, getValueCount } = section;
           const stateKey = `accordion:${label}`;
@@ -2223,7 +2095,6 @@ export class NodeEditor extends RapidElement {
           }
 
           const isCollapsed = this.groupCollapseState[stateKey] ?? true;
-          const isHovered = this.groupHoverState[stateKey] ?? false;
 
           // Check for errors in this section
           const fieldsInSection = this.collectFieldsFromItems(section.items);
@@ -2233,20 +2104,15 @@ export class NodeEditor extends RapidElement {
 
           // Value count / checkmark display
           let valueCount = 0;
-          let showBubble = false;
-          let showCheckmark = false;
-          let hasValue = false;
+          let isChecked = false;
 
           if (getValueCount) {
             try {
               const result = getValueCount(this.formData);
               if (typeof result === 'boolean') {
-                hasValue = result;
-                showCheckmark = result && isCollapsed && !isHovered;
+                isChecked = result;
               } else if (typeof result === 'number') {
                 valueCount = result;
-                hasValue = valueCount > 0;
-                showBubble = valueCount > 0 && isCollapsed && !isHovered;
               }
             } catch (error) {
               // ignore
@@ -2254,91 +2120,31 @@ export class NodeEditor extends RapidElement {
           }
 
           return html`
-            <div
-              class="accordion-section ${isCollapsed
-                ? 'collapsed'
-                : 'expanded'} ${hasValue ? 'has-value' : ''}"
+            <temba-accordion-section
+              label=${label}
+              .count=${valueCount}
+              ?checked=${isChecked}
+              ?collapsed=${isCollapsed}
+              ?hasError=${sectionHasErrors}
             >
-              <div
-                class="accordion-header"
-                @click=${() =>
-                  this.handleAccordionToggle(stateKey, sections, multi)}
-                @mouseenter=${() => this.handleGroupMouseEnter(stateKey)}
-                @mouseleave=${() => this.handleGroupMouseLeave(stateKey)}
-              >
-                <div class="accordion-title">${label}</div>
-                ${sectionHasErrors
-                  ? html`<temba-icon
-                      name="alert_warning"
-                      class="accordion-error-icon"
-                      size="1.2"
-                    ></temba-icon>`
-                  : html`<div class="accordion-toggle-container">
-                      <temba-icon
-                        name="arrow_right"
-                        size="1.2"
-                        class="accordion-toggle-icon ${isCollapsed
-                          ? 'collapsed'
-                          : 'expanded'} ${showBubble || showCheckmark
-                          ? 'faded'
-                          : ''}"
-                      ></temba-icon>
-                      ${showCheckmark
-                        ? html`<temba-icon
-                            name="check"
-                            size="0.8"
-                            class="accordion-checkmark-icon"
-                          ></temba-icon>`
-                        : showBubble
-                          ? html`<div
-                              class="accordion-count-bubble ${!showBubble
-                                ? 'hidden'
-                                : ''}"
-                            >
-                              ${valueCount}
-                            </div>`
-                          : ''}
-                    </div>`}
-              </div>
-              <div
-                class="accordion-content ${isCollapsed
-                  ? 'collapsed'
-                  : 'expanded'}"
-              >
-                ${section.items.map((item) =>
-                  this.renderLayoutItem(item, config, renderedFields)
-                )}
-              </div>
-            </div>
+              ${section.items.map((item) =>
+                this.renderLayoutItem(item, config, renderedFields)
+              )}
+            </temba-accordion-section>
           `;
         })}
-      </div>
+      </temba-accordion>
     `;
   }
 
-  private handleAccordionToggle(
-    stateKey: string,
-    sections: AccordionSection[],
-    multi: boolean
-  ): void {
-    const isCurrentlyCollapsed = this.groupCollapseState[stateKey] ?? true;
-
-    if (multi) {
-      // Multi mode: just toggle this section
-      this.groupCollapseState = {
-        ...this.groupCollapseState,
-        [stateKey]: !isCurrentlyCollapsed
-      };
-    } else {
-      // Single mode: collapse all other sections, toggle this one
-      const newState = { ...this.groupCollapseState };
-      sections.forEach((section) => {
-        const key = `accordion:${section.label}`;
-        newState[key] = true; // collapse all
-      });
-      newState[stateKey] = !isCurrentlyCollapsed; // toggle clicked
-      this.groupCollapseState = newState;
-    }
+  private handleAccordionSectionToggle(evt: CustomEvent): void {
+    const label = evt.detail.label;
+    const collapsed = evt.detail.collapsed;
+    const stateKey = `accordion:${label}`;
+    this.groupCollapseState = {
+      ...this.groupCollapseState,
+      [stateKey]: collapsed
+    };
   }
 
   private collectFieldsFromItems(items: LayoutItem[]): string[] {

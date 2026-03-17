@@ -216,7 +216,7 @@ export class CharCount extends RapidElement {
         visibility: hidden;
         text-align: left;
         position: fixed;
-        z-index: 1000;
+        z-index: 1000003;
       }
 
       .fine-print {
@@ -275,6 +275,9 @@ export class CharCount extends RapidElement {
   @property({ type: String })
   text: string;
 
+  @property({ type: Boolean, attribute: 'no-expressions' })
+  noExpressions = false;
+
   @property({ type: Number })
   count: number;
 
@@ -308,7 +311,9 @@ export class CharCount extends RapidElement {
   }
 
   private updateSegments() {
-    const estimated = this.replaceExpressions(this.text);
+    const estimated = this.noExpressions
+      ? this.text
+      : this.replaceExpressions(this.text);
     const sms = splitSMS(estimated);
     this.count = estimated.length;
     this.segments = sms.parts.length;
@@ -327,7 +332,8 @@ export class CharCount extends RapidElement {
   }
 
   public render(): TemplateResult {
-    const hasExpressions = this.text && this.text.indexOf('@') > -1;
+    const hasExpressions =
+      !this.noExpressions && this.text && this.text.indexOf('@') > -1;
 
     let segments = html`.`;
     if (this.segments > 1) {

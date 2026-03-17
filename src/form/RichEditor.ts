@@ -1,7 +1,7 @@
 import { TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { FieldElement } from './FieldElement';
-import { CompletionOption, Position } from '../interfaces';
+import { CompletionOption, CustomEventType, Position } from '../interfaces';
 import { tokenize, TokenType } from '../excellent/tokenizer';
 import {
   messageParser,
@@ -284,6 +284,11 @@ export class RichEditor extends FieldElement {
     const div = this.editableDiv;
     if (!div) return;
 
+    if (this.disableCompletion) {
+      div.textContent = text || '';
+      return;
+    }
+
     const parser = this.session ? sessionParser : messageParser;
     const tokens = tokenize(text || '', parser);
 
@@ -429,6 +434,8 @@ export class RichEditor extends FieldElement {
         const modax = this.closest('temba-modax') as any;
         if (modax) {
           modax.submit();
+        } else {
+          this.fireCustomEvent(CustomEventType.Submitted);
         }
         return;
       }
@@ -566,6 +573,38 @@ export class RichEditor extends FieldElement {
 
   public get inputElement(): HTMLDivElement {
     return this.editableDiv;
+  }
+
+  public getText(): string {
+    return this.value || '';
+  }
+
+  public getCaretPosition(): number {
+    if (!this.editableDiv) return 0;
+    return getCaretOffset(this.editableDiv);
+  }
+
+  public getCaretScreenPosition(): { top: number; left: number } | null {
+    if (!this.editableDiv) return null;
+    const sel = this.editableDiv.getRootNode() as ShadowRoot;
+    const selection = (sel as any).getSelection
+      ? (sel as any).getSelection()
+      : window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    const rect = range.getBoundingClientRect();
+    if (rect.top === 0 && rect.left === 0) return null;
+    return { top: rect.bottom, left: rect.left };
+  }
+
+  public insertTextAt(text: string, position: number): number {
+    const current = this.value || '';
+    const newValue =
+      current.substring(0, position) + text + current.substring(position);
+    const newCaret = position + text.length;
+    this.applyValue(newValue, newCaret);
+    return newCaret;
   }
 
   public hasVisibleOptions(): boolean {

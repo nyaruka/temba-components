@@ -72,7 +72,6 @@ export class ContactChat extends ContactStoreElement {
       }
 
       temba-contact-history {
-        border-bottom: 1px solid #f6f6f6;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
@@ -80,14 +79,11 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .compose {
-        background: #fff;
         display: flex;
         flex-direction: column;
-        --textarea-min-height: 8em;
-        --textarea-height: 0.5em;
-        --widget-box-shadow-focused: none;
-        --compose-curvature: 0px;
-        overflow: hidden;
+        --compose-border: 1px solid #e1e1e1;
+        --compose-curvature: 6px;
+        margin: 0.5em;
       }
 
       .closed-footer {
@@ -124,12 +120,6 @@ export class ContactChat extends ContactStoreElement {
       }
 
       temba-compose {
-        border-top-right-radius: 0;
-        border-top-left-radius: 0;
-        --temba-tabs-options-padding: 0.5em 0.5em 0 0.5em;
-        --temba-tabs-border-left: none;
-        --temba-tabs-border-right: none;
-        --temba-tabs-border-bottom: none;
       }
 
       .error-gutter {
@@ -673,7 +663,7 @@ export class ContactChat extends ContactStoreElement {
           counter
           autogrow
           shortcuts
-          ?embeddedTabs=${!this.currentTicket}
+          min-height="75"
           @temba-submitted=${this.handleSend.bind(this)}
         >
         </temba-compose>

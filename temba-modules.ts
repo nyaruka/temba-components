@@ -78,6 +78,8 @@ import './src/form/BaseListEditor'; // Import base class
 import { ExpressionHighlight } from './src/display/ExpressionHighlight';
 import { FloatingTab } from './src/display/FloatingTab';
 import { FloatingWindow } from './src/layout/FloatingWindow';
+import { Accordion } from './src/layout/Accordion';
+import { AccordionSection } from './src/layout/AccordionSection';
 import { Simulator } from './src/simulator/Simulator';
 
 export function addCustomElement(name: string, comp: any) {
@@ -164,6 +166,8 @@ addCustomElement('temba-key-value-editor', KeyValueEditor);
 addCustomElement('temba-array-editor', TembaArrayEditor);
 addCustomElement('temba-message-editor', MessageEditor);
 addCustomElement('temba-rich-edit', RichEditor);
+addCustomElement('temba-accordion', Accordion);
+addCustomElement('temba-accordion-section', AccordionSection);
 addCustomElement('temba-expression-highlight', ExpressionHighlight);
 addCustomElement('temba-floating-tab', FloatingTab);
 addCustomElement('temba-floating-window', FloatingWindow);

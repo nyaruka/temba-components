@@ -307,11 +307,12 @@ export class CanvasNode extends RapidElement {
       }
 
       .quick-reply {
-        background-color: #f0f0f0;
-        border: 1px solid #e0e0e0;
-        border-radius: calc(var(--curvature) * 1.5);
-        padding: 0.2em 1em;
-        font-size: 0.8em;
+        background: white;
+        border: 1px solid var(--color-quick-reply, rgb(60, 146, 221));
+        border-radius: 18px;
+        padding: 4px 8px;
+        font-size: 11px;
+        color: var(--color-quick-reply, rgb(60, 146, 221));
         margin: 0.2em;
         flex: 0 1 auto;
         min-width: 0;

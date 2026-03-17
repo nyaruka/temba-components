@@ -106,6 +106,7 @@
     --color-error: rgb(var(--error-rgb));
     --color-alert: rgb(var(--error-rgb));
 
+    --color-quick-reply: rgb(60, 146, 221);
     --color-automated: rgb(78, 205, 106);
 
     --icon-color: var(--text-color);
