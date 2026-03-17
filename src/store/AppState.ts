@@ -475,13 +475,9 @@ export const zustand = createStore<AppState>()(
       updateCanvasPositions: (positions: CanvasPositions) => {
         set((state: AppState) => {
           for (const uuid in positions) {
-            // todo: add nodes that are created and then moved, for now ignore
             if (state.flowDefinition._ui.nodes[uuid]) {
               state.flowDefinition._ui.nodes[uuid].position = positions[uuid];
-            }
-
-            // otherwise, it might be a sticky
-            else if (state.flowDefinition._ui.stickies[uuid]) {
+            } else if (state.flowDefinition._ui.stickies[uuid]) {
               state.flowDefinition._ui.stickies[uuid].position =
                 positions[uuid];
             }

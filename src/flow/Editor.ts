@@ -6066,30 +6066,54 @@ export class Editor extends RapidElement {
 
     const stickies = this.definition?._ui?.stickies || {};
 
+    // Detect flows with missing UI metadata (e.g. stale _ui after UUID
+    // regeneration during export/import). Flag as corrupted if any node
+    // is missing a _ui entry, not just when all are.
+    const hasCorruptedUI =
+      this.definition &&
+      this.definition.nodes.length > 0 &&
+      this.definition.nodes.some(
+        (n) => !this.definition._ui?.nodes[n.uuid]
+      );
+
     return html`${style} ${this.renderIssuesWindow()}
       ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
       ${this.renderAutoTranslateDialog()}
       <div id="editor-container">
         <div id="editor">
-          ${this.definition &&
-          this.definition.nodes.length === 0 &&
-          !this.isReadOnly()
+          ${hasCorruptedUI
             ? html`<div class="empty-flow">
                 <div class="empty-flow-content">
-                  <div class="empty-flow-title">This flow is empty</div>
-                  <div class="empty-flow-description">
-                    Get started by adding your first action or split to define
-                    how this flow will work.
+                  <div class="empty-flow-title">
+                    Unable to display this flow
                   </div>
-                  <button
-                    class="empty-flow-button"
-                    @click=${this.handleEmptyFlowClick}
-                  >
-                    Add first step
-                  </button>
+                  <div class="empty-flow-description">
+                    This flow's layout data does not match its nodes. It may
+                    have been corrupted during an export or migration. Please
+                    re-export the flow from the original workspace and try
+                    importing it again.
+                  </div>
                 </div>
               </div>`
-            : ''}
+            : this.definition &&
+                this.definition.nodes.length === 0 &&
+                !this.isReadOnly()
+              ? html`<div class="empty-flow">
+                  <div class="empty-flow-content">
+                    <div class="empty-flow-title">This flow is empty</div>
+                    <div class="empty-flow-description">
+                      Get started by adding your first action or split to define
+                      how this flow will work.
+                    </div>
+                    <button
+                      class="empty-flow-button"
+                      @click=${this.handleEmptyFlowClick}
+                    >
+                      Add first step
+                    </button>
+                  </div>
+                </div>`
+              : ''}
           <div
             id="grid"
             class="${this.viewingRevision ? 'viewing-revision' : ''}"
@@ -6105,18 +6129,20 @@ export class Editor extends RapidElement {
                   !!this.viewingRevision || this.isTranslating
               })}"
             >
-              ${this.definition
+              ${this.definition && !hasCorruptedUI
                 ? repeat(
                     [...this.definition.nodes].sort((a, b) =>
                       a.uuid.localeCompare(b.uuid)
                     ),
                     (node) => node.uuid,
                     (node) => {
-                      const position = this.definition._ui?.nodes[node.uuid]
-                        ?.position || {
-                        left: 0,
-                        top: 0
+                      const nodeUI = this.definition._ui?.nodes[node.uuid] || {
+                        position: { left: 0, top: 0 },
+                        type: node.router?.wait
+                          ? 'wait_for_response'
+                          : 'execute_actions'
                       };
+                      const position = nodeUI.position;
 
                       const dragging =
                         this.isDragging &&
@@ -6142,14 +6168,16 @@ export class Editor extends RapidElement {
                         style="left:${position.left}px; top:${position.top}px;transition: all 0.2s ease-in-out;"
                         .plumber=${this.plumber}
                         .node=${node}
-                        .ui=${this.definition._ui.nodes[node.uuid]}
+                        .ui=${nodeUI}
                         @temba-node-deleted=${(event) => {
                           this.deleteNodes([event.detail.uuid]);
                         }}
                       ></temba-flow-node>`;
                     }
                   )
-                : html`<temba-loading></temba-loading>`}
+                : hasCorruptedUI
+                  ? ''
+                  : html`<temba-loading></temba-loading>`}
               ${repeat(
                 Object.entries(stickies),
                 ([uuid]) => uuid,
