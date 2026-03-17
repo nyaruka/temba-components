@@ -260,6 +260,54 @@ describe('split_by_expression node config', () => {
       expect(resultNode.exits).to.have.lengthOf(3);
     });
 
+    it('should preserve expression operands with spaces for has_number_between', () => {
+      const minExpression = '@(extract(webhook.json.queryData[0], "minLength"))';
+      const formData = {
+        uuid: 'test-node-uuid',
+        operand: '@fields.value',
+        rules: [
+          {
+            operator: {
+              value: 'has_number_between',
+              name: 'has a number between'
+            },
+            value1: minExpression,
+            value2: '20',
+            category: 'In Range'
+          }
+        ],
+        result_name: ''
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node-uuid',
+        actions: [],
+        router: {
+          type: 'switch',
+          operand: '@input.text',
+          cases: [],
+          categories: [],
+          default_category_uuid: ''
+        },
+        exits: []
+      };
+
+      const resultNode = split_by_expression.fromFormData!(
+        formData,
+        originalNode
+      );
+
+      expect(resultNode.router!.cases![0].type).to.equal('has_number_between');
+      expect(resultNode.router!.cases![0].arguments).to.deep.equal([
+        minExpression,
+        '20'
+      ]);
+
+      const roundTripFormData = split_by_expression.toFormData!(resultNode);
+      expect(roundTripFormData.rules[0].value1).to.equal(minExpression);
+      expect(roundTripFormData.rules[0].value2).to.equal('20');
+    });
+
     it('should handle empty rules', () => {
       const formData = {
         uuid: 'test-node-uuid',
