@@ -191,15 +191,15 @@ export const extractUserRules = (formData: FormData) => {
     .map((rule: any) => {
       const operatorValue = getOperatorValue(rule.operator);
       const operatorConfig = getOperatorConfig(operatorValue);
+      const value1 = rule.value1 ? rule.value1.trim() : '';
+      const value2 = rule.value2 ? rule.value2.trim() : '';
 
       let value = '';
 
       if (operatorConfig && operatorConfig.operands === 1) {
-        value = rule.value1 ? rule.value1.trim() : '';
+        value = value1;
       } else if (operatorConfig && operatorConfig.operands === 2) {
-        const val1 = rule.value1 ? rule.value1.trim() : '';
-        const val2 = rule.value2 ? rule.value2.trim() : '';
-        value = `${val1} ${val2}`.trim();
+        value = '';
       } else {
         value = '';
       }
@@ -207,6 +207,8 @@ export const extractUserRules = (formData: FormData) => {
       return {
         operator: operatorValue,
         value: value,
+        value1,
+        value2,
         category: rule.category.trim()
       };
     });

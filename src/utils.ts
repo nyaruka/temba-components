@@ -1371,6 +1371,13 @@ export const generateDefaultCategoryName = (
   }
 };
 
+// Parses two-operand rule values from explicit form operands.
+const parseTwoOperandRuleValues = (rule: any): string[] => {
+  const value1 = typeof rule?.value1 === 'string' ? rule.value1.trim() : '';
+  const value2 = typeof rule?.value2 === 'string' ? rule.value2.trim() : '';
+  return [value1, value2].filter((value) => value !== '');
+};
+
 // Helper function to create a rules-based router (used by wait_for_response and split_by_expression)
 export const createRulesRouter = (
   operand: string,
@@ -1491,8 +1498,8 @@ export const createRulesRouter = (
         // No operands needed
         arguments_ = [];
       } else if (operatorConfig.operands === 2) {
-        // Two operands (e.g., "1 10" for between) - split into separate arguments
-        arguments_ = rule.value.split(' ').filter((arg: string) => arg.trim());
+        // Two operands (e.g., "1" and "10" for between)
+        arguments_ = parseTwoOperandRuleValues(rule);
       } else {
         // Single operand - keep as one argument string
         if (rule.value && rule.value.trim()) {
