@@ -264,9 +264,11 @@ describe('temba-message-editor', () => {
     const richEdit = editor.shadowRoot.querySelector(
       'temba-rich-edit'
     ) as any;
+    expect(richEdit).to.not.be.null;
     const editableDiv = richEdit.shadowRoot.querySelector(
       '.highlight-editor'
     ) as HTMLDivElement;
+    expect(editableDiv).to.not.be.null;
 
     // Type "men" normally
     editableDiv.textContent = 'men';
