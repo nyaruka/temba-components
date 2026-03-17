@@ -298,6 +298,16 @@ export class ContactSearch extends FieldElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
+
+    // set the form value immediately if we have pre-existing data (e.g. editing)
+    if (this.query || this.recipients.length > 0) {
+      this.setValue({
+        advanced: this.advanced,
+        query: this.query,
+        exclusions: this.exclusions,
+        recipients: this.recipients
+      });
+    }
   }
 
   public updated(changedProperties: Map<string, any>) {
