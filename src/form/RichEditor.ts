@@ -196,6 +196,7 @@ export class RichEditor extends FieldElement {
   private hiddenElement: HTMLInputElement;
   private query: string;
   private _skipRender = false;
+  private _composing = false;
 
   // Undo/redo: native browser undo doesn't work because syntax highlighting
   // replaces innerHTML on every input, destroying the browser's undo history.
@@ -352,17 +353,28 @@ export class RichEditor extends FieldElement {
    * we read the text back, re-render with highlighting, and restore the cursor.
    */
   private handleInput(): void {
-    if (this.disabled) return;
+    if (this.disabled || this._composing) return;
 
     const text = getTextFromEditableDiv(this.editableDiv);
+    const currentValue = this.value || '';
+
+    if (text === currentValue) return;
+
     const caretPos = getCaretOffset(this.editableDiv);
 
-    if (text !== (this.value || '')) {
-      this.undoStack.push({ value: this.value || '', caret: caretPos });
-      this.redoStack = [];
-    }
+    this.undoStack.push({ value: currentValue, caret: caretPos });
+    this.redoStack = [];
 
     this.applyValue(text, Math.min(caretPos, text.length));
+  }
+
+  private handleCompositionStart(): void {
+    this._composing = true;
+  }
+
+  private handleCompositionEnd(): void {
+    this._composing = false;
+    this.handleInput();
   }
 
   /** Applies a new value, re-renders, restores caret, and fires events. */
@@ -653,6 +665,8 @@ export class RichEditor extends FieldElement {
             data-placeholder=${this.placeholder}
             @input=${this.handleInput}
             @beforeinput=${this.handleBeforeInput}
+            @compositionstart=${this.handleCompositionStart}
+            @compositionend=${this.handleCompositionEnd}
             @keydown=${this.handleKeydown}
             @keyup=${this.handleKeyUp}
             @click=${this.handleClick}

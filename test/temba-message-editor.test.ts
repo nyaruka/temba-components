@@ -256,6 +256,57 @@ describe('temba-message-editor', () => {
     expect(clickCalled).to.be.true;
   });
 
+  it('preserves composed characters during IME/dead-key input', async () => {
+    const editor = (await getComponent(
+      'temba-message-editor'
+    )) as MessageEditor;
+
+    const richEdit = editor.shadowRoot.querySelector(
+      'temba-rich-edit'
+    ) as any;
+    expect(richEdit).to.not.be.null;
+    const editableDiv = richEdit.shadowRoot.querySelector(
+      '.highlight-editor'
+    ) as HTMLDivElement;
+    expect(editableDiv).to.not.be.null;
+
+    // Type "men" normally
+    editableDiv.textContent = 'men';
+    editableDiv.dispatchEvent(new Event('input', { bubbles: true }));
+    await editor.updateComplete;
+    expect(richEdit.value).to.equal('men');
+
+    let changeEvents = 0;
+    richEdit.addEventListener('change', () => {
+      changeEvents += 1;
+    });
+
+    // Simulate dead-key composition: user presses ´ then u to get ú
+    editableDiv.dispatchEvent(
+      new CompositionEvent('compositionstart', { bubbles: true })
+    );
+
+    // During composition, the browser inserts the dead key character
+    editableDiv.textContent = 'men´';
+    editableDiv.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Value should NOT update during composition — the re-render would
+    // destroy the in-progress composition and produce a bare accent
+    expect(richEdit.value).to.equal('men');
+
+    // Browser replaces the dead key + vowel with the composed character
+    editableDiv.textContent = 'menú';
+    editableDiv.dispatchEvent(
+      new CompositionEvent('compositionend', { bubbles: true })
+    );
+    editableDiv.dispatchEvent(new Event('input', { bubbles: true }));
+    await editor.updateComplete;
+
+    // Now the value should reflect the final composed text
+    expect(richEdit.value).to.equal('menú');
+    expect(changeEvents).to.equal(1);
+  });
+
   it('initializes with correct height for long text content', async () => {
     const longText =
       'This is a very long text that should span multiple lines and cause the autogrow functionality to kick in and expand the textarea to accommodate all the content. This text should be long enough to trigger the autogrow behavior during initialization.';
