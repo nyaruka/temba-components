@@ -291,6 +291,26 @@ export const createRulesArrayConfig = (
   maintainEmptyItem: true,
   isEmptyItem: isEmptyRuleItem,
   onItemChange: createRuleItemChangeHandler(),
+  createEmptyItem: (items: any[]) => {
+    // Default to the last rule's operator that has at least one operand,
+    // falling back to the first operator option
+    const lastWithOperand = [...items]
+      .reverse()
+      .find((item) => {
+        const opValue = getOperatorValue(item.operator);
+        const config = opValue ? getOperatorConfig(opValue) : undefined;
+        return config && config.operands >= 1;
+      });
+
+    const opValue = lastWithOperand
+      ? getOperatorValue(lastWithOperand.operator)
+      : null;
+    const option = opValue
+      ? operatorOptions.find((o: any) => o.value === opValue)
+      : operatorOptions[0];
+
+    return option ? { operator: [{ ...option }] } : {};
+  },
   itemConfig: {
     ...createRulesItemConfig(),
     operator: {
