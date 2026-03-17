@@ -130,6 +130,31 @@ describe('temba-compose chatbox', () => {
     await updateComponent(compose, getValidText_Long_WithUrl());
     await assertScreenshot('compose/wraps-text-and-url', getClip(compose));
   });
+
+  it('keeps template variable session completion disabled by default', async () => {
+    const compose: Compose = await getCompose({
+      templates: true
+    });
+
+    const templateEditor = compose.shadowRoot.querySelector(
+      'temba-template-editor'
+    ) as HTMLElement;
+    expect(templateEditor).to.not.be.null;
+    expect(templateEditor.hasAttribute('session')).to.be.false;
+  });
+
+  it('enables template variable session completion with template-session attribute', async () => {
+    const compose: Compose = await getCompose({
+      templates: true,
+      'template-session': true
+    });
+
+    const templateEditor = compose.shadowRoot.querySelector(
+      'temba-template-editor'
+    ) as HTMLElement;
+    expect(templateEditor).to.not.be.null;
+    expect(templateEditor.hasAttribute('session')).to.be.true;
+  });
 });
 
 describe('temba-compose attachments', () => {

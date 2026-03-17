@@ -153,6 +153,9 @@ export class Compose extends FieldElement {
   @property({ type: Boolean })
   templates: boolean;
 
+  @property({ type: Boolean, attribute: 'template-session' })
+  templateSession = false;
+
   @property({ type: String, attribute: 'template-warning' })
   templateWarning: string;
 
@@ -740,6 +743,7 @@ export class Compose extends FieldElement {
                   >
                     <temba-template-editor
                       class="templates"
+                      ?session=${this.templateSession}
                       @temba-context-changed=${this.handleTemplateChanged}
                       @temba-content-changed=${this
                         .handleTemplateVariablesChanged}

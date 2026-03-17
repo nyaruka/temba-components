@@ -6,7 +6,8 @@ import {
   SelectFieldConfig,
   CheckboxFieldConfig,
   KeyValueFieldConfig,
-  MessageEditorFieldConfig
+  MessageEditorFieldConfig,
+  TemplateEditorFieldConfig
 } from '../src/flow/types';
 import { assertScreenshot, getClip } from './utils.test';
 
@@ -401,6 +402,33 @@ describe('FieldRenderer', () => {
         'field-renderer/message-editor-with-label',
         getClip(container as HTMLElement)
       );
+    });
+  });
+
+  describe('template-editor fields', () => {
+    it('should enable session completion for template variables', async () => {
+      const config: TemplateEditorFieldConfig = {
+        type: 'template-editor',
+        endpoint: '/api/internal/templates.json'
+      };
+
+      const template = FieldRenderer.renderField(
+        'template',
+        config,
+        { uuid: 'template-123' },
+        {
+          additionalData: { template_variables: ['@contact.name'] },
+          onChange: () => {}
+        }
+      );
+
+      const container = await fixture(html`<div>${template}</div>`);
+      const templateEditor = container.querySelector(
+        'temba-template-editor'
+      ) as HTMLElement;
+
+      expect(templateEditor).to.exist;
+      expect(templateEditor.hasAttribute('session')).to.be.true;
     });
   });
 

@@ -51,4 +51,34 @@ describe('TemplateEditor', () => {
       'This template currently has no approved translations.'
     );
   });
+
+  it('passes session mode to variable completions', async () => {
+    const templateEditor = await createTemplateEditor(html`
+      <temba-template-editor session></temba-template-editor>
+    `);
+
+    templateEditor.translation = {
+      locale: 'en',
+      status: 'approved',
+      channel: { uuid: 'chan-1', name: 'WhatsApp' },
+      variables: [{ type: 'text' }],
+      components: [
+        {
+          name: 'body',
+          type: 'body',
+          content: 'Hi {{1}}',
+          variables: { '1': 0 }
+        }
+      ]
+    } as any;
+    templateEditor.currentVariables = [''];
+
+    await templateEditor.updateComplete;
+
+    const variableInput = templateEditor.shadowRoot.querySelector(
+      'temba-completion.variable'
+    ) as HTMLElement;
+    expect(variableInput).to.exist;
+    expect(variableInput.hasAttribute('session')).to.be.true;
+  });
 });

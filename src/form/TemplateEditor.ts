@@ -172,6 +172,9 @@ export class TemplateEditor extends FieldElement {
   @property({ type: Boolean })
   translating: boolean;
 
+  @property({ type: Boolean })
+  session = false;
+
   @property({ type: String, attribute: 'template-warning' })
   templateWarning: string;
 
@@ -302,6 +305,7 @@ export class TemplateEditor extends FieldElement {
         return html`<temba-completion
           class="variable"
           type="text"
+          ?session=${this.session}
           value=${variableIndex < currVariables.length
             ? currVariables[variableIndex]
             : null}
@@ -352,6 +356,7 @@ export class TemplateEditor extends FieldElement {
                   >
                     <temba-completion
                       style="flex-grow:1; margin-right:1em;"
+                      ?session=${this.session}
                       prefix="${prefix}"
                       index=${variableIndex}
                       value=${value}
