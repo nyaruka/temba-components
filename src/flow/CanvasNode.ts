@@ -392,6 +392,16 @@ export class CanvasNode extends RapidElement {
         pointer-events: all;
       }
 
+      .exit::after {
+        content: '';
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        right: -6px;
+        bottom: -6px;
+        border-radius: 50%;
+      }
+
       .exit.connected {
         background-color: #fff;
         pointer-events: all;
