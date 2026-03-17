@@ -631,7 +631,7 @@ export class CanvasNode extends RapidElement {
       }
 
       const ele = this.parentElement;
-      if (ele) {
+      if (ele && this.ui) {
         const rect = ele.getBoundingClientRect();
 
         getStore()

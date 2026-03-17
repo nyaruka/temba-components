@@ -475,15 +475,26 @@ export const zustand = createStore<AppState>()(
       updateCanvasPositions: (positions: CanvasPositions) => {
         set((state: AppState) => {
           for (const uuid in positions) {
-            // todo: add nodes that are created and then moved, for now ignore
             if (state.flowDefinition._ui.nodes[uuid]) {
               state.flowDefinition._ui.nodes[uuid].position = positions[uuid];
-            }
-
-            // otherwise, it might be a sticky
-            else if (state.flowDefinition._ui.stickies[uuid]) {
+            } else if (state.flowDefinition._ui.stickies[uuid]) {
               state.flowDefinition._ui.stickies[uuid].position =
                 positions[uuid];
+            } else {
+              // Node exists in definition but not in _ui (e.g. stale _ui after
+              // UUID regeneration). Create a minimal entry so the position
+              // is persisted.
+              const nodeDef = state.flowDefinition.nodes.find(
+                (n) => n.uuid === uuid
+              );
+              if (nodeDef) {
+                state.flowDefinition._ui.nodes[uuid] = {
+                  position: positions[uuid],
+                  type: nodeDef.router?.wait
+                    ? 'wait_for_response'
+                    : 'execute_actions'
+                };
+              }
             }
           }
 
