@@ -39,6 +39,7 @@ interface ConnectionInfo {
   svgEl: SVGSVGElement;
   pathEl: SVGPathElement;
   arrowEl: SVGPolygonElement;
+  hitAreaEl: SVGCircleElement;
 }
 
 interface DragState {
@@ -608,6 +609,7 @@ export class Plumber {
     svgEl: SVGSVGElement;
     pathEl: SVGPathElement;
     arrowEl: SVGPolygonElement;
+    hitAreaEl: SVGCircleElement;
   } {
     const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svgEl.classList.add('plumb-connector');
@@ -637,7 +639,18 @@ export class Plumber {
     arrowEl.style.pointerEvents = 'fill';
     arrowEl.style.cursor = 'pointer';
 
+    // Invisible larger hit area behind the arrow for easier grabbing
+    const hitAreaEl = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'circle'
+    );
+    hitAreaEl.setAttribute('r', '18');
+    hitAreaEl.setAttribute('fill', 'transparent');
+    hitAreaEl.style.pointerEvents = 'fill';
+    hitAreaEl.style.cursor = 'pointer';
+
     svgEl.appendChild(pathEl);
+    svgEl.appendChild(hitAreaEl);
     svgEl.appendChild(arrowEl);
 
     // Hover support
@@ -647,8 +660,10 @@ export class Plumber {
     pathEl.addEventListener('mouseleave', removeHover);
     arrowEl.addEventListener('mouseenter', addHover);
     arrowEl.addEventListener('mouseleave', removeHover);
+    hitAreaEl.addEventListener('mouseenter', addHover);
+    hitAreaEl.addEventListener('mouseleave', removeHover);
 
-    return { svgEl, pathEl, arrowEl };
+    return { svgEl, pathEl, arrowEl, hitAreaEl };
   }
 
   private updateSVGPath(
@@ -659,7 +674,8 @@ export class Plumber {
     targetX: number,
     targetY: number,
     targetFace: TargetFace = 'top',
-    jogYOffset = 0
+    jogYOffset = 0,
+    hitAreaEl?: SVGCircleElement
   ) {
     const aw = ARROW_HALF_WIDTH;
     const al = ARROW_LENGTH;
@@ -714,6 +730,22 @@ export class Plumber {
         },${targetY + aw}`
       );
     }
+
+    // Position hit area circle at arrow center
+    if (hitAreaEl) {
+      const halfAl = al / 2;
+      let cx = targetX;
+      let cy = targetY;
+      if (targetFace === 'top') {
+        cy = targetY - halfAl;
+      } else if (targetFace === 'left') {
+        cx = targetX - halfAl;
+      } else {
+        cx = targetX + halfAl;
+      }
+      hitAreaEl.setAttribute('cx', String(cx));
+      hitAreaEl.setAttribute('cy', String(cy));
+    }
   }
 
   private createConnectionSVG(
@@ -724,7 +756,7 @@ export class Plumber {
     const endpoints = this.getConnectionEndpoints(exitId, toId, scope);
     if (!endpoints) return false;
 
-    const { svgEl, pathEl, arrowEl } = this.createSVGElement();
+    const { svgEl, pathEl, arrowEl, hitAreaEl } = this.createSVGElement();
     this.updateSVGPath(
       pathEl,
       arrowEl,
@@ -733,7 +765,8 @@ export class Plumber {
       endpoints.targetX,
       endpoints.targetY,
       endpoints.targetFace,
-      endpoints.jogYOffset
+      endpoints.jogYOffset,
+      hitAreaEl
     );
     this.canvas.appendChild(svgEl);
 
@@ -743,7 +776,8 @@ export class Plumber {
       toId,
       svgEl,
       pathEl,
-      arrowEl
+      arrowEl,
+      hitAreaEl
     });
 
     // Make arrowhead draggable for picking up existing connections
@@ -785,6 +819,8 @@ export class Plumber {
     };
     arrowEl.addEventListener('mousedown', onArrowDown);
     arrowEl.addEventListener('touchstart', onArrowDown, { passive: false });
+    hitAreaEl.addEventListener('mousedown', onArrowDown);
+    hitAreaEl.addEventListener('touchstart', onArrowDown, { passive: false });
     pathEl.addEventListener('mousedown', onArrowDown);
     pathEl.addEventListener('touchstart', onArrowDown, { passive: false });
 
@@ -828,7 +864,8 @@ export class Plumber {
       endpoints.targetX,
       endpoints.targetY,
       endpoints.targetFace,
-      endpoints.jogYOffset
+      endpoints.jogYOffset,
+      conn.hitAreaEl
     );
     this.updateOverlayPosition(exitId);
   }
@@ -1262,11 +1299,12 @@ export class Plumber {
       if (overlay) overlay.style.display = 'none';
     }
 
-    const { svgEl, pathEl, arrowEl } = this.createSVGElement();
+    const { svgEl, pathEl, arrowEl, hitAreaEl } = this.createSVGElement();
     svgEl.classList.add('dragging');
     // Ensure the drag SVG never intercepts mouse events (e.g. hover detection on nodes)
     pathEl.style.pointerEvents = 'none';
     arrowEl.style.pointerEvents = 'none';
+    hitAreaEl.style.pointerEvents = 'none';
     this.canvas.appendChild(svgEl);
 
     // Calculate source point
