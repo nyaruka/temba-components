@@ -224,7 +224,7 @@ describe('temba-modax', () => {
 
     // Close and reopen with a different endpoint (no headers)
     await clickPrimary(modax);
-    modax.endpoint = '/test-assets/modax/hello.html';
+    modax.endpoint = '/test-assets/modax/form.html';
     await open(modax);
     expect(modax.style.getPropertyValue('--header-bg')).to.equal(
       ''
