@@ -480,21 +480,6 @@ export const zustand = createStore<AppState>()(
             } else if (state.flowDefinition._ui.stickies[uuid]) {
               state.flowDefinition._ui.stickies[uuid].position =
                 positions[uuid];
-            } else {
-              // Node exists in definition but not in _ui (e.g. stale _ui after
-              // UUID regeneration). Create a minimal entry so the position
-              // is persisted.
-              const nodeDef = state.flowDefinition.nodes.find(
-                (n) => n.uuid === uuid
-              );
-              if (nodeDef) {
-                state.flowDefinition._ui.nodes[uuid] = {
-                  position: positions[uuid],
-                  type: nodeDef.router?.wait
-                    ? 'wait_for_response'
-                    : 'execute_actions'
-                };
-              }
             }
           }
 

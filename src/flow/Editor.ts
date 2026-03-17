@@ -6067,12 +6067,13 @@ export class Editor extends RapidElement {
     const stickies = this.definition?._ui?.stickies || {};
 
     // Detect flows with missing UI metadata (e.g. stale _ui after UUID
-    // regeneration during export/import)
+    // regeneration during export/import). Flag as corrupted if any node
+    // is missing a _ui entry, not just when all are.
     const hasCorruptedUI =
       this.definition &&
       this.definition.nodes.length > 0 &&
-      !this.definition.nodes.some(
-        (n) => this.definition._ui?.nodes[n.uuid]
+      this.definition.nodes.some(
+        (n) => !this.definition._ui?.nodes[n.uuid]
       );
 
     return html`${style} ${this.renderIssuesWindow()}
