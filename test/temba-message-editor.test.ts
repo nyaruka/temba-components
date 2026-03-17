@@ -276,6 +276,11 @@ describe('temba-message-editor', () => {
     await editor.updateComplete;
     expect(richEdit.value).to.equal('men');
 
+    let changeEvents = 0;
+    richEdit.addEventListener('change', () => {
+      changeEvents += 1;
+    });
+
     // Simulate dead-key composition: user presses ´ then u to get ú
     editableDiv.dispatchEvent(
       new CompositionEvent('compositionstart', { bubbles: true })
@@ -294,9 +299,12 @@ describe('temba-message-editor', () => {
     editableDiv.dispatchEvent(
       new CompositionEvent('compositionend', { bubbles: true })
     );
+    editableDiv.dispatchEvent(new Event('input', { bubbles: true }));
+    await editor.updateComplete;
 
     // Now the value should reflect the final composed text
     expect(richEdit.value).to.equal('menú');
+    expect(changeEvents).to.equal(1);
   });
 
   it('initializes with correct height for long text content', async () => {

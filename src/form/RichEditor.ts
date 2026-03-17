@@ -356,12 +356,14 @@ export class RichEditor extends FieldElement {
     if (this.disabled || this._composing) return;
 
     const text = getTextFromEditableDiv(this.editableDiv);
+    const currentValue = this.value || '';
+
+    if (text === currentValue) return;
+
     const caretPos = getCaretOffset(this.editableDiv);
 
-    if (text !== (this.value || '')) {
-      this.undoStack.push({ value: this.value || '', caret: caretPos });
-      this.redoStack = [];
-    }
+    this.undoStack.push({ value: currentValue, caret: caretPos });
+    this.redoStack = [];
 
     this.applyValue(text, Math.min(caretPos, text.length));
   }
