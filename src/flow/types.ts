@@ -242,6 +242,7 @@ export interface ArrayFieldConfig extends BaseFieldConfig {
     allItems: any[]
   ) => any[];
   isEmptyItem?: (item: any) => boolean;
+  createEmptyItem?: (items: any[]) => any;
 }
 
 export interface CheckboxFieldConfig extends BaseFieldConfig {

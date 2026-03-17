@@ -385,6 +385,7 @@ export class FieldRenderer {
         ?maintainEmptyItem="${config.maintainEmptyItem !== false}"
         .onItemChange="${config.onItemChange}"
         .isEmptyItemFn="${config.isEmptyItem}"
+        .createEmptyItemFn="${config.createEmptyItem}"
         class="${extraClasses}"
         style="${style}"
         @change="${onChange || (() => {})}"

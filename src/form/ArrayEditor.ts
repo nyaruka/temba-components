@@ -25,6 +25,9 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   @property({ type: Function })
   isEmptyItemFn?: (item: any) => boolean;
 
+  @property({ type: Function })
+  createEmptyItemFn?: (items: any[]) => any;
+
   @property({ type: Boolean })
   sortable = false;
 
@@ -331,6 +334,9 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   }
 
   createEmptyItem(): ListItem {
+    if (this.createEmptyItemFn) {
+      return this.createEmptyItemFn(this._items);
+    }
     return {};
   }
 
@@ -339,6 +345,8 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     fieldName: string,
     newValue: any
   ) {
+    // Use displayItems so the empty row's pre-filled data (e.g. operator) is preserved
+    const sourceItems = this.displayItems;
     let updatedItems: any[];
 
     if (this.onItemChange) {
@@ -346,10 +354,10 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         itemIndex,
         fieldName,
         newValue,
-        this._items
+        sourceItems
       );
     } else {
-      updatedItems = [...this._items];
+      updatedItems = [...sourceItems];
       updatedItems[itemIndex] = {
         ...updatedItems[itemIndex],
         [fieldName]: newValue
@@ -450,11 +458,10 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   }
 
   private computeFieldValue(
-    itemIndex: number,
+    item: ListItem,
     fieldName: string,
     config: FieldConfig
   ): any {
-    const item = this._items[itemIndex] || {};
     const currentValue = item[fieldName];
 
     if (config.computeValue) {
@@ -474,11 +481,12 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   }
 
   private renderArrayField(
+    item: ListItem,
     itemIndex: number,
     fieldName: string,
     config: FieldConfig
   ): TemplateResult {
-    const computedValue = this.computeFieldValue(itemIndex, fieldName, config);
+    const computedValue = this.computeFieldValue(item, fieldName, config);
 
     // Extract flavor from select config if available
     const flavor =
@@ -539,8 +547,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       let isVisible = true;
       if (config.conditions?.visible) {
         try {
-          const currentItem = this._items[index] || {};
-          isVisible = config.conditions.visible(currentItem);
+          isVisible = config.conditions.visible(item);
         } catch (error) {
           console.error(`Error checking visibility for ${fieldName}:`, error);
         }
@@ -561,7 +568,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
               ? 'flex:none'
               : 'flex:1'}"
           >
-            ${this.renderArrayField(index, fieldName, config)}
+            ${this.renderArrayField(item, index, fieldName, config)}
           </div>
         `);
       }
