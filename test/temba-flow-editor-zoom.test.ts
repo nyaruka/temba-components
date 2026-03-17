@@ -668,7 +668,7 @@ describe('Editor Zoom', () => {
       const changes = new Map();
       changes.set('definition', undefined);
       (editor as any).definition = { uuid: 'flow-ghi', nodes: [] };
-      (editor as any).updated(changes);
+      (editor as any).willUpdate(changes);
 
       expect((editor as any).zoom).to.equal(0.65);
       expect((editor as any).plumber.zoom).to.equal(0.65);
@@ -683,7 +683,7 @@ describe('Editor Zoom', () => {
       const changes = new Map();
       changes.set('definition', undefined);
       (editor as any).definition = { uuid: 'flow-jkl', nodes: [] };
-      (editor as any).updated(changes);
+      (editor as any).willUpdate(changes);
 
       expect((editor as any).zoom).to.equal(1.0);
     });
@@ -701,7 +701,7 @@ describe('Editor Zoom', () => {
       const changes = new Map();
       changes.set('definition', undefined);
       (editor as any).definition = { uuid: 'flow-mno', nodes: [] };
-      (editor as any).updated(changes);
+      (editor as any).willUpdate(changes);
 
       // zoom should remain at default since 'bad' is not a number
       expect((editor as any).zoom).to.equal(1.0);

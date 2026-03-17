@@ -133,6 +133,7 @@ interface LocalizationUpdate {
 }
 
 const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
+const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 
 // How long the pending-changes auto-save countdown runs (in ms).
 // Used in both the CSS animation and the JS setTimeout.
@@ -166,7 +167,7 @@ class PendingChangesTimer {
   ) {}
 
   /** Show the card and start (or restart) the countdown timer. */
-  start(): void {
+  start(requestRender = true): void {
     this.clearTimer();
     this.resetCount++;
     this.unsaved = true;
@@ -178,7 +179,9 @@ class PendingChangesTimer {
         this.onExpire();
       }
     }, this.delay);
-    this.host.requestUpdate();
+    if (requestRender) {
+      this.host.requestUpdate();
+    }
   }
 
   /** Hide the card and cancel the timer without calling any callback. */
@@ -252,7 +255,7 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.getCurrentActivity())
   private activityData!: any;
 
-  @fromStore(zustand, (state: AppState) => state.flowInfo?.issues || [])
+  @fromStore(zustand, (state: AppState) => state.flowInfo?.issues ?? EMPTY_FLOW_ISSUES)
   private flowIssues!: FlowIssue[];
 
   // Drag state
@@ -1358,6 +1361,7 @@ export class Editor extends RapidElement {
   ): void {
     super.firstUpdated(changes);
     this.plumber = new Plumber(this.querySelector('#canvas'), this);
+    this.plumber.zoom = this.zoom;
     this.setupGlobalEventListeners();
     getStore()?.getState().setFlushSave(this.flushSave);
 
@@ -1370,9 +1374,16 @@ export class Editor extends RapidElement {
     this.loupeEl = this.querySelector('#loupe') as HTMLElement;
     this.loupeContentEl = this.querySelector('#loupe-content') as HTMLElement;
     this.initLoupe();
-    if (changes.has('flow')) {
-      getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
-      this.fetchRevisions();
+    if (changes.has('flow') && this.flow) {
+      // Defer revision fetch so reactive state changes in fetchRevisions()
+      // don't run inside firstUpdated().
+      setTimeout(() => {
+        if (!this.isConnected || !this.flow) {
+          return;
+        }
+        getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+        this.fetchRevisions();
+      }, 0);
     }
 
     this.plumber.on('connection:drag', (connection: any) => {
@@ -1503,6 +1514,9 @@ export class Editor extends RapidElement {
       if (this.translationFilters.categories !== normalizedFilters.categories) {
         this.translationFilters = normalizedFilters;
       }
+
+      // Pre-sync zoom state so we don't mutate reactive state in updated().
+      this.restoreInitialZoomFromSettings();
     }
 
     if (changes.has('dirtyDate')) {
@@ -1515,13 +1529,29 @@ export class Editor extends RapidElement {
         } else if (this.pendingTimer.unsaved) {
           // Additional change while the pending-changes card is showing —
           // reset the timer so all accumulated changes can be discarded.
-          this.pendingTimer.start();
+          this.pendingTimer.start(false);
           this._suppressDirtySave = true;
         } else {
           this.isSaving = true;
         }
       }
     }
+  }
+
+  private restoreInitialZoomFromSettings(): void {
+    if (this.zoomInitialized || !this.definition) {
+      return;
+    }
+
+    const savedZoom = this.getFlowSetting<number>('zoom');
+    if (typeof savedZoom === 'number' && Number.isFinite(savedZoom)) {
+      const clamped = Math.max(0.3, Math.min(1.0, Math.round(savedZoom * 100) / 100));
+      this.zoom = clamped;
+      if (this.plumber) {
+        this.plumber.zoom = clamped;
+      }
+    }
+    this.zoomInitialized = true;
   }
 
   protected updated(
@@ -1541,20 +1571,6 @@ export class Editor extends RapidElement {
       // Start fetching activity data when definition is loaded
       if (this.definition?.uuid) {
         this.startActivityFetching();
-      }
-
-      // Restore saved zoom level on initial load
-      if (!this.zoomInitialized && this.definition) {
-        const savedZoom = this.getFlowSetting<number>('zoom');
-        if (typeof savedZoom === 'number' && Number.isFinite(savedZoom)) {
-          const clamped = Math.max(
-            0.3,
-            Math.min(1.0, Math.round(savedZoom * 100) / 100)
-          );
-          this.zoom = clamped;
-          this.plumber.zoom = clamped;
-        }
-        this.zoomInitialized = true;
       }
     }
 
