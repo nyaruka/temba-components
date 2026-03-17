@@ -3,7 +3,12 @@ import { useFakeTimers } from 'sinon';
 import { Button } from '../src/display/Button';
 import { Modax } from '../src/layout/Modax';
 import { CustomEventType } from '../src/interfaces';
-import { assertScreenshot, getClip, mockPOST } from './utils.test';
+import {
+  assertScreenshot,
+  getClip,
+  mockGET,
+  mockPOST
+} from './utils.test';
 
 let clock: any;
 
@@ -172,5 +177,60 @@ describe('temba-modax', () => {
     await clickPrimary(modax);
     await clock.runAllAsync();
     await hideTest;
+  });
+
+  it('applies header colors from response headers', async () => {
+    mockGET(
+      /\/test-assets\/modax\/hello\.html/,
+      '<div>Colored Header</div>',
+      {
+        'X-Temba-Header-Bg': '#8e5ea7',
+        'X-Temba-Header-Text': '#fff'
+      }
+    );
+
+    const modax: Modax = await fixture(
+      getModaxHTML('/test-assets/modax/hello.html')
+    );
+
+    await open(modax);
+    expect(modax.style.getPropertyValue('--header-bg')).to.equal(
+      '#8e5ea7'
+    );
+    expect(
+      modax.style.getPropertyValue('--header-text')
+    ).to.equal('#fff');
+  });
+
+  it('clears header colors when headers are absent', async () => {
+    // First load with custom headers
+    mockGET(
+      /\/colored-header\.html/,
+      '<div>Colored</div>',
+      {
+        'X-Temba-Header-Bg': '#8e5ea7',
+        'X-Temba-Header-Text': '#fff'
+      }
+    );
+
+    const modax: Modax = await fixture(
+      getModaxHTML('/colored-header.html')
+    );
+
+    await open(modax);
+    expect(modax.style.getPropertyValue('--header-bg')).to.equal(
+      '#8e5ea7'
+    );
+
+    // Close and reopen with a different endpoint (no headers)
+    await clickPrimary(modax);
+    modax.endpoint = '/test-assets/modax/hello.html';
+    await open(modax);
+    expect(modax.style.getPropertyValue('--header-bg')).to.equal(
+      ''
+    );
+    expect(
+      modax.style.getPropertyValue('--header-text')
+    ).to.equal('');
   });
 });

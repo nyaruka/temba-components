@@ -31,7 +31,11 @@ export class ExpressionHighlight extends LitElement {
     this.observer = new MutationObserver(() => {
       this.text = this.textContent || '';
     });
-    this.observer.observe(this, { childList: true, characterData: true, subtree: true });
+    this.observer.observe(this, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
   }
 
   disconnectedCallback(): void {
