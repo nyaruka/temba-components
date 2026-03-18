@@ -40,6 +40,8 @@ export class RichEditor extends FieldElement {
 
       :host {
         display: block;
+        min-width: 0;
+        contain: inline-size;
       }
 
       .comp-container {
@@ -60,6 +62,16 @@ export class RichEditor extends FieldElement {
         border: 1px solid var(--color-widget-border);
         transition: all ease-in-out var(--transition-speed);
         box-shadow: var(--widget-box-shadow);
+      }
+
+      .input-container.xsmall {
+        --temba-textinput-padding: 6px 8px;
+        --temba-textinput-font-size: 13px;
+      }
+
+      .input-container.small {
+        --temba-textinput-padding: 6px 8px;
+        --temba-textinput-font-size: 14px;
       }
 
       .input-container:focus-within {
@@ -165,6 +177,9 @@ export class RichEditor extends FieldElement {
 
   @property({ type: Number })
   maxLength: number;
+
+  @property({ type: String })
+  flavor = 'default';
 
   @property({ type: Boolean })
   session: boolean;
@@ -654,7 +669,7 @@ export class RichEditor extends FieldElement {
       <div class="comp-container">
         <div id="anchor" style=${styleMap(anchorStyles)}></div>
         <div
-          class="input-container"
+          class="input-container ${this.flavor !== 'default' ? this.flavor : ''}"
           style=${this.minHeight
             ? `--textarea-min-height: ${this.minHeight}px`
             : ''}

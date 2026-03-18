@@ -132,21 +132,21 @@ export const OPERATORS: OperatorConfig[] = [
     name: 'has state',
     operands: 0,
     categoryName: 'Has State',
-    filter: 'HAS_LOCATIONS'
+    filter: 'locations'
   },
   {
     type: 'has_district',
     name: 'has district',
     operands: 1,
     categoryName: 'Has District',
-    filter: 'HAS_LOCATIONS'
+    filter: 'locations'
   },
   {
     type: 'has_ward',
     name: 'has ward',
     operands: 2,
     categoryName: 'Has Ward',
-    filter: 'HAS_LOCATIONS'
+    filter: 'locations'
   },
 
   // Hidden/system operators
@@ -184,10 +184,17 @@ export const OPERATORS: OperatorConfig[] = [
 ];
 
 // Get operators suitable for wait_for_response rules
-export const getWaitForResponseOperators = (): OperatorConfig[] => {
-  return OPERATORS.filter(
-    (op) => op.visibility !== 'hidden' && !op.filter // For now, exclude location operators unless we support feature detection
-  );
+// When features are provided, includes operators whose filter matches an enabled feature
+export const getWaitForResponseOperators = (
+  features?: string[]
+): OperatorConfig[] => {
+  return OPERATORS.filter((op) => {
+    if (op.visibility === 'hidden') return false;
+    if (op.filter) {
+      return features ? features.includes(op.filter) : false;
+    }
+    return true;
+  });
 };
 
 // Number operator types used for digit-based routing

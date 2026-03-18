@@ -22,7 +22,8 @@ export type FlowType = (typeof FlowTypes)[keyof typeof FlowTypes];
  */
 export const Features = {
   AI: 'ai',
-  AIRTIME: 'airtime'
+  AIRTIME: 'airtime',
+  LOCATIONS: 'locations'
 } as const;
 
 export type Feature = (typeof Features)[keyof typeof Features];
@@ -185,7 +186,7 @@ export interface BaseFieldConfig {
 
 export interface TextFieldConfig extends BaseFieldConfig {
   type: 'text';
-  placeholder?: string;
+  placeholder?: string | ((formData: Record<string, any>) => string);
   flavor?: 'xsmall' | 'small' | 'large';
 }
 
