@@ -304,12 +304,15 @@ export const zustand = createStore<AppState>()(
         reclassifyTerminalNodes(data.definition);
         reclassifyVoiceWaitNodes(data.definition);
         const issueMaps = buildIssueMaps(data.info?.issues);
+        const flowLang = data.definition.language;
         set({
           flowInfo: data.info,
           flowDefinition: data.definition,
           viewingRevision,
           issuesByNode: issueMaps.byNode,
-          issuesByAction: issueMaps.byAction
+          issuesByAction: issueMaps.byAction,
+          languageCode: flowLang,
+          isTranslating: false
         });
       },
 
