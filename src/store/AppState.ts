@@ -936,9 +936,14 @@ export const zustand = createStore<AppState>()(
             categories: false
           };
 
+          const newCategories = !!filters.categories;
+          if (currentFilters.categories === newCategories) {
+            return;
+          }
+
           state.flowDefinition._ui.translation_filters = {
             ...currentFilters,
-            categories: !!filters.categories
+            categories: newCategories
           };
 
           state.dirtyDate = new Date();

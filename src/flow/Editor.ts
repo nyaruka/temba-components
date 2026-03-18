@@ -965,6 +965,7 @@ export class Editor extends RapidElement {
         gap: 6px;
         background: transparent;
         border: none;
+        outline: none;
         color: #6b7280;
         font-size: 12px;
         font-weight: 600;
@@ -978,10 +979,6 @@ export class Editor extends RapidElement {
         color: #6b7280;
       }
 
-      .translation-settings-toggle:focus-visible {
-        outline: 2px solid #94a3b8;
-        outline-offset: 2px;
-      }
 
       .translation-settings-arrow {
         width: 8px;
@@ -5969,9 +5966,8 @@ export class Editor extends RapidElement {
                   .animated=${false}
                 ></temba-progress>
               </div>
-              <button
+              <div
                 class="translation-settings-toggle"
-                type="button"
                 @click=${this.toggleTranslationSettings}
                 aria-expanded="${this.translationSettingsExpanded}"
                 aria-controls="${settingsPanelId}"
@@ -5982,7 +5978,7 @@ export class Editor extends RapidElement {
                     ? 'expanded'
                     : ''}"
                 ></span>
-              </button>
+              </div>
             </div>
             ${this.translationSettingsExpanded
               ? html`<div

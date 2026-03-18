@@ -109,6 +109,8 @@ export class Checkbox extends FieldElement {
   @property({ type: String })
   animateChange = 'pulse';
 
+  private initialized = false;
+
   public connectedCallback() {
     super.connectedCallback();
   }
@@ -138,8 +140,13 @@ export class Checkbox extends FieldElement {
       } else {
         this.internals.setFormValue(undefined);
       }
-      this.fireEvent('change');
+      // Only fire change after the initial render
+      if (this.initialized) {
+        this.fireEvent('change');
+      }
     }
+
+    this.initialized = true;
   }
 
   public serializeValue(value: any): string {
