@@ -509,6 +509,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         showLabel: false, // ArrayEditor doesn't show labels for individual fields
         flavor: flavor,
         extraClasses: 'form-control',
+        formData: item,
         onChange: (e: Event) => {
           let value: any;
           const target = e.target as any;
@@ -566,7 +567,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
             data-field-name="${fieldName}"
             style="${config.width || config.maxWidth || config.type === 'select'
               ? 'flex:none'
-              : 'flex:1'}"
+              : 'flex:1;min-width:0'}"
           >
             ${this.renderArrayField(item, index, fieldName, config)}
           </div>

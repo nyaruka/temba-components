@@ -184,6 +184,8 @@ export interface Activity {
 }
 
 export interface AppState {
+  features: string[];
+
   flowDefinition: FlowDefinition;
   flowInfo: FlowInfo;
   issuesByNode: Map<string, FlowIssue[]>;
@@ -249,6 +251,7 @@ export interface AppState {
     actionUuid: string,
     localizationData: Record<string, any>
   ): void;
+  setFeatures: (features: string[]) => void;
   clearFlowData: () => void;
   setTranslationFilters: (filters: { categories: boolean }) => void;
   markAutoTranslated: (
@@ -261,6 +264,7 @@ export interface AppState {
 export const zustand = createStore<AppState>()(
   subscribeWithSelector(
     immer((set, get) => ({
+      features: [] as string[],
       languageNames: {},
       canvasSize: { width: 0, height: 0 },
       languageCode: '',
@@ -390,6 +394,10 @@ export const zustand = createStore<AppState>()(
         const languageCode = state.languageCode;
         const languageNames = state.languageNames;
         return { name: languageNames[languageCode], code: languageCode };
+      },
+
+      setFeatures: (features: string[]) => {
+        set({ features });
       },
 
       clearFlowData: () => {

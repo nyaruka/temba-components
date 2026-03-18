@@ -185,6 +185,62 @@ describe('wait_for_response node config', () => {
         'no-timeout'
       );
     });
+
+    it('renders long argument values without overflow', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-wait-node-5',
+          actions: [],
+          router: {
+            type: 'switch',
+            wait: {
+              type: 'msg',
+              timeout: {
+                category_uuid: 'timeout-cat-5',
+                seconds: 300
+              }
+            },
+            result_name: 'response',
+            categories: [
+              {
+                uuid: 'long-val-cat',
+                name: 'Long Value',
+                exit_uuid: 'long-val-exit'
+              },
+              {
+                uuid: 'other-cat-5',
+                name: 'Other',
+                exit_uuid: 'other-exit-5'
+              },
+              {
+                uuid: 'timeout-cat-5',
+                name: 'No Response',
+                exit_uuid: 'timeout-exit-5'
+              }
+            ],
+            cases: [
+              {
+                uuid: 'long-val-case',
+                type: 'has_any_word',
+                arguments: [
+                  '@(extract(webhook.json.queryData[0], "minLengthValueThatIsVeryLongAndShouldNotOverflow"))'
+                ],
+                category_uuid: 'long-val-cat'
+              }
+            ],
+            operand: '@input.text',
+            default_category_uuid: 'other-cat-5'
+          },
+          exits: [
+            { uuid: 'long-val-exit', destination_uuid: null },
+            { uuid: 'other-exit-5', destination_uuid: null },
+            { uuid: 'timeout-exit-5', destination_uuid: null }
+          ]
+        } as Node,
+        { type: 'wait_for_response' },
+        'long-argument'
+      );
+    });
   });
 
   describe('data transformation', () => {

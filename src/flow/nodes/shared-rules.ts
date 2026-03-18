@@ -1,6 +1,11 @@
-import { getOperatorConfig } from '../operators';
+import {
+  getOperatorConfig,
+  getWaitForResponseOperators,
+  operatorsToSelectOptions
+} from '../operators';
 import { generateDefaultCategoryName } from '../../utils';
 import { FormData } from '../types';
+import { zustand } from '../../store/AppState';
 
 /**
  * Shared helper function to get operator value from various formats.
@@ -122,6 +127,30 @@ export const value2VisibilityCondition = (formData: Record<string, any>) => {
 };
 
 /**
+ * Returns a placeholder for value1 based on the selected operator.
+ * Location operators use "State" as the first operand.
+ */
+const value1Placeholder = (formData: Record<string, any>): string => {
+  const operatorValue = getOperatorValue(formData.operator);
+  if (operatorValue === 'has_district' || operatorValue === 'has_ward') {
+    return 'State';
+  }
+  return '';
+};
+
+/**
+ * Returns a placeholder for value2 based on the selected operator.
+ * has_ward uses "District" as the second operand.
+ */
+const value2Placeholder = (formData: Record<string, any>): string => {
+  const operatorValue = getOperatorValue(formData.operator);
+  if (operatorValue === 'has_ward') {
+    return 'District';
+  }
+  return '';
+};
+
+/**
  * Shared item configuration for rules array.
  * This defines the operator, value1, value2, and category fields.
  */
@@ -131,11 +160,17 @@ export const createRulesItemConfig = () => ({
     required: true,
     multi: false,
     options: [], // Will be set by the caller
+    getDynamicOptions: () => {
+      const features = zustand.getState().features;
+      return operatorsToSelectOptions(getWaitForResponseOperators(features));
+    },
     flavor: 'xsmall' as const,
     width: '220px'
   },
   value1: {
     type: 'text' as const,
+    placeholder: value1Placeholder,
+    evaluated: true,
     flavor: 'xsmall' as const,
     conditions: {
       visible: value1VisibilityCondition
@@ -143,6 +178,8 @@ export const createRulesItemConfig = () => ({
   },
   value2: {
     type: 'text' as const,
+    placeholder: value2Placeholder,
+    evaluated: true,
     flavor: 'xsmall' as const,
     conditions: {
       visible: value2VisibilityCondition
@@ -294,22 +331,33 @@ export const createRulesArrayConfig = (
   isEmptyItem: isEmptyRuleItem,
   onItemChange: createRuleItemChangeHandler(),
   createEmptyItem: (items: any[]) => {
-    // Default to the last rule's operator that has at least one operand,
-    // falling back to the first operator option
+    // Get current operator options dynamically (includes location operators if enabled)
+    const features = zustand.getState().features;
+    const currentOptions = operatorsToSelectOptions(
+      getWaitForResponseOperators(features)
+    );
+
+    // Default to the last rule's non-location operator that has at least one operand,
+    // falling back to the first non-location operator option
     const lastWithOperand = [...items]
       .reverse()
       .find((item) => {
         const opValue = getOperatorValue(item.operator);
         const config = opValue ? getOperatorConfig(opValue) : undefined;
-        return config && config.operands >= 1;
+        return config && config.operands >= 1 && config.filter !== 'locations';
       });
+
+    const nonLocationOptions = currentOptions.filter((o: any) => {
+      const config = getOperatorConfig(o.value);
+      return !config || config.filter !== 'locations';
+    });
 
     const opValue = lastWithOperand
       ? getOperatorValue(lastWithOperand.operator)
       : null;
     const option = opValue
-      ? operatorOptions.find((o: any) => o.value === opValue)
-      : operatorOptions[0];
+      ? currentOptions.find((o: any) => o.value === opValue)
+      : nonLocationOptions[0];
 
     return option ? { operator: [{ ...option }] } : {};
   },

@@ -129,6 +129,12 @@ export class FieldRenderer {
       style
     } = context;
 
+    // Resolve placeholder (supports static string or dynamic function)
+    const placeholder =
+      typeof config.placeholder === 'function'
+        ? config.placeholder(context.formData || {})
+        : config.placeholder || '';
+
     // If field supports expression evaluation, use temba-completion
     if (config.evaluated) {
       return html`<temba-rich-edit
@@ -137,8 +143,9 @@ export class FieldRenderer {
         ?required="${config.required}"
         .errors="${errors}"
         .value="${value || ''}"
-        placeholder="${config.placeholder || ''}"
+        placeholder="${placeholder}"
         session
+        flavor="${config.flavor || 'default'}"
         .helpText="${config.helpText || ''}"
         class="${extraClasses}"
         style="${style}"
@@ -152,7 +159,7 @@ export class FieldRenderer {
       ?required="${config.required}"
       .errors="${errors}"
       .value="${value || ''}"
-      placeholder="${config.placeholder || ''}"
+      placeholder="${placeholder}"
       .helpText="${config.helpText || ''}"
       flavor="${config.flavor || 'default'}"
       class="${extraClasses}"

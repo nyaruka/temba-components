@@ -1406,6 +1406,7 @@ export class Editor extends RapidElement {
     this.plumber.zoom = this.zoom;
     this.setupGlobalEventListeners();
     getStore()?.getState().setFlushSave(this.flushSave);
+    zustand.getState().setFeatures(this.features);
 
     // Eagerly detect touch capability so hover-only controls are visible
     // from the start and scrollbar/touch-action CSS is applied immediately.
@@ -1600,6 +1601,9 @@ export class Editor extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
+    if (changes.has('features')) {
+      zustand.getState().setFeatures(this.features);
+    }
     if (changes.has('canvasSize')) {
       // console.log('Setting canvas size', this.canvasSize);
     }
