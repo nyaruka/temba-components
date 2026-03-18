@@ -6075,21 +6075,18 @@ export class Editor extends RapidElement {
     const currentName =
       availableLanguages.find((lang) => lang.code === this.languageCode)
         ?.name || this.languageCode;
-    const baseName =
-      availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
-      'base language';
 
     return html`
       <div class="language-banner">
         <span class="language-banner-text"
-          >Viewing in <strong>${currentName}</strong></span
+          >Viewing <strong>${currentName}</strong></span
         >
         <button
           class="language-banner-close"
           type="button"
           @click=${this.handleLanguageBannerClose}
         >
-          Back to ${baseName}
+          Done
         </button>
       </div>
     `;
