@@ -926,14 +926,26 @@ export class Simulator extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
-    this.chat = this.shadowRoot.querySelector('temba-chat');
+    this.refreshChat();
+    this.setupCustomScrollbar();
+  }
 
-    // if we have events that were collected before chat was ready, add them now
+  /**
+   * Re-query the chat element from the DOM to ensure our reference is fresh.
+   * This handles cases where the temba-chat element is recreated after a
+   * re-render (e.g., when the render condition at the top of render() toggles).
+   * Also flushes any pending events that were stored while chat was unavailable.
+   */
+  private refreshChat(): Chat | null {
+    const current = this.shadowRoot?.querySelector('temba-chat') as Chat;
+    if (current !== this.chat) {
+      this.chat = current;
+    }
     if (this.chat && this.events.length > 0) {
       this.chat.addMessages(this.events, null, true);
+      this.events = [];
     }
-
-    this.setupCustomScrollbar();
+    return this.chat;
   }
 
   private setupCustomScrollbar() {
@@ -1159,10 +1171,8 @@ export class Simulator extends RapidElement {
     this.isVisible = true;
     getStore().getState().setSimulatorActive(true);
 
-    // ensure chat component is available
-    if (!this.chat) {
-      this.chat = this.shadowRoot.querySelector('temba-chat');
-    }
+    // ensure chat component reference is fresh
+    this.refreshChat();
 
     // start the simulation if we haven't already
     if (!this.session) {
@@ -1208,6 +1218,7 @@ export class Simulator extends RapidElement {
           type: MessageType.Error
         }
       } as ContactEvent;
+      this.refreshChat();
       if (this.chat) {
         this.chat.addMessages([errorEvent], null, true);
       } else {
@@ -1304,6 +1315,9 @@ export class Simulator extends RapidElement {
         newEvents.push(event);
       }
     }
+
+    // refresh chat reference in case the element was recreated by a re-render
+    this.refreshChat();
 
     // add all new events to chat component if it exists
     if (this.chat) {
@@ -1502,6 +1516,7 @@ export class Simulator extends RapidElement {
     this.closeWebhookDetails();
 
     // reset chat component
+    this.refreshChat();
     if (this.chat) {
       this.chat.reset();
     }
@@ -2023,6 +2038,7 @@ export class Simulator extends RapidElement {
     } as ContactEvent;
 
     // show user's message immediately via chat component
+    this.refreshChat();
     if (this.chat) {
       this.chat.addMessages([msgInEvt], null, true);
     } else {
@@ -2060,6 +2076,7 @@ export class Simulator extends RapidElement {
           type: MessageType.Error
         }
       } as ContactEvent;
+      this.refreshChat();
       if (this.chat) {
         this.chat.addMessages([errorEvent], null, true);
       } else {
