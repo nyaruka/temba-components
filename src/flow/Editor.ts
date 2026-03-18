@@ -843,6 +843,43 @@ export class Editor extends RapidElement {
         border-radius: var(--curvature);
       }
 
+      .language-banner {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #5b7ea6;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .language-banner-text {
+        white-space: nowrap;
+      }
+
+      .language-banner-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .language-banner-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
       .localization-window-content {
         display: flex;
         flex-direction: column;
@@ -876,6 +913,11 @@ export class Editor extends RapidElement {
         display: flex;
         flex-direction: column;
         gap: 8px;
+      }
+
+      .localization-progress.disabled {
+        opacity: 0.4;
+        pointer-events: none;
       }
 
       .localization-progress-bar-row {
@@ -5217,14 +5259,6 @@ export class Editor extends RapidElement {
 
     this.closeOpenWindows();
     this.localizationWindowHidden = false;
-
-    const alreadySelected = languages.some(
-      (lang) => lang.code === this.languageCode
-    );
-
-    if (!alreadySelected) {
-      this.handleLanguageChange(languages[0].code);
-    }
   }
 
   private handleLocalizationLanguageSelect(languageCode: string): void {
@@ -5239,16 +5273,17 @@ export class Editor extends RapidElement {
     const nextValue = select?.values?.[0]?.value;
     if (nextValue) {
       this.handleLocalizationLanguageSelect(nextValue);
+    } else {
+      // Cleared — return to base language
+      const baseLanguage = this.definition?.language;
+      if (baseLanguage) {
+        this.handleLanguageChange(baseLanguage);
+      }
     }
   }
 
   private handleLocalizationWindowClosed(): void {
     this.localizationWindowHidden = true;
-
-    const baseLanguage = this.definition?.language;
-    if (baseLanguage && this.languageCode !== baseLanguage) {
-      this.handleLanguageChange(baseLanguage);
-    }
   }
 
   private toggleTranslationSettings(): void {
@@ -5822,20 +5857,16 @@ export class Editor extends RapidElement {
     }
 
     const baseLanguage = this.definition?.language;
-    const availableLanguages = this.getAvailableLanguages();
-    const baseName =
-      availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
-      'Base Language';
-
-    const activeLanguageCode = languages.some(
-      (lang) => lang.code === this.languageCode
-    )
-      ? this.languageCode
-      : languages[0]?.code;
-    const activeLanguage = activeLanguageCode
-      ? languages.find((lang) => lang.code === activeLanguageCode)
+    const isBaseSelected =
+      !this.languageCode ||
+      this.languageCode === baseLanguage ||
+      !languages.some((lang) => lang.code === this.languageCode);
+    const activeLanguage = !isBaseSelected
+      ? languages.find((lang) => lang.code === this.languageCode)
       : null;
-    const progress = this.getLocalizationProgress(activeLanguageCode || '');
+    const progress = this.getLocalizationProgress(
+      isBaseSelected ? '' : this.languageCode
+    );
     const includeCategories = this.translationFilters.categories;
     const settingsPanelId = 'translation-settings-panel';
     const remainingTranslations = Math.max(
@@ -5847,6 +5878,7 @@ export class Editor extends RapidElement {
     const autoTranslateButtonLabel = this.autoTranslating
       ? 'Stop Auto Translate'
       : 'Auto Translate';
+    const showAutoTranslate = !isBaseSelected && hasPendingTranslations;
     const autoTranslateButtonDisabled =
       !this.autoTranslating && !hasTranslations;
 
@@ -5865,13 +5897,14 @@ export class Editor extends RapidElement {
       >
         <div class="localization-window-content">
           <div class="localization-header">
-            Translate from <strong>${baseName}</strong> to the languages below.
-            Closing this window returns you to editing in ${baseName}.
+            Select a language to view or translate your flow content.
           </div>
           <div class="localization-language-row">
             <temba-select
               flavor="small"
               class="localization-language-select"
+              placeholder="Select a language"
+              ?clearable=${true}
               .values=${activeLanguage
                 ? [{ name: activeLanguage.name, value: activeLanguage.code }]
                 : []}
@@ -5885,27 +5918,35 @@ export class Editor extends RapidElement {
                   ></temba-option>`
               )}
             </temba-select>
-            <button
-              class="auto-translate-button"
-              type="button"
-              ?disabled=${autoTranslateButtonDisabled}
-              @click=${this.handleAutoTranslateClick}
-            >
-              ${autoTranslateButtonLabel}
-            </button>
+            ${showAutoTranslate || this.autoTranslating
+              ? html`<button
+                  class="auto-translate-button"
+                  type="button"
+                  ?disabled=${autoTranslateButtonDisabled}
+                  @click=${this.handleAutoTranslateClick}
+                >
+                  ${autoTranslateButtonLabel}
+                </button>`
+              : ''}
           </div>
-          <div class="localization-progress">
+          <div
+            class="localization-progress ${isBaseSelected ? 'disabled' : ''}"
+          >
             <div class="localization-progress-summary">
               ${this.autoTranslating
                 ? html`<temba-loading units="3" size="8"></temba-loading>
                     <span>Auto translating remaining text…</span>`
-                : !hasTranslations
-                  ? // prettier-ignore
-                    html`<span>Add content or enable more options to start translating.</span>`
-                  : hasPendingTranslations
+                : isBaseSelected
+                  ? html`<span
+                      >Select a language to see translation progress.</span
+                    >`
+                  : !hasTranslations
                     ? // prettier-ignore
-                      html`<span>${progress.localized} of ${progress.total} items translated</span>`
-                    : html`<span>All items are translated.</span>`}
+                      html`<span>Add content or enable more options to start translating.</span>`
+                    : hasPendingTranslations
+                      ? // prettier-ignore
+                        html`<span>${progress.localized} of ${progress.total} items translated</span>`
+                      : html`<span>All items are translated.</span>`}
             </div>
             ${this.autoTranslateError
               ? html`<div class="auto-translate-error">
@@ -5944,7 +5985,10 @@ export class Editor extends RapidElement {
               </button>
             </div>
             ${this.translationSettingsExpanded
-              ? html`<div id="${settingsPanelId}" class="translation-settings">
+              ? html`<div
+                  id="${settingsPanelId}"
+                  class="translation-settings"
+                >
                   <div class="translation-settings-row">
                     <temba-checkbox
                       name="include-categories"
@@ -6007,6 +6051,47 @@ export class Editor extends RapidElement {
             : ''}
         </div>
       </temba-dialog>
+    `;
+  }
+
+  private handleLanguageBannerClose(): void {
+    const baseLanguage = this.definition?.language;
+    if (baseLanguage) {
+      this.handleLanguageChange(baseLanguage);
+    }
+  }
+
+  private renderLanguageBanner(): TemplateResult | string {
+    const baseLanguage = this.definition?.language;
+    if (
+      !baseLanguage ||
+      !this.languageCode ||
+      this.languageCode === baseLanguage
+    ) {
+      return '';
+    }
+
+    const availableLanguages = this.getAvailableLanguages();
+    const currentName =
+      availableLanguages.find((lang) => lang.code === this.languageCode)
+        ?.name || this.languageCode;
+    const baseName =
+      availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
+      'base language';
+
+    return html`
+      <div class="language-banner">
+        <span class="language-banner-text"
+          >Viewing in <strong>${currentName}</strong></span
+        >
+        <button
+          class="language-banner-close"
+          type="button"
+          @click=${this.handleLanguageBannerClose}
+        >
+          Back to ${baseName}
+        </button>
+      </div>
     `;
   }
 
@@ -6096,6 +6181,7 @@ export class Editor extends RapidElement {
       ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
       ${this.renderAutoTranslateDialog()}
       <div id="editor-container">
+        ${this.renderLanguageBanner()}
         <div id="editor">
           ${hasCorruptedUI
             ? html`<div class="empty-flow">

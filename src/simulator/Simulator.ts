@@ -1175,6 +1175,12 @@ export class Simulator extends RapidElement {
   private async startFlow() {
     const now = new Date().toISOString();
 
+    // use the currently viewed language for the test contact
+    const viewingLanguage = zustand.getState().languageCode;
+    if (viewingLanguage) {
+      this.contact = { ...this.contact, language: viewingLanguage };
+    }
+
     // set created_on to simulation start time
     this.contact = { ...this.contact, created_on: now };
 
@@ -1506,13 +1512,14 @@ export class Simulator extends RapidElement {
       nodes: {}
     });
 
-    // reset contact to initial state
+    // reset contact to initial state, using the currently viewed language
+    const viewingLanguage = zustand.getState().languageCode;
     this.contact = {
       uuid: 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286',
       urns: ['tel:+12065551212'],
       fields: {},
       groups: [],
-      language: 'eng',
+      language: viewingLanguage || this.definition?.language || 'eng',
       status: 'active',
       created_on: new Date().toISOString()
     };

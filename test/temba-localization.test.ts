@@ -171,7 +171,7 @@ describe('Localization Editing', () => {
     expect(windowEl.hidden).to.be.true;
   });
 
-  it('should open localization window with translation languages excluding base', async () => {
+  it('should open localization window with placeholder and non-base languages', async () => {
     const tab = editor.querySelector('#localization-tab');
     tab.dispatchEvent(
       new CustomEvent('temba-button-clicked', { bubbles: true })
@@ -183,7 +183,8 @@ describe('Localization Editing', () => {
 
     const select = windowEl.querySelector('temba-select') as any;
     expect(select).to.exist;
-    expect(select.values[0].value).to.equal('fra');
+    // No language selected by default — shows placeholder
+    expect(select.values).to.have.lengthOf(0);
 
     const options = windowEl.querySelectorAll('temba-option');
     expect(options.length).to.equal(2);
@@ -195,20 +196,23 @@ describe('Localization Editing', () => {
     expect(optionLabels).to.not.include('English');
 
     const state = zustand.getState();
-    expect(state.languageCode).to.equal('fra');
+    expect(state.languageCode).to.equal('eng');
 
-    const summary = windowEl.querySelector('.localization-progress-summary');
-    expect(summary?.textContent.trim()).to.equal('0 of 1 items translated');
-
-    const progress = windowEl.querySelector('temba-progress') as any;
+    // Progress controls shown but disabled when no language selected
+    const progress = windowEl.querySelector('.localization-progress');
     expect(progress).to.exist;
-    expect(progress.current).to.equal(0);
-    expect(progress.total).to.equal(1);
-    expect(progress.animated).to.be.false;
+    expect(progress.classList.contains('disabled')).to.be.true;
   });
 
   it('should toggle translation settings and persist include categories preference', async () => {
     await openLocalizationWindow(editor);
+
+    // Switch to a non-base language so progress/settings are shown
+    const windowEl = editor.querySelector('#localization-window');
+    const select = windowEl.querySelector('temba-select') as any;
+    select.values = [{ name: 'French', value: 'fra' }];
+    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
+    await editor.updateComplete;
 
     const toggle = editor.querySelector(
       '.translation-settings-toggle'
@@ -275,6 +279,13 @@ describe('Localization Editing', () => {
     await editor.updateComplete;
 
     await openLocalizationWindow(editor);
+
+    // Switch to a non-base language so progress is shown
+    const windowEl = editor.querySelector('#localization-window');
+    const select = windowEl.querySelector('temba-select') as any;
+    select.values = [{ name: 'French', value: 'fra' }];
+    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
+    await editor.updateComplete;
 
     let summary = editor
       .querySelector('.localization-progress-summary')
@@ -402,9 +413,17 @@ describe('Localization Editing', () => {
   it('should open auto translate dialog when clicking auto translate', async () => {
     await openLocalizationWindow(editor);
 
+    // Switch to a non-base language with pending translations
+    const windowEl = editor.querySelector('#localization-window');
+    const select = windowEl.querySelector('temba-select') as any;
+    select.values = [{ name: 'French', value: 'fra' }];
+    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
+    await editor.updateComplete;
+
     const autoTranslateButton = editor.querySelector(
       '.auto-translate-button'
     ) as HTMLButtonElement;
+    expect(autoTranslateButton).to.exist;
     expect(autoTranslateButton.disabled).to.be.false;
 
     autoTranslateButton.click();
@@ -423,19 +442,28 @@ describe('Localization Editing', () => {
     );
   });
 
-  it('should return to base language when window closes', async () => {
+  it('should preserve selected language when window closes', async () => {
     const tab = editor.querySelector('#localization-tab');
     tab.dispatchEvent(
       new CustomEvent('temba-button-clicked', { bubbles: true })
     );
     await editor.updateComplete;
 
+    // Switch to Spanish
     const windowEl = editor.querySelector('#localization-window') as any;
+    const select = windowEl.querySelector('temba-select') as any;
+    select.values = [{ name: 'Spanish', value: 'spa' }];
+    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
+    await editor.updateComplete;
+
+    expect(zustand.getState().languageCode).to.equal('spa');
+
     windowEl.close();
     await editor.updateComplete;
 
+    // Language should remain as Spanish after closing
     const state = zustand.getState();
-    expect(state.languageCode).to.equal('eng');
+    expect(state.languageCode).to.equal('spa');
     expect(windowEl.hidden).to.be.true;
   });
 
