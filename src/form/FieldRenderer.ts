@@ -501,6 +501,7 @@ export class FieldRenderer {
       url="${config.endpoint || '/api/internal/templates.json'}"
       template="${templateUuid}"
       variables="${variables}"
+      session
       @temba-context-changed="${onChange || (() => {})}"
       @temba-content-changed="${onChange || (() => {})}"
     ></temba-template-editor>`;
