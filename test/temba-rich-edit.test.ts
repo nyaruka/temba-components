@@ -82,4 +82,47 @@ describe('temba-rich-edit', () => {
     expect(editor.value).to.equal('@contact.name');
     expect(inputEvents).to.equal(1);
   });
+
+  it('undoes completion back to pre-completion value', async () => {
+    const editor = (await fixture(html`
+      <temba-rich-edit
+        value="@co"
+        session
+      ></temba-rich-edit>
+    `)) as any;
+
+    await editor.updateComplete;
+
+    const editableDiv = editor.shadowRoot.querySelector(
+      '.highlight-editor'
+    ) as any;
+    const options = editor.shadowRoot.querySelector('temba-options') as any;
+
+    // Type one character so undo history contains "@co".
+    editableDiv.focus();
+    editableDiv.setSelectionRange(3, 3);
+    editableDiv.textContent = '@con';
+    editableDiv.dispatchEvent(new Event('input', { bubbles: true }));
+    await editor.updateComplete;
+    expect(editor.value).to.equal('@con');
+
+    editor.query = 'con';
+    editableDiv.setSelectionRange(4, 4);
+    options.dispatchEvent(
+      new CustomEvent('temba-selection', {
+        detail: {
+          selected: { name: 'contact.name' },
+          tabbed: false
+        },
+        bubbles: true,
+        composed: true
+      })
+    );
+    expect(editor.value).to.equal('@contact.name');
+
+    // Undo should return to "@con" (state immediately before completion),
+    // not to the earlier "@co" typing state.
+    editor.performUndo();
+    expect(editor.value).to.equal('@con');
+  });
 });
