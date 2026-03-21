@@ -261,6 +261,85 @@ describe('temba-node-editor', () => {
     expect(cancelEventFired).to.equal(true);
   });
 
+  it('flushes rich-edit values before saving rules', async () => {
+    const node = {
+      uuid: 'test-node-uuid',
+      actions: [],
+      router: {
+        type: 'switch',
+        operand: '@input.text',
+        cases: [
+          {
+            uuid: 'case-1',
+            type: 'has_phrase',
+            arguments: ['@con'],
+            category_uuid: 'cat-1'
+          }
+        ],
+        categories: [
+          { uuid: 'cat-1', name: 'Matched', exit_uuid: 'exit-1' },
+          { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+        ],
+        default_category_uuid: 'cat-other'
+      },
+      exits: [
+        { uuid: 'exit-1', destination_uuid: null },
+        { uuid: 'exit-other', destination_uuid: null }
+      ]
+    };
+
+    const nodeUI = {
+      type: 'split_by_expression',
+      position: { left: 100, top: 100 }
+    };
+
+    const el = (await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${nodeUI}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
+
+    const rulesEditor = el.shadowRoot?.querySelector(
+      'temba-array-editor[name="rules"]'
+    ) as any;
+    expect(rulesEditor).to.not.be.null;
+
+    const valueEditor = rulesEditor.shadowRoot?.querySelector(
+      'temba-rich-edit[name="value1"]'
+    ) as any;
+    expect(valueEditor).to.not.be.null;
+
+    // Simulate a value change that hasn't propagated via input/change yet.
+    valueEditor.value = '@contact.name';
+    await valueEditor.updateComplete;
+
+    let savedNode: any = null;
+    el.addEventListener('temba-node-saved', (e: any) => {
+      savedNode = e.detail.node;
+    });
+
+    const dialog = el.shadowRoot!.querySelector('temba-dialog');
+    dialog!.dispatchEvent(
+      new CustomEvent('temba-button-clicked', {
+        detail: { button: { name: 'Save' } },
+        bubbles: true
+      })
+    );
+
+    expect(savedNode).to.not.be.null;
+    const savedCase = savedNode.router.cases.find(
+      (case_: any) => case_.type === 'has_phrase'
+    );
+    expect(savedCase).to.exist;
+    expect(savedCase.arguments[0]).to.equal('@contact.name');
+  });
+
   it('handles property updates', async () => {
     const el = (await fixture(html`
       <temba-node-editor .isOpen=${true}></temba-node-editor>
