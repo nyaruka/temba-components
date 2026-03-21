@@ -565,6 +565,7 @@ export class RichEditor extends FieldElement {
     this.value = (this.editableDiv as any).value;
     this.query = '';
     this.options = [];
+    this.fireEvent('input');
     this.fireEvent('change');
 
     if (tabbed) {
