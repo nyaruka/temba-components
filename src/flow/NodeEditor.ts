@@ -781,8 +781,6 @@ export class NodeEditor extends RapidElement {
   }
 
   private handleSave(): void {
-    this.flushPendingFieldInputs();
-
     // Process form data first
     const processedFormData = this.processFormDataForSave();
 
@@ -909,55 +907,6 @@ export class NodeEditor extends RapidElement {
         uiConfig
       });
     }
-  }
-
-  /**
-   * Flushes any pending rich-editor values into form handlers before save.
-   * This prevents races where completion UI updates but parent formData
-   * hasn't received the final input event yet.
-   */
-  private flushPendingFieldInputs(): void {
-    if (!this.shadowRoot) {
-      return;
-    }
-
-    const editors = this.getRichEditorsDeep(this.shadowRoot);
-    if (editors.length === 0) {
-      return;
-    }
-
-    editors.forEach((editor: any) => {
-      if (typeof editor.fireEvent === 'function') {
-        editor.fireEvent('input');
-        editor.fireEvent('change');
-      } else {
-        editor.dispatchEvent(
-          new Event('input', {
-            bubbles: true,
-            composed: true
-          })
-        );
-        editor.dispatchEvent(
-          new Event('change', {
-            bubbles: true,
-            composed: true
-          })
-        );
-      }
-    });
-  }
-
-  private getRichEditorsDeep(root: ShadowRoot | HTMLElement): any[] {
-    const editors = Array.from(root.querySelectorAll('temba-rich-edit')) as any[];
-    const elements = Array.from(root.querySelectorAll('*')) as any[];
-
-    elements.forEach((element) => {
-      if (element.shadowRoot) {
-        editors.push(...this.getRichEditorsDeep(element.shadowRoot));
-      }
-    });
-
-    return editors;
   }
 
   private updateLocalization(

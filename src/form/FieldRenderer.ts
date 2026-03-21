@@ -149,7 +149,7 @@ export class FieldRenderer {
         .helpText="${config.helpText || ''}"
         class="${extraClasses}"
         style="${style}"
-        @input="${onChange || (() => {})}"
+        @change="${onChange || (() => {})}"
       ></temba-rich-edit>`;
     }
 
@@ -201,7 +201,7 @@ export class FieldRenderer {
         .helpText="${config.helpText || ''}"
         class="${extraClasses}"
         style="${combinedStyle}"
-        @input="${onChange || (() => {})}"
+        @change="${onChange || (() => {})}"
       ></temba-rich-edit>`;
     }
 
