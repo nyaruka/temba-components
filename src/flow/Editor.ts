@@ -2512,18 +2512,22 @@ export class Editor extends RapidElement {
   }
 
   private handleLoupeKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Alt') return;
-    this.loupeKeyHeld = true;
-    // Show loupe immediately at last known mouse position
-    if (this.loupeLastMouse) {
-      this.handleLoupeMouseMove(this.loupeLastMouse as MouseEvent);
+    if (event.key !== 'Control' && event.key !== 'Shift') return;
+    if (event.ctrlKey && event.shiftKey) {
+      this.loupeKeyHeld = true;
+      // Show loupe immediately at last known mouse position
+      if (this.loupeLastMouse) {
+        this.handleLoupeMouseMove(this.loupeLastMouse as MouseEvent);
+      }
     }
   }
 
   private handleLoupeKeyUp(event: KeyboardEvent): void {
-    if (event.key !== 'Alt') return;
-    this.loupeKeyHeld = false;
-    this.hideLoupe();
+    if (event.key !== 'Control' && event.key !== 'Shift') return;
+    if (this.loupeKeyHeld) {
+      this.loupeKeyHeld = false;
+      this.hideLoupe();
+    }
   }
 
   private handleLoupeMouseDown(): void {
@@ -2538,7 +2542,7 @@ export class Editor extends RapidElement {
   private handleLoupeMouseMove(event: MouseEvent): void {
     this.loupeLastMouse = { clientX: event.clientX, clientY: event.clientY };
 
-    // Require z key held, hide while mouse is down, during interactions, or with dialogs open
+    // Require Ctrl+Shift held, hide while mouse is down, during interactions, or with dialogs open
     if (
       !this.loupeKeyHeld ||
       this.loupeMouseIsDown ||
