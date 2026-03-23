@@ -945,25 +945,26 @@ export class NodeEditor extends RapidElement {
   // server responds with updated info will see the result name and avoid
   // generating a duplicate default name.
   private updateFlowInfoResult(node: Node): void {
-    const resultName = node.router?.result_name;
-    if (!resultName || !this.flowInfo?.results) return;
+    if (!this.flowInfo?.results) return;
 
     const state = zustand.getState();
-    const results = [...this.flowInfo.results];
 
     // Remove any existing entry for this node
-    const filtered = results.filter(
+    const filtered = this.flowInfo.results.filter(
       (r) => !r.node_uuids.includes(node.uuid)
     );
 
-    // Add the new/updated result
-    const categories = (node.router?.categories || []).map((c) => c.name);
-    filtered.push({
-      key: resultName.toLowerCase().replace(/\s+/g, '_'),
-      name: resultName,
-      categories,
-      node_uuids: [node.uuid]
-    });
+    // Add new entry only if result_name is set
+    const resultName = node.router?.result_name;
+    if (resultName) {
+      const categories = (node.router?.categories || []).map((c) => c.name);
+      filtered.push({
+        key: resultName.toLowerCase().replace(/\s+/g, '_'),
+        name: resultName,
+        categories,
+        node_uuids: [node.uuid]
+      });
+    }
 
     state.setFlowInfo({ ...this.flowInfo, results: filtered });
   }
