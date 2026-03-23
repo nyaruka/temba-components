@@ -92,7 +92,7 @@ export class Compose extends FieldElement {
 
       .shortcut-overlay {
         position: fixed;
-        margin-top: 4px;
+        margin-bottom: 4px;
         display: flex;
         flex-direction: row;
         align-items: stretch;
@@ -251,11 +251,9 @@ export class Compose extends FieldElement {
   @property({ type: Boolean, attribute: false })
   showShortcuts = false;
 
-  private shortcutAnchor: { top: number; left: number } = null;
   private shortcutFilter: string = null;
   private shortcutViaIcon = false;
   private lastCaretPosition: number = 0;
-  private lastCaretScreenPosition: { top: number; left: number } = null;
 
   public constructor() {
     super();
@@ -358,10 +356,6 @@ export class Compose extends FieldElement {
       return;
     }
 
-    // Use saved caret screen position since clicking the icon steals focus
-    if (this.lastCaretScreenPosition) {
-      this.shortcutAnchor = this.lastCaretScreenPosition;
-    }
     this.shortcutFilter = '';
     this.shortcutViaIcon = true;
     this.showShortcuts = true;
@@ -492,10 +486,6 @@ export class Compose extends FieldElement {
 
     // Track caret for shortcut icon click
     this.lastCaretPosition = richEdit.getCaretPosition();
-    const screenPos = richEdit.getCaretScreenPosition();
-    if (screenPos) {
-      this.lastCaretScreenPosition = screenPos;
-    }
 
     // Detect / at beginning of line for shortcuts
     if (this.shortcuts) {
@@ -506,10 +496,6 @@ export class Compose extends FieldElement {
 
       if (line.startsWith('/')) {
         if (!this.showShortcuts) {
-          const caretPos = richEdit.getCaretScreenPosition();
-          if (caretPos) {
-            this.shortcutAnchor = caretPos;
-          }
           this.shortcutViaIcon = false;
         }
         this.shortcutFilter = line.substring(1);
@@ -577,11 +563,9 @@ export class Compose extends FieldElement {
     if (!container) return '';
     const rect = container.getBoundingClientRect();
     const margin = 16;
-    const top = this.shortcutAnchor
-      ? this.shortcutAnchor.top
-      : rect.top + 30;
-    const maxHeight = window.innerHeight - top - margin;
-    return `left: ${rect.left}px; top: ${top}px; width: ${rect.width}px; max-height: ${maxHeight}px;`;
+    const bottom = window.innerHeight - rect.top;
+    const maxHeight = rect.top - margin;
+    return `left: ${rect.left}px; bottom: ${bottom}px; width: ${rect.width}px; max-height: ${maxHeight}px;`;
   }
 
   private getMessageEditor(): MessageEditor {
@@ -705,7 +689,11 @@ export class Compose extends FieldElement {
           </div>
 
           ${this.shortcuts && this.showShortcuts
-            ? html`<div class="shortcut-overlay" style=${this.getShortcutOverlayStyle()}>
+            ? html`<div
+                class="shortcut-overlay"
+                style=${this.getShortcutOverlayStyle()}
+                @mousedown=${(e: MouseEvent) => e.preventDefault()}
+              >
                 <temba-shortcuts
                   @temba-selection=${this.handleShortcutSelection}
                 ></temba-shortcuts>
