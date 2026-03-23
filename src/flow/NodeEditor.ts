@@ -24,7 +24,13 @@ import { generateUUID } from '../utils';
 import { formatIssueMessage } from './utils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
-import { AppState, FlowIssue, fromStore, zustand } from '../store/AppState';
+import {
+  AppState,
+  FlowInfo,
+  FlowIssue,
+  fromStore,
+  zustand
+} from '../store/AppState';
 import { getStore } from '../store/Store';
 
 export class NodeEditor extends RapidElement {
@@ -469,6 +475,9 @@ export class NodeEditor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private flowDefinition!: FlowDefinition;
 
+  @fromStore(zustand, (state: AppState) => state.flowInfo)
+  private flowInfo!: FlowInfo;
+
   @fromStore(zustand, (state: AppState) => state.issuesByNode)
   private issuesByNode!: Map<string, FlowIssue[]>;
 
@@ -600,6 +609,25 @@ export class NodeEditor extends RapidElement {
         this.formData = nodeConfig.toFormData(this.node, this.nodeUI);
       } else {
         this.formData = { ...this.node };
+      }
+
+      // For new wait_for_response nodes, default the result name
+      if (
+        this.nodeUI?.type === 'wait_for_response' &&
+        !this.formData.result_name &&
+        this.flowInfo?.results &&
+        !this.flowDefinition?._ui?.nodes?.[this.node.uuid]
+      ) {
+        const existingNames = new Set(
+          this.flowInfo.results.map((r) => r.name)
+        );
+        let candidate = 'Result';
+        let i = 2;
+        while (existingNames.has(candidate)) {
+          candidate = `Result ${i}`;
+          i++;
+        }
+        this.formData.result_name = candidate;
       }
 
       // Convert Record objects to array format for key-value editors
@@ -876,6 +904,10 @@ export class NodeEditor extends RapidElement {
       // Node editing mode with router - use formDataToNode
       const updatedNode = this.formDataToNode(processedFormData);
 
+      // Eagerly update flowInfo results so subsequent node creation
+      // sees the new result name before the server round-trip
+      this.updateFlowInfoResult(updatedNode);
+
       // Generate UI config if the node config provides a toUIConfig function
       const nodeConfig = this.getNodeConfig();
       const uiConfig = nodeConfig?.toUIConfig
@@ -907,6 +939,34 @@ export class NodeEditor extends RapidElement {
         uiConfig
       });
     }
+  }
+
+  // Updates flowInfo.results eagerly so that new nodes created before the
+  // server responds with updated info will see the result name and avoid
+  // generating a duplicate default name.
+  private updateFlowInfoResult(node: Node): void {
+    if (!this.flowInfo?.results) return;
+
+    const state = zustand.getState();
+
+    // Remove any existing entry for this node
+    const filtered = this.flowInfo.results.filter(
+      (r) => !r.node_uuids.includes(node.uuid)
+    );
+
+    // Add new entry only if result_name is set
+    const resultName = node.router?.result_name;
+    if (resultName) {
+      const categories = (node.router?.categories || []).map((c) => c.name);
+      filtered.push({
+        key: resultName.toLowerCase().replace(/\s+/g, '_'),
+        name: resultName,
+        categories,
+        node_uuids: [node.uuid]
+      });
+    }
+
+    state.setFlowInfo({ ...this.flowInfo, results: filtered });
   }
 
   private updateLocalization(

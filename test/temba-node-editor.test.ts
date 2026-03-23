@@ -1,6 +1,7 @@
 import '../temba-modules';
 import { html, fixture, expect } from '@open-wc/testing';
 import { assertScreenshot, getClip } from './utils.test';
+import { zustand } from '../src/store/AppState';
 
 // Define interface for NodeEditor component
 interface NodeEditorElement extends HTMLElement {
@@ -1095,5 +1096,97 @@ describe('temba-node-editor', () => {
     expect(newCategory.uuid).to.not.equal('existing-cat-other');
     expect(newCategory.uuid).to.not.equal('existing-cat-failure');
     expect(newCategory.uuid).to.have.length.greaterThan(0);
+  });
+
+  describe('default result name for new wait_for_response nodes', () => {
+    const setupStore = (results: { name: string; key: string }[]) => {
+      const state = zustand.getState();
+      zustand.setState({
+        ...state,
+        flowDefinition: {
+          language: 'en',
+          localization: {},
+          name: 'Test Flow',
+          nodes: [],
+          uuid: 'test-uuid',
+          type: 'messaging' as const,
+          revision: 1,
+          spec_version: '14.3',
+          _ui: { nodes: {}, languages: [] }
+        },
+        flowInfo: {
+          results: results.map((r) => ({
+            ...r,
+            categories: [],
+            node_uuids: ['some-node']
+          })),
+          dependencies: [],
+          counts: { nodes: 0, languages: 0 },
+          locals: []
+        }
+      });
+    };
+
+    const createNewWaitNode = async () => {
+      const node = {
+        uuid: 'new-node-uuid',
+        actions: [],
+        exits: [],
+        router: {
+          type: 'switch',
+          categories: [],
+          cases: [],
+          operand: '@input.text',
+          default_category_uuid: undefined
+        }
+      };
+
+      const nodeUI = {
+        type: 'wait_for_response',
+        position: { left: 100, top: 100 }
+      };
+
+      const el = (await fixture(html`
+        <temba-node-editor
+          .node=${node}
+          .nodeUI=${nodeUI}
+          .isOpen=${true}
+        ></temba-node-editor>
+      `)) as NodeEditorElement;
+
+      await el.updateComplete;
+      return el;
+    };
+
+    it('defaults to "Result" when no results exist', async () => {
+      setupStore([]);
+      const el = await createNewWaitNode();
+      expect((el as any).formData.result_name).to.equal('Result');
+    });
+
+    it('defaults to "Result 2" when "Result" exists', async () => {
+      setupStore([{ name: 'Result', key: 'result' }]);
+      const el = await createNewWaitNode();
+      expect((el as any).formData.result_name).to.equal('Result 2');
+    });
+
+    it('fills gaps in numbering', async () => {
+      setupStore([
+        { name: 'Result', key: 'result' },
+        { name: 'Result 3', key: 'result_3' }
+      ]);
+      const el = await createNewWaitNode();
+      expect((el as any).formData.result_name).to.equal('Result 2');
+    });
+
+    it('skips all existing names', async () => {
+      setupStore([
+        { name: 'Result', key: 'result' },
+        { name: 'Result 2', key: 'result_2' },
+        { name: 'Result 3', key: 'result_3' }
+      ]);
+      const el = await createNewWaitNode();
+      expect((el as any).formData.result_name).to.equal('Result 4');
+    });
   });
 });
