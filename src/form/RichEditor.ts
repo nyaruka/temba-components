@@ -554,6 +554,13 @@ export class RichEditor extends FieldElement {
   private handleOptionSelection(evt: CustomEvent): void {
     const option = evt.detail.selected as CompletionOption;
     const tabbed = evt.detail.tabbed;
+    const currentValue = this.value || '';
+    const caretPos = getCaretOffset(this.editableDiv);
+
+    // Mirror typing/paste behavior: completion insertion should be undoable
+    // back to the exact pre-completion editor state.
+    this.undoStack.push({ value: currentValue, caret: caretPos });
+    this.redoStack = [];
 
     updateInputElementWithCompletion(
       this.query,
@@ -565,6 +572,7 @@ export class RichEditor extends FieldElement {
     this.value = (this.editableDiv as any).value;
     this.query = '';
     this.options = [];
+    this.fireEvent('input');
     this.fireEvent('change');
 
     if (tabbed) {
