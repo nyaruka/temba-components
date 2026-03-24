@@ -685,7 +685,7 @@ export class RichEditor extends FieldElement {
           <div
             class="highlight-editor"
             contenteditable="true"
-            spellcheck="false"
+            spellcheck="true"
             data-placeholder=${this.placeholder}
             @input=${this.handleInput}
             @beforeinput=${this.handleBeforeInput}
