@@ -350,6 +350,7 @@ export class RichEditor extends FieldElement {
           let className = isMono ? `${cls} tok-mono` : cls;
           if (isInvalidFn) className += ' tok-fn-invalid';
           span.className = className;
+          if (isMono) span.setAttribute('spellcheck', 'false');
           div.appendChild(span);
         }
       }
