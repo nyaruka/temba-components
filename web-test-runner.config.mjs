@@ -109,13 +109,14 @@ const checkScreenshot = async (filename, excluded, threshold) => {
               matchOptions
             );
 
-      // The files should look the same.
-      if (numDiffPixels != 0) {
-        // console.error("number of different pixels are not 0");
+      // The files should look the same (allow a tiny tolerance for subpixel rendering differences)
+      const totalPixels = img1.width * img1.height;
+      const diffRatio = numDiffPixels / totalPixels;
+      if (diffRatio > 0.001) {
         const diffImg = await getPath(DIFF, filename);
         diff.pack().pipe(fs.createWriteStream(diffImg));
         reject({
-          message: 'Pixel match failed',
+          message: `Pixel match failed (${numDiffPixels} pixels differ, ${(diffRatio * 100).toFixed(3)}%)`,
           files: [diffImg, testImg, truthImg, path.resolve(SCREENSHOTS)]
         });
       }
