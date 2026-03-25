@@ -797,8 +797,9 @@ export class ContactChat extends ContactStoreElement {
           this.chat.loadMessages(allMessages);
 
           // wait for Lit to render the DOM, then position scroll, then reveal
+          // uses setTimeout instead of requestAnimationFrame for test compatibility
           this.chat.updateComplete.then(() => {
-            requestAnimationFrame(() => {
+            window.setTimeout(() => {
               if (!this.chat) return;
 
               // position internal scroll only — never use scrollIntoView
@@ -826,19 +827,19 @@ export class ContactChat extends ContactStoreElement {
                 }
               }
 
-              // one more frame to let scroll settle, then fade in
-              requestAnimationFrame(() => {
+              // let scroll settle, then fade in
+              window.setTimeout(() => {
                 if (this.chat) {
                   this.chat.style.visibility = 'visible';
                   this.chat.style.opacity = '0';
-                  requestAnimationFrame(() => {
+                  window.setTimeout(() => {
                     if (this.chat) {
                       this.chat.style.opacity = '1';
                     }
-                  });
+                  }, 16);
                 }
-              });
-            });
+              }, 16);
+            }, 16);
           });
         }
       );
