@@ -46,6 +46,15 @@ export const BODY_SNIPPET_LENGTH = 250;
 // re-export for backwards compatibility
 export { renderTicketAction, renderTicketAssigneeChanged };
 
+interface SearchResult {
+  uuid: string;
+  type: string;
+  created_on: string;
+  msg?: any;
+  _user?: any;
+  [key: string]: any;
+}
+
 export class ContactChat extends ContactStoreElement {
   public static get styles() {
     return css`
@@ -68,7 +77,7 @@ export class ContactChat extends ContactStoreElement {
         flex-grow: 1;
         flex-direction: column;
         min-height: 0;
-        background: #f9f9f9;
+        background: #fff;
       }
 
       temba-contact-history {
@@ -84,6 +93,7 @@ export class ContactChat extends ContactStoreElement {
         --compose-border: 1px solid #e1e1e1;
         --compose-curvature: 6px;
         margin: 0.5em;
+        background: #f9f9f9;
       }
 
       .closed-footer {
@@ -140,8 +150,169 @@ export class ContactChat extends ContactStoreElement {
         border-bottom: 1px solid #ddd;
         background: linear-gradient(0deg, #fff, #fff);
         --chat-border-in: 1px solid #eee;
-        --color-chat-out: var(--color-message)
-        );
+        --color-chat-out: var(--color-message);
+        transition: opacity 0.15s ease;
+      }
+
+      .chat-container {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-height: 0;
+      }
+
+      @keyframes search-slide-in {
+        from {
+          max-height: 0;
+          opacity: 0;
+          padding-top: 0;
+          padding-bottom: 0;
+        }
+        to {
+          max-height: 3em;
+          opacity: 1;
+          padding-top: 0.5em;
+          padding-bottom: 0.5em;
+        }
+      }
+
+      @keyframes search-slide-out {
+        from {
+          max-height: 3em;
+          opacity: 1;
+          padding-top: 0.5em;
+          padding-bottom: 0.5em;
+        }
+        to {
+          max-height: 0;
+          opacity: 0;
+          padding-top: 0;
+          padding-bottom: 0;
+        }
+      }
+
+      .search-overlay {
+        display: flex;
+        align-items: center;
+        gap: 0.25em;
+        padding: 1em 1em;
+        border-bottom: 1px solid #ddd;
+        overflow: hidden;
+        animation: search-slide-in 0.15s ease-out;
+      }
+
+      .search-overlay.closing {
+        animation: search-slide-out 0.15s ease-in forwards;
+      }
+
+      .search-input-wrapper {
+        flex-grow: 1;
+        min-width: 0;
+        position: relative;
+        margin-right: 0.5em;
+      }
+
+      .search-input {
+        --temba-textinput-padding: 6px 28px 6px 8px;
+      }
+
+      .search-go {
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.15em;
+        border-radius: 3px;
+        color: #999;
+        z-index: 1;
+      }
+
+      .search-go:hover {
+        color: #333;
+      }
+
+      .search-go:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+
+      .search-counter {
+        font-size: 11px;
+        color: #666;
+        white-space: nowrap;
+        min-width: 3em;
+        text-align: center;
+      }
+
+      .search-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25em;
+        border-radius: 4px;
+        color: #666;
+        font-size: 11px;
+      }
+
+      .search-btn:hover,
+      .search-btn.enter-target:not(:disabled) {
+        background: rgba(0, 0, 0, 0.08);
+        color: #333;
+      }
+
+      .search-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+
+      .search-btn:disabled:hover {
+        background: none;
+      }
+
+      .search-no-results {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #999;
+        font-size: 14px;
+        text-align: center;
+        pointer-events: none;
+        z-index: 5;
+      }
+
+      .search-toggle {
+        position: absolute;
+        top: 0.5em;
+        right: 1.5em;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        width: 2em;
+        height: 2em;
+        cursor: pointer;
+        color: #888;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .search-toggle:hover {
+        background: #fff;
+        color: #333;
+        border-color: #ccc;
       }
 
       .action-bar {
@@ -301,6 +472,30 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: String })
   errorMessage: string;
 
+  @property({ type: Boolean, attribute: false })
+  searchMode = false;
+
+  @property({ type: String, attribute: false })
+  searchQuery = '';
+
+  @property({ type: Array, attribute: false })
+  searchResults: SearchResult[] = [];
+
+  @property({ type: Number, attribute: false })
+  searchIndex = -1;
+
+  @property({ type: Boolean, attribute: false })
+  searchLoading = false;
+
+  @property({ type: Boolean, attribute: false })
+  searchFocused = false;
+
+  @property({ type: Boolean, attribute: false })
+  searchClosing = false;
+
+  @property({ type: Boolean, attribute: false })
+  searchNoResults = false;
+
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
   private chat: Chat;
@@ -396,6 +591,280 @@ export class ContactChat extends ContactStoreElement {
     if (compose) {
       compose.reset();
     }
+  }
+
+  private handleSearchToggle() {
+    if (this.searchMode) {
+      this.handleSearchClose();
+    } else {
+      this.searchMode = true;
+      this.searchQuery = '';
+      this.searchResults = [];
+      this.searchIndex = -1;
+      this.searchLoading = false;
+      this.searchNoResults = false;
+      // stop polling while searching
+      if (this.refreshId) {
+        clearTimeout(this.refreshId);
+        this.refreshId = null;
+      }
+      window.setTimeout(() => {
+        const input = this.shadowRoot.querySelector(
+          '.search-input'
+        ) as any;
+        if (input) {
+          input.focus();
+        }
+      }, 50);
+    }
+  }
+
+  private handleSearchClose() {
+    this.searchClosing = true;
+    window.setTimeout(() => {
+      this.searchClosing = false;
+      this.searchMode = false;
+      this.searchQuery = '';
+      this.searchResults = [];
+      this.searchIndex = -1;
+      this.searchLoading = false;
+      this.searchNoResults = false;
+      this.lastSearchedQuery = '';
+      if (this.chat) {
+        this.chat.searchHighlight = null;
+        this.chat.highlightMessageUuid = null;
+      }
+      // reload the current view
+      this.chat.reset();
+      this.blockFetching = false;
+      this.blockFetchingNewer = false;
+      this.fetchingNewer = false;
+      this.beforeUUID = null;
+      this.afterUUID = null;
+      this.fetchPreviousMessages();
+    }, 150);
+  }
+
+  private handleSearchInput(e: Event) {
+    const input = e.target as HTMLInputElement;
+    this.searchQuery = input.value;
+  }
+
+  // tracks the query that produced the current searchResults
+  private lastSearchedQuery = '';
+
+  private handleSearchKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const currentQuery = this.searchQuery.trim();
+      if (currentQuery !== this.lastSearchedQuery) {
+        this.executeSearch();
+      } else if (e.shiftKey) {
+        this.handleSearchPrev();
+      } else {
+        this.handleSearchNext();
+      }
+    } else if (e.key === 'Escape') {
+      this.handleSearchClose();
+      e.preventDefault();
+    }
+  }
+
+  private executeSearch() {
+    const query = this.searchQuery.trim();
+    if (!query || !this.currentContact || this.searchLoading) {
+      return;
+    }
+
+    this.searchLoading = true;
+    this.searchResults = [];
+    this.searchIndex = -1;
+    this.lastSearchedQuery = query;
+    if (this.chat) {
+      this.chat.searchHighlight = null;
+      this.chat.highlightMessageUuid = null;
+      this.chat.reset();
+    }
+
+    const url = `/contact/chat_search/${this.currentContact.uuid}/?text=${encodeURIComponent(query)}`;
+    getUrl(url)
+      .then((response: WebResponse) => {
+        this.searchLoading = false;
+        this.searchResults = response.json.results || [];
+        if (this.searchResults.length > 0) {
+          this.searchNoResults = false;
+          this.searchIndex = 0;
+          this.navigateToResult(0);
+        } else {
+          this.searchNoResults = true;
+          this.searchIndex = -1;
+        }
+      })
+      .catch(() => {
+        this.searchLoading = false;
+      });
+  }
+
+  private navigateToResult(index: number) {
+    if (index < 0 || index >= this.searchResults.length) {
+      return;
+    }
+
+    this.searchIndex = index;
+    const result = this.searchResults[index];
+
+    const FADE_MS = 120;
+
+    if (!this.chat) {
+      return;
+    }
+
+    const endpoint = this.getEndpoint();
+    if (!endpoint) {
+      return;
+    }
+
+    this.chat.searchHighlight = this.searchQuery.trim();
+
+    // start fetches immediately (in parallel with fade-out)
+    const beforePromise = fetchContactHistory(
+      endpoint,
+      this.currentTicket?.uuid,
+      result.uuid,
+      null
+    );
+    const afterPromise = fetchContactHistory(
+      endpoint,
+      this.currentTicket?.uuid,
+      null,
+      result.uuid
+    );
+
+    // fade out, then hide completely before swapping content
+    this.chat.style.opacity = '0';
+
+    window.setTimeout(() => {
+      // fully hidden (including scrollbar) during content swap
+      this.chat.style.visibility = 'hidden';
+      this.chat.reset();
+      this.blockFetching = false;
+      this.blockFetchingNewer = false;
+      this.fetchingNewer = false;
+      this.beforeUUID = null;
+      this.afterUUID = null;
+
+      const matchedEvent: ContactEvent = {
+        ...result,
+        created_on: new Date(result.created_on)
+      };
+
+      Promise.all([beforePromise, afterPromise]).then(
+        ([beforePage, afterPage]) => {
+          const afterMessages = this.createMessages(afterPage);
+          afterMessages.reverse();
+
+          const beforeMessages = this.createMessages(beforePage);
+          beforeMessages.reverse();
+
+          const matchPage = {
+            events: [matchedEvent],
+            next: null
+          } as ContactHistoryPage;
+          const matchMessages = this.createMessages(matchPage);
+          matchMessages.reverse();
+
+          if (beforePage.next) {
+            this.beforeUUID = beforePage.next;
+          } else if (beforeMessages.length > 0) {
+            const oldestBefore =
+              beforePage.events[beforePage.events.length - 1];
+            this.beforeUUID = oldestBefore.uuid;
+          } else {
+            this.blockFetching = true;
+            const allEvents = [...afterMessages, ...matchMessages];
+            if (allEvents.length > 0) {
+              const oldest = allEvents[allEvents.length - 1];
+              this.chat.setEndOfHistory(new Date(oldest.created_on));
+            }
+          }
+
+          // synchronously load all messages (no internal timeouts)
+          const allMessages = [
+            ...beforeMessages,
+            ...matchMessages,
+            ...afterMessages
+          ];
+          this.chat.loadMessages(allMessages);
+
+          // wait for Lit to render the DOM, then position scroll, then reveal
+          this.chat.updateComplete.then(() => {
+            requestAnimationFrame(() => {
+              if (!this.chat) return;
+
+              // position internal scroll only — never use scrollIntoView
+              // which can move ancestor containers
+              this.chat.highlightMessageUuid = result.uuid;
+              const scroll = this.chat.shadowRoot?.querySelector(
+                '.scroll'
+              ) as HTMLElement;
+              const row = this.chat.shadowRoot?.querySelector(
+                `.row[data-uuid="${result.uuid}"]`
+              ) as HTMLElement;
+              if (scroll && row) {
+                // calculate position to center the row within the scroll area
+                // column-reverse: scrollTop=0 is bottom, negative is up
+                const scrollRect = scroll.getBoundingClientRect();
+                const rowRect = row.getBoundingClientRect();
+                const rowCenter = rowRect.top + rowRect.height / 2;
+                const scrollCenter = scrollRect.top + scrollRect.height / 2;
+                const offset = rowCenter - scrollCenter;
+                scroll.scrollTop = scroll.scrollTop + offset;
+              } else {
+                // fallback: just go to bottom
+                if (scroll) {
+                  scroll.scrollTop = 0;
+                }
+              }
+
+              // one more frame to let scroll settle, then fade in
+              requestAnimationFrame(() => {
+                if (this.chat) {
+                  this.chat.style.visibility = 'visible';
+                  this.chat.style.opacity = '0';
+                  requestAnimationFrame(() => {
+                    if (this.chat) {
+                      this.chat.style.opacity = '1';
+                    }
+                  });
+                }
+              });
+            });
+          });
+        }
+      );
+    }, FADE_MS);
+  }
+
+  private handleSearchPrev() {
+    if (this.searchResults.length === 0) {
+      return;
+    }
+    const newIndex =
+      this.searchIndex <= 0
+        ? this.searchResults.length - 1
+        : this.searchIndex - 1;
+    this.navigateToResult(newIndex);
+  }
+
+  private handleSearchNext() {
+    if (this.searchResults.length === 0) {
+      return;
+    }
+    const newIndex =
+      this.searchIndex >= this.searchResults.length - 1
+        ? 0
+        : this.searchIndex + 1;
+    this.navigateToResult(newIndex);
   }
 
   private handleInterrupt() {
@@ -530,8 +999,8 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private checkForNewMessages() {
-    // we are already working on it
-    if (this.polling) {
+    // we are already working on it or in search mode
+    if (this.polling || this.searchMode) {
       return;
     }
 
@@ -612,7 +1081,9 @@ export class ContactChat extends ContactStoreElement {
         }
 
         chat.addMessages(messages);
-        this.scheduleRefresh();
+        if (!this.searchMode) {
+          this.scheduleRefresh();
+        }
       });
     }
   }
@@ -621,6 +1092,42 @@ export class ContactChat extends ContactStoreElement {
     if (this.chat) {
       this.chat.fetching = false;
     }
+    this.fetchingNewer = false;
+  }
+
+  private blockFetchingNewer = false;
+  private fetchingNewer = false;
+
+  private fetchNewerMessages() {
+    if (!this.searchMode || !this.afterUUID || !this.chat || this.fetchingNewer || this.blockFetchingNewer) {
+      return;
+    }
+
+    this.fetchingNewer = true;
+    const endpoint = this.getEndpoint();
+    if (!endpoint) {
+      this.fetchingNewer = false;
+      return;
+    }
+
+    fetchContactHistory(
+      endpoint,
+      this.currentTicket?.uuid,
+      null,
+      this.afterUUID
+    ).then((page: ContactHistoryPage) => {
+      const messages = this.createMessages(page);
+      messages.reverse();
+
+      if (messages.length === 0) {
+        this.blockFetchingNewer = true;
+      }
+
+      // maintainScroll=true keeps the user's visual position stable
+      // so they must actively scroll down to trigger the next fetch
+      // fetchingNewer is reset in fetchComplete after scroll settles
+      this.chat.addMessages(messages, null, true, true);
+    });
   }
 
   private getTembaCompose(): TemplateResult {
@@ -786,46 +1293,123 @@ export class ContactChat extends ContactStoreElement {
 
     return html`<div class="chat-wrapper">
       ${this.currentContact
-        ? html`<temba-chat
-              @temba-scroll-threshold=${this.fetchPreviousMessages}
-              @temba-fetch-complete=${this.fetchComplete}
-              avatar=${this.avatar}
-              agent
-              avatars
-              ?hasFooter=${inFlow}
-              .showMessageLogsAfter=${this.showMessageLogsAfter}
-            >
-              ${inFlow
-                ? html`
-                    <div slot="footer" class="flow-footer">
-                      <div class="in-flow">
-                        <div class="flow-name">
-                          <temba-icon name="flow" size="1.2"></temba-icon>
-                          <div>
-                            Currently in
-                            <a
-                              href="/flow/editor/${this.currentContact.flow
-                                .uuid}/"
-                              >${this.currentContact.flow.name}</a
-                            >
-                          </div>
-                        </div>
-                        ${this.showInterrupt
-                          ? html`<temba-button
-                              class="interrupt-button"
-                              destructive
-                              small
-                              @click=${this.handleInterrupt}
-                              name="Interrupt"
-                            >
-                            </temba-button>`
-                          : null}
-                      </div>
+        ? html`<div class="chat-container">
+              ${this.searchMode
+                ? html`<div class="search-overlay ${this.searchClosing ? 'closing' : ''}">
+                    <div class="search-input-wrapper">
+                      <temba-textinput
+                        class="search-input"
+                        placeholder="Search messages..."
+                        .value=${this.searchQuery}
+                        .submitOnEnter=${false}
+                        @input=${this.handleSearchInput}
+                        @keydown=${this.handleSearchKeydown}
+                        @focus=${() => (this.searchFocused = true)}
+                        @blur=${() => (this.searchFocused = false)}
+                        widget_only
+                      ></temba-textinput>
+                      <button
+                        class="search-go"
+                        @click=${this.executeSearch}
+                        ?disabled=${!this.searchQuery.trim() ||
+                        this.searchLoading}
+                        title="Search (Enter)"
+                      >
+                        <temba-icon
+                          name="search"
+                          size="0.8"
+                        ></temba-icon>
+                      </button>
                     </div>
-                  `
+                    ${this.searchLoading
+                      ? html`<span class="search-counter"
+                          ><temba-loading size="8"></temba-loading
+                        ></span>`
+                      : this.searchResults.length > 0
+                        ? html`<span class="search-counter"
+                            >${this.searchIndex + 1} /
+                            ${this.searchResults.length}</span
+                          ><button
+                            class="search-btn ${this.searchFocused && this.searchQuery.trim() === this.lastSearchedQuery ? 'enter-target' : ''}"
+                            @click=${this.handleSearchNext}
+                            title="Older match (Enter)"
+                          >
+                            &#x25B2;
+                          </button>
+                          <button
+                            class="search-btn"
+                            @click=${this.handleSearchPrev}
+                            title="Newer match (Shift+Enter)"
+                          >
+                            &#x25BC;
+                          </button>`
+                        : null}
+                    <button
+                      class="search-btn"
+                      @click=${this.handleSearchClose}
+                      title="Close search (Escape)"
+                    >
+                      &#x2715;
+                    </button>
+                  </div>`
                 : null}
-              <div slot="footer"></div>
-            </temba-chat>
+              ${!this.searchMode
+                ? html`<button
+                    class="search-toggle"
+                    @click=${this.handleSearchToggle}
+                    title="Search messages"
+                  >
+                    <temba-icon name="search" size="1"></temba-icon>
+                  </button>`
+                : null}
+              <temba-chat
+                @temba-scroll-threshold=${this.fetchPreviousMessages}
+                @temba-scroll-threshold-bottom=${this.fetchNewerMessages}
+                @temba-fetch-complete=${this.fetchComplete}
+                avatar=${this.avatar}
+                agent
+                avatars
+                ?hasFooter=${inFlow}
+                .showMessageLogsAfter=${this.showMessageLogsAfter}
+              >
+                ${inFlow
+                  ? html`
+                      <div slot="footer" class="flow-footer">
+                        <div class="in-flow">
+                          <div class="flow-name">
+                            <temba-icon name="flow" size="1.2"></temba-icon>
+                            <div>
+                              Currently in
+                              <a
+                                href="/flow/editor/${this.currentContact.flow
+                                  .uuid}/"
+                                >${this.currentContact.flow.name}</a
+                              >
+                            </div>
+                          </div>
+                          ${this.showInterrupt
+                            ? html`<temba-button
+                                class="interrupt-button"
+                                destructive
+                                small
+                                @click=${this.handleInterrupt}
+                                name="Interrupt"
+                              >
+                              </temba-button>`
+                            : null}
+                        </div>
+                      </div>
+                    `
+                  : null}
+                <div slot="footer"></div>
+              </temba-chat>
+              ${this.searchNoResults
+                ? html`<div class="search-no-results">
+                    No results found for
+                    <strong>${this.lastSearchedQuery}</strong>
+                  </div>`
+                : null}
+            </div>
             ${inTicket
               ? html`<div class="in-ticket-wrapper">
                   <div class="in-ticket">

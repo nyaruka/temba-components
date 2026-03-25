@@ -265,4 +265,111 @@ describe('temba-contact-chat', () => {
 
     await assertScreenshot('contacts/chat-failure', getClip(chat));
   });
+
+  it('searches messages and shows results', async () => {
+    await loadStore();
+
+    // mock the search endpoint to return results for "primus"
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    // click the search toggle button
+    const searchToggle = chat.shadowRoot.querySelector(
+      '.search-toggle'
+    ) as HTMLElement;
+    expect(searchToggle).to.exist;
+    searchToggle.click();
+
+    // wait for search mode to activate and input to render
+    await waitFor(100);
+    clock.tick(100);
+    await chat.updateComplete;
+
+    await assertScreenshot('contacts/chat-search-open', getClip(chat));
+
+    // type "primus" into the search input
+    const textInput = chat.shadowRoot.querySelector(
+      '.search-input'
+    ) as any;
+    expect(textInput).to.exist;
+    textInput.value = 'primus';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await chat.updateComplete;
+
+    // trigger the search by calling executeSearch directly
+    (chat as any).executeSearch();
+
+    // wait for the search API response and results to load
+    for (let i = 0; i < 30; i++) {
+      await waitFor(50);
+      clock.tick(50);
+      await chat.updateComplete;
+      if (chat.searchResults && chat.searchResults.length > 0) break;
+    }
+
+    expect(chat.searchResults.length).to.equal(2);
+    expect(chat.searchIndex).to.equal(0);
+
+    // wait for the navigation to settle (fade out + load + fade in)
+    for (let i = 0; i < 20; i++) {
+      await waitFor(50);
+      clock.tick(50);
+      await chat.updateComplete;
+    }
+
+    await assertScreenshot('contacts/chat-search-result', getClip(chat));
+  });
+
+  it('shows no results message when search has no matches', async () => {
+    await loadStore();
+
+    // mock the search endpoint to return empty results
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=xyznotfound/,
+      '/test-assets/contacts/chat-search-empty.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    // open search mode
+    const searchToggle = chat.shadowRoot.querySelector(
+      '.search-toggle'
+    ) as HTMLElement;
+    searchToggle.click();
+    await waitFor(100);
+    clock.tick(100);
+    await chat.updateComplete;
+
+    // type a query with no matches
+    const textInput = chat.shadowRoot.querySelector(
+      '.search-input'
+    ) as any;
+    textInput.value = 'xyznotfound';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await chat.updateComplete;
+
+    // trigger the search
+    (chat as any).executeSearch();
+
+    // wait for the search API response
+    for (let i = 0; i < 30; i++) {
+      await waitFor(50);
+      clock.tick(50);
+      await chat.updateComplete;
+      if (chat.searchNoResults) break;
+    }
+
+    expect(chat.searchResults.length).to.equal(0);
+    expect(chat.searchNoResults).to.be.true;
+
+    await assertScreenshot('contacts/chat-search-no-results', getClip(chat));
+  });
 });
