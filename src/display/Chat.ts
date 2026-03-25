@@ -1309,6 +1309,12 @@ export class Chat extends RapidElement {
       hasLocationAttachment &&
       message.msg.text &&
       /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/.test(message.msg.text.trim());
+    // Keep the text interpolation itself whitespace-free: this element uses
+    // pre-wrap, so formatter-inserted newlines become visible in screenshots.
+    const messageText =
+      this.searchHighlight && this.highlightMessageUuid === message.uuid
+        ? this.highlightText(message.msg.text, this.searchHighlight)
+        : message.msg.text;
 
     return html`
       <div class="bubble-wrap">
@@ -1348,7 +1354,7 @@ export class Chat extends RapidElement {
           : message.msg.text && !textIsCoordinates
             ? html`<div class="bubble">
                 ${name ? html`<div class="name">${name}</div>` : null}
-                <div class="message-text">${this.searchHighlight && this.highlightMessageUuid === message.uuid ? this.highlightText(message.msg.text, this.searchHighlight) : message.msg.text}</div>
+                <div class="message-text">${messageText}</div>
               </div>`
             : null}
 
