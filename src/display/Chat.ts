@@ -267,6 +267,7 @@ export class Chat extends RapidElement {
       .incoming .row {
         flex-direction: row-reverse;
         margin-left: 1em;
+        margin-right: 1em;
       }
 
       .bubble {
