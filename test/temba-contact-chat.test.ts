@@ -302,8 +302,10 @@ describe('temba-contact-chat', () => {
     textInput.dispatchEvent(new Event('input', { bubbles: true }));
     await chat.updateComplete;
 
-    // trigger the search by calling executeSearch directly
-    (chat as any).executeSearch();
+    // trigger search via the same UI action users use
+    const searchGo = chat.shadowRoot.querySelector('.search-go') as HTMLElement;
+    expect(searchGo).to.exist;
+    searchGo.click();
 
     // wait for the search API response and results to load
     for (let i = 0; i < 30; i++) {
@@ -356,8 +358,10 @@ describe('temba-contact-chat', () => {
     textInput.dispatchEvent(new Event('input', { bubbles: true }));
     await chat.updateComplete;
 
-    // trigger the search
-    (chat as any).executeSearch();
+    // trigger search via the same UI action users use
+    const searchGo = chat.shadowRoot.querySelector('.search-go') as HTMLElement;
+    expect(searchGo).to.exist;
+    searchGo.click();
 
     // wait for the search API response
     for (let i = 0; i < 30; i++) {

@@ -630,12 +630,15 @@ export class ContactChat extends ContactStoreElement {
       this.searchLoading = false;
       this.searchNoResults = false;
       this.lastSearchedQuery = '';
-      if (this.chat) {
-        this.chat.searchHighlight = null;
-        this.chat.highlightMessageUuid = null;
+      const chat = this.chat;
+      if (!chat) {
+        return;
       }
+
+      chat.searchHighlight = null;
+      chat.highlightMessageUuid = null;
       // reload the current view
-      this.chat.reset();
+      chat.reset();
       this.blockFetching = false;
       this.blockFetchingNewer = false;
       this.fetchingNewer = false;
@@ -679,6 +682,7 @@ export class ContactChat extends ContactStoreElement {
     this.searchLoading = true;
     this.searchResults = [];
     this.searchIndex = -1;
+    this.searchNoResults = false;
     this.lastSearchedQuery = query;
     if (this.chat) {
       this.chat.searchHighlight = null;
@@ -702,6 +706,9 @@ export class ContactChat extends ContactStoreElement {
       })
       .catch(() => {
         this.searchLoading = false;
+        this.searchResults = [];
+        this.searchIndex = -1;
+        this.searchNoResults = false;
       });
   }
 
@@ -758,8 +765,9 @@ export class ContactChat extends ContactStoreElement {
         created_on: new Date(result.created_on)
       };
 
-      Promise.all([beforePromise, afterPromise]).then(
-        ([beforePage, afterPage]) => {
+      let navigationCompleted = false;
+      Promise.all([beforePromise, afterPromise])
+        .then(([beforePage, afterPage]) => {
           const afterMessages = this.createMessages(afterPage);
           afterMessages.reverse();
 
@@ -798,6 +806,7 @@ export class ContactChat extends ContactStoreElement {
 
           // wait for Lit to render the DOM, then position scroll, then reveal
           // uses setTimeout instead of requestAnimationFrame for test compatibility
+          navigationCompleted = true;
           this.chat.updateComplete.then(() => {
             window.setTimeout(() => {
               if (!this.chat) return;
@@ -841,8 +850,21 @@ export class ContactChat extends ContactStoreElement {
               }, 16);
             }, 16);
           });
-        }
-      );
+        })
+        .catch(() => {
+          this.blockFetching = false;
+          this.blockFetchingNewer = false;
+          this.fetchingNewer = false;
+          this.beforeUUID = null;
+          this.afterUUID = null;
+          this.fetchPreviousMessages();
+        })
+        .finally(() => {
+          if (!navigationCompleted && this.chat) {
+            this.chat.style.visibility = 'visible';
+            this.chat.style.opacity = '1';
+          }
+        });
     }, FADE_MS);
   }
 
@@ -1117,17 +1139,26 @@ export class ContactChat extends ContactStoreElement {
       null,
       this.afterUUID
     ).then((page: ContactHistoryPage) => {
+      if (!this.chat) {
+        this.fetchingNewer = false;
+        return;
+      }
+
       const messages = this.createMessages(page);
       messages.reverse();
 
       if (messages.length === 0) {
         this.blockFetchingNewer = true;
+        this.fetchingNewer = false;
+        return;
       }
 
       // maintainScroll=true keeps the user's visual position stable
       // so they must actively scroll down to trigger the next fetch
       // fetchingNewer is reset in fetchComplete after scroll settles
       this.chat.addMessages(messages, null, true, true);
+    }).catch(() => {
+      this.fetchingNewer = false;
     });
   }
 
@@ -1481,8 +1512,17 @@ export const fetchContactHistory = (
   after: string = undefined
 ): Promise<ContactHistoryPage> => {
   return new Promise<ContactHistoryPage>((resolve) => {
+    const emptyPage: ContactHistoryPage = {
+      events: [],
+      next: null
+    };
     const controller = new AbortController();
     pendingRequests.push(controller);
+    const clearController = () => {
+      pendingRequests = pendingRequests.filter(
+        (pendingController: AbortController) => pendingController !== controller
+      );
+    };
 
     let url = endpoint;
     const params = [];
@@ -1505,17 +1545,13 @@ export const fetchContactHistory = (
 
     getUrl(url, controller)
       .then((response: WebResponse) => {
-        // on success, remove our abort controller
-        pendingRequests = pendingRequests.filter(
-          (controller: AbortController) => {
-            return response.controller === controller;
-          }
-        );
-
-        resolve(response.json as ContactHistoryPage);
+        clearController();
+        const page = response.json as ContactHistoryPage;
+        resolve(page || emptyPage);
       })
       .catch(() => {
-        // canceled
+        clearController();
+        resolve(emptyPage);
       });
   });
 };

@@ -1123,8 +1123,8 @@ export class Chat extends RapidElement {
     if (parts.length === 1) {
       return text;
     }
-    return html`${parts.map((part) =>
-      regex.test(part) ? html`<mark>${part}</mark>` : part
+    return html`${parts.map((part, index) =>
+      index % 2 === 1 ? html`<mark>${part}</mark>` : part
     )}`;
   }
 
