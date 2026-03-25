@@ -350,6 +350,7 @@ export class RichEditor extends FieldElement {
           let className = isMono ? `${cls} tok-mono` : cls;
           if (isInvalidFn) className += ' tok-fn-invalid';
           span.className = className;
+          if (isMono) span.setAttribute('spellcheck', 'false');
           div.appendChild(span);
         }
       }
@@ -685,7 +686,7 @@ export class RichEditor extends FieldElement {
           <div
             class="highlight-editor"
             contenteditable="true"
-            spellcheck="false"
+            spellcheck="true"
             data-placeholder=${this.placeholder}
             @input=${this.handleInput}
             @beforeinput=${this.handleBeforeInput}
