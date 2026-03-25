@@ -947,9 +947,11 @@ export class Chat extends RapidElement {
       isMsg1 && isMsg2 ? msg1.type === msg2.type : isMsg1 === isMsg2;
 
     // check time first - if BATCH_TIME_WINDOW has passed since last time_elapsed reason
-    const timeToCheck = lastTimeElapsedDate || msg1.created_on;
+    // compare the current message (msg1) against the last break point to detect
+    // when messages have drifted far enough to warrant a new time group
+    const timeToCheck = lastTimeElapsedDate || msg2.created_on;
     if (
-      Math.abs(msg2.created_on.getTime() - timeToCheck.getTime()) >=
+      Math.abs(msg1.created_on.getTime() - timeToCheck.getTime()) >=
       BATCH_TIME_WINDOW
     ) {
       return { same: false, reason: 'time_elapsed' };
@@ -984,12 +986,21 @@ export class Chat extends RapidElement {
         // if our message belongs to the previous group, in we go
         const groupCheck = this.isSameGroup(lastMsg, newMsg);
         if (groupCheck.same) {
-          group.messages.push(...newGroup.messages);
+          if (append) {
+            group.messages.push(...newGroup.messages);
+          } else {
+            // historical messages are older, prepend to maintain chronological order
+            group.messages.unshift(...newGroup.messages);
+          }
         } else {
           // otherwise, just add our entire group as a new one
           if (append) {
             this.messageGroups.splice(0, 0, newGroup);
           } else {
+            // update the boundary group's reason to reflect the new adjacency
+            if (groupCheck.reason) {
+              group.reason = groupCheck.reason;
+            }
             this.messageGroups.push(newGroup);
           }
         }
@@ -1190,7 +1201,6 @@ export class Chat extends RapidElement {
         );
         showTimeForReason = timeSinceLastShown >= BATCH_TIME_WINDOW;
       } else {
-        // no previous timestamp, check against previous group
         showTimeForReason = group.reason === 'time_elapsed';
       }
     }
