@@ -314,6 +314,81 @@ export default {
           }
         }
 
+        // Handle contact chat history
+        if (context.request.method === 'GET' && context.path.match(/^\/contact\/chat\/[^/]+\/$/)) {
+          const historyPath = path.resolve('./demo/data/contact-chat-history.json');
+          if (fs.existsSync(historyPath)) {
+            const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+            const url = new URL(context.request.url, 'http://localhost');
+            const before = url.searchParams.get('before');
+            const after = url.searchParams.get('after');
+
+            if (before) {
+              // return events older than this UUID
+              const events = history.events.filter(e => e.uuid < before);
+              context.contentType = 'application/json';
+              context.body = JSON.stringify({ events: events, next: null });
+              return;
+            } else if (after) {
+              // return events newer than this UUID
+              const events = history.events.filter(e => e.uuid > after);
+              context.contentType = 'application/json';
+              context.body = JSON.stringify({ events: events.reverse(), next: null });
+              return;
+            }
+          }
+          context.contentType = 'application/json';
+          context.body = JSON.stringify({ error: 'must specify before or after parameter' });
+          context.status = 400;
+          return;
+        }
+
+        // Handle contact chat search
+        if (context.request.method === 'GET' && context.path.match(/^\/contact\/chat_search\/[^/]+\/$/)) {
+          const historyPath = path.resolve('./demo/data/contact-chat-history.json');
+          if (fs.existsSync(historyPath)) {
+            const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+            const url = new URL(context.request.url, 'http://localhost');
+            const text = (url.searchParams.get('text') || '').toLowerCase();
+            if (text) {
+              const results = history.events.filter(
+                e => e.msg && e.msg.text && e.msg.text.toLowerCase().includes(text)
+              );
+              context.contentType = 'application/json';
+              context.body = JSON.stringify({ results });
+              return;
+            }
+          }
+          context.contentType = 'application/json';
+          context.body = JSON.stringify({ results: [] });
+          return;
+        }
+
+        // Handle contact chat POST (send message) - return a mock event
+        if (context.request.method === 'POST' && context.path.match(/^\/contact\/chat\/[^/]+\/$/)) {
+          return new Promise((resolve) => {
+            let body = '';
+            context.req.on('data', chunk => { body += chunk.toString(); });
+            context.req.on('end', () => {
+              const data = JSON.parse(body);
+              const event = {
+                uuid: crypto.randomUUID(),
+                type: 'msg_created',
+                created_on: new Date().toISOString(),
+                msg: {
+                  urn: 'tel:+1234567890',
+                  text: data.text || '',
+                  channel: { uuid: 'ch-001', name: 'SMS Channel' },
+                  attachments: data.attachments || []
+                }
+              };
+              context.contentType = 'application/json';
+              context.body = JSON.stringify({ event });
+              resolve();
+            });
+          });
+        }
+
         // Handle omnibox endpoint - combines groups and contacts
         if (context.request.method === 'GET' && context.path === '/contact/omnibox/') {
           const url = new URL(context.request.url, 'http://localhost');

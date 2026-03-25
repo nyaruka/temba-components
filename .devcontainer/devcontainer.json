@@ -12,7 +12,8 @@
     "--network=textit_default",
     "--hostname=temba-components",
     "--add-host=minio:host-gateway",
-    "--shm-size=1g"
+    "--shm-size=1g",
+    "-p=3010:3010"
   ],
   "mounts": [
     "source=${localEnv:NYARUKA_HOME}/temba-components,target=/workspaces/temba-components,type=bind,consistency=cached",

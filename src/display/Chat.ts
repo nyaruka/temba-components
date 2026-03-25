@@ -1,4 +1,4 @@
-import { TemplateResult, html, PropertyValueMap, css } from 'lit';
+import { TemplateResult, html, nothing, PropertyValueMap, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { RapidElement } from '../RapidElement';
@@ -267,7 +267,6 @@ export class Chat extends RapidElement {
       .incoming .row {
         flex-direction: row-reverse;
         margin-left: 1em;
-        margin-right: 1em;
       }
 
       .bubble {
@@ -724,6 +723,35 @@ export class Chat extends RapidElement {
           rgba(0, 0, 0, 0.3) 0px 4px 10px 0px,
           rgba(0, 0, 0, 0.4) 0px 2px 4px 0px;
       }
+
+      mark {
+        background: #fef08a;
+        color: #1a1a1a;
+        padding: 0.1em 0.3em;
+        margin: 0 0.1em;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+      }
+
+      .search-match .bubble {
+        box-shadow: 0 0 0 2px #fef08a;
+      }
+
+      @keyframes search-pulse {
+        0% {
+          box-shadow: 0 0 0 2px #fef08a;
+        }
+        50% {
+          box-shadow: 0 0 0 4px #fef08a;
+        }
+        100% {
+          box-shadow: 0 0 0 2px #fef08a;
+        }
+      }
+
+      .search-match .bubble {
+        animation: search-pulse 1s ease-in-out 2;
+      }
     `;
   }
 
@@ -766,6 +794,12 @@ export class Chat extends RapidElement {
   @property({ type: Boolean })
   showTimestamps = true;
 
+  @property({ type: String, attribute: false })
+  searchHighlight: string = null;
+
+  @property({ type: String, attribute: false })
+  highlightMessageUuid: string = null;
+
   private msgMap = new Map<string, ContactEvent>();
   private metadataCache = new Map<string, ContactEvent>();
 
@@ -782,7 +816,8 @@ export class Chat extends RapidElement {
   public addMessages(
     messages: ContactEvent[],
     startTime: Date = null,
-    append = false
+    append = false,
+    maintainScroll = false
   ) {
     if (!startTime) {
       startTime = new Date();
@@ -824,19 +859,26 @@ export class Chat extends RapidElement {
         this.insertGroups(grouped, append);
 
         // show notification if new messages are appended and user is scrolled away from bottom
-        if (append && isScrolledAway && newMessages.length > 0) {
+        // but not during search (searchHighlight is set)
+        if (append && isScrolledAway && newMessages.length > 0 && !this.searchHighlight) {
           this.showNewMessageNotification = true;
         }
 
         window.setTimeout(() => {
           // when appending (new messages at bottom), adjust scroll to maintain visible content
           // with column-reverse, new content at bottom increases scrollHeight
-          if (append && isScrolledAway) {
+          if (append && (isScrolledAway || maintainScroll)) {
             const heightDiff = ele.scrollHeight - prevScrollHeight;
             ele.scrollTop = prevTop - heightDiff;
           } else {
             ele.scrollTop = prevTop;
           }
+
+          // recalculate shadow visibility after content change
+          const scrollableHeight = ele.scrollHeight - ele.clientHeight;
+          const absScrollTop = Math.abs(ele.scrollTop);
+          this.hideTopScroll = absScrollTop >= scrollableHeight - 1;
+          this.hideBottomScroll = absScrollTop <= 1;
 
           this.fireCustomEvent(CustomEventType.FetchComplete);
         }, 100);
@@ -846,6 +888,31 @@ export class Chat extends RapidElement {
         ? 0
         : Math.max(0, MIN_FETCH_TIME - elapsed)
     );
+  }
+
+  /**
+   * Synchronously loads messages into the chat without any timeouts or scroll
+   * adjustments. Use this when the caller controls visibility and scroll
+   * positioning (e.g. search result navigation).
+   */
+  public loadMessages(messages: ContactEvent[]) {
+    const newMessageIds: string[] = [];
+    for (const m of messages) {
+      if (m.type === 'msg_deleted' || m.type === 'msg_status_changed') {
+        const msgUuid = (m as any).msg_uuid;
+        if (msgUuid) {
+          this.metadataCache.set(msgUuid, m);
+        }
+        continue;
+      }
+      if (this.addMessage(m)) {
+        newMessageIds.push(m.uuid);
+      }
+    }
+    if (newMessageIds.length > 0) {
+      const grouped = this.groupMessages(newMessageIds);
+      this.insertGroups(grouped, false);
+    }
   }
 
   private addMessage(msg: ContactEvent): boolean {
@@ -995,6 +1062,11 @@ export class Chat extends RapidElement {
     if (shouldFetch) {
       this.fireCustomEvent(CustomEventType.ScrollThreshold);
     }
+
+    // trigger when scrolling near the bottom (newest messages) in column-reverse
+    if (absScrollTop <= SCROLL_FETCH_BUFFER * 3 && scrollableHeight > 0) {
+      this.fireCustomEvent(CustomEventType.ScrollThresholdBottom);
+    }
   }
 
   public scrollToBottom() {
@@ -1004,6 +1076,56 @@ export class Chat extends RapidElement {
       this.hideBottomScroll = true;
       this.showNewMessageNotification = false;
     }
+  }
+
+  public scrollToMessage(
+    uuid: string,
+    animate = true,
+    onComplete?: () => void
+  ) {
+    this.highlightMessageUuid = uuid;
+    window.setTimeout(() => {
+      const scroll = this.shadowRoot.querySelector('.scroll') as HTMLElement;
+      const row = this.shadowRoot.querySelector(
+        `.row[data-uuid="${uuid}"]`
+      ) as HTMLElement;
+      if (scroll && row) {
+        // manually set scrollTop to center the row within the scroll area
+        // this avoids scrollIntoView which can move ancestor containers
+        const scrollRect = scroll.getBoundingClientRect();
+        const rowRect = row.getBoundingClientRect();
+        const rowCenter = rowRect.top + rowRect.height / 2;
+        const scrollCenter = scrollRect.top + scrollRect.height / 2;
+        const offset = rowCenter - scrollCenter;
+        if (animate) {
+          scroll.scrollBy({ top: offset, behavior: 'smooth' });
+        } else {
+          scroll.scrollTop = scroll.scrollTop + offset;
+        }
+      }
+      if (onComplete) {
+        // wait one frame for the browser to finish the scroll
+        requestAnimationFrame(() => onComplete());
+      }
+    }, 150);
+  }
+
+  private highlightText(
+    text: string,
+    search: string
+  ): TemplateResult | string {
+    if (!search || !text) {
+      return text;
+    }
+    const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    const parts = text.split(regex);
+    if (parts.length === 1) {
+      return text;
+    }
+    return html`${parts.map((part, index) =>
+      index % 2 === 1 ? html`<mark>${part}</mark>` : part
+    )}`;
   }
 
   private handleNewMessageClick() {
@@ -1110,8 +1232,13 @@ export class Chat extends RapidElement {
               const deletedClass = msgEvent._deleted ? 'deleted' : '';
               const latestClass = index === msgIds.length - 1 ? 'latest' : '';
               const eventClass = msg._rendered ? 'is-event' : '';
+              const matchClass =
+                this.highlightMessageUuid === msg.uuid
+                  ? 'search-match'
+                  : '';
               return html`<div
-                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass}"
+                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass} ${matchClass}"
+                data-uuid=${msg.uuid || nothing}
               >
                 ${this.renderMessage(msg, index == 0 ? name : null)}
               </div>`;
@@ -1182,6 +1309,12 @@ export class Chat extends RapidElement {
       hasLocationAttachment &&
       message.msg.text &&
       /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/.test(message.msg.text.trim());
+    // Keep the text interpolation itself whitespace-free: this element uses
+    // pre-wrap, so formatter-inserted newlines become visible in screenshots.
+    const messageText =
+      this.searchHighlight && this.highlightMessageUuid === message.uuid
+        ? this.highlightText(message.msg.text, this.searchHighlight)
+        : message.msg.text;
 
     return html`
       <div class="bubble-wrap">
@@ -1221,7 +1354,7 @@ export class Chat extends RapidElement {
           : message.msg.text && !textIsCoordinates
             ? html`<div class="bubble">
                 ${name ? html`<div class="name">${name}</div>` : null}
-                <div class="message-text">${message.msg.text}</div>
+                <div class="message-text">${messageText}</div>
               </div>`
             : null}
 

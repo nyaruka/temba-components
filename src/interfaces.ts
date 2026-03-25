@@ -278,6 +278,7 @@ export enum CustomEventType {
   ButtonClicked = 'temba-button-clicked',
   DialogHidden = 'temba-dialog-hidden',
   ScrollThreshold = 'temba-scroll-threshold',
+  ScrollThresholdBottom = 'temba-scroll-threshold-bottom',
   ContentChanged = 'temba-content-changed',
   ContextChanged = 'temba-context-changed',
   FetchComplete = 'temba-fetch-complete',
