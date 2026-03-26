@@ -10,7 +10,7 @@ AGENTS.md
 start.sh
 
 ## npm
-/node_modules/
+/node_modules
 /.pnpm-store/
 /npm-debug.log
 

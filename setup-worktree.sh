@@ -20,14 +20,31 @@ if ! docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep
     devcontainer up --workspace-folder "$SCRIPT_DIR"
 fi
 
-# Install deps if needed (pnpm store is shared via Docker volume, so installs are fast)
+# Install deps into a shared directory, then symlink into the worktree.
+# This avoids a per-worktree pnpm install (~20s) on every new workspace.
 docker exec "$CONTAINER_NAME" bash -c '
     WORKTREE_DIR="/workspaces/worktrees/temba-components/'"$WORKSPACE_NAME"'"
-    cd "$WORKTREE_DIR"
+    DEPS_DIR="/workspaces/worktrees/.deps/temba-components"
+    mkdir -p "$DEPS_DIR"
 
-    if [ ! -d "node_modules/lit" ]; then
-        echo "Installing dependencies..."
+    # Install into shared deps dir if not done or lockfile has changed
+    LOCK_HASH=$(md5sum "$WORKTREE_DIR/pnpm-lock.yaml" | cut -d" " -f1)
+    CACHED_HASH=$(cat "$DEPS_DIR/.lock-hash" 2>/dev/null || echo "")
+    if [ "$LOCK_HASH" != "$CACHED_HASH" ]; then
+        echo "Installing shared dependencies..."
+        cp "$WORKTREE_DIR/package.json" "$WORKTREE_DIR/pnpm-lock.yaml" "$DEPS_DIR/"
+        cd "$DEPS_DIR"
         pnpm install
+        echo "$LOCK_HASH" > "$DEPS_DIR/.lock-hash"
+    fi
+
+    # Symlink node_modules into the worktree
+    target="$WORKTREE_DIR/node_modules"
+    if [ -L "$target" ] && [ "$(readlink "$target")" = "$DEPS_DIR/node_modules" ]; then
+        : # already symlinked
+    else
+        rm -rf "$target"
+        ln -s "$DEPS_DIR/node_modules" "$target"
     fi
 
     echo "Worktree '\'''"$WORKSPACE_NAME"''\'' ready for development"
