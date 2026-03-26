@@ -1,0 +1,1 @@
+../utils/projects/temba-components/AGENTS.md
