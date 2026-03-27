@@ -24,7 +24,8 @@ jobs:
         run: |
           echo "NYARUKA_HOME=$(dirname ${{ github.workspace }})" >> $GITHUB_ENV
           echo "CONDUCTOR_HOME=/tmp/conductor" >> $GITHUB_ENV
-          mkdir -p /tmp/conductor/workspaces
+          echo "WORKTREES=/tmp/worktrees" >> $GITHUB_ENV
+          mkdir -p /tmp/conductor/workspaces /tmp/worktrees
       - name: Build and run dev container task
         id: validate
         uses: devcontainers/ci@v0.3
