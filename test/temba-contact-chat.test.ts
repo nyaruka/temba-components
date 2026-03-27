@@ -266,6 +266,20 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-failure', getClip(chat));
   });
 
+  it('hides search toggle when showSearch is not set', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const searchToggle = chat.shadowRoot.querySelector(
+      '.search-toggle'
+    ) as HTMLElement;
+    expect(searchToggle).to.not.exist;
+
+    await assertScreenshot('contacts/chat-no-search', getClip(chat));
+  });
+
   it('searches messages and shows results', async () => {
     await loadStore();
 
@@ -276,7 +290,8 @@ describe('temba-contact-chat', () => {
     );
 
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
+      contact: 'contact-dave-active',
+      showSearch: true
     });
 
     // click the search toggle button
@@ -338,7 +353,8 @@ describe('temba-contact-chat', () => {
     );
 
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
+      contact: 'contact-dave-active',
+      showSearch: true
     });
 
     // open search mode
