@@ -453,6 +453,9 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: Boolean })
   disableReply = false;
 
+  @property({ type: Boolean })
+  showSearch = false;
+
   @property({ type: String })
   avatar = DEFAULT_AVATAR;
 
@@ -1326,7 +1329,7 @@ export class ContactChat extends ContactStoreElement {
     return html`<div class="chat-wrapper">
       ${this.currentContact
         ? html`<div class="chat-container">
-              ${this.searchMode
+              ${this.showSearch && this.searchMode
                 ? html`<div class="search-overlay ${this.searchClosing ? 'closing' : ''}">
                     <div class="search-input-wrapper">
                       <temba-textinput
@@ -1385,7 +1388,7 @@ export class ContactChat extends ContactStoreElement {
                     </button>
                   </div>`
                 : null}
-              ${!this.searchMode
+              ${this.showSearch && !this.searchMode
                 ? html`<button
                     class="search-toggle"
                     @click=${this.handleSearchToggle}
