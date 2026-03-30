@@ -2,6 +2,7 @@ import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FlowTypes } from '../types';
 import { Node, EnterFlow } from '../../store/flow-definition';
 import { renderFlowLinks } from '../utils';
+import { shouldExcludeFlow } from '../flow-utils';
 
 export const enter_flow: ActionConfig = {
   name: 'Enter a Flow',
@@ -25,7 +26,8 @@ export const enter_flow: ActionConfig = {
       helpText: 'The contact will enter this flow and not return',
       endpoint: '/api/v2/flows.json',
       valueKey: 'uuid',
-      nameKey: 'name'
+      nameKey: 'name',
+      shouldExclude: shouldExcludeFlow
     }
   },
   layout: ['flow'],

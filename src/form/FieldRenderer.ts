@@ -264,6 +264,7 @@ export class FieldRenderer {
       class="${extraClasses}"
       style="${style}"
       .getName=${config.getName}
+      .shouldExclude=${config.shouldExclude}
       .createArbitraryOption=${config.createArbitraryOption}
       ?allowCreate="${config.allowCreate || false}"
       @change="${onChange || (() => {})}"
