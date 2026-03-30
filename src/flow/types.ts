@@ -217,6 +217,7 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   createArbitraryOption?: (input: string, options: any[]) => any;
   allowCreate?: boolean;
   getDynamicOptions?: () => Array<{ value: string; name: string }>;
+  shouldExclude?: (option: any) => boolean;
 }
 
 export interface KeyValueFieldConfig extends BaseFieldConfig {

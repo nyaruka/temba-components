@@ -3,6 +3,7 @@ import { Node, SetRunResult } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import { html } from 'lit';
 import { renderFlowLinks } from '../utils';
+import { shouldExcludeFlow } from '../flow-utils';
 import {
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
@@ -24,7 +25,8 @@ export const split_by_subflow: NodeConfig = {
         'Once the subflow is complete or expires, the contact will return here',
       endpoint: '/api/v2/flows.json',
       valueKey: 'uuid',
-      nameKey: 'name'
+      nameKey: 'name',
+      shouldExclude: shouldExcludeFlow
     },
     params: {
       type: 'key-value',
