@@ -2261,8 +2261,9 @@ export class Editor extends RapidElement {
   }
 
   private handleKeyDown(event: KeyboardEvent): void {
-    // Cmd/Ctrl+F opens flow search
+    // Cmd/Ctrl+F opens flow search (unless a dialog is already open)
     if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+      if (this.isDialogOrMenuOpen()) return;
       event.preventDefault();
       const search = this.querySelector('temba-flow-search') as FlowSearch;
       if (search) {
