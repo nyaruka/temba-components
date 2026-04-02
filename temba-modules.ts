@@ -81,6 +81,7 @@ import { FloatingWindow } from './src/layout/FloatingWindow';
 import { Accordion } from './src/layout/Accordion';
 import { AccordionSection } from './src/layout/AccordionSection';
 import { Simulator } from './src/simulator/Simulator';
+import { FlowSearch } from './src/flow/FlowSearch';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -172,3 +173,4 @@ addCustomElement('temba-expression-highlight', ExpressionHighlight);
 addCustomElement('temba-floating-tab', FloatingTab);
 addCustomElement('temba-floating-window', FloatingWindow);
 addCustomElement('temba-simulator', Simulator);
+addCustomElement('temba-flow-search', FlowSearch);

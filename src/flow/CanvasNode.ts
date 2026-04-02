@@ -6,7 +6,7 @@ import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
-import { isRightClick, renderClamped } from './utils';
+import { isRightClick, localizeAction, renderClamped } from './utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
@@ -1647,7 +1647,6 @@ export class CanvasNode extends RapidElement {
    * Falls back to base language values if no localization exists for a field.
    */
   private getLocalizedAction(action: Action): Action {
-    // If not translating or no flow definition, return original action
     if (
       !this.isTranslating ||
       !this.flowDefinition ||
@@ -1657,36 +1656,10 @@ export class CanvasNode extends RapidElement {
       return action;
     }
 
-    // Check if there's localization for this action
-    const localization =
-      this.flowDefinition?.localization?.[this.languageCode]?.[action.uuid];
-
-    if (!localization) {
-      // No localization available, return original action
-      return action;
-    }
-
-    // Create a new action with localized values, falling back to base language
-    const localizedAction = { ...action };
-
-    // Apply localized values for each field
-    Object.keys(localization).forEach((field) => {
-      const localizedValue = localization[field];
-      if (Array.isArray(localizedValue)) {
-        // Localized values are stored as arrays
-        if (localizedValue.length > 0) {
-          // For single-value fields like 'text', take the first element
-          // For array fields like 'quick_replies', use the whole array
-          if (Array.isArray(action[field])) {
-            localizedAction[field] = localizedValue;
-          } else {
-            localizedAction[field] = localizedValue[0];
-          }
-        }
-      }
-    });
-
-    return localizedAction;
+    return localizeAction(
+      action,
+      this.flowDefinition?.localization?.[this.languageCode]?.[action.uuid]
+    );
   }
 
   private renderAction(node: Node, action: Action, index: number) {

@@ -1,5 +1,5 @@
 import { html, TemplateResult } from 'lit-html';
-import { NamedObject, FlowPosition } from '../store/flow-definition';
+import { Action, NamedObject, FlowPosition } from '../store/flow-definition';
 import { FlowIssue } from '../store/AppState';
 import { CustomEventType } from '../interfaces';
 import { tokenize, TokenType } from '../excellent/tokenizer';
@@ -808,3 +808,33 @@ export const calculateReflowPositions = (
 
   return newPositions;
 };
+
+/**
+ * Apply localization overrides to an action, falling back to the base value
+ * for any field that has no localized entry.
+ *
+ * @param action       The base-language action.
+ * @param localization The per-field localization record for this action's UUID
+ *                     (i.e. `definition.localization[lang][action.uuid]`), or
+ *                     undefined if no localization exists.
+ * @returns A shallow copy with localized values merged in, or the original
+ *          action if there is nothing to merge.
+ */
+export function localizeAction(
+  action: Action,
+  localization: Record<string, any> | undefined
+): Action {
+  if (!localization) return action;
+  const localized = { ...action };
+  for (const field of Object.keys(localization)) {
+    const val = localization[field];
+    if (Array.isArray(val) && val.length > 0) {
+      if (Array.isArray((action as any)[field])) {
+        (localized as any)[field] = val;
+      } else {
+        (localized as any)[field] = val[0];
+      }
+    }
+  }
+  return localized;
+}
