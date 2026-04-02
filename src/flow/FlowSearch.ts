@@ -14,6 +14,7 @@ import {
   StartSession,
   CallWebhook,
   CallResthook,
+  CallClassifier,
   CallLLM,
   OpenTicket,
   AddToGroup,
@@ -35,6 +36,7 @@ import {
   ActionConfig,
   NodeConfig
 } from './types';
+import { localizeAction } from './utils';
 
 // Sticky note badge colors: border matches the sticky's border, fill is 25% lighter
 const STICKY_BADGE_COLORS: Record<
@@ -197,6 +199,12 @@ function getActionSearchTexts(action: Action): string[] {
       if (a.input) texts.push(a.input);
       break;
     }
+    case 'call_classifier': {
+      const a = action as CallClassifier;
+      if (a.classifier?.name) texts.push(a.classifier.name);
+      if (a.input) texts.push(a.input);
+      break;
+    }
     case 'open_ticket': {
       const a = action as OpenTicket;
       if (a.topic?.name) texts.push(a.topic.name);
@@ -283,28 +291,6 @@ function getTypeName(
   if (actionConfig?.name) return actionConfig.name;
   if (nodeConfig?.name) return nodeConfig.name;
   return 'Unknown';
-}
-
-/**
- * Apply localization to an action, falling back to base values for unlocalized fields.
- */
-function localizeAction(
-  action: Action,
-  localization: Record<string, any> | undefined
-): Action {
-  if (!localization) return action;
-  const localized = { ...action };
-  for (const field of Object.keys(localization)) {
-    const val = localization[field];
-    if (Array.isArray(val) && val.length > 0) {
-      if (Array.isArray((action as any)[field])) {
-        (localized as any)[field] = val;
-      } else {
-        (localized as any)[field] = val[0];
-      }
-    }
-  }
-  return localized;
 }
 
 /**
@@ -739,7 +725,13 @@ export class FlowSearch extends LitElement {
   render(): TemplateResult {
     return html`
       <div class="backdrop" @click=${this.handleBackdropClick}></div>
-      <div class="search-container" @click=${(e: Event) => e.stopPropagation()}>
+      <div
+        class="search-container"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search flow"
+        @click=${(e: Event) => e.stopPropagation()}
+      >
         <div class="search-input-row">
           <div class="search-icon">
             <svg
@@ -757,6 +749,7 @@ export class FlowSearch extends LitElement {
           <input
             type="text"
             placeholder="Search this flow..."
+            aria-label="Search this flow"
             .value=${this.searchQuery}
             @input=${this.handleInput}
             @keydown=${this.handleKeyDown}
