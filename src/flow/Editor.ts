@@ -71,6 +71,7 @@ import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import { FloatingWindow } from '../layout/FloatingWindow';
 import { Icon } from '../Icons';
+import { FlowSearch, SearchResult } from './FlowSearch';
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -2260,6 +2261,22 @@ export class Editor extends RapidElement {
   }
 
   private handleKeyDown(event: KeyboardEvent): void {
+    // Cmd/Ctrl+F opens flow search
+    if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+      event.preventDefault();
+      const search = this.querySelector('temba-flow-search') as FlowSearch;
+      if (search) {
+        search.definition = this.definition;
+        search.languageCode = this.languageCode || '';
+        search.show();
+      }
+      return;
+    }
+
+    // Don't handle other keys while search overlay is open
+    const search = this.querySelector('temba-flow-search') as FlowSearch;
+    if (search?.open) return;
+
     if (event.key === 'Delete' || event.key === 'Backspace') {
       // If delete confirmation dialog is already showing, confirm it
       if (this.deleteDialog?.open) {
@@ -6155,6 +6172,82 @@ export class Editor extends RapidElement {
     });
   }
 
+  private handleSearchResultSelected(event: CustomEvent): void {
+    const result = event.detail as SearchResult;
+
+    // Handle sticky note results
+    if (result.stickyField) {
+      this.focusCanvasElement(
+        `temba-sticky-note[uuid="${result.nodeUuid}"]`,
+        result.stickyField
+      );
+      return;
+    }
+
+    const node = this.definition.nodes.find(
+      (n) => n.uuid === result.nodeUuid
+    );
+    if (!node) return;
+
+    const nodeUI = this.definition._ui?.nodes[result.nodeUuid];
+
+    // Scroll to the node
+    this.focusNode(result.nodeUuid);
+
+    // Open editor after a short delay so scroll can start
+    setTimeout(() => {
+      if (result.action) {
+        // Open the action editor
+        this.editingAction = result.action;
+        this.editingNode = node;
+        this.editingNodeUI = nodeUI;
+        this.dialogOrigin = null;
+      } else {
+        // Open the node editor (for splits, webhooks, etc.)
+        this.editingNode = node;
+        this.editingNodeUI = nodeUI;
+        this.dialogOrigin = null;
+      }
+    }, 200);
+  }
+
+  /**
+   * Scroll a canvas element into view and optionally focus a field inside it.
+   */
+  private focusCanvasElement(
+    selector: string,
+    stickyField?: 'title' | 'body'
+  ): void {
+    const el = this.querySelector(selector) as HTMLElement;
+    if (!el) return;
+
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (!editor) return;
+
+    const editorRect = editor.getBoundingClientRect();
+    const centerX = el.offsetLeft + el.offsetWidth / 2;
+    const centerY = el.offsetTop + el.offsetHeight / 2;
+    const targetScrollX = centerX * this.zoom - editorRect.width / 2;
+    const targetScrollY = centerY * this.zoom - editorRect.height / 2;
+
+    editor.scrollTo({
+      left: Math.max(0, targetScrollX),
+      top: Math.max(0, targetScrollY),
+      behavior: 'smooth'
+    });
+
+    if (stickyField) {
+      setTimeout(() => {
+        const fieldEl = el.shadowRoot?.querySelector(
+          `.sticky-${stickyField}`
+        ) as HTMLElement;
+        if (fieldEl) {
+          fieldEl.focus();
+        }
+      }, 300);
+    }
+  }
+
   private isReadOnly(): boolean {
     return this.viewingRevision !== null || this.isTranslating;
   }
@@ -6370,6 +6463,9 @@ export class Editor extends RapidElement {
             .features=${this.features}
           ></temba-node-type-selector>`
         : ''}
+      <temba-flow-search
+        @temba-search-result-selected=${this.handleSearchResultSelected}
+      ></temba-flow-search>
       ${this.renderIssuesTab()} ${this.renderRevisionsTab()}
       ${this.renderLocalizationTab()} `;
   }
