@@ -13,11 +13,13 @@ WORKSPACE_NAME="$(basename "$SCRIPT_DIR")"
 
 # Ensure the devcontainer is running, build if needed
 if ! docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -q true; then
-    # Remove stopped container if it exists (stale mounts, etc.)
-    docker rm "$CONTAINER_NAME" 2>/dev/null || true
-
-    echo "Container '$CONTAINER_NAME' is not running — starting devcontainer..."
-    devcontainer up --workspace-folder "$SCRIPT_DIR"
+    if docker inspect "$CONTAINER_NAME" &>/dev/null; then
+        echo "Container '$CONTAINER_NAME' is stopped — restarting..."
+        docker start "$CONTAINER_NAME"
+    else
+        echo "Container '$CONTAINER_NAME' not found — building devcontainer..."
+        devcontainer up --workspace-folder "$SCRIPT_DIR"
+    fi
 fi
 
 # Install deps into a shared directory, then symlink into the worktree.
