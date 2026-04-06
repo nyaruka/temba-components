@@ -598,7 +598,6 @@ export class FlowSearch extends LitElement {
     }
 
     const query = this.searchQuery.toLowerCase();
-    const results: SearchResult[] = [];
 
     // Get the localization map for the active language (if translating)
     const isTranslating =
