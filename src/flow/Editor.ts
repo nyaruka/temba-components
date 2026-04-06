@@ -653,7 +653,6 @@ export class Editor extends RapidElement {
       }
 
       .toolbar-group {
-        --toolbar-translation-control-height: 22px;
         display: flex;
         align-items: center;
         gap: 4px;
@@ -680,6 +679,14 @@ export class Editor extends RapidElement {
 
       .toolbar-language-group {
         margin-left: 2px;
+      }
+
+      .toolbar-language-group.toolbar-group {
+        --toolbar-translation-control-height: 22px;
+      }
+
+      .toolbar-zoom-group {
+        gap: 2px;
       }
 
       .language-pill {
@@ -6318,41 +6325,43 @@ export class Editor extends RapidElement {
         </div>
         ${!this.showMessageTable ? html`
           <div class="toolbar-right">
-            <button
-              class="toolbar-btn"
-              @click=${this.zoomToFit}
-              ?disabled=${!this.zoomInitialized || this.zoomFitted}
-              title="Zoom to fit"
-            >
-              <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
-            </button>
-            <div class="toolbar-divider"></div>
-            <button
-              class="toolbar-btn"
-              @click=${this.zoomOut}
-              ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
-              title="Zoom out"
-            >
-              −
-            </button>
-            <span class="toolbar-zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
-            <button
-              class="toolbar-btn"
-              @click=${this.zoomIn}
-              ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-              title="Zoom in"
-            >
-              +
-            </button>
-            <div class="toolbar-divider"></div>
-            <button
-              class="toolbar-btn"
-              @click=${this.zoomToFull}
-              ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-              title="Zoom to 100%"
-            >
-              <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
-            </button>
+            <div class="toolbar-group toolbar-zoom-group">
+              <button
+                class="toolbar-btn"
+                @click=${this.zoomToFit}
+                ?disabled=${!this.zoomInitialized || this.zoomFitted}
+                title="Zoom to fit"
+              >
+                <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
+              </button>
+              <div class="toolbar-group-divider"></div>
+              <button
+                class="toolbar-btn"
+                @click=${this.zoomOut}
+                ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
+                title="Zoom out"
+              >
+                −
+              </button>
+              <span class="toolbar-zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
+              <button
+                class="toolbar-btn"
+                @click=${this.zoomIn}
+                ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
+                title="Zoom in"
+              >
+                +
+              </button>
+              <div class="toolbar-group-divider"></div>
+              <button
+                class="toolbar-btn"
+                @click=${this.zoomToFull}
+                ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
+                title="Zoom to 100%"
+              >
+                <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
+              </button>
+            </div>
             <div class="toolbar-divider"></div>
             <button
               class="toolbar-btn revisions-btn ${!this.revisionsWindowHidden
