@@ -6249,6 +6249,7 @@ export class Editor extends RapidElement {
       (progress.localized / Math.max(progress.total, 1)) * 100
     );
     const hasTranslations = progress.total > 0;
+    const showLanguageGroupTreatment = Boolean(activeLanguage);
 
     return html`
       <div class="editor-toolbar">
@@ -6270,7 +6271,11 @@ export class Editor extends RapidElement {
           ${languages.length > 0
             ? html`
               <div class="toolbar-divider"></div>
-              <div class="toolbar-group toolbar-language-group">
+              <div
+                class="toolbar-language-group ${showLanguageGroupTreatment
+                  ? 'toolbar-group'
+                  : ''}"
+              >
                 <div class="toolbar-language">
                   ${activeLanguage
                     ? html`
@@ -6298,7 +6303,7 @@ export class Editor extends RapidElement {
                       ></temba-options>
                     `}
                 </div>
-                ${activeLanguage
+                ${showLanguageGroupTreatment
                   ? html`
                     <div class="toolbar-group-divider"></div>
                     ${this.renderToolbarTranslationTools(hasTranslations)}
