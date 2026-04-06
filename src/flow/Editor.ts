@@ -680,6 +680,18 @@ export class Editor extends RapidElement {
         --icon-size: 16px;
       }
 
+      .language-percent {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 6px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+      }
+
       .language-pill .language-clear {
         cursor: pointer;
         display: flex;
@@ -6245,7 +6257,8 @@ export class Editor extends RapidElement {
                     ? html`
                       <div class="language-pill">
                         <temba-icon name="translate-01"></temba-icon>
-                        ${activeLanguage.name} (${percent}%)
+                        <span>${activeLanguage.name}</span>
+                        <span class="language-percent">${percent}%</span>
                         <div class="language-clear" @click=${this.handleLanguageClear}>
                           <temba-icon name="${Icon.select_clear}" size="1"></temba-icon>
                         </div>
@@ -6344,7 +6357,7 @@ export class Editor extends RapidElement {
           @click=${this.handleToolbarCategoriesToggle}
           title="Toggle categories"
         >
-          <temba-icon name=${Icon.filter} size="0.9"></temba-icon>
+          <temba-icon name=${Icon.label} size="0.9"></temba-icon>
         </button>
         <button
           class="toolbar-btn language-tool ${this.autoTranslating
@@ -6357,7 +6370,7 @@ export class Editor extends RapidElement {
             : 'Auto translate'}"
         >
           <temba-icon
-            name=${this.autoTranslating ? 'progress_spinner' : Icon.service}
+            name=${this.autoTranslating ? 'progress_spinner' : Icon.ai}
             size="0.9"
             ?spin=${this.autoTranslating}
           ></temba-icon>
