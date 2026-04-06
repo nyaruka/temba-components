@@ -457,6 +457,16 @@ export class Editor extends RapidElement {
 
   private dialogOrigin: { x: number; y: number } | null = null;
 
+  // Message table view toggle
+  @property({ type: Boolean, reflect: true, attribute: 'message-view' })
+  showMessageTable = false;
+
+  @state()
+  private showLanguageOptions = false;
+
+  @state()
+  private toolbarTranslationSettingsOpen = false;
+
   @state()
   private isCreatingNewNode = false;
 
@@ -541,6 +551,7 @@ export class Editor extends RapidElement {
   private boundTouchEnd = this.handleTouchEnd.bind(this);
   private boundTouchCancel = this.handleTouchCancel.bind(this);
   private boundCanvasTouchStart = this.handleCanvasTouchStart.bind(this);
+  private boundWindowResize = this.updateZoomControlPositioning.bind(this);
 
   static get styles() {
     return css`
@@ -548,7 +559,246 @@ export class Editor extends RapidElement {
         position: relative;
         flex: 1;
         display: flex;
+        flex-direction: column;
         min-height: 0;
+      }
+
+      .editor-toolbar {
+        --toolbar-control-height: 28px;
+        --toolbar-translation-control-height: 24px;
+        --toolbar-progress-height: 22px;
+        display: flex;
+        align-items: center;
+        padding: 6px 12px;
+        background: #fff;
+        border-bottom: 1px solid #e8e8e8;
+        z-index: 1;
+        flex-shrink: 0;
+        gap: 8px;
+      }
+
+      .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: auto;
+      }
+
+      .toolbar-btn {
+        width: var(--toolbar-control-height);
+        height: var(--toolbar-control-height);
+        border: none;
+        background: transparent;
+        border-radius: var(--curvature);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        color: #888;
+        font-size: 16px;
+        line-height: 1;
+        outline: none;
+      }
+
+      .toolbar-btn:focus,
+      .toolbar-btn:focus-visible {
+        outline: none;
+      }
+
+      .toolbar-btn:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: #555;
+      }
+
+      .toolbar-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+        background: transparent;
+      }
+
+      .toolbar-btn.active {
+        background: rgba(0, 100, 200, 0.1);
+        color: #0064c8;
+      }
+
+      .toolbar-btn.active:hover {
+        background: rgba(0, 100, 200, 0.15);
+      }
+
+      .toolbar-btn.revisions-btn {
+        --icon-color: rgb(142, 94, 167);
+        color: rgb(142, 94, 167);
+      }
+
+      .toolbar-btn.revisions-btn:hover {
+        color: rgb(142, 94, 167);
+      }
+
+      .toolbar-btn.revisions-btn.open {
+        background: rgba(142, 94, 167, 0.14);
+      }
+
+      .toolbar-btn.revisions-btn.open:hover {
+        background: rgba(142, 94, 167, 0.2);
+      }
+
+      .toolbar-divider {
+        width: 1px;
+        height: 16px;
+        background: #e0e0e0;
+        margin: 0 4px;
+      }
+
+      .toolbar-language {
+        position: relative;
+      }
+
+      .toolbar-language-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .language-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #5b7ea6;
+        color: white;
+        height: var(--toolbar-translation-control-height);
+        padding: 0 8px;
+        border-radius: var(--curvature);
+        box-sizing: border-box;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        cursor: default;
+        --icon-color: rgba(255, 255, 255, 0.8);
+        --icon-size: 16px;
+      }
+
+      .language-pill .language-clear {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        padding: 1px;
+        border-radius: 50%;
+        --icon-color: rgba(255, 255, 255, 0.7);
+      }
+
+      .language-pill .language-clear:hover {
+        background: rgba(255, 255, 255, 0.2);
+        --icon-color: #fff;
+      }
+
+      .toolbar-zoom-level {
+        font-size: 12px;
+        min-width: 40px;
+        text-align: center;
+        color: #555;
+        font-weight: 500;
+      }
+
+      .toolbar-translation {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .toolbar-translation-progress {
+        position: relative;
+      }
+
+      .toolbar-translation-progress > temba-progress {
+        width: 180px;
+        height: var(--toolbar-progress-height);
+        --progress-min-height: 0;
+        --progress-padding: 4px;
+        --progress-bar-min-height: 0;
+        --progress-etc-padding: 0 2px 0 6px;
+      }
+
+      .toolbar-translation-progress temba-loading {
+        margin-right: 2px;
+      }
+
+      .toolbar-translation-settings-menu {
+        background: #fff;
+        border-radius: var(--curvature);
+        padding: 6px;
+        min-width: 180px;
+      }
+
+      .progress-settings-toggle {
+        width: var(--toolbar-progress-height);
+        height: var(--toolbar-progress-height);
+        background: rgba(0, 0, 0, 0.07);
+        border-radius: 0;
+        color: rgba(0, 0, 0, 0.5);
+      }
+
+      .progress-settings-toggle:hover {
+        background: rgba(0, 0, 0, 0.07);
+      }
+
+      .progress-settings-arrow {
+        transition: transform 0.16s ease;
+        transform: rotate(0deg);
+      }
+
+      .progress-settings-arrow.open {
+        transform: rotate(90deg);
+      }
+
+      .toolbar-translation-settings-row {
+        display: flex;
+        align-items: center;
+      }
+
+      .toolbar-translation-settings-row temba-checkbox {
+        width: 100%;
+        --checkbox-padding: 4px;
+      }
+
+      .toolbar-translation-settings-action {
+        margin-top: 4px;
+      }
+
+      .toolbar-translation-settings-action .toolbar-auto-translate {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .toolbar-auto-translate {
+        height: var(--toolbar-translation-control-height);
+        background: #fff;
+        border: 1px solid #d7dce2;
+        color: #4b5563;
+        padding: 0 10px;
+        border-radius: var(--curvature);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .toolbar-auto-translate:hover {
+        background: #f7f9fb;
+        border-color: #c9d1da;
+      }
+
+      .toolbar-auto-translate[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       #editor {
@@ -674,6 +924,14 @@ export class Editor extends RapidElement {
       #canvas.read-only-connections svg.plumb-connector * {
         pointer-events: none !important;
         cursor: default !important;
+      }
+
+      #canvas.read-only-connections svg.plumb-connector path {
+        stroke: #e0e0e0;
+      }
+
+      #canvas.read-only-connections svg.plumb-connector .plumb-arrow {
+        fill: #e0e0e0;
       }
 
       svg.plumb-connector.removing path {
@@ -844,42 +1102,7 @@ export class Editor extends RapidElement {
         border-radius: var(--curvature);
       }
 
-      .language-banner {
-        position: absolute;
-        top: 12px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: #5b7ea6;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 500;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .language-banner-text {
-        white-space: nowrap;
-      }
-
-      .language-banner-close {
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        color: white;
-        cursor: pointer;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        white-space: nowrap;
-      }
-
-      .language-banner-close:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
+      /* Language banner replaced by toolbar language selector */
 
       .localization-window-content {
         display: flex;
@@ -1144,62 +1367,7 @@ export class Editor extends RapidElement {
         opacity: 0.9;
       }
 
-      .zoom-controls {
-        position: absolute;
-        top: 8px;
-        right: 16px;
-        z-index: 4999;
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        background: white;
-        border-radius: var(--curvature);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-        padding: 4px;
-        user-select: none;
-      }
-
-      .zoom-controls button {
-        width: 28px;
-        height: 28px;
-        border: none;
-        background: transparent;
-        border-radius: var(--curvature);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        color: #555;
-        font-size: 16px;
-        line-height: 1;
-        outline: none;
-      }
-
-      .zoom-controls button:hover {
-        background: rgba(0, 0, 0, 0.06);
-      }
-
-      .zoom-controls button:disabled {
-        opacity: 0.3;
-        cursor: default;
-        background: transparent;
-      }
-
-      .zoom-controls .zoom-level {
-        font-size: 12px;
-        min-width: 40px;
-        text-align: center;
-        color: #555;
-        font-weight: 500;
-      }
-
-      .zoom-controls .zoom-divider {
-        width: 1px;
-        height: 16px;
-        background: #e0e0e0;
-        margin: 0 2px;
-      }
+      /* Legacy zoom-controls kept for compat — now in toolbar */
 
       .loupe,
       .loupe * {
@@ -1595,6 +1763,18 @@ export class Editor extends RapidElement {
     this.zoomInitialized = true;
   }
 
+  private setSimulatorTabHidden(hidden: boolean): void {
+    const simulator = document.querySelector('temba-simulator') as HTMLElement & {
+      shadowRoot?: ShadowRoot;
+    };
+    const phoneTab = simulator?.shadowRoot?.querySelector(
+      '#phone-tab'
+    ) as any;
+    if (phoneTab) {
+      phoneTab.hidden = hidden;
+    }
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -1602,8 +1782,26 @@ export class Editor extends RapidElement {
     if (changes.has('features')) {
       zustand.getState().setFeatures(this.features);
     }
+    if (changes.has('revisionsWindowHidden')) {
+      this.setSimulatorTabHidden(!this.revisionsWindowHidden);
+    }
     if (changes.has('canvasSize')) {
-      // console.log('Setting canvas size', this.canvasSize);
+      this.updateZoomControlPositioning();
+    }
+
+    if (changes.has('showMessageTable') && !this.showMessageTable && this.plumber) {
+      // Canvas was re-added to the DOM; rebind the plumber and repaint connections
+      requestAnimationFrame(() => {
+        const canvas = this.querySelector('#canvas');
+        if (canvas) {
+          this.plumber.setContainer(canvas as HTMLElement);
+          this.plumber.repaintEverything();
+        }
+      });
+    }
+
+    if (changes.has('showMessageTable')) {
+      this.updateZoomControlPositioning();
     }
 
     if (changes.has('definition')) {
@@ -1928,6 +2126,7 @@ export class Editor extends RapidElement {
     document.removeEventListener('touchmove', this.boundTouchMove);
     document.removeEventListener('touchend', this.boundTouchEnd);
     document.removeEventListener('touchcancel', this.boundTouchCancel);
+    window.removeEventListener('resize', this.boundWindowResize);
 
     const canvas = this.querySelector('#canvas');
     if (canvas) {
@@ -1961,6 +2160,7 @@ export class Editor extends RapidElement {
     });
     document.addEventListener('touchend', this.boundTouchEnd);
     document.addEventListener('touchcancel', this.boundTouchCancel);
+    window.addEventListener('resize', this.boundWindowResize);
 
     // Fallback: on first touch, mark as touch device in case
     // navigator.maxTouchPoints wasn't detected in firstUpdated.
@@ -2455,26 +2655,26 @@ export class Editor extends RapidElement {
     this.setZoom(1.0);
   }
 
-  /** Adjust zoom control right offset and floating tab positions */
+  /** Adjust floating tab positioning relative to toolbar and editor scrollbar */
   private updateZoomControlPositioning(): void {
     requestAnimationFrame(() => {
       const editor = this.querySelector('#editor') as HTMLElement;
-      const zoomControls = this.querySelector('.zoom-controls') as HTMLElement;
-      if (editor && zoomControls) {
-        // Match right spacing to the top spacing (8px) by accounting for
-        // the scrollbar width
-        const scrollbarWidth = editor.offsetWidth - editor.clientWidth;
-        zoomControls.style.right = `${8 + scrollbarWidth}px`;
-
-        // Clip floating tabs so they appear to go under the scrollbar
+      if (editor) {
+        const scrollbarWidth = Math.max(
+          editor.offsetWidth - editor.clientWidth,
+          0
+        );
+        // Keep floating tabs just left of the vertical scrollbar.
         document.documentElement.style.setProperty(
           '--floating-tab-clip',
           `${scrollbarWidth}px`
         );
       }
-      if (zoomControls) {
-        const rect = zoomControls.getBoundingClientRect();
-        FloatingTab.START_TOP = rect.bottom + 8;
+
+      const toolbar = this.querySelector('.editor-toolbar') as HTMLElement;
+      if (toolbar) {
+        const rect = toolbar.getBoundingClientRect();
+        FloatingTab.START_TOP = rect.bottom + 20;
         FloatingTab.updateAllPositions();
       }
     });
@@ -4478,9 +4678,12 @@ export class Editor extends RapidElement {
     }
   }
 
+  private editForceBase = false;
+
   private handleActionEditRequested(event: CustomEvent): void {
     // For action editing, we set the action and find the corresponding node
     this.editingAction = event.detail.action;
+    this.editForceBase = !!event.detail.forceBase;
     this.dialogOrigin =
       event.detail.originX != null
         ? { x: event.detail.originX, y: event.detail.originY }
@@ -4624,6 +4827,7 @@ export class Editor extends RapidElement {
     this.editingNodeUI = null;
     this.editingAction = null;
     this.dialogOrigin = null;
+    this.editForceBase = false;
   }
 
   private handleActionEditCanceled(): void {
@@ -5269,21 +5473,6 @@ export class Editor extends RapidElement {
     );
   }
 
-  private handleLocalizationTabClick(): void {
-    const languages = this.getLocalizationLanguages();
-    if (!languages.length) {
-      return;
-    }
-
-    if (!this.localizationWindowHidden) {
-      this.handleLocalizationWindowClosed();
-      return;
-    }
-
-    this.closeOpenWindows();
-    this.localizationWindowHidden = false;
-  }
-
   private handleLocalizationLanguageSelect(languageCode: string): void {
     if (languageCode === this.languageCode) {
       return;
@@ -5334,6 +5523,79 @@ export class Editor extends RapidElement {
     this.translationFilters = { categories };
     getStore()?.getState().setTranslationFilters({ categories });
     this.requestUpdate();
+  }
+
+  private closeToolbarTranslationSettingsDropdown(): void {
+    this.toolbarTranslationSettingsOpen = false;
+    document.removeEventListener(
+      'click',
+      this.boundToolbarSettingsOutsideClick,
+      true
+    );
+
+    const dropdown = this.querySelector(
+      '#toolbar-translation-settings-dropdown'
+    ) as any;
+    if (!dropdown || !dropdown.open) {
+      return;
+    }
+
+    dropdown.open = false;
+    window.setTimeout(() => {
+      dropdown.dormant = true;
+    }, 250);
+  }
+
+  private boundToolbarSettingsOutsideClick =
+    this.handleToolbarSettingsOutsideClick.bind(this);
+
+  private handleToolbarSettingsOpened(): void {
+    this.toolbarTranslationSettingsOpen = true;
+    requestAnimationFrame(() => {
+      document.addEventListener(
+        'click',
+        this.boundToolbarSettingsOutsideClick,
+        true
+      );
+    });
+  }
+
+  private handleToolbarSettingsOutsideClick(event: MouseEvent): void {
+    const dropdown = this.querySelector(
+      '#toolbar-translation-settings-dropdown'
+    ) as HTMLElement;
+    if (!dropdown) {
+      this.closeToolbarTranslationSettingsDropdown();
+      return;
+    }
+
+    const path = event.composedPath ? event.composedPath() : [];
+    if (!path.includes(dropdown)) {
+      this.closeToolbarTranslationSettingsDropdown();
+    }
+  }
+
+  private handleToolbarSettingsToggleClick(event: MouseEvent): void {
+    const dropdown = (event.currentTarget as HTMLElement)?.closest(
+      'temba-dropdown'
+    ) as any;
+    if (!dropdown?.open) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.closeToolbarTranslationSettingsDropdown();
+  }
+
+  private handleToolbarIncludeCategoriesChange(event: Event): void {
+    this.handleIncludeCategoriesChange(event);
+    this.closeToolbarTranslationSettingsDropdown();
+  }
+
+  private handleToolbarAutoTranslateClick(event: Event): void {
+    void this.handleAutoTranslateClick(event);
+    this.closeToolbarTranslationSettingsDropdown();
   }
 
   private async handleAutoTranslateClick(event: Event): Promise<void> {
@@ -5770,21 +6032,6 @@ export class Editor extends RapidElement {
     `;
   }
 
-  private renderRevisionsTab(): TemplateResult | string {
-    return html`
-      <temba-floating-tab
-        id="revisions-tab"
-        icon="revisions"
-        label="Revisions"
-        color="rgb(142, 94, 167)"
-        order="0"
-        .saving=${this.isSaving}
-        .active=${!this.revisionsWindowHidden}
-        @temba-button-clicked=${this.handleRevisionsTabClick}
-      ></temba-floating-tab>
-    `;
-  }
-
   private renderRevisionsWindow(): TemplateResult | string {
     return html`
       <temba-floating-window
@@ -6076,61 +6323,235 @@ export class Editor extends RapidElement {
     `;
   }
 
-  private handleLanguageBannerClose(): void {
+  private handleLanguageIconClick(): void {
+    if (this.showLanguageOptions) {
+      this.showLanguageOptions = false;
+      return;
+    }
+    this.showLanguageOptions = true;
+    // Close on next click anywhere outside
+    requestAnimationFrame(() => {
+      const close = () => {
+        this.showLanguageOptions = false;
+        document.removeEventListener('click', close);
+      };
+      document.addEventListener('click', close, { once: true });
+    });
+  }
+
+  private handleLanguageOptionSelected(event: CustomEvent): void {
+    if (!this.showLanguageOptions) return;
+    const selected = event.detail?.selected;
+    if (selected?.value) {
+      this.handleLanguageChange(selected.value);
+    }
+    this.showLanguageOptions = false;
+  }
+
+  private handleLanguageClear(): void {
     const baseLanguage = this.definition?.language;
     if (baseLanguage) {
       this.handleLanguageChange(baseLanguage);
     }
   }
 
-  private renderLanguageBanner(): TemplateResult | string {
+  private renderToolbar(): TemplateResult {
+    const languages = this.getLocalizationLanguages();
     const baseLanguage = this.definition?.language;
-    if (
-      !baseLanguage ||
+    const isBaseSelected =
       !this.languageCode ||
-      this.languageCode === baseLanguage
-    ) {
-      return '';
-    }
-
-    const availableLanguages = this.getAvailableLanguages();
-    const currentName =
-      availableLanguages.find((lang) => lang.code === this.languageCode)
-        ?.name || this.languageCode;
+      this.languageCode === baseLanguage ||
+      !languages.some((lang) => lang.code === this.languageCode);
+    const activeLanguage = !isBaseSelected
+      ? languages.find((lang) => lang.code === this.languageCode)
+      : null;
 
     return html`
-      <div class="language-banner">
-        <span class="language-banner-text"
-          >Viewing <strong>${currentName}</strong></span
-        >
-        <button
-          class="language-banner-close"
-          type="button"
-          @click=${this.handleLanguageBannerClose}
-        >
-          Done
-        </button>
+      <div class="editor-toolbar">
+        <div class="toolbar-left">
+          <button
+            class="toolbar-btn ${!this.showMessageTable ? 'active' : ''}"
+            @click=${() => { this.showMessageTable = false; }}
+            title="Flow canvas"
+          >
+            <temba-icon name="flow" size="1"></temba-icon>
+          </button>
+          <button
+            class="toolbar-btn ${this.showMessageTable ? 'active' : ''}"
+            @click=${() => { this.showMessageTable = true; }}
+            title="Message list"
+          >
+            <temba-icon name="message-square-02" size="1"></temba-icon>
+          </button>
+          ${languages.length > 0
+            ? html`
+              <div class="toolbar-divider"></div>
+              <div class="toolbar-language-group">
+                <div class="toolbar-language">
+                  ${activeLanguage
+                    ? html`
+                      <div class="language-pill">
+                        <temba-icon name="translate-01"></temba-icon>
+                        ${activeLanguage.name}
+                        <div class="language-clear" @click=${this.handleLanguageClear}>
+                          <temba-icon name="${Icon.select_clear}" size="1"></temba-icon>
+                        </div>
+                      </div>
+                    `
+                    : html`
+                      <button
+                        class="toolbar-btn"
+                        id="language-btn"
+                        @click=${this.handleLanguageIconClick}
+                        title="Select a language"
+                      >
+                        <temba-icon name="translate-01" size="1"></temba-icon>
+                      </button>
+                      <temba-options
+                        .anchorTo=${this.querySelector('#language-btn') as HTMLElement}
+                        .options=${languages.map((lang) => ({ name: lang.name, value: lang.code }))}
+                        ?visible=${this.showLanguageOptions}
+                        @temba-selection=${this.handleLanguageOptionSelected}
+                        min-width="200"
+                      ></temba-options>
+                    `}
+                </div>
+                ${activeLanguage ? this.renderToolbarTranslation(isBaseSelected) : ''}
+              </div>
+            `
+            : ''}
+        </div>
+        ${!this.showMessageTable ? html`
+          <div class="toolbar-right">
+            <button
+              class="toolbar-btn"
+              @click=${this.zoomToFit}
+              ?disabled=${!this.zoomInitialized || this.zoomFitted}
+              title="Zoom to fit"
+            >
+              <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button
+              class="toolbar-btn"
+              @click=${this.zoomOut}
+              ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
+              title="Zoom out"
+            >
+              −
+            </button>
+            <span class="toolbar-zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
+            <button
+              class="toolbar-btn"
+              @click=${this.zoomIn}
+              ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
+              title="Zoom in"
+            >
+              +
+            </button>
+            <div class="toolbar-divider"></div>
+            <button
+              class="toolbar-btn"
+              @click=${this.zoomToFull}
+              ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
+              title="Zoom to 100%"
+            >
+              <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button
+              class="toolbar-btn revisions-btn ${!this.revisionsWindowHidden
+                ? 'open'
+                : ''}"
+              @click=${this.handleRevisionsTabClick}
+              title="Revisions"
+            >
+              <temba-icon
+                name=${this.isSaving ? 'progress_spinner' : 'revisions'}
+                size="1"
+                ?spin=${this.isSaving}
+              ></temba-icon>
+            </button>
+          </div>
+        ` : ''}
       </div>
     `;
   }
 
-  private renderLocalizationTab(): TemplateResult | string {
-    if (this.definition?.nodes.length === 0) return '';
-    const languages = this.getLocalizationLanguages();
-    if (!languages.length) {
-      return html``;
-    }
+  private renderToolbarTranslation(isBaseSelected: boolean): TemplateResult {
+    const progress = this.getLocalizationProgress(
+      isBaseSelected ? '' : this.languageCode
+    );
+    const includeCategories = this.translationFilters.categories;
+    const remainingTranslations = Math.max(
+      progress.total - progress.localized,
+      0
+    );
+    const hasTranslations = progress.total > 0;
+    const hasPendingTranslations = remainingTranslations > 0;
+    const autoTranslateButtonLabel = this.autoTranslating
+      ? 'Stop Auto Translate'
+      : 'Auto Translate';
+    const showAutoTranslate = !isBaseSelected && hasPendingTranslations;
 
     return html`
-      <temba-floating-tab
-        id="localization-tab"
-        icon="language"
-        label="Translate Flow"
-        color="#5b7ea6"
-        order="3"
-        .active=${!this.localizationWindowHidden}
-        @temba-button-clicked=${this.handleLocalizationTabClick}
-      ></temba-floating-tab>
+      <div class="toolbar-translation">
+        <div class="toolbar-translation-progress">
+          ${this.autoTranslating
+            ? html`<temba-loading units="3" size="6"></temba-loading>`
+            : ''}
+          <temba-progress
+            .current=${progress.localized}
+            .total=${Math.max(progress.total, 1)}
+            .animated=${false}
+          >
+            <temba-dropdown
+              id="toolbar-translation-settings-dropdown"
+              @temba-opened=${this.handleToolbarSettingsOpened}
+            >
+              <button
+                slot="toggle"
+                class="toolbar-btn progress-settings-toggle"
+                type="button"
+                aria-label="Translation options"
+                title="Translation options"
+                @click=${this.handleToolbarSettingsToggleClick}
+              >
+                <temba-icon
+                  class="progress-settings-arrow ${this
+                    .toolbarTranslationSettingsOpen
+                    ? 'open'
+                    : ''}"
+                  name=${Icon.arrow_right}
+                  size="0.75"
+                ></temba-icon>
+              </button>
+              <div slot="dropdown" class="toolbar-translation-settings-menu">
+                <div class="toolbar-translation-settings-row">
+                  <temba-checkbox
+                    name="include-categories"
+                    label="Include categories"
+                    ?checked=${includeCategories}
+                    @change=${this.handleToolbarIncludeCategoriesChange}
+                  ></temba-checkbox>
+                </div>
+                ${showAutoTranslate || this.autoTranslating
+                  ? html`<div class="toolbar-translation-settings-action">
+                      <button
+                        class="toolbar-auto-translate"
+                        type="button"
+                        ?disabled=${!this.autoTranslating && !hasTranslations}
+                        @click=${this.handleToolbarAutoTranslateClick}
+                      >
+                        ${autoTranslateButtonLabel}
+                      </button>
+                    </div>`
+                  : ''}
+              </div>
+            </temba-dropdown>
+          </temba-progress>
+        </div>
+      </div>
     `;
   }
 
@@ -6276,8 +6697,11 @@ export class Editor extends RapidElement {
       ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
       ${this.renderAutoTranslateDialog()}
       <div id="editor-container">
-        ${this.renderLanguageBanner()}
+        ${this.renderToolbar()}
         <div id="editor">
+          ${this.showMessageTable
+            ? html`<temba-message-table></temba-message-table>`
+            : html`
           ${hasCorruptedUI
             ? html`<div class="empty-flow">
                 <div class="empty-flow-content">
@@ -6401,39 +6825,7 @@ export class Editor extends RapidElement {
               ${this.renderConnectionPlaceholder()}
             </div>
           </div>
-        </div>
-        <div class="zoom-controls">
-          <button
-            @click=${this.zoomToFit}
-            ?disabled=${!this.zoomInitialized || this.zoomFitted}
-            title="Zoom to fit"
-          >
-            <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
-          </button>
-          <div class="zoom-divider"></div>
-          <button
-            @click=${this.zoomOut}
-            ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
-            title="Zoom out"
-          >
-            −
-          </button>
-          <span class="zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
-          <button
-            @click=${this.zoomIn}
-            ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-            title="Zoom in"
-          >
-            +
-          </button>
-          <div class="zoom-divider"></div>
-          <button
-            @click=${this.zoomToFull}
-            ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-            title="Zoom to 100%"
-          >
-            <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
-          </button>
+          `}
         </div>
         ${this.renderPendingCard()}
       </div>
@@ -6449,6 +6841,7 @@ export class Editor extends RapidElement {
             .nodeUI=${this.editingNodeUI}
             .action=${this.editingAction}
             .dialogOrigin=${this.dialogOrigin}
+            ?force-base=${this.editForceBase}
             @temba-node-saved=${(e: CustomEvent) =>
               this.handleNodeSaved(e.detail.node, e.detail.uiConfig)}
             @temba-action-saved=${(e: CustomEvent) =>
@@ -6467,7 +6860,8 @@ export class Editor extends RapidElement {
       <temba-flow-search
         @temba-search-result-selected=${this.handleSearchResultSelected}
       ></temba-flow-search>
-      ${this.renderIssuesTab()} ${this.renderRevisionsTab()}
-      ${this.renderLocalizationTab()} `;
+      ${!this.showMessageTable ? html`
+        ${this.renderIssuesTab()}
+      ` : ''} `;
   }
 }

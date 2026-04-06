@@ -470,7 +470,14 @@ export class NodeEditor extends RapidElement {
   private languageCode!: string;
 
   @fromStore(zustand, (state: AppState) => state.isTranslating)
-  private isTranslating!: boolean;
+  private _isTranslating!: boolean;
+
+  @property({ type: Boolean, attribute: 'force-base' })
+  forceBase = false;
+
+  private get isTranslating(): boolean {
+    return this.forceBase ? false : this._isTranslating;
+  }
 
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private flowDefinition!: FlowDefinition;

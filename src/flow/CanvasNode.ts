@@ -414,10 +414,12 @@ export class CanvasNode extends RapidElement {
       .exit.read-only, .exit.read-only:hover {
         pointer-events: none !important;
         cursor: default;
+        visibility: hidden;
       }
 
       .exit.connected.read-only, .exit.connected.read-only:hover {
         background-color: #fff;
+        visibility: hidden;
       }
       
       .exit.removing, .exit.removing:hover {

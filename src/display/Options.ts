@@ -199,6 +199,9 @@ export class Options extends RapidElement {
   @property({ type: Number })
   width: number;
 
+  @property({ type: Number, attribute: 'min-width' })
+  minWidth: number;
+
   @property({ type: Number, attribute: 'static-width' })
   staticWidth: number;
 
@@ -697,6 +700,9 @@ export class Options extends RapidElement {
     const optionsStyle = {};
     if (this.width) {
       optionsStyle['width'] = `${this.width}px`;
+    }
+    if (this.minWidth) {
+      optionsStyle['min-width'] = `${this.minWidth}px`;
     }
 
     const classes = getClasses({

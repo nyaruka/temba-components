@@ -133,6 +133,8 @@ export class Select<T extends SelectOption> extends FieldElement {
         box-shadow: var(--widget-box-shadow);
         position: relative;
         min-height: var(--temba-select-min-height, 2.4em);
+        max-height: var(--temba-select-max-height, none);
+        overflow: hidden;
       }
 
       temba-icon.select-open:hover,
@@ -157,6 +159,8 @@ export class Select<T extends SelectOption> extends FieldElement {
       .left-side {
         flex: 1;
         overflow: hidden;
+        display: flex;
+        align-items: center;
       }
 
       .empty .placeholder {
@@ -574,6 +578,9 @@ export class Select<T extends SelectOption> extends FieldElement {
 
   @property({ type: Number, attribute: 'option-width' })
   optionWidth: number;
+
+  @property({ type: Number, attribute: 'option-min-width' })
+  optionMinWidth: number;
 
   @property({ type: Boolean, attribute: 'anchor-right' })
   anchorRight: boolean;
@@ -1914,7 +1921,7 @@ export class Select<T extends SelectOption> extends FieldElement {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        padding: 2px 8px;
+        padding: var(--temba-select-option-padding, 2px 8px);
         display: flex;"
       >
         ${icon
@@ -2080,6 +2087,7 @@ export class Select<T extends SelectOption> extends FieldElement {
             name="${Icon.select_clear}"
             size="1.1"
             class="clear-button"
+            style="margin-right:6px"
             @click=${this.handleClear}
           />`
         : null;
@@ -2310,7 +2318,7 @@ export class Select<T extends SelectOption> extends FieldElement {
               : null
           }</slot>
           ${
-            !this.tags && !this.emails
+            !this.tags && !this.emails && !(this.clearable && this.values.length > 0 && !this.isMultiMode)
               ? html`<div
                   class="right-side arrow"
                   style="display:block;margin-right:5px"
@@ -2345,6 +2353,7 @@ export class Select<T extends SelectOption> extends FieldElement {
     .nameKey=${this.nameKey}
     .getName=${this.getNameInternal}
     ?static-width=${this.optionWidth}
+    .minWidth=${this.optionMinWidth || 0}
     ?anchor-right=${this.anchorRight}
     ?visible=${this.visibleOptions.length > 0 || this.shouldShowEmptyMessage()}
     ?showEmptyMessage=${this.shouldShowEmptyMessage()}

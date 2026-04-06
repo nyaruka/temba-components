@@ -4,14 +4,19 @@ import { property } from 'lit/decorators.js';
 
 export class ProgressBar extends RapidElement {
   static styles = css`
+    :host {
+      display: flex;
+    }
+
     .wrapper {
+      flex: 1;
       display: flex;
       box-sizing: content-box;
       background: #f1f1f1;
       border-radius: var(--curvature);
       box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.05);
       overflow: hidden;
-      min-height: 1.5rem;
+      min-height: var(--progress-min-height, 1.5rem);
     }
 
     .message {
@@ -27,13 +32,17 @@ export class ProgressBar extends RapidElement {
       position: relative;
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
-      padding: 4px;
-      min-height: 6px;
+      padding: var(--progress-padding, 4px);
+      min-height: var(--progress-bar-min-height, 6px);
+      overflow: hidden;
     }
     .meter > span {
       display: block;
       height: 100%;
-      border-radius: calc(var(--curvature) * 0.8);
+      border-top-left-radius: calc(var(--curvature) * 0.8);
+      border-bottom-left-radius: calc(var(--curvature) * 0.8);
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
       background-color: var(--color-primary-dark);
       background-image: linear-gradient(
         center bottom,
@@ -66,10 +75,10 @@ export class ProgressBar extends RapidElement {
       z-index: 1;
       background-size: 50px 50px;
       animation: move 8s linear infinite;
-      border-top-right-radius: var(--curvature);
-      border-bottom-right-radius: var(--curvature);
-      border-top-left-radius: var(--curvature);
-      border-bottom-left-radius: var(--curvature);
+      border-top-left-radius: calc(var(--curvature) * 0.8);
+      border-bottom-left-radius: calc(var(--curvature) * 0.8);
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
       overflow: hidden;
     }
 
@@ -111,19 +120,13 @@ export class ProgressBar extends RapidElement {
       white-space: nowrap;
       color: rgba(0, 0, 0, 0.5);
       align-self: center;
-      padding: 0px 6px;
+      padding: var(--progress-etc-padding, 0px 6px);
       align-self: stretch;
       align-items: center;
     }
 
     .etc > div {
       font-size: 0.7em;
-    }
-
-    .wrapper *::last-child {
-      border-top-right-radius: var(--curvature);
-      border-bottom-right-radius: var(--curvature);
-      overflow: hidden;
     }
 
     .meter.done > span:after,
