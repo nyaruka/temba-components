@@ -656,7 +656,9 @@ export class Editor extends RapidElement {
         display: flex;
         align-items: center;
         gap: 4px;
-        padding: 2px;
+        height: var(--toolbar-control-height);
+        box-sizing: border-box;
+        padding: 0 2px;
         border: 1px solid #d7dce2;
         border-radius: calc(var(--curvature) + 2px);
         background: #f7f9fb;
