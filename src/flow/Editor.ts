@@ -561,11 +561,11 @@ export class Editor extends RapidElement {
       }
 
       .editor-toolbar {
-        --toolbar-control-height: 30px;
-        --toolbar-translation-control-height: 26px;
+        --toolbar-control-height: 28px;
+        --toolbar-translation-control-height: 24px;
         display: flex;
         align-items: center;
-        padding: 7px 12px;
+        padding: 6px 12px;
         background: #fff;
         border-bottom: 1px solid #e8e8e8;
         z-index: 1;
@@ -653,12 +653,13 @@ export class Editor extends RapidElement {
       }
 
       .toolbar-group {
+        --toolbar-translation-control-height: 22px;
         display: flex;
         align-items: center;
         gap: 4px;
         height: var(--toolbar-control-height);
         box-sizing: border-box;
-        padding: 0 2px;
+        padding: 0 3px;
         border: 1px solid #d7dce2;
         border-radius: calc(var(--curvature) + 2px);
         background: #f7f9fb;
