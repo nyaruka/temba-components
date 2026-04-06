@@ -645,6 +645,11 @@ export class Editor extends RapidElement {
         background: rgba(142, 94, 167, 0.2);
       }
 
+      .toolbar-tip {
+        display: flex;
+        align-items: center;
+      }
+
       .toolbar-divider {
         width: 1px;
         height: 16px;
@@ -6242,6 +6247,14 @@ export class Editor extends RapidElement {
     }
   }
 
+  private renderToolbarTip(text: string, content: TemplateResult): TemplateResult {
+    return html`
+      <temba-tip class="toolbar-tip" text=${text} position="bottom">
+        ${content}
+      </temba-tip>
+    `;
+  }
+
   private renderToolbar(): TemplateResult {
     const languages = this.getLocalizationLanguages();
     const baseLanguage = this.definition?.language;
@@ -6264,20 +6277,30 @@ export class Editor extends RapidElement {
     return html`
       <div class="editor-toolbar">
         <div class="toolbar-left">
-          <button
-            class="toolbar-btn ${!this.showMessageTable ? 'active' : ''}"
-            @click=${() => { this.showMessageTable = false; }}
-            title="Flow canvas"
-          >
-            <temba-icon name="flow" size="1"></temba-icon>
-          </button>
-          <button
-            class="toolbar-btn ${this.showMessageTable ? 'active' : ''}"
-            @click=${() => { this.showMessageTable = true; }}
-            title="Message list"
-          >
-            <temba-icon name="message-square-02" size="1"></temba-icon>
-          </button>
+          ${this.renderToolbarTip(
+            'Flow canvas',
+            html`
+              <button
+                class="toolbar-btn ${!this.showMessageTable ? 'active' : ''}"
+                @click=${() => { this.showMessageTable = false; }}
+                aria-label="Flow canvas"
+              >
+                <temba-icon name="flow" size="1"></temba-icon>
+              </button>
+            `
+          )}
+          ${this.renderToolbarTip(
+            'Message list',
+            html`
+              <button
+                class="toolbar-btn ${this.showMessageTable ? 'active' : ''}"
+                @click=${() => { this.showMessageTable = true; }}
+                aria-label="Message list"
+              >
+                <temba-icon name="message-square-02" size="1"></temba-icon>
+              </button>
+            `
+          )}
           ${languages.length > 0
             ? html`
               <div class="toolbar-divider"></div>
@@ -6296,14 +6319,19 @@ export class Editor extends RapidElement {
                       </div>
                     `
                     : html`
-                      <button
-                        class="toolbar-btn language-tool"
-                        id="language-btn"
-                        @click=${this.handleLanguageIconClick}
-                        title="Select a language"
-                      >
-                        <temba-icon name="translate-01" size="1"></temba-icon>
-                      </button>
+                      ${this.renderToolbarTip(
+                        'Select a language',
+                        html`
+                          <button
+                            class="toolbar-btn language-tool"
+                            id="language-btn"
+                            @click=${this.handleLanguageIconClick}
+                            aria-label="Select a language"
+                          >
+                            <temba-icon name="translate-01" size="1"></temba-icon>
+                          </button>
+                        `
+                      )}
                       <temba-options
                         .anchorTo=${this.querySelector('#language-btn') as HTMLElement}
                         .options=${languages.map((lang) => ({ name: lang.name, value: lang.code }))}
@@ -6326,56 +6354,81 @@ export class Editor extends RapidElement {
         ${!this.showMessageTable ? html`
           <div class="toolbar-right">
             <div class="toolbar-group toolbar-zoom-group">
-              <button
-                class="toolbar-btn"
-                @click=${this.zoomToFit}
-                ?disabled=${!this.zoomInitialized || this.zoomFitted}
-                title="Zoom to fit"
-              >
-                <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
-              </button>
+              ${this.renderToolbarTip(
+                'Zoom to fit',
+                html`
+                  <button
+                    class="toolbar-btn"
+                    @click=${this.zoomToFit}
+                    ?disabled=${!this.zoomInitialized || this.zoomFitted}
+                    aria-label="Zoom to fit"
+                  >
+                    <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
+                  </button>
+                `
+              )}
               <div class="toolbar-group-divider"></div>
-              <button
-                class="toolbar-btn"
-                @click=${this.zoomOut}
-                ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
-                title="Zoom out"
-              >
-                −
-              </button>
+              ${this.renderToolbarTip(
+                'Zoom out',
+                html`
+                  <button
+                    class="toolbar-btn"
+                    @click=${this.zoomOut}
+                    ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
+                    aria-label="Zoom out"
+                  >
+                    −
+                  </button>
+                `
+              )}
               <span class="toolbar-zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
-              <button
-                class="toolbar-btn"
-                @click=${this.zoomIn}
-                ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-                title="Zoom in"
-              >
-                +
-              </button>
+              ${this.renderToolbarTip(
+                'Zoom in',
+                html`
+                  <button
+                    class="toolbar-btn"
+                    @click=${this.zoomIn}
+                    ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
+                    aria-label="Zoom in"
+                  >
+                    +
+                  </button>
+                `
+              )}
               <div class="toolbar-group-divider"></div>
-              <button
-                class="toolbar-btn"
-                @click=${this.zoomToFull}
-                ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-                title="Zoom to 100%"
-              >
-                <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
-              </button>
+              ${this.renderToolbarTip(
+                'Zoom to 100%',
+                html`
+                  <button
+                    class="toolbar-btn"
+                    @click=${this.zoomToFull}
+                    ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
+                    aria-label="Zoom to 100%"
+                  >
+                    <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
+                  </button>
+                `
+              )}
             </div>
             <div class="toolbar-divider"></div>
-            <button
-              class="toolbar-btn revisions-btn ${!this.revisionsWindowHidden
-                ? 'open'
-                : ''}"
-              @click=${this.handleRevisionsTabClick}
-              title="Revisions"
-            >
-              <temba-icon
-                name=${this.isSaving ? 'progress_spinner' : 'revisions'}
-                size="1"
-                ?spin=${this.isSaving}
-              ></temba-icon>
-            </button>
+            ${this.renderToolbarTip(
+              'Revisions',
+              html`
+                <button
+                  class="toolbar-btn revisions-btn ${!this.revisionsWindowHidden
+                    ? 'open'
+                    : ''}"
+                  @click=${this.handleRevisionsTabClick}
+                  aria-label="Revisions"
+                >
+                  <temba-icon
+                    name=${this.isSaving ? 'progress_spinner' : 'revisions'}
+                    size="1"
+                    ?spin=${this.isSaving}
+                  ></temba-icon>
+                </button>
+              `
+            )}
           </div>
         ` : ''}
       </div>
@@ -6386,38 +6439,56 @@ export class Editor extends RapidElement {
     hasTranslations: boolean
   ): TemplateResult {
     const includeCategories = this.translationFilters.categories;
+    const autoTranslateLabel = this.autoTranslating
+      ? 'Stop auto translate'
+      : 'Auto translate';
     return html`
       <div class="toolbar-translation">
-        <button
-          class="toolbar-btn language-tool ${includeCategories ? 'active' : ''}"
-          @click=${this.handleToolbarCategoriesToggle}
-          title="Toggle categories"
-        >
-          <temba-icon name=${Icon.quick_replies} size="0.9"></temba-icon>
-        </button>
-        <button
-          class="toolbar-btn language-tool ${this.autoTranslating
-            ? 'active'
-            : ''}"
-          @click=${this.handleAutoTranslateClick}
-          ?disabled=${!this.autoTranslating && !hasTranslations}
-          title="${this.autoTranslating
-            ? 'Stop auto translate'
-            : 'Auto translate'}"
-        >
-          <temba-icon
-            name=${this.autoTranslating ? 'progress_spinner' : Icon.ai}
-            size="0.9"
-            ?spin=${this.autoTranslating}
-          ></temba-icon>
-        </button>
-        <button
-          class="toolbar-language-done"
-          @click=${this.handleLanguageClear}
-          title="Done"
-        >
-          Done
-        </button>
+        ${this.renderToolbarTip(
+          'Toggle categories',
+          html`
+            <button
+              class="toolbar-btn language-tool ${includeCategories
+                ? 'active'
+                : ''}"
+              @click=${this.handleToolbarCategoriesToggle}
+              aria-label="Toggle categories"
+            >
+              <temba-icon name=${Icon.quick_replies} size="0.9"></temba-icon>
+            </button>
+          `
+        )}
+        ${this.renderToolbarTip(
+          autoTranslateLabel,
+          html`
+            <button
+              class="toolbar-btn language-tool ${this.autoTranslating
+                ? 'active'
+                : ''}"
+              @click=${this.handleAutoTranslateClick}
+              ?disabled=${!this.autoTranslating && !hasTranslations}
+              aria-label=${autoTranslateLabel}
+            >
+              <temba-icon
+                name=${this.autoTranslating ? 'progress_spinner' : Icon.ai}
+                size="0.9"
+                ?spin=${this.autoTranslating}
+              ></temba-icon>
+            </button>
+          `
+        )}
+        ${this.renderToolbarTip(
+          'Done',
+          html`
+            <button
+              class="toolbar-language-done"
+              @click=${this.handleLanguageClear}
+              aria-label="Done"
+            >
+              Done
+            </button>
+          `
+        )}
       </div>
     `;
   }
