@@ -6357,7 +6357,7 @@ export class Editor extends RapidElement {
           @click=${this.handleToolbarCategoriesToggle}
           title="Toggle categories"
         >
-          <temba-icon name=${Icon.label} size="0.9"></temba-icon>
+          <temba-icon name=${Icon.quick_replies} size="0.9"></temba-icon>
         </button>
         <button
           class="toolbar-btn language-tool ${this.autoTranslating
