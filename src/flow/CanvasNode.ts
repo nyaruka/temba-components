@@ -11,6 +11,10 @@ import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
 import { AppState, FlowIssue, fromStore, zustand } from '../store/AppState';
+import {
+  getTranslatableCategoriesForNode,
+  hasTranslatableCategoriesForNode
+} from './categoryLocalization';
 
 const DRAG_THRESHOLD = 5;
 
@@ -1787,6 +1791,11 @@ export class CanvasNode extends RapidElement {
     // Check if this node type supports category localization
     const nodeConfig = NODE_CONFIG[this.ui?.type];
     const supportsLocalization = nodeConfig?.localizable === 'categories';
+    const translatableCategoryUuids = new Set(
+      getTranslatableCategoriesForNode(this.ui?.type, node.router.categories).map(
+        (category) => category.uuid
+      )
+    );
 
     return html`<div class="categories">
       ${repeat(
@@ -1804,7 +1813,8 @@ export class CanvasNode extends RapidElement {
           if (
             this.isTranslating &&
             this.languageCode !== 'eng' &&
-            supportsLocalization
+            supportsLocalization &&
+            translatableCategoryUuids.has(category.uuid)
           ) {
             const localization =
               this.flowDefinition?.localization?.[this.languageCode];
@@ -1822,6 +1832,7 @@ export class CanvasNode extends RapidElement {
             this.isTranslating &&
             this.languageCode !== 'eng' &&
             supportsLocalization &&
+            translatableCategoryUuids.has(category.uuid) &&
             this.includeCategoriesInTranslation &&
             !isLocalized;
 
@@ -1870,12 +1881,20 @@ export class CanvasNode extends RapidElement {
 
     const nodeConfig = NODE_CONFIG[this.ui.type];
 
-    // Check if this node should be disabled (grayed out)
-    const supportsLocalization = nodeConfig?.localizable === 'categories';
-    const isNodeDisabled =
-      this.isTranslating &&
-      supportsLocalization &&
-      !this.includeCategoriesInTranslation;
+    // A node is non-localizable in translation mode if it has no translatable
+    // content (actions or categories), or if all translatable categories are
+    // currently hidden by the categories toggle.
+    const hasTranslatableCategories =
+      nodeConfig?.localizable === 'categories' &&
+      hasTranslatableCategoriesForNode(this.ui.type, this.node.router?.categories);
+    const hasTranslatableActions = (this.node.actions || []).some((action) => {
+      const actionConfig = ACTION_CONFIG[action.type];
+      return !!actionConfig?.localizable?.length;
+    });
+    const hasActiveTranslatableContent =
+      hasTranslatableActions ||
+      (hasTranslatableCategories && this.includeCategoriesInTranslation);
+    const isNodeDisabled = this.isTranslating && !hasActiveTranslatableContent;
 
     // Get active contact count for this node
     const activeCount =

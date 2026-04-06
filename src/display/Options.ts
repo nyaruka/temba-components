@@ -106,9 +106,9 @@ export class Options extends RapidElement {
 
       .option {
         font-size: var(--temba-options-font-size);
-        padding: 5px 10px;
-        border-radius: 4px;
-        margin: 0.3em;
+        padding: var(--temba-options-option-padding, 5px 10px);
+        border-radius: var(--temba-options-option-radius, 4px);
+        margin: var(--temba-options-option-margin, 0.3em);
         cursor: pointer;
         color: var(--color-text-dark);
         scroll-margin: 5px 0px;
@@ -170,13 +170,13 @@ export class Options extends RapidElement {
       }
 
       .option:hover {
-        background: var(--option-hover-bg);
-        color: var(--option-hover-text);
+        background: var(--temba-options-option-hover-bg, var(--option-hover-bg));
+        color: var(--temba-options-option-hover-text, var(--option-hover-text));
       }
 
       .option.focused {
-        background: var(--color-selection);
-        color: var(--color-text-dark);
+        background: var(--temba-options-option-focus-bg, var(--color-selection));
+        color: var(--temba-options-option-focus-text, var(--color-text-dark));
       }
 
       .option.no-options {

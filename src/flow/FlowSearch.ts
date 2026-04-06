@@ -37,6 +37,8 @@ import {
   NodeConfig
 } from './types';
 import { localizeAction } from './utils';
+import { Icon } from '../Icons';
+import { getTranslatableCategoriesForNode } from './categoryLocalization';
 
 // Sticky note badge colors: border matches the sticky's border, fill is 25% lighter
 const STICKY_BADGE_COLORS: Record<
@@ -71,6 +73,8 @@ export interface SearchResult {
   // For sticky notes: which field matched ('title' or 'body')
   stickyField?: 'title' | 'body';
 }
+
+type SearchScope = 'flow' | 'table';
 
 /**
  * Extract searchable text from an action.
@@ -214,6 +218,13 @@ function getActionSearchTexts(action: Action): string[] {
       break;
     }
   }
+  return texts;
+}
+
+function getTableMessageSearchTexts(action: SendMsg): string[] {
+  const texts: string[] = [];
+  if (action.text) texts.push(action.text);
+  if (action.quick_replies) texts.push(...action.quick_replies);
   return texts;
 }
 
@@ -376,9 +387,8 @@ export class FlowSearch extends LitElement {
       flex-shrink: 0;
     }
 
-    .search-icon svg {
-      width: 20px;
-      height: 20px;
+    .search-icon temba-icon {
+      --icon-color: #9ca3af;
       display: block;
     }
 
@@ -492,6 +502,12 @@ export class FlowSearch extends LitElement {
   @property({ type: String })
   languageCode: string = '';
 
+  @property({ type: String })
+  scope: SearchScope = 'flow';
+
+  @property({ type: Boolean })
+  includeCategories = false;
+
   @state()
   private searchQuery = '';
 
@@ -591,6 +607,20 @@ export class FlowSearch extends LitElement {
       ? this.definition.localization?.[this.languageCode]
       : undefined;
 
+    if (this.scope === 'table') {
+      this.results = this.performTableSearch(query, langLocalization);
+      return;
+    }
+
+    this.results = this.performFlowSearch(query, langLocalization);
+  }
+
+  private performFlowSearch(
+    query: string,
+    langLocalization: Record<string, Record<string, any>> | undefined
+  ): SearchResult[] {
+    const results: SearchResult[] = [];
+
     for (const node of this.definition.nodes) {
       const nodeUI = this.definition._ui?.nodes[node.uuid];
       const nodeType = nodeUI?.type || 'execute_actions';
@@ -687,7 +717,88 @@ export class FlowSearch extends LitElement {
       }
     }
 
-    this.results = results;
+    return results;
+  }
+
+  private performTableSearch(
+    query: string,
+    langLocalization: Record<string, Record<string, any>> | undefined
+  ): SearchResult[] {
+    const results: SearchResult[] = [];
+
+    for (const node of this.definition.nodes) {
+      const nodeUI = this.definition._ui?.nodes[node.uuid];
+      const nodeType = nodeUI?.type || 'execute_actions';
+
+      // Message table rows: one row per send_msg action
+      if (node.actions) {
+        for (const action of node.actions) {
+          if (action.type !== 'send_msg') {
+            continue;
+          }
+
+          const actionConfig = ACTION_CONFIG[action.type];
+          const searchAction = localizeAction(
+            action,
+            langLocalization?.[action.uuid]
+          ) as SendMsg;
+          const texts = getTableMessageSearchTexts(searchAction);
+          for (const text of texts) {
+            const idx = text.toLowerCase().indexOf(query);
+            if (idx !== -1) {
+              results.push({
+                nodeUuid: node.uuid,
+                action,
+                typeName: getTypeName(actionConfig, undefined),
+                color: getColor(actionConfig, undefined),
+                fullText: text,
+                matchStart: idx,
+                matchLength: query.length
+              });
+              break;
+            }
+          }
+        }
+      }
+
+      // Message table category rows: one grouped row per node when enabled.
+      if (
+        this.includeCategories &&
+        node.router?.categories?.length &&
+        NODE_CONFIG[nodeType]?.localizable === 'categories'
+      ) {
+        const categories = getTranslatableCategoriesForNode(
+          nodeType,
+          node.router.categories
+        );
+        if (!categories.length) {
+          continue;
+        }
+
+        const nodeConfig = NODE_CONFIG[nodeType];
+        const categoryTexts = categories.map((cat) =>
+          localizeCategoryName(cat.uuid, cat.name, langLocalization)
+        );
+
+        for (const text of categoryTexts) {
+          const idx = text.toLowerCase().indexOf(query);
+          if (idx !== -1) {
+            results.push({
+              nodeUuid: node.uuid,
+              action: null,
+              typeName: getTypeName(undefined, nodeConfig),
+              color: getColor(undefined, nodeConfig),
+              fullText: text,
+              matchStart: idx,
+              matchLength: query.length
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    return results;
   }
 
   private renderMatchText(result: SearchResult): TemplateResult {
@@ -723,33 +834,26 @@ export class FlowSearch extends LitElement {
   }
 
   render(): TemplateResult {
+    const isTableScope = this.scope === 'table';
+    const searchLabel = isTableScope ? 'Search this table' : 'Search this flow';
+
     return html`
       <div class="backdrop" @click=${this.handleBackdropClick}></div>
       <div
         class="search-container"
         role="dialog"
         aria-modal="true"
-        aria-label="Search flow"
+        aria-label=${searchLabel}
         @click=${(e: Event) => e.stopPropagation()}
       >
         <div class="search-input-row">
           <div class="search-icon">
-            <svg
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                clip-rule="evenodd"
-              />
-            </svg>
+            <temba-icon name=${Icon.search} size="1.5"></temba-icon>
           </div>
           <input
             type="text"
-            placeholder="Search this flow..."
-            aria-label="Search this flow"
+            placeholder="${searchLabel}..."
+            aria-label=${searchLabel}
             .value=${this.searchQuery}
             @input=${this.handleInput}
             @keydown=${this.handleKeyDown}

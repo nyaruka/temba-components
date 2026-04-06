@@ -206,7 +206,7 @@ export interface AppState {
   simulatorActive: boolean;
 
   getCurrentActivity: () => Activity | null;
-  fetchRevision: (endpoint: string, id?: string) => void;
+  fetchRevision: (endpoint: string, id?: string) => Promise<void>;
   fetchWorkspace: (endpoint: string) => Promise<void>;
   fetchAllLanguages: (endpoint: string) => Promise<void>;
   fetchActivity: (endpoint: string) => Promise<void>;

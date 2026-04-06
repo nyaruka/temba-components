@@ -22,6 +22,7 @@ import {
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { formatIssueMessage } from './utils';
+import { getTranslatableCategoriesForNode } from './categoryLocalization';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
 import {
@@ -612,6 +613,28 @@ export class NodeEditor extends RapidElement {
           this.node,
           localization
         );
+
+        const translatableCategoryUuids = new Set(
+          getTranslatableCategoriesForNode(
+            this.nodeUI?.type,
+            this.node.router?.categories
+          ).map((category) => category.uuid)
+        );
+
+        if (
+          this.formData.categories &&
+          typeof this.formData.categories === 'object' &&
+          !Array.isArray(this.formData.categories)
+        ) {
+          this.formData = {
+            ...this.formData,
+            categories: Object.fromEntries(
+              Object.entries(this.formData.categories).filter(([categoryUuid]) =>
+                translatableCategoryUuids.has(categoryUuid)
+              )
+            )
+          };
+        }
       } else if (nodeConfig?.toFormData) {
         this.formData = nodeConfig.toFormData(this.node, this.nodeUI);
       } else {
@@ -879,7 +902,10 @@ export class NodeEditor extends RapidElement {
 
           const languageLocalization =
             this.flowDefinition?.localization?.[this.languageCode] || {};
-          const categories = this.node?.router?.categories || [];
+          const categories = getTranslatableCategoriesForNode(
+            this.nodeUI?.type,
+            this.node?.router?.categories
+          );
 
           categories.forEach((category) => {
             const categoryUuid = category.uuid;

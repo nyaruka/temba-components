@@ -23,6 +23,21 @@ export class Tip extends RapidElement {
         font-size: 14px;
         z-index: 2147483647;
         color: #333;
+        white-space: nowrap;
+      }
+
+      .tip kbd {
+        display: inline;
+        padding: 0;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        color: #8b98ab;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: 0.01em;
+        font-family: inherit;
       }
 
       .tip.hide-on-change {
@@ -31,6 +46,7 @@ export class Tip extends RapidElement {
 
       .show {
         opacity: 1;
+        z-index: 2147483647;
       }
 
       .slot {
@@ -66,6 +82,9 @@ export class Tip extends RapidElement {
   @property({ type: String })
   text: string;
 
+  @property({ attribute: false })
+  content: TemplateResult | string | null = null;
+
   @property({ type: Boolean })
   visible = false;
 
@@ -85,7 +104,7 @@ export class Tip extends RapidElement {
   poppedTop: boolean;
 
   @property({ type: Number })
-  delay = 120;
+  delay = 350;
 
   @property({ type: Number })
   hideDelay = 40;
@@ -313,10 +332,8 @@ export class Tip extends RapidElement {
         <slot></slot>
       </div>
       <div class="${classes}" style=${styleMap(tipStyle)}>
-        ${this.text}
-        <div class="arrow ${this.arrow}" style=${styleMap(arrowStyle)}>
-          ${this.arrow}
-        </div>
+        ${this.content ?? this.text}
+        <div class="arrow" style=${styleMap(arrowStyle)}></div>
       </div>
     `;
   }
