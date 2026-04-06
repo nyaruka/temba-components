@@ -8,7 +8,7 @@ export class Tip extends RapidElement {
   static get styles() {
     return css`
       .tip {
-        transition: opacity 200ms ease-in-out;
+        transition: opacity 120ms cubic-bezier(0.2, 0, 0, 1);
         margin: 0px;
         position: fixed;
         opacity: 0;
@@ -21,7 +21,7 @@ export class Tip extends RapidElement {
           0 1px 3px 0px rgba(0, 0, 0, 0.1),
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
         font-size: 14px;
-        z-index: 10000;
+        z-index: 2147483647;
         color: #333;
       }
 
@@ -84,13 +84,19 @@ export class Tip extends RapidElement {
   @property({ type: Boolean, attribute: false })
   poppedTop: boolean;
 
+  @property({ type: Number })
+  delay = 120;
+
+  @property({ type: Number })
+  hideDelay = 40;
+
   arrow: string;
   arrowTop: number;
   arrowLeft: number;
   arrowDirection: string;
 
-  lastEnter = 0;
-  failSafe = 0;
+  showTimer = 0;
+  hideTimer = 0;
 
   public willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
@@ -112,16 +118,18 @@ export class Tip extends RapidElement {
       const tipBounds = tipEl.getBoundingClientRect();
       const anchorBounds = this.getDiv('.slot').getBoundingClientRect();
 
-      // TODO: pick a direction automatically
-      let tipSide = this.position;
-      if (tipSide === 'auto') {
-        tipSide = 'left';
-      }
+      const viewportPadding = 8;
+      const side = this.chooseSide(
+        this.position,
+        anchorBounds,
+        tipBounds,
+        viewportPadding
+      );
 
       this.arrowLeft = 0;
       this.arrowTop = 0;
 
-      if (tipSide === 'left') {
+      if (side === 'left') {
         this.left = anchorBounds.left - tipBounds.width - 10;
         this.top = getMiddle(anchorBounds, tipBounds);
 
@@ -129,27 +137,48 @@ export class Tip extends RapidElement {
         this.arrowTop = tipBounds.height / 2;
         this.arrowLeft = tipBounds.width + 2;
         this.arrow = '▶';
-      } else if (tipSide === 'right') {
+      } else if (side === 'right') {
         this.left = anchorBounds.right + 12;
         this.top = getMiddle(anchorBounds, tipBounds);
 
         this.arrowTop = tipBounds.height / 2;
         this.arrowLeft = -8;
         this.arrow = '◀';
-      } else if (tipSide === 'top') {
+      } else if (side === 'top') {
         this.top = anchorBounds.top - tipBounds.height - 12;
         this.left = getCenter(anchorBounds, tipBounds);
 
         this.arrowTop = tipBounds.height + 2;
         this.arrowLeft = tipBounds.width / 2 - 4;
         this.arrow = '▼';
-      } else if (tipSide === 'bottom') {
+      } else if (side === 'bottom') {
         this.top = anchorBounds.bottom + 10;
         this.left = getCenter(anchorBounds, tipBounds);
 
         this.arrowTop = -2;
         this.arrowLeft = tipBounds.width / 2 - 3;
         this.arrow = '▲';
+      }
+
+      const minLeft = viewportPadding;
+      const maxLeft = window.innerWidth - tipBounds.width - viewportPadding;
+      const minTop = viewportPadding;
+      const maxTop = window.innerHeight - tipBounds.height - viewportPadding;
+
+      const unclampedLeft = this.left;
+      const unclampedTop = this.top;
+      this.left = this.clamp(this.left, minLeft, maxLeft);
+      this.top = this.clamp(this.top, minTop, maxTop);
+
+      const leftDelta = this.left - unclampedLeft;
+      const topDelta = this.top - unclampedTop;
+
+      if (side === 'top' || side === 'bottom') {
+        this.arrowLeft -= leftDelta;
+        this.arrowLeft = this.clamp(this.arrowLeft, 8, tipBounds.width - 14);
+      } else {
+        this.arrowTop -= topDelta;
+        this.arrowTop = this.clamp(this.arrowTop, 8, tipBounds.height - 8);
       }
 
       // round to avoid sub-pixel rendering differences
@@ -168,18 +197,87 @@ export class Tip extends RapidElement {
     }
   }
 
+  private clamp(value: number, min: number, max: number): number {
+    if (max < min) {
+      return min;
+    }
+    return Math.min(Math.max(value, min), max);
+  }
+
+  private chooseSide(
+    preferred: string,
+    anchorBounds: DOMRect,
+    tipBounds: DOMRect,
+    viewportPadding: number
+  ): string {
+    const gap = 12;
+    const spaces = {
+      left: anchorBounds.left - viewportPadding,
+      right: window.innerWidth - anchorBounds.right - viewportPadding,
+      top: anchorBounds.top - viewportPadding,
+      bottom: window.innerHeight - anchorBounds.bottom - viewportPadding
+    };
+
+    const required = {
+      left: tipBounds.width + gap,
+      right: tipBounds.width + gap,
+      top: tipBounds.height + gap,
+      bottom: tipBounds.height + gap
+    };
+
+    const fits = (side: string) => spaces[side] >= required[side];
+    const opposite: Record<string, string> = {
+      left: 'right',
+      right: 'left',
+      top: 'bottom',
+      bottom: 'top'
+    };
+
+    if (preferred !== 'auto') {
+      if (fits(preferred)) {
+        return preferred;
+      }
+      const fallback = opposite[preferred];
+      if (fallback && fits(fallback)) {
+        return fallback;
+      }
+      return preferred;
+    }
+
+    const order = ['bottom', 'right', 'left', 'top'];
+    let bestSide = order[0];
+    let bestSpace = -1;
+
+    for (const side of order) {
+      if (fits(side)) {
+        return side;
+      }
+      if (spaces[side] > bestSpace) {
+        bestSpace = spaces[side];
+        bestSide = side;
+      }
+    }
+
+    return bestSide;
+  }
+
   private handleMouseEnter() {
-    this.lastEnter = window.setTimeout(() => {
+    window.clearTimeout(this.hideTimer);
+    window.clearTimeout(this.showTimer);
+    this.showTimer = window.setTimeout(() => {
       this.visible = true;
-      this.failSafe = window.setTimeout(() => {
-        this.visible = false;
-      }, 2000);
-    }, 600);
+    }, this.delay);
   }
 
   private handleMouseLeave() {
-    window.clearTimeout(this.lastEnter);
-    window.clearTimeout(this.failSafe);
+    window.clearTimeout(this.showTimer);
+    window.clearTimeout(this.hideTimer);
+    if (this.hideDelay > 0) {
+      this.hideTimer = window.setTimeout(() => {
+        this.visible = false;
+      }, this.hideDelay);
+      return;
+    }
     this.visible = false;
   }
 
