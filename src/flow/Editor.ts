@@ -561,11 +561,11 @@ export class Editor extends RapidElement {
       }
 
       .editor-toolbar {
-        --toolbar-control-height: 28px;
-        --toolbar-translation-control-height: 24px;
+        --toolbar-control-height: 30px;
+        --toolbar-translation-control-height: 26px;
         display: flex;
         align-items: center;
-        padding: 6px 12px;
+        padding: 7px 12px;
         background: #fff;
         border-bottom: 1px solid #e8e8e8;
         z-index: 1;
