@@ -465,9 +465,6 @@ export class Editor extends RapidElement {
   private showLanguageOptions = false;
 
   @state()
-  private toolbarTranslationSettingsOpen = false;
-
-  @state()
   private isCreatingNewNode = false;
 
   @state()
@@ -566,7 +563,6 @@ export class Editor extends RapidElement {
       .editor-toolbar {
         --toolbar-control-height: 28px;
         --toolbar-translation-control-height: 24px;
-        --toolbar-progress-height: 22px;
         display: flex;
         align-items: center;
         padding: 6px 12px;
@@ -709,96 +705,12 @@ export class Editor extends RapidElement {
       .toolbar-translation {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 6px;
       }
 
-      .toolbar-translation-progress {
-        position: relative;
-      }
-
-      .toolbar-translation-progress > temba-progress {
-        width: 180px;
-        height: var(--toolbar-progress-height);
-        --progress-min-height: 0;
-        --progress-padding: 4px;
-        --progress-bar-min-height: 0;
-        --progress-etc-padding: 0 2px 0 6px;
-      }
-
-      .toolbar-translation-progress temba-loading {
-        margin-right: 2px;
-      }
-
-      .toolbar-translation-settings-menu {
-        background: #fff;
-        border-radius: var(--curvature);
-        padding: 6px;
-        min-width: 180px;
-      }
-
-      .progress-settings-toggle {
-        width: var(--toolbar-progress-height);
-        height: var(--toolbar-progress-height);
-        background: rgba(0, 0, 0, 0.07);
-        border-radius: 0;
-        color: rgba(0, 0, 0, 0.5);
-      }
-
-      .progress-settings-toggle:hover {
-        background: rgba(0, 0, 0, 0.07);
-      }
-
-      .progress-settings-arrow {
-        transition: transform 0.16s ease;
-        transform: rotate(0deg);
-      }
-
-      .progress-settings-arrow.open {
-        transform: rotate(90deg);
-      }
-
-      .toolbar-translation-settings-row {
-        display: flex;
-        align-items: center;
-      }
-
-      .toolbar-translation-settings-row temba-checkbox {
-        width: 100%;
-        --checkbox-padding: 4px;
-      }
-
-      .toolbar-translation-settings-action {
-        margin-top: 4px;
-      }
-
-      .toolbar-translation-settings-action .toolbar-auto-translate {
-        width: 100%;
-        justify-content: center;
-      }
-
-      .toolbar-auto-translate {
+      .toolbar-btn.language-tool {
+        width: var(--toolbar-translation-control-height);
         height: var(--toolbar-translation-control-height);
-        background: #fff;
-        border: 1px solid #d7dce2;
-        color: #4b5563;
-        padding: 0 10px;
-        border-radius: var(--curvature);
-        font-size: 12px;
-        font-weight: 500;
-        cursor: pointer;
-        white-space: nowrap;
-        display: inline-flex;
-        align-items: center;
-      }
-
-      .toolbar-auto-translate:hover {
-        background: #f7f9fb;
-        border-color: #c9d1da;
-      }
-
-      .toolbar-auto-translate[disabled] {
-        opacity: 0.5;
-        cursor: not-allowed;
       }
 
       #editor {
@@ -5517,85 +5429,19 @@ export class Editor extends RapidElement {
     }
   }
 
-  private handleIncludeCategoriesChange(event: Event): void {
-    const checkbox = event.target as Checkbox;
-    const categories = checkbox?.checked ?? false;
+  private setIncludeCategories(categories: boolean): void {
     this.translationFilters = { categories };
     getStore()?.getState().setTranslationFilters({ categories });
     this.requestUpdate();
   }
 
-  private closeToolbarTranslationSettingsDropdown(): void {
-    this.toolbarTranslationSettingsOpen = false;
-    document.removeEventListener(
-      'click',
-      this.boundToolbarSettingsOutsideClick,
-      true
-    );
-
-    const dropdown = this.querySelector(
-      '#toolbar-translation-settings-dropdown'
-    ) as any;
-    if (!dropdown || !dropdown.open) {
-      return;
-    }
-
-    dropdown.open = false;
-    window.setTimeout(() => {
-      dropdown.dormant = true;
-    }, 250);
+  private handleIncludeCategoriesChange(event: Event): void {
+    const checkbox = event.target as Checkbox;
+    this.setIncludeCategories(checkbox?.checked ?? false);
   }
 
-  private boundToolbarSettingsOutsideClick =
-    this.handleToolbarSettingsOutsideClick.bind(this);
-
-  private handleToolbarSettingsOpened(): void {
-    this.toolbarTranslationSettingsOpen = true;
-    requestAnimationFrame(() => {
-      document.addEventListener(
-        'click',
-        this.boundToolbarSettingsOutsideClick,
-        true
-      );
-    });
-  }
-
-  private handleToolbarSettingsOutsideClick(event: MouseEvent): void {
-    const dropdown = this.querySelector(
-      '#toolbar-translation-settings-dropdown'
-    ) as HTMLElement;
-    if (!dropdown) {
-      this.closeToolbarTranslationSettingsDropdown();
-      return;
-    }
-
-    const path = event.composedPath ? event.composedPath() : [];
-    if (!path.includes(dropdown)) {
-      this.closeToolbarTranslationSettingsDropdown();
-    }
-  }
-
-  private handleToolbarSettingsToggleClick(event: MouseEvent): void {
-    const dropdown = (event.currentTarget as HTMLElement)?.closest(
-      'temba-dropdown'
-    ) as any;
-    if (!dropdown?.open) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    this.closeToolbarTranslationSettingsDropdown();
-  }
-
-  private handleToolbarIncludeCategoriesChange(event: Event): void {
-    this.handleIncludeCategoriesChange(event);
-    this.closeToolbarTranslationSettingsDropdown();
-  }
-
-  private handleToolbarAutoTranslateClick(event: Event): void {
-    void this.handleAutoTranslateClick(event);
-    this.closeToolbarTranslationSettingsDropdown();
+  private handleToolbarCategoriesToggle(): void {
+    this.setIncludeCategories(!this.translationFilters.categories);
   }
 
   private async handleAutoTranslateClick(event: Event): Promise<void> {
@@ -6365,6 +6211,13 @@ export class Editor extends RapidElement {
     const activeLanguage = !isBaseSelected
       ? languages.find((lang) => lang.code === this.languageCode)
       : null;
+    const progress = this.getLocalizationProgress(
+      isBaseSelected ? '' : this.languageCode
+    );
+    const percent = Math.round(
+      (progress.localized / Math.max(progress.total, 1)) * 100
+    );
+    const hasTranslations = progress.total > 0;
 
     return html`
       <div class="editor-toolbar">
@@ -6392,7 +6245,7 @@ export class Editor extends RapidElement {
                     ? html`
                       <div class="language-pill">
                         <temba-icon name="translate-01"></temba-icon>
-                        ${activeLanguage.name}
+                        ${activeLanguage.name} (${percent}%)
                         <div class="language-clear" @click=${this.handleLanguageClear}>
                           <temba-icon name="${Icon.select_clear}" size="1"></temba-icon>
                         </div>
@@ -6416,7 +6269,9 @@ export class Editor extends RapidElement {
                       ></temba-options>
                     `}
                 </div>
-                ${activeLanguage ? this.renderToolbarTranslation(isBaseSelected) : ''}
+                ${activeLanguage
+                  ? this.renderToolbarTranslationTools(hasTranslations)
+                  : ''}
               </div>
             `
             : ''}
@@ -6478,79 +6333,35 @@ export class Editor extends RapidElement {
     `;
   }
 
-  private renderToolbarTranslation(isBaseSelected: boolean): TemplateResult {
-    const progress = this.getLocalizationProgress(
-      isBaseSelected ? '' : this.languageCode
-    );
+  private renderToolbarTranslationTools(
+    hasTranslations: boolean
+  ): TemplateResult {
     const includeCategories = this.translationFilters.categories;
-    const remainingTranslations = Math.max(
-      progress.total - progress.localized,
-      0
-    );
-    const hasTranslations = progress.total > 0;
-    const hasPendingTranslations = remainingTranslations > 0;
-    const autoTranslateButtonLabel = this.autoTranslating
-      ? 'Stop Auto Translate'
-      : 'Auto Translate';
-    const showAutoTranslate = !isBaseSelected && hasPendingTranslations;
-
     return html`
       <div class="toolbar-translation">
-        <div class="toolbar-translation-progress">
-          ${this.autoTranslating
-            ? html`<temba-loading units="3" size="6"></temba-loading>`
-            : ''}
-          <temba-progress
-            .current=${progress.localized}
-            .total=${Math.max(progress.total, 1)}
-            .animated=${false}
-          >
-            <temba-dropdown
-              id="toolbar-translation-settings-dropdown"
-              @temba-opened=${this.handleToolbarSettingsOpened}
-            >
-              <button
-                slot="toggle"
-                class="toolbar-btn progress-settings-toggle"
-                type="button"
-                aria-label="Translation options"
-                title="Translation options"
-                @click=${this.handleToolbarSettingsToggleClick}
-              >
-                <temba-icon
-                  class="progress-settings-arrow ${this
-                    .toolbarTranslationSettingsOpen
-                    ? 'open'
-                    : ''}"
-                  name=${Icon.arrow_right}
-                  size="0.75"
-                ></temba-icon>
-              </button>
-              <div slot="dropdown" class="toolbar-translation-settings-menu">
-                <div class="toolbar-translation-settings-row">
-                  <temba-checkbox
-                    name="include-categories"
-                    label="Include categories"
-                    ?checked=${includeCategories}
-                    @change=${this.handleToolbarIncludeCategoriesChange}
-                  ></temba-checkbox>
-                </div>
-                ${showAutoTranslate || this.autoTranslating
-                  ? html`<div class="toolbar-translation-settings-action">
-                      <button
-                        class="toolbar-auto-translate"
-                        type="button"
-                        ?disabled=${!this.autoTranslating && !hasTranslations}
-                        @click=${this.handleToolbarAutoTranslateClick}
-                      >
-                        ${autoTranslateButtonLabel}
-                      </button>
-                    </div>`
-                  : ''}
-              </div>
-            </temba-dropdown>
-          </temba-progress>
-        </div>
+        <button
+          class="toolbar-btn language-tool ${includeCategories ? 'active' : ''}"
+          @click=${this.handleToolbarCategoriesToggle}
+          title="Toggle categories"
+        >
+          <temba-icon name=${Icon.filter} size="0.9"></temba-icon>
+        </button>
+        <button
+          class="toolbar-btn language-tool ${this.autoTranslating
+            ? 'active'
+            : ''}"
+          @click=${this.handleAutoTranslateClick}
+          ?disabled=${!this.autoTranslating && !hasTranslations}
+          title="${this.autoTranslating
+            ? 'Stop auto translate'
+            : 'Auto translate'}"
+        >
+          <temba-icon
+            name=${this.autoTranslating ? 'progress_spinner' : Icon.service}
+            size="0.9"
+            ?spin=${this.autoTranslating}
+          ></temba-icon>
+        </button>
       </div>
     `;
   }
