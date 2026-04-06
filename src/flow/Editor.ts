@@ -692,20 +692,6 @@ export class Editor extends RapidElement {
         color: #fff;
       }
 
-      .language-pill .language-clear {
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        padding: 1px;
-        border-radius: 50%;
-        --icon-color: rgba(255, 255, 255, 0.7);
-      }
-
-      .language-pill .language-clear:hover {
-        background: rgba(255, 255, 255, 0.2);
-        --icon-color: #fff;
-      }
-
       .toolbar-zoom-level {
         font-size: 12px;
         min-width: 40px;
@@ -723,6 +709,23 @@ export class Editor extends RapidElement {
       .toolbar-btn.language-tool {
         width: var(--toolbar-translation-control-height);
         height: var(--toolbar-translation-control-height);
+      }
+
+      .toolbar-language-done {
+        height: var(--toolbar-translation-control-height);
+        border: 1px solid #d7dce2;
+        background: #fff;
+        color: #4b5563;
+        border-radius: var(--curvature);
+        padding: 0 8px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .toolbar-language-done:hover {
+        background: #f7f9fb;
+        border-color: #c9d1da;
       }
 
       #editor {
@@ -6259,9 +6262,6 @@ export class Editor extends RapidElement {
                         <temba-icon name="translate-01"></temba-icon>
                         <span>${activeLanguage.name}</span>
                         <span class="language-percent">${percent}%</span>
-                        <div class="language-clear" @click=${this.handleLanguageClear}>
-                          <temba-icon name="${Icon.select_clear}" size="1"></temba-icon>
-                        </div>
                       </div>
                     `
                     : html`
@@ -6374,6 +6374,13 @@ export class Editor extends RapidElement {
             size="0.9"
             ?spin=${this.autoTranslating}
           ></temba-icon>
+        </button>
+        <button
+          class="toolbar-language-done"
+          @click=${this.handleLanguageClear}
+          title="Done"
+        >
+          Done
         </button>
       </div>
     `;
