@@ -652,14 +652,31 @@ export class Editor extends RapidElement {
         margin: 0 4px;
       }
 
+      .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px;
+        border: 1px solid #d7dce2;
+        border-radius: calc(var(--curvature) + 2px);
+        background: #f7f9fb;
+      }
+
+      .toolbar-group-divider {
+        width: 1px;
+        height: 18px;
+        background: #d7dce2;
+        margin: 0 2px;
+      }
+
       .toolbar-language {
         position: relative;
+        display: flex;
+        align-items: center;
       }
 
       .toolbar-language-group {
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        margin-left: 2px;
       }
 
       .language-pill {
@@ -703,7 +720,7 @@ export class Editor extends RapidElement {
       .toolbar-translation {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
       }
 
       .toolbar-btn.language-tool {
@@ -713,8 +730,8 @@ export class Editor extends RapidElement {
 
       .toolbar-language-done {
         height: var(--toolbar-translation-control-height);
-        border: 1px solid #d7dce2;
-        background: #fff;
+        border: none;
+        background: transparent;
         color: #4b5563;
         border-radius: var(--curvature);
         padding: 0 8px;
@@ -724,8 +741,7 @@ export class Editor extends RapidElement {
       }
 
       .toolbar-language-done:hover {
-        background: #f7f9fb;
-        border-color: #c9d1da;
+        background: rgba(0, 0, 0, 0.06);
       }
 
       #editor {
@@ -6254,7 +6270,7 @@ export class Editor extends RapidElement {
           ${languages.length > 0
             ? html`
               <div class="toolbar-divider"></div>
-              <div class="toolbar-language-group">
+              <div class="toolbar-group toolbar-language-group">
                 <div class="toolbar-language">
                   ${activeLanguage
                     ? html`
@@ -6266,7 +6282,7 @@ export class Editor extends RapidElement {
                     `
                     : html`
                       <button
-                        class="toolbar-btn"
+                        class="toolbar-btn language-tool"
                         id="language-btn"
                         @click=${this.handleLanguageIconClick}
                         title="Select a language"
@@ -6283,7 +6299,10 @@ export class Editor extends RapidElement {
                     `}
                 </div>
                 ${activeLanguage
-                  ? this.renderToolbarTranslationTools(hasTranslations)
+                  ? html`
+                    <div class="toolbar-group-divider"></div>
+                    ${this.renderToolbarTranslationTools(hasTranslations)}
+                  `
                   : ''}
               </div>
             `
