@@ -140,6 +140,9 @@ export interface NodeConfig extends FormConfig {
 
   // Localization support for router categories
   localizable?: 'categories'; // Only categories are localizable for routers
+  // Categories that should not be translated. 'all' means all system categories
+  // are non-translatable (except Other/No Response). A string[] lists specific names.
+  nonTranslatableCategories?: 'all' | string[];
   toLocalizationFormData?: (
     node: Node,
     localization: Record<string, any>

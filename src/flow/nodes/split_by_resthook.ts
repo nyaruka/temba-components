@@ -130,6 +130,7 @@ export const split_by_resthook: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
+  nonTranslatableCategories: 'all',
   toLocalizationFormData: categoriesToLocalizationFormData,
   fromLocalizationFormData: localizationFormDataToCategories
 };

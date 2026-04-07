@@ -400,6 +400,7 @@ export const wait_for_response: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
+  nonTranslatableCategories: ['Timeout'],
   toLocalizationFormData: categoriesToLocalizationFormData,
   fromLocalizationFormData: localizationFormDataToCategories
 };

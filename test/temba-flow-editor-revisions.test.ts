@@ -92,7 +92,7 @@ describe('Editor Revisions', () => {
     expect(revisions.length).to.equal(0);
   });
 
-  it('should have purple color for revisions tab and blue for selected item', async () => {
+  it('should have purple color for revisions window and blue for selected item', async () => {
     // Force revisions window to show
     (element as any).revisionsWindowHidden = false;
     (element as any).localizationWindowHidden = true;
@@ -115,10 +115,10 @@ describe('Editor Revisions', () => {
 
     await element.requestUpdate();
 
-    // Check tab color
-    const tab = element.querySelector('#revisions-tab');
-    expect(tab).to.exist;
-    expect(tab.getAttribute('color')).to.equal('rgb(142, 94, 167)');
+    // Check revisions window color
+    const revisionsWindow = element.querySelector('#revisions-window');
+    expect(revisionsWindow).to.exist;
+    expect(revisionsWindow.getAttribute('color')).to.equal('rgb(142, 94, 167)');
 
     // Check selected item styles
     const selectedItem = element.querySelector(
