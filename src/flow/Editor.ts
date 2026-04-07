@@ -605,9 +605,13 @@ export class Editor extends RapidElement {
         outline: none;
       }
 
-      .toolbar-btn:focus,
-      .toolbar-btn:focus-visible {
+      .toolbar-btn:focus {
         outline: none;
+      }
+
+      .toolbar-btn:focus-visible {
+        outline: 2px solid #0064c8;
+        outline-offset: 2px;
       }
 
       .toolbar-btn:hover {
@@ -2693,8 +2697,10 @@ export class Editor extends RapidElement {
   }
 
   private handleLoupeKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Control' && event.key !== 'Shift') return;
-    if (event.ctrlKey && event.shiftKey) {
+    // Cmd+Ctrl+A (Mac) / Ctrl+Meta+A (Windows)
+    if (event.key.toLowerCase() !== 'a') return;
+    if (event.metaKey && event.ctrlKey) {
+      event.preventDefault();
       this.loupeKeyHeld = true;
       // Show loupe immediately at last known mouse position
       if (this.loupeLastMouse) {
@@ -2704,8 +2710,9 @@ export class Editor extends RapidElement {
   }
 
   private handleLoupeKeyUp(event: KeyboardEvent): void {
-    if (event.key !== 'Control' && event.key !== 'Shift') return;
-    if (this.loupeKeyHeld) {
+    if (!this.loupeKeyHeld) return;
+    // Hide when any modifier is released
+    if (event.key === 'a' || event.key === 'Meta' || event.key === 'Control') {
       this.loupeKeyHeld = false;
       this.hideLoupe();
     }
@@ -2723,7 +2730,7 @@ export class Editor extends RapidElement {
   private handleLoupeMouseMove(event: MouseEvent): void {
     this.loupeLastMouse = { clientX: event.clientX, clientY: event.clientY };
 
-    // Require Ctrl+Shift held, hide while mouse is down, during interactions, or with dialogs open
+    // Require Cmd+Ctrl+A held, hide while mouse is down, during interactions, or with dialogs open
     if (
       !this.loupeKeyHeld ||
       this.loupeMouseIsDown ||
