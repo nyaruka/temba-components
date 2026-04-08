@@ -31,6 +31,7 @@ import {
 import { TEMBA_COMPONENTS_VERSION } from '../version';
 import {
   formatIssueMessage,
+  getLanguageDisplayName,
   getNodeBounds,
   calculateReflowPositions,
   isRightClick,
@@ -506,16 +507,8 @@ export class Editor extends RapidElement {
   private getAvailableLanguages(): Array<{ code: string; name: string }> {
     // Use languages from workspace if available
     if (this.workspace?.languages && this.workspace.languages.length > 0) {
-      const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
       return this.workspace.languages
-        .map((code) => {
-          try {
-            const name = languageNames.of(code);
-            return name ? { code, name } : { code, name: code };
-          } catch {
-            return { code, name: code };
-          }
-        })
+        .map((code) => ({ code, name: getLanguageDisplayName(code) }))
         .filter((lang) => lang.code && lang.name);
     }
 

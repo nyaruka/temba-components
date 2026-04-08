@@ -8,17 +8,14 @@ import {
 } from '../types';
 import { Node, SetContactLanguage } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
-import { renderClamped } from '../utils';
+import { getLanguageDisplayName, renderClamped } from '../utils';
 
 export const set_contact_language: ActionConfig = {
   name: 'Update Language',
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactLanguage) => {
-    const languageNames = new Intl.DisplayNames(['en'], {
-      type: 'language'
-    });
-    const name = languageNames.of(action.language) || action.language;
+    const name = getLanguageDisplayName(action.language);
     return renderClamped(
       html`Set to <strong>${name}</strong>`,
       `Set to ${name}`
@@ -38,12 +35,9 @@ export const set_contact_language: ActionConfig = {
         const store = getStore();
         const workspace = store?.getState().workspace;
         if (workspace?.languages && Array.isArray(workspace.languages)) {
-          const languageNames = new Intl.DisplayNames(['en'], {
-            type: 'language'
-          });
           return workspace.languages.map((languageCode: string) => ({
             value: languageCode,
-            name: languageNames.of(languageCode) || languageCode
+            name: getLanguageDisplayName(languageCode)
           }));
         }
         return [];
@@ -53,14 +47,11 @@ export const set_contact_language: ActionConfig = {
   toFormData: (action: SetContactLanguage) => {
     // Convert the language code back to the option object format expected by the form
     if (action.language) {
-      const languageNames = new Intl.DisplayNames(['en'], {
-        type: 'language'
-      });
       return {
         language: [
           {
             value: action.language,
-            name: languageNames.of(action.language) || action.language
+            name: getLanguageDisplayName(action.language)
           }
         ],
         uuid: action.uuid
