@@ -8,6 +8,9 @@ import {
 } from '../operators';
 import {
   resultNameField,
+  localizeRulesField,
+  localizeCategoriesField,
+  nodeOptionsAccordion,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -107,7 +110,9 @@ export const split_by_run_result: NodeConfig = {
       operatorsToSelectOptions(getWaitForResponseOperators()),
       ''
     ),
-    result_name: resultNameField
+    result_name: resultNameField,
+    localizeRules: localizeRulesField,
+    localizeCategories: localizeCategoriesField
   },
   layout: [
     {
@@ -118,7 +123,7 @@ export const split_by_run_result: NodeConfig = {
       items: ['result', 'delimit_by', 'delimit_index']
     },
     'rules',
-    'result_name'
+    nodeOptionsAccordion
   ],
   validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
@@ -172,7 +177,9 @@ export const split_by_run_result: NodeConfig = {
           ]
         : [DELIMIT_INDEX_OPTIONS[0]],
       rules: rules,
-      result_name: node.router?.result_name || ''
+      result_name: node.router?.result_name || '',
+      localizeRules: nodeUI?.config?.localizeRules || false,
+      localizeCategories: nodeUI?.config?.localizeCategories || false
     };
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -266,6 +273,8 @@ export const split_by_run_result: NodeConfig = {
       ? 'split_by_run_result_delimited'
       : 'split_by_run_result';
 
+    config.localizeRules = !!formData.localizeRules;
+    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
     return config;
   },
 

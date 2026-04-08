@@ -3,6 +3,7 @@ import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 import {
   resultNameField,
+  nodeOptionsAccordionSimple,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -131,7 +132,7 @@ export const split_by_groups: NodeConfig = {
     },
     result_name: resultNameField
   },
-  layout: ['groups', 'result_name'],
+  layout: ['groups', nodeOptionsAccordionSimple],
   validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 

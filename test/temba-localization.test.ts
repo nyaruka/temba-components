@@ -186,21 +186,37 @@ describe('Localization Editing', () => {
     expect(options).to.exist;
   });
 
-  it('should toggle categories and persist include categories preference', async () => {
-    // Switch to a non-base language so translation tools appear
-    await selectLanguageInToolbar(editor, 'French', 'fra');
+  it('should include category translations when per-node localizeCategories is set', async () => {
+    editor?.remove();
 
-    // Click the categories toggle button in the toolbar
-    const categoriesBtn = editor.querySelector(
-      '.toolbar-btn[aria-label="Toggle categories"]'
-    ) as HTMLButtonElement;
-    expect(categoriesBtn).to.exist;
+    setupWorkspace();
 
-    categoriesBtn.click();
+    const categoryFlowDefinition: FlowDefinition =
+      buildCategoryFlowDefinition();
+    // Set localizeCategories on the node's UI config
+    categoryFlowDefinition._ui.nodes['split-node'].config = {
+      localizeCategories: true
+    };
+
+    zustand.getState().setFlowContents({
+      definition: categoryFlowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 1, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
 
-    const filters = zustand.getState().flowDefinition._ui.translation_filters;
-    expect(filters?.categories).to.be.true;
+    // Switch to a non-base language
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+
+    // Check that progress includes the 2 categories
+    const progress = (editor as any).getLocalizationProgress('fra');
+    expect(progress.total).to.equal(2);
   });
 
   it('should allow switching translation languages via toolbar', async () => {
@@ -210,11 +226,12 @@ describe('Localization Editing', () => {
     expect(state.languageCode).to.equal('spa');
   });
 
-  it('should include category translations when categories toggle is enabled', async () => {
+  it('should exclude categories from progress when localizeCategories is not set', async () => {
     editor?.remove();
 
     setupWorkspace();
 
+    // Flow with categories but no localizeCategories config
     const categoryFlowDefinition: FlowDefinition =
       buildCategoryFlowDefinition();
 
@@ -234,16 +251,9 @@ describe('Localization Editing', () => {
     // Switch to a non-base language
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
-    // Toggle categories on
-    const categoriesBtn = editor.querySelector(
-      '.toolbar-btn[aria-label="Toggle categories"]'
-    ) as HTMLButtonElement;
-    categoriesBtn.click();
-    await editor.updateComplete;
-
-    // Check that progress now includes categories
+    // Without localizeCategories, progress should not include categories
     const progress = (editor as any).getLocalizationProgress('fra');
-    expect(progress.total).to.equal(2);
+    expect(progress.total).to.equal(0);
   });
 
   it('should open auto translate dialog when clicking auto translate', async () => {

@@ -1596,7 +1596,8 @@ describe('EditorNode', () => {
 
       const mockUI: NodeUI = {
         position: { left: 0, top: 0 },
-        type: 'split_by_groups'
+        type: 'split_by_groups',
+        config: { localizeCategories: true }
       };
 
       // Create node
@@ -1609,7 +1610,6 @@ describe('EditorNode', () => {
 
       // Set fromStore properties directly
       (editorNode as any).isTranslating = true;
-      (editorNode as any).includeCategoriesInTranslation = true;
       (editorNode as any).languageCode = 'spa';
 
       await editorNode.requestUpdate();

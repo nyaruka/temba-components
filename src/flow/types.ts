@@ -169,7 +169,7 @@ export interface BaseFieldConfig {
   minLength?: number;
   maxLength?: number;
   pattern?: string;
-  helpText?: string;
+  helpText?: string | ((formData: Record<string, any>) => string);
 
   // Layout properties
   maxWidth?: string;
@@ -313,11 +313,13 @@ export interface RowLayoutConfig {
 export interface GroupLayoutConfig {
   type: 'group';
   label: string;
+  icon?: string; // optional icon name to display before the label
   items: LayoutItem[]; // can contain fields, rows, or other groups
   collapsible?: boolean;
   collapsed?: boolean | ((formData: FormData) => boolean); // initial state if collapsible - can be a function
   helpText?: string;
   contentPadding?: string; // CSS padding for group content area
+  gap?: string; // CSS gap between items (default: '15px')
   bordered?: boolean; // whether to show border around the group (default: true)
   reveal?: boolean; // one-way expand: once clicked, header disappears and items show directly
   getGroupValueCount?: (formData: FormData) => number | boolean; // optional function to get count for bubble display
@@ -334,6 +336,7 @@ export interface TextLayoutConfig {
 
 export interface AccordionSection {
   label: string;
+  icon?: string;
   items: LayoutItem[];
   collapsed?: boolean | ((formData: FormData) => boolean);
   getValueCount?: (formData: FormData) => number | boolean;

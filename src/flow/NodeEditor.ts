@@ -228,6 +228,7 @@ export class NodeEditor extends RapidElement {
         color: var(--color-label, #777);
         font-size: 14px;
         display: flex;
+        align-items: center;
       }
 
       .form-group-help {
@@ -402,34 +403,50 @@ export class NodeEditor extends RapidElement {
         width: 100%;
         display: flex;
         flex-direction: column;
-        gap: 5px;
       }
 
       .category-localization-row {
         display: grid;
-        grid-template-columns: 40% 60%;
-      }
-
-      .category-localization-row:last-child {
-        border-bottom: none;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        align-items: center;
+        padding: 4px 0;
       }
 
       .original-name {
-        padding: 10px 20px;
+        font-size: 13px;
+        color: #333;
+        padding: 10px 12px;
         background: #fff8dc;
-        display: flex;
-        align-items: center;
         border-radius: var(--curvature);
-      }
-
-      .localized-name {
-        padding: 10px;
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 38px;
+        box-sizing: border-box;
       }
 
       .localized-name temba-textinput {
         width: 100%;
+      }
+
+      .localization-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #aaa;
+        padding: 10px 0 2px;
+      }
+
+      .localization-section-label:first-child {
+        padding-top: 0;
+      }
+
+      .rule-operator {
+        font-size: 11px;
+        color: #b8a060;
+        margin-right: 4px;
       }
     `;
   }
@@ -556,6 +573,7 @@ export class NodeEditor extends RapidElement {
   }
 
   private initializeFormData(): void {
+    this.groupCollapseState = {};
     const nodeConfig = this.getNodeConfig();
 
     // Temporary: terminal nodes defer to action configs, same as execute_actions
@@ -621,6 +639,7 @@ export class NodeEditor extends RapidElement {
           ).map((category) => category.uuid)
         );
 
+        // Filter categories to translatable ones
         if (
           this.formData.categories &&
           typeof this.formData.categories === 'object' &&
@@ -634,6 +653,29 @@ export class NodeEditor extends RapidElement {
               )
             )
           };
+        }
+
+        // Determine visibility based on per-node config or existing values
+        const nodeConfig2 = this.nodeUI?.config || {};
+        const showCategories =
+          nodeConfig2.localizeCategories ||
+          (this.formData.categories &&
+            Object.values(this.formData.categories).some(
+              (c: any) => c.localizedName
+            ));
+        const showRules =
+          nodeConfig2.localizeRules ||
+          (this.formData.rules &&
+            Object.values(this.formData.rules).some((r: any) =>
+              r.localizedArguments?.some((a: string) => a)
+            ));
+
+        // Remove sections that shouldn't be shown
+        if (!showCategories) {
+          delete this.formData.categories;
+        }
+        if (!showRules) {
+          delete this.formData.rules;
         }
       } else if (nodeConfig?.toFormData) {
         this.formData = nodeConfig.toFormData(this.node, this.nodeUI);
@@ -658,6 +700,7 @@ export class NodeEditor extends RapidElement {
           i++;
         }
         this.formData.result_name = candidate;
+        this.formData._isNew = true;
       }
 
       // Convert Record objects to array format for key-value editors
@@ -886,7 +929,7 @@ export class NodeEditor extends RapidElement {
         }
       }
 
-      // Handle node localization (for router categories)
+      // Handle node localization (for router categories and rules)
       if (this.node) {
         const nodeConfig = this.getNodeConfig();
 
@@ -894,7 +937,6 @@ export class NodeEditor extends RapidElement {
           nodeConfig?.localizable === 'categories' &&
           nodeConfig.fromLocalizationFormData
         ) {
-          // Get localization data for all categories
           const localizationData = nodeConfig.fromLocalizationFormData(
             processedFormData,
             this.node
@@ -902,6 +944,8 @@ export class NodeEditor extends RapidElement {
 
           const languageLocalization =
             this.flowDefinition?.localization?.[this.languageCode] || {};
+
+          // Save category localizations
           const categories = getTranslatableCategoriesForNode(
             this.nodeUI?.type,
             this.node?.router?.categories
@@ -918,8 +962,22 @@ export class NodeEditor extends RapidElement {
                 nextLocalization
               );
             } else if (languageLocalization[categoryUuid]) {
-              // Remove existing localization when the translation was cleared
               this.updateLocalization(this.languageCode, categoryUuid, {});
+            }
+          });
+
+          // Save rule localizations
+          const cases = this.node.router?.cases || [];
+          cases.forEach((c) => {
+            const nextLocalization = localizationData[c.uuid];
+            if (nextLocalization) {
+              this.updateLocalization(
+                this.languageCode,
+                c.uuid,
+                nextLocalization
+              );
+            } else if (languageLocalization[c.uuid]) {
+              this.updateLocalization(this.languageCode, c.uuid, {});
             }
           });
 
@@ -1465,18 +1523,9 @@ export class NodeEditor extends RapidElement {
         // Recursively check items in rows
         this.updateGroupCollapseStatesRecursive(item.items);
       } else if (typeof item === 'object' && item.type === 'accordion') {
-        // Check each accordion section
+        // Accordion sections use their collapsed function only for initial state;
+        // after that, user toggles control them.
         item.sections.forEach((section) => {
-          const stateKey = `accordion:${section.label}`;
-          if (typeof section.collapsed === 'function') {
-            const newCollapsedState = section.collapsed(this.formData);
-            if (this.groupCollapseState[stateKey] !== newCollapsedState) {
-              this.groupCollapseState = {
-                ...this.groupCollapseState,
-                [stateKey]: newCollapsedState
-              };
-            }
-          }
           this.updateGroupCollapseStatesRecursive(section.items);
         });
       }
@@ -1601,37 +1650,79 @@ export class NodeEditor extends RapidElement {
     ]);
   }
 
-  private renderCategoryLocalizationTable(): TemplateResult {
+  private renderLocalizationTable(): TemplateResult {
+    const rules = this.formData.rules || {};
+    const ruleEntries = Object.entries(rules);
     const categories = this.formData.categories || {};
     const categoryEntries = Object.entries(categories);
 
-    if (categoryEntries.length === 0) {
-      return html`<div>No categories to localize</div>`;
+    if (ruleEntries.length === 0 && categoryEntries.length === 0) {
+      return html`<div>No content to localize</div>`;
     }
-
-    const languageName = getStore().getLanguageName(this.languageCode);
 
     return html`
       <div class="category-localization-table">
-        ${categoryEntries.map(
-          ([categoryUuid, categoryData]: [string, any]) => html`
-            <div class="category-localization-row">
-              <div class="original-name">${categoryData.originalName}</div>
-              <div class="localized-name">
-                <temba-textinput
-                  name="${categoryUuid}"
-                  placeholder="${languageName} Translation"
-                  value="${categoryData.localizedName || ''}"
-                  @change=${(e: Event) =>
-                    this.handleCategoryLocalizationChange(
-                      categoryUuid,
-                      (e.target as any).value
-                    )}
-                ></temba-textinput>
-              </div>
-            </div>
-          `
-        )}
+        ${ruleEntries.length > 0
+          ? html`
+              <div class="localization-section-label">Rules</div>
+              ${ruleEntries.map(
+                ([caseUuid, ruleData]: [string, any]) => html`
+                  ${(ruleData.originalArguments || []).map(
+                    (arg: string, i: number) =>
+                      arg
+                        ? html`
+                            <div class="category-localization-row">
+                              <div class="original-name">
+                                <span class="rule-operator">${ruleData.operatorName}</span>
+                                <span>${arg}</span>
+                              </div>
+                              <div class="localized-name">
+                                <temba-textinput
+                                  name="rule-${caseUuid}-${i}"
+                                  placeholder=""
+                                  value="${ruleData.localizedArguments?.[i] || ''}"
+                                  @change=${(e: Event) =>
+                                    this.handleRuleLocalizationChange(
+                                      caseUuid,
+                                      i,
+                                      (e.target as any).value
+                                    )}
+                                ></temba-textinput>
+                              </div>
+                            </div>
+                          `
+                        : ''
+                  )}
+                `
+              )}
+            `
+          : ''}
+        ${categoryEntries.length > 0
+          ? html`
+              <div class="localization-section-label">Categories</div>
+              ${categoryEntries.map(
+                ([categoryUuid, categoryData]: [string, any]) => html`
+                  <div class="category-localization-row">
+                    <div class="original-name">
+                      ${categoryData.originalName}
+                    </div>
+                    <div class="localized-name">
+                      <temba-textinput
+                        name="${categoryUuid}"
+                        placeholder=""
+                        value="${categoryData.localizedName || ''}"
+                        @change=${(e: Event) =>
+                          this.handleCategoryLocalizationChange(
+                            categoryUuid,
+                            (e.target as any).value
+                          )}
+                      ></temba-textinput>
+                    </div>
+                  </div>
+                `
+              )}
+            `
+          : ''}
       </div>
     `;
   }
@@ -1640,18 +1731,31 @@ export class NodeEditor extends RapidElement {
     categoryUuid: string,
     value: string
   ): void {
-    // Update formData with new localized value
     if (!this.formData.categories) {
       this.formData.categories = {};
     }
-
     if (!this.formData.categories[categoryUuid]) {
       this.formData.categories[categoryUuid] = {};
     }
-
     this.formData.categories[categoryUuid].localizedName = value;
+    this.requestUpdate();
+  }
 
-    // Trigger a re-render
+  private handleRuleLocalizationChange(
+    caseUuid: string,
+    argIndex: number,
+    value: string
+  ): void {
+    if (!this.formData.rules) {
+      this.formData.rules = {};
+    }
+    if (!this.formData.rules[caseUuid]) {
+      this.formData.rules[caseUuid] = { originalArguments: [], localizedArguments: [] };
+    }
+    if (!this.formData.rules[caseUuid].localizedArguments) {
+      this.formData.rules[caseUuid].localizedArguments = [];
+    }
+    this.formData.rules[caseUuid].localizedArguments[argIndex] = value;
     this.requestUpdate();
   }
 
@@ -1997,7 +2101,9 @@ export class NodeEditor extends RapidElement {
       collapsible = false,
       collapsed = false,
       helpText,
+      icon,
       contentPadding,
+      gap,
       bordered = true,
       reveal = false,
       getGroupValueCount
@@ -2085,7 +2191,9 @@ export class NodeEditor extends RapidElement {
             : undefined}
         >
           <div class="form-group-info">
-            <div class="form-group-title">${label}</div>
+            <div class="form-group-title">${icon
+                ? html`<temba-icon name=${icon} size="1" style="margin-right:6px;color:#999;"></temba-icon>`
+                : ''}${label}</div>
             ${helpText
               ? html`<div class="form-group-help">
                   ${renderMarkdownInline(helpText)}
@@ -2128,9 +2236,10 @@ export class NodeEditor extends RapidElement {
         </div>
         <div
           class="form-group-content ${isCollapsed ? 'collapsed' : 'expanded'}"
-          style="${contentPadding
-            ? `--group-content-padding: ${contentPadding}`
-            : ''}"
+          style="${[
+            contentPadding ? `--group-content-padding: ${contentPadding}` : '',
+            gap ? `gap: ${gap}` : ''
+          ].filter(Boolean).join(';')}"
         >
           ${items.map((item) =>
             this.renderLayoutItem(item, config, renderedFields)
@@ -2215,9 +2324,10 @@ export class NodeEditor extends RapidElement {
           return html`
             <temba-accordion-section
               label=${label}
+              icon=${section.icon || ''}
               .count=${valueCount}
               ?checked=${isChecked}
-              ?collapsed=${isCollapsed}
+              .collapsed=${isCollapsed}
               ?hasError=${sectionHasErrors}
             >
               ${section.items.map((item) =>
@@ -2341,13 +2451,13 @@ export class NodeEditor extends RapidElement {
       return html` <div>No configuration available</div> `;
     }
 
-    // Special rendering for category localization
+    // Special rendering for category/rule localization
     if (
       this.isTranslating &&
       config.localizable === 'categories' &&
-      this.formData.categories
+      (this.formData.categories || this.formData.rules)
     ) {
-      return this.renderCategoryLocalizationTable();
+      return this.renderLocalizationTable();
     }
 
     // Use the new fields configuration system

@@ -33,6 +33,8 @@ export class AccordionSection extends LitElement {
       }
 
       .accordion-title {
+        display: flex;
+        align-items: center;
         font-weight: 500;
         font-size: 13px;
         color: var(--color-label, #777);
@@ -132,6 +134,9 @@ export class AccordionSection extends LitElement {
   @property({ type: String })
   label = '';
 
+  @property({ type: String })
+  icon = '';
+
   @property({ type: Number })
   count: number;
 
@@ -189,7 +194,9 @@ export class AccordionSection extends LitElement {
         @mouseenter=${this.handleMouseEnter}
         @mouseleave=${this.handleMouseLeave}
       >
-        <div class="accordion-title">${this.label}</div>
+        <div class="accordion-title">${this.icon
+            ? html`<temba-icon name=${this.icon} size="1" style="margin-right:6px;color:#999;"></temba-icon>`
+            : ''}${this.label}</div>
         ${this.hasError
           ? html`<temba-icon
               name="alert_warning"

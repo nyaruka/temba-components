@@ -12,10 +12,8 @@ import { CustomEventType } from '../interfaces';
 import { renderHighlightedText } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { ACTION_GROUP_METADATA, SPLIT_GROUP_METADATA } from './types';
-import {
-  getTranslatableCategoriesForNode,
-  hasTranslatableCategoriesForNode
-} from './categoryLocalization';
+import { getOperatorConfig } from './operators';
+import { getTranslatableCategoriesForNode } from './categoryLocalization';
 
 interface MessageEntry {
   kind: 'message';
@@ -24,14 +22,15 @@ interface MessageEntry {
   nodeIndex: number;
 }
 
-interface CategoryGroupEntry {
-  kind: 'category-group';
+interface LocalizationGroupEntry {
+  kind: 'localization-group';
   node: Node;
+  rules: Array<{ uuid: string; type: string; arguments: string[] }>;
   categories: Category[];
   nodeIndex: number;
 }
 
-type TableEntry = MessageEntry | CategoryGroupEntry;
+type TableEntry = MessageEntry | LocalizationGroupEntry;
 
 export class MessageTable extends RapidElement {
   static get styles() {
@@ -80,6 +79,70 @@ export class MessageTable extends RapidElement {
 
       .message-table tr.category-row td.translation-td {
         padding: 8px;
+      }
+
+      .message-table tr.localization-paired-row td {
+        padding: 2px 16px 2px 26px;
+      }
+
+      .message-table tr.localization-paired-row:not(.localization-paired-last) td {
+        border-bottom: none;
+      }
+
+      .message-table tr.localization-paired-row td.translation-td {
+        padding: 2px 8px;
+      }
+
+      .message-table tr.localization-paired-first td,
+      .message-table tr.localization-paired-first td.translation-td {
+        padding-top: 12px;
+      }
+
+      .message-table tr.localization-paired-last td,
+      .message-table tr.localization-paired-last td.translation-td {
+        padding-bottom: 12px;
+      }
+
+      .localization-paired-row td:first-child {
+        position: relative;
+      }
+
+      .localization-paired-row td:first-child::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--node-rail-color, #d1d5db);
+      }
+
+      .localization-paired-first td:first-child::before {
+        top: 8px;
+      }
+
+      .localization-paired-last td:first-child::before {
+        bottom: 8px;
+      }
+
+      .localization-paired-row .message-cell::before {
+        display: none;
+      }
+
+      .localization-paired-row td.translation-td {
+        height: 1px;
+      }
+
+      .localization-paired-row .translation-cell {
+        height: 100%;
+        display: flex;
+        align-items: stretch;
+      }
+
+      .localization-paired-row .category-translation-item {
+        display: flex;
+        align-items: center;
+        flex: 1;
       }
 
       .message-cell {
@@ -133,6 +196,12 @@ export class MessageTable extends RapidElement {
       .category-original-item {
         color: #334155;
         background: #f7f9fc;
+      }
+
+      .rule-operator {
+        font-size: 11px;
+        color: #999;
+        margin-right: 4px;
       }
 
       .category-translation-item {
@@ -267,29 +336,6 @@ export class MessageTable extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.isTranslating)
   private isTranslating!: boolean;
 
-  private shouldIncludeCategories(node: Node): boolean {
-    if (!this.isTranslating) {
-      return false;
-    }
-
-    const includeCategories = !!this.definition?._ui?.translation_filters
-      ?.categories;
-    if (!includeCategories || !node.router?.categories?.length) {
-      return false;
-    }
-
-    const nodeType = this.definition?._ui?.nodes?.[node.uuid]?.type;
-    if (!nodeType) {
-      return false;
-    }
-
-    if (NODE_CONFIG[nodeType]?.localizable !== 'categories') {
-      return false;
-    }
-
-    return hasTranslatableCategoriesForNode(nodeType, node.router?.categories);
-  }
-
   private getEntries(): TableEntry[] {
     if (!this.definition?.nodes) return [];
 
@@ -309,19 +355,48 @@ export class MessageTable extends RapidElement {
         }
       }
 
-      if (this.shouldIncludeCategories(node)) {
-        const nodeType = this.definition?._ui?.nodes?.[node.uuid]?.type;
-        const categories = getTranslatableCategoriesForNode(
-          nodeType,
-          node.router?.categories
-        );
-        if (categories.length === 0) {
-          continue;
-        }
+      if (!this.isTranslating) continue;
 
+      const nodeUI = this.definition?._ui?.nodes?.[node.uuid];
+      const nodeType = nodeUI?.type;
+
+      // Collect rules that have localized values or are flagged for localization
+      const langLocalization = this.definition?.localization?.[this.languageCode] || {};
+      let rules: Array<{ uuid: string; type: string; arguments: string[] }> = [];
+      if (node.router?.cases?.length) {
+        const hasLocalizeRules = nodeUI?.config?.localizeRules;
+        rules = node.router.cases
+          .filter((c) => c.arguments?.length > 0 && c.arguments.some((a) => a))
+          .filter((c) => hasLocalizeRules || langLocalization[c.uuid]?.arguments?.some((a: string) => a))
+          .map((c) => ({ uuid: c.uuid, type: c.type, arguments: [...c.arguments] }));
+      }
+
+      // Collect categories that have localized values or are flagged for localization
+      let categories: Category[] = [];
+      if (
+        nodeType &&
+        NODE_CONFIG[nodeType]?.localizable === 'categories' &&
+        node.router?.categories?.length
+      ) {
+        const hasLocalizeCategories = nodeUI?.config?.localizeCategories;
+        const translatableCategories = getTranslatableCategoriesForNode(
+          nodeType,
+          node.router.categories
+        );
+        if (hasLocalizeCategories) {
+          categories = translatableCategories;
+        } else {
+          categories = translatableCategories.filter(
+            (cat) => langLocalization[cat.uuid]?.name?.some((n: string) => n)
+          );
+        }
+      }
+
+      if (rules.length > 0 || categories.length > 0) {
         entries.push({
-          kind: 'category-group',
+          kind: 'localization-group',
           node,
+          rules,
           categories,
           nodeIndex
         });
@@ -418,7 +493,7 @@ export class MessageTable extends RapidElement {
     });
   }
 
-  private handleBaseCategoryClick(entry: CategoryGroupEntry): void {
+  private handleBaseGroupClick(entry: LocalizationGroupEntry): void {
     const nodeUI = this.definition?._ui?.nodes?.[entry.node.uuid];
     if (!nodeUI) {
       return;
@@ -431,7 +506,7 @@ export class MessageTable extends RapidElement {
     });
   }
 
-  private handleCategoryTranslationClick(entry: CategoryGroupEntry): void {
+  private handleGroupTranslationClick(entry: LocalizationGroupEntry): void {
     const nodeUI = this.definition?._ui?.nodes?.[entry.node.uuid];
     if (!nodeUI) {
       return;
@@ -443,14 +518,32 @@ export class MessageTable extends RapidElement {
     });
   }
 
-  private getCategoryTranslations(entry: CategoryGroupEntry): Array<{
+  private getGroupTranslations(
+    entry: LocalizationGroupEntry
+  ): Array<{
     original: string;
     translated: string | null;
+    isRule: boolean;
+    operatorName?: string;
   }> {
-    return entry.categories.map((category) => ({
+    const ruleItems = entry.rules.map((c) => {
+      const original = c.arguments.join(', ');
+      const operatorName = getOperatorConfig(c.type)?.name || c.type;
+      const localization =
+        this.definition?.localization?.[this.languageCode]?.[c.uuid];
+      const translated = Array.isArray(localization?.arguments)
+        ? localization.arguments.join(', ')
+        : null;
+      return { original, translated, isRule: true, operatorName };
+    });
+
+    const categoryItems = entry.categories.map((category) => ({
       original: category.name,
-      translated: this.getTranslatedCategoryName(category.uuid)
+      translated: this.getTranslatedCategoryName(category.uuid),
+      isRule: false
     }));
+
+    return [...ruleItems, ...categoryItems];
   }
 
   private getEntryRailColor(entry: TableEntry): string {
@@ -485,7 +578,7 @@ export class MessageTable extends RapidElement {
 
     if (entries.length === 0) {
       return html`<div class="empty-state">
-        No messages or localizable categories in this flow.
+        No messages or localizable content in this flow.
       </div>`;
     }
 
@@ -501,37 +594,95 @@ export class MessageTable extends RapidElement {
         </thead>
         <tbody>
           ${entries.map((entry) => {
+            const isGroupEntry = entry.kind === 'localization-group';
             const translatedText =
               showTranslation && entry.kind === 'message'
                 ? this.getTranslatedText(entry.action.uuid)
-                : showTranslation && entry.kind === 'category-group'
-                  ? this.getCategoryTranslations(entry)
-                  : null;
+                : null;
             const translatedQuickReplies =
               showTranslation && entry.kind === 'message'
                 ? this.getTranslatedQuickReplies(entry.action.uuid)
                 : [];
-            const hasCategoryTranslation =
-              entry.kind === 'category-group' &&
-              Array.isArray(translatedText) &&
-              translatedText.some((item) => !!item.translated);
+            const groupTranslations =
+              showTranslation && isGroupEntry
+                ? this.getGroupTranslations(entry)
+                : null;
+            const hasGroupTranslation =
+              Array.isArray(groupTranslations) &&
+              groupTranslations.some((item) => !!item.translated);
             const hasMessageTranslation =
               entry.kind === 'message' &&
               (!!translatedText || translatedQuickReplies.length > 0);
             const hasTranslation =
               entry.kind === 'message'
                 ? hasMessageTranslation
-                : hasCategoryTranslation;
-            const translationCellClass =
-              entry.kind === 'category-group'
+                : hasGroupTranslation;
+            const translationCellClass = isGroupEntry
                 ? 'translation-cell category-translation-cell'
                 : `translation-cell ${hasTranslation
                     ? 'has-translation'
                     : 'missing-translation'}`;
 
+            const handleBaseClick = () => {
+              if (entry.kind === 'message') this.handleBaseTextClick(entry);
+              else if (isGroupEntry) this.handleBaseGroupClick(entry);
+            };
+            const handleTranslationClickFn = () => {
+              if (entry.kind === 'message') this.handleTranslationClick(entry);
+              else if (isGroupEntry) this.handleGroupTranslationClick(entry);
+            };
+
+            if (isGroupEntry && showTranslation) {
+              // Render localization groups as paired rows so originals and translations align
+              return html`
+                ${groupTranslations.map(
+                  (item, idx) => html`
+                    <tr
+                      class="category-row localization-paired-row ${idx === 0 ? 'localization-paired-first' : ''} ${idx === groupTranslations.length - 1 ? 'localization-paired-last' : ''}"
+                      style=${`--node-rail-color: ${this.getEntryRailColor(entry)};`}
+                      data-node-uuid=${entry.node.uuid}
+                      data-entry-kind=${entry.kind}
+                    >
+                      <td>
+                        <div
+                          class="message-cell category-message-cell"
+                          @click=${handleBaseClick}
+                          title="Click to edit"
+                        >
+                          <div class="category-item category-original-item">
+                            <span>${item.isRule && item.operatorName
+                              ? html`<span class="rule-operator">${item.operatorName}</span> `
+                              : ''}${renderHighlightedText(item.original, true)}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="translation-td">
+                        <div
+                          class="translation-cell category-translation-cell"
+                          @click=${handleTranslationClickFn}
+                          title="Click to edit translation"
+                        >
+                          <div
+                            class="category-item category-translation-item ${item.translated
+                              ? ''
+                              : 'missing'}"
+                          >
+                            <span>${item.isRule && item.operatorName
+                              ? html`<span class="rule-operator">${item.operatorName}</span> `
+                              : ''}${item.translated
+                              ? renderHighlightedText(item.translated, true)
+                              : 'No translation'}</span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  `
+                )}
+              `;
+            }
+
             return html`
               <tr
-                class=${entry.kind === 'category-group' ? 'category-row' : ''}
                 style=${`--node-rail-color: ${this.getEntryRailColor(entry)};`}
                 data-node-uuid=${entry.node.uuid}
                 data-entry-kind=${entry.kind}
@@ -541,20 +692,30 @@ export class MessageTable extends RapidElement {
               >
                 <td>
                   <div
-                    class="message-cell ${entry.kind === 'category-group'
-                      ? 'category-message-cell'
-                      : ''}"
-                    @click=${() =>
-                      entry.kind === 'message'
-                        ? this.handleBaseTextClick(entry)
-                        : this.handleBaseCategoryClick(entry)}
-                    title=${entry.kind === 'message'
-                      ? 'Click to edit message'
-                      : 'Click to edit category'}
+                    class="message-cell"
+                    @click=${handleBaseClick}
+                    title="Click to edit message"
                   >
-                    ${entry.kind === 'category-group'
-                      ? html`
+                    ${entry.kind === 'message'
+                      ? html`${renderHighlightedText(
+                          this.stripLeadingLineBreaks(entry.action.text || ''),
+                          true
+                        )}${(entry.action.quick_replies || [])
+                          .length > 0
+                          ? html`<div class="quick-replies">${(entry.action.quick_replies || []).map(
+                              (reply) => html`<div class="quick-reply">${reply}</div>`
+                            )}</div>`
+                          : ''}`
+                      : isGroupEntry
+                        ? html`
                           <div class="category-stack category-stack-original">
+                            ${entry.rules.map(
+                              (c) => html`
+                                <div class="category-item category-original-item">
+                                  <span><span class="rule-operator">${getOperatorConfig(c.type)?.name || c.type}</span> ${renderHighlightedText(c.arguments.join(', '), true)}</span>
+                                </div>
+                              `
+                            )}
                             ${entry.categories.map(
                               (category) => html`
                                 <div class="category-item category-original-item">
@@ -564,50 +725,17 @@ export class MessageTable extends RapidElement {
                             )}
                           </div>
                         `
-                      : html`${renderHighlightedText(
-                          this.stripLeadingLineBreaks(entry.action.text || ''),
-                          true
-                        )}${(entry.action.quick_replies || [])
-                          .length > 0
-                          ? html`<div class="quick-replies">${(entry.action.quick_replies || []).map(
-                              (reply) => html`<div class="quick-reply">${reply}</div>`
-                            )}</div>`
-                          : ''}`}
+                        : ''}
                   </div>
                 </td>
                 ${showTranslation
                   ? html`<td class="translation-td">
                       <div
                         class=${translationCellClass}
-                        @click=${() =>
-                          entry.kind === 'message'
-                            ? this.handleTranslationClick(entry)
-                            : this.handleCategoryTranslationClick(entry)}
-                        title=${entry.kind === 'message'
-                          ? 'Click to edit translation'
-                          : 'Click to edit category translation'}
+                        @click=${handleTranslationClickFn}
+                        title="Click to edit translation"
                       >
-                        ${entry.kind === 'category-group' &&
-                        Array.isArray(translatedText)
-                          ? html`<div class="category-stack">
-                              ${translatedText.map(
-                                (item) => html`
-                                  <div
-                                    class="category-item category-translation-item ${item.translated
-                                      ? ''
-                                      : 'missing'}"
-                                  >
-                                    <span>${item.translated
-                                      ? renderHighlightedText(
-                                          item.translated,
-                                          true
-                                        )
-                                      : 'No translation'}</span>
-                                  </div>
-                                `
-                              )}
-                            </div>`
-                          : entry.kind === 'message'
+                        ${entry.kind === 'message'
                             ? html`${typeof translatedText === 'string'
                                 ? renderHighlightedText(
                                     this.stripLeadingLineBreaks(translatedText),

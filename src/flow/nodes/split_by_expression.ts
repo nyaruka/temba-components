@@ -8,6 +8,9 @@ import {
 } from '../operators';
 import {
   resultNameField,
+  localizeRulesField,
+  localizeCategoriesField,
+  nodeOptionsAccordion,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -36,9 +39,11 @@ export const split_by_expression: NodeConfig = {
       operatorsToSelectOptions(getWaitForResponseOperators()),
       ''
     ),
-    result_name: resultNameField
+    result_name: resultNameField,
+    localizeRules: localizeRulesField,
+    localizeCategories: localizeCategoriesField
   },
-  layout: ['operand', 'rules', 'result_name'],
+  layout: ['operand', 'rules', nodeOptionsAccordion],
   validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
@@ -52,7 +57,7 @@ export const split_by_expression: NodeConfig = {
       errors
     };
   },
-  toFormData: (node: Node) => {
+  toFormData: (node: Node, nodeUI?: any) => {
     // Extract rules from router cases using shared function
     const rules = casesToFormRules(node);
 
@@ -60,8 +65,16 @@ export const split_by_expression: NodeConfig = {
       uuid: node.uuid,
       operand: node.router?.operand || '@input.text',
       rules: rules,
-      result_name: node.router?.result_name || ''
+      result_name: node.router?.result_name || '',
+      localizeRules: nodeUI?.config?.localizeRules || false,
+      localizeCategories: nodeUI?.config?.localizeCategories || false
     };
+  },
+  toUIConfig: (formData: FormData) => {
+    const config: Record<string, any> = {};
+    config.localizeRules = !!formData.localizeRules;
+    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    return config;
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get user rules using shared extraction function

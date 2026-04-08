@@ -44,13 +44,6 @@ export class CanvasNode extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private flowDefinition!: any;
 
-  @fromStore(
-    zustand,
-    (state: AppState) =>
-      state.flowDefinition?._ui?.translation_filters?.categories || false
-  )
-  private includeCategoriesInTranslation!: boolean;
-
   @fromStore(zustand, (state: AppState) => state.getCurrentActivity())
   private activity!: any;
 
@@ -1827,13 +1820,14 @@ export class CanvasNode extends RapidElement {
             }
           }
 
-          // Category is localizable if: translating, supports localization, categories enabled, and not base language
+          // Category is localizable if: translating, supports localization, categories enabled per-node, and not base language
+          const nodeLocalizeCategories = !!this.ui?.config?.localizeCategories;
           const isLocalizable =
             this.isTranslating &&
             this.languageCode !== 'eng' &&
             supportsLocalization &&
             translatableCategoryUuids.has(category.uuid) &&
-            this.includeCategoriesInTranslation &&
+            nodeLocalizeCategories &&
             !isLocalized;
 
           return html`<div
@@ -1891,9 +1885,12 @@ export class CanvasNode extends RapidElement {
       const actionConfig = ACTION_CONFIG[action.type];
       return !!actionConfig?.localizable?.length;
     });
+    const nodeLocalizeCategories = !!this.ui?.config?.localizeCategories;
+    const nodeLocalizeRules = !!this.ui?.config?.localizeRules;
     const hasActiveTranslatableContent =
       hasTranslatableActions ||
-      (hasTranslatableCategories && this.includeCategoriesInTranslation);
+      (hasTranslatableCategories && nodeLocalizeCategories) ||
+      nodeLocalizeRules;
     const isNodeDisabled = this.isTranslating && !hasActiveTranslatableContent;
 
     // Get active contact count for this node

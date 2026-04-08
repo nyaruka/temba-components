@@ -330,11 +330,6 @@ export class Editor extends RapidElement {
   private localizationWindowHidden = true;
 
   @state()
-  private translationFilters: { categories: boolean } = {
-    categories: false
-  };
-
-  @state()
   private translationSettingsExpanded = false;
 
   @state()
@@ -1657,17 +1652,6 @@ export class Editor extends RapidElement {
         this.flowType = this.getFlowTypeFromDefinition(this.definition.type);
       }
 
-      const filters = this.definition?._ui?.translation_filters || {
-        categories: false
-      };
-      const normalizedFilters = {
-        categories: !!filters.categories
-      };
-
-      if (this.translationFilters.categories !== normalizedFilters.categories) {
-        this.translationFilters = normalizedFilters;
-      }
-
       // Pre-sync zoom state so we don't mutate reactive state in updated().
       this.restoreInitialZoomFromSettings();
     }
@@ -2421,8 +2405,7 @@ export class Editor extends RapidElement {
     search.definition = this.definition;
     search.languageCode = this.languageCode || '';
     search.scope = this.showMessageTable ? 'table' : 'flow';
-    search.includeCategories =
-      this.translationFilters.categories && this.isTranslating;
+    search.includeCategories = this.isTranslating && this.hasAnyNodeWithLocalizeCategories();
     search.show();
   }
 
@@ -5236,10 +5219,7 @@ export class Editor extends RapidElement {
       return { total: 0, localized: 0 };
     }
 
-    const bundles = this.buildTranslationBundles(
-      this.translationFilters.categories,
-      languageCode
-    );
+    const bundles = this.buildTranslationBundles(languageCode);
     return this.getTranslationCounts(bundles);
   }
 
@@ -5251,7 +5231,6 @@ export class Editor extends RapidElement {
   }
 
   private buildTranslationBundles(
-    includeCategories: boolean,
     languageCode: string = this.languageCode
   ): TranslationBundle[] {
     if (
@@ -5296,10 +5275,6 @@ export class Editor extends RapidElement {
         }
       });
 
-      if (!includeCategories) {
-        return;
-      }
-
       const nodeUI = this.definition._ui?.nodes?.[node.uuid];
       const nodeType = nodeUI?.type;
       if (!nodeType) {
@@ -5307,7 +5282,30 @@ export class Editor extends RapidElement {
       }
 
       const nodeConfig = NODE_CONFIG[nodeType];
+      // Include rule (case argument) translations when localizeRules is set
+      if (nodeUI?.config?.localizeRules && node.router?.cases?.length) {
+        const ruleTranslations = node.router.cases
+          .filter((c) => c.arguments?.length > 0 && c.arguments.some((a) => a))
+          .flatMap((c) =>
+            this.findTranslations(
+              'property',
+              c.uuid,
+              ['arguments'],
+              c,
+              languageLocalization
+            )
+          );
+
+        if (ruleTranslations.length > 0) {
+          bundles.push({
+            nodeUuid: node.uuid,
+            translations: ruleTranslations
+          });
+        }
+      }
+
       if (
+        nodeUI?.config?.localizeCategories &&
         nodeConfig?.localizable === 'categories' &&
         node.router?.categories?.length
       ) {
@@ -5493,25 +5491,11 @@ export class Editor extends RapidElement {
     }
   }
 
-  private setIncludeCategories(categories: boolean): void {
-    this.translationFilters = { categories };
-    getStore()?.getState().setTranslationFilters({ categories });
-    this.requestUpdate();
-  }
-
-  private handleIncludeCategoriesChange(event: Event): void {
-    if (this.viewingRevision) {
-      return;
-    }
-    const checkbox = event.target as Checkbox;
-    this.setIncludeCategories(checkbox?.checked ?? false);
-  }
-
-  private handleToolbarCategoriesToggle(): void {
-    if (this.viewingRevision) {
-      return;
-    }
-    this.setIncludeCategories(!this.translationFilters.categories);
+  private hasAnyNodeWithLocalizeCategories(): boolean {
+    if (!this.definition?._ui?.nodes) return false;
+    return Object.values(this.definition._ui.nodes).some(
+      (nodeUI: any) => nodeUI?.config?.localizeCategories
+    );
   }
 
   private async handleAutoTranslateClick(event?: Event): Promise<void> {
@@ -5651,9 +5635,7 @@ export class Editor extends RapidElement {
       return;
     }
 
-    const bundles = this.buildTranslationBundles(
-      this.translationFilters.categories
-    );
+    const bundles = this.buildTranslationBundles();
 
     for (const bundle of bundles) {
       if (!this.autoTranslating) {
@@ -6084,7 +6066,6 @@ export class Editor extends RapidElement {
     const progress = this.getLocalizationProgress(
       isBaseSelected ? '' : this.languageCode
     );
-    const includeCategories = this.translationFilters.categories;
     const settingsPanelId = 'translation-settings-panel';
     const remainingTranslations = Math.max(
       progress.total - progress.localized,
@@ -6206,16 +6187,6 @@ export class Editor extends RapidElement {
                   id="${settingsPanelId}"
                   class="translation-settings"
                 >
-                  <div class="translation-settings-row">
-                    <temba-checkbox
-                      name="include-categories"
-                      label="Include categories"
-                      ?checked=${includeCategories}
-                      ?disabled=${disableTranslationControls}
-                      style="--checkbox-padding:5px; border-radius:var(--curvature);"
-                      @change=${this.handleIncludeCategoriesChange}
-                    ></temba-checkbox>
-                  </div>
                 </div>`
               : ''}
           </div>
@@ -6592,28 +6563,12 @@ export class Editor extends RapidElement {
   }
 
   private renderToolbarTranslationTools(hasTranslations: boolean): TemplateResult {
-    const includeCategories = this.translationFilters.categories;
     const disableTranslationControls = Boolean(this.viewingRevision);
     const autoTranslateLabel = this.autoTranslating
       ? 'Stop auto translate'
       : 'Auto translate';
     return html`
       <div class="toolbar-translation">
-        ${this.renderToolbarTip(
-          'Toggle categories',
-          html`
-            <button
-              class="toolbar-btn language-tool ${includeCategories
-                ? 'active'
-                : ''}"
-              @click=${this.handleToolbarCategoriesToggle}
-              ?disabled=${disableTranslationControls}
-              aria-label="Toggle categories"
-            >
-              <temba-icon name=${Icon.children} size="0.9"></temba-icon>
-            </button>
-          `
-        )}
         ${this.renderToolbarTip(
           autoTranslateLabel,
           html`
@@ -6957,8 +6912,7 @@ export class Editor extends RapidElement {
         : ''}
       <temba-flow-search
         .scope=${this.showMessageTable ? 'table' : 'flow'}
-        .includeCategories=${this.translationFilters.categories &&
-        this.isTranslating}
+        .includeCategories=${this.isTranslating && this.hasAnyNodeWithLocalizeCategories()}
         @temba-search-result-selected=${this.handleSearchResultSelected}
       ></temba-flow-search>
       ${!this.showMessageTable ? html`
