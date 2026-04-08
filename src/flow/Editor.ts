@@ -1717,12 +1717,16 @@ export class Editor extends RapidElement {
     }
 
     if (changes.has('showMessageTable') && !this.showMessageTable && this.plumber) {
-      // Canvas was re-added to the DOM; rebind the plumber and repaint connections
+      // Canvas was re-added to the DOM; rebind the plumber, listeners, and repaint
       requestAnimationFrame(() => {
         const canvas = this.querySelector('#canvas');
         if (canvas) {
           this.plumber.setContainer(canvas as HTMLElement);
           this.plumber.repaintEverything();
+          canvas.addEventListener('contextmenu', this.boundCanvasContextMenu);
+          canvas.addEventListener('touchstart', this.boundCanvasTouchStart, {
+            passive: false
+          });
         }
       });
     }
