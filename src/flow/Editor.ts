@@ -56,7 +56,6 @@ interface Revision {
 }
 
 import { ACTION_GROUP_METADATA } from './types';
-import { Checkbox } from '../form/Checkbox';
 
 import {
   Plumber,
