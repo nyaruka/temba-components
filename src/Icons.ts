@@ -4,7 +4,7 @@ export const SVG_FINGERPRINT = 'de580a861152b5d164592ae63b65e5aa';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
-  ai = 'beaker-02',
+  ai = 'stars-02',
   alert_warning = 'alert-square',
   account = 'user-01',
   action = 'lightning-02',

@@ -221,6 +221,10 @@ export class Plumber {
     this.editor = editor;
   }
 
+  public setContainer(canvas: HTMLElement) {
+    this.canvas = canvas;
+  }
+
   // --- Event system ---
 
   private notifyListeners(eventName: string, info: any) {

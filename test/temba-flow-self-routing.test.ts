@@ -77,7 +77,8 @@ describe('Flow Editor Self-Routing Prevention', () => {
         connectionDragging: false,
         on: stub(),
         connectIds: stub(),
-        repaintEverything: stub()
+        repaintEverything: stub(),
+        setContainer: stub()
       };
 
       // Set up editor state
@@ -146,7 +147,7 @@ describe('Flow Editor Self-Routing Prevention', () => {
         } as any);
 
       // Set up editor state
-      (editor as any).plumber = { connectionDragging: true };
+      (editor as any).plumber = { connectionDragging: true, setContainer: stub(), repaintEverything: stub() };
       (editor as any).definition = mockDefinition;
       (editor as any).sourceId = 'exit-1a';
       (editor as any).sourceNodeId = 'node-1';

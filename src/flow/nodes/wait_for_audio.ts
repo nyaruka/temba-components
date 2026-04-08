@@ -83,6 +83,7 @@ export const wait_for_audio: NodeConfig = {
     };
   },
   localizable: 'categories',
+  nonTranslatableCategories: 'all',
   toLocalizationFormData: categoriesToLocalizationFormData,
   fromLocalizationFormData: localizationFormDataToCategories
 };

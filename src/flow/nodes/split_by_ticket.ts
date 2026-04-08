@@ -147,6 +147,7 @@ export const split_by_ticket: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
+  nonTranslatableCategories: 'all',
   toLocalizationFormData: categoriesToLocalizationFormData,
   fromLocalizationFormData: localizationFormDataToCategories
 };

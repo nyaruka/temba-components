@@ -82,6 +82,7 @@ import { Accordion } from './src/layout/Accordion';
 import { AccordionSection } from './src/layout/AccordionSection';
 import { Simulator } from './src/simulator/Simulator';
 import { FlowSearch } from './src/flow/FlowSearch';
+import { MessageTable } from './src/flow/MessageTable';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -150,6 +151,7 @@ addCustomElement('temba-toast', Toast);
 addCustomElement('temba-chat', Chat);
 addCustomElement('temba-media-picker', MediaPicker);
 addCustomElement('temba-flow-editor', Editor);
+addCustomElement('temba-message-table', MessageTable);
 addCustomElement('temba-node-editor', NodeEditor);
 addCustomElement('temba-flow-node', CanvasNode);
 addCustomElement('temba-sticky-note', StickyNote);

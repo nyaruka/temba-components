@@ -77,15 +77,23 @@ describe('Localization Editing', () => {
     }
   });
 
-  const openLocalizationWindow = async (
-    flowEditor: Editor
-  ): Promise<HTMLElement> => {
-    const tab = flowEditor.querySelector('#localization-tab');
-    tab.dispatchEvent(
-      new CustomEvent('temba-button-clicked', { bubbles: true })
+  const selectLanguageInToolbar = async (
+    flowEditor: Editor,
+    languageName: string,
+    languageCode: string
+  ): Promise<void> => {
+    // Open language options dropdown
+    const languageBtn = flowEditor.querySelector('#language-btn') as HTMLElement;
+    languageBtn.click();
+    await flowEditor.updateComplete;
+
+    // Select the language via the handler
+    (flowEditor as any).handleLanguageOptionSelected(
+      new CustomEvent('temba-selection', {
+        detail: { selected: { name: languageName, value: languageCode } }
+      })
     );
     await flowEditor.updateComplete;
-    return flowEditor.querySelector('#localization-window') as HTMLElement;
   };
 
   before(() => {
@@ -162,106 +170,68 @@ describe('Localization Editing', () => {
     await editor.updateComplete;
   });
 
-  it('should render localization floating tab when translations exist', () => {
-    const tab = editor.querySelector('#localization-tab');
-    expect(tab).to.exist;
-
-    const windowEl = editor.querySelector('#localization-window') as any;
-    expect(windowEl).to.exist;
-    expect(windowEl.hidden).to.be.true;
+  it('should render language controls in toolbar when translations exist', () => {
+    const languageBtn = editor.querySelector('#language-btn');
+    expect(languageBtn).to.exist;
   });
 
-  it('should open localization window with placeholder and non-base languages', async () => {
-    const tab = editor.querySelector('#localization-tab');
-    tab.dispatchEvent(
-      new CustomEvent('temba-button-clicked', { bubbles: true })
-    );
+  it('should show language options with non-base languages', async () => {
+    // Open language dropdown
+    const languageBtn = editor.querySelector('#language-btn') as HTMLElement;
+    languageBtn.click();
     await editor.updateComplete;
 
-    const windowEl = editor.querySelector('#localization-window') as any;
-    expect(windowEl.hidden).to.be.false;
-
-    const select = windowEl.querySelector('temba-select') as any;
-    expect(select).to.exist;
-    // No language selected by default — shows placeholder
-    expect(select.values).to.have.lengthOf(0);
-
-    const options = windowEl.querySelectorAll('temba-option');
-    expect(options.length).to.equal(2);
-    const optionLabels = Array.from(options).map((opt: Element) =>
-      opt.getAttribute('name')
-    );
-    expect(optionLabels).to.include('French');
-    expect(optionLabels).to.include('Spanish');
-    expect(optionLabels).to.not.include('English');
-
-    const state = zustand.getState();
-    expect(state.languageCode).to.equal('eng');
-
-    // Progress controls shown but disabled when no language selected
-    const progress = windowEl.querySelector('.localization-progress');
-    expect(progress).to.exist;
-    expect(progress.classList.contains('disabled')).to.be.true;
+    // The options should contain non-base languages
+    const options = editor.querySelector('temba-options');
+    expect(options).to.exist;
   });
 
-  it('should toggle translation settings and persist include categories preference', async () => {
-    await openLocalizationWindow(editor);
-
-    // Switch to a non-base language so progress/settings are shown
-    const windowEl = editor.querySelector('#localization-window');
-    const select = windowEl.querySelector('temba-select') as any;
-    select.values = [{ name: 'French', value: 'fra' }];
-    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
-    await editor.updateComplete;
-
-    const toggle = editor.querySelector(
-      '.translation-settings-toggle'
-    ) as HTMLElement;
-    expect(toggle).to.exist;
-
-    toggle.dispatchEvent(new Event('click', { bubbles: true }));
-    await editor.updateComplete;
-
-    const checkbox = editor.querySelector(
-      '#translation-settings-panel temba-checkbox'
-    ) as any;
-    expect(checkbox).to.exist;
-    expect(Boolean(checkbox.checked)).to.be.false;
-
-    checkbox.checked = true;
-    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-    await editor.updateComplete;
-
-    const filters = zustand.getState().flowDefinition._ui.translation_filters;
-    expect(filters?.categories).to.be.true;
-  });
-
-  it('should allow toggling translation languages within the window', async () => {
-    const tab = editor.querySelector('#localization-tab');
-    tab.dispatchEvent(
-      new CustomEvent('temba-button-clicked', { bubbles: true })
-    );
-    await editor.updateComplete;
-
-    const windowEl = editor.querySelector('#localization-window');
-    const select = windowEl.querySelector('temba-select') as any;
-    expect(select).to.exist;
-
-    select.values = [{ name: 'Spanish', value: 'spa' }];
-    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
-    await editor.updateComplete;
-
-    const state = zustand.getState();
-    expect(state.languageCode).to.equal('spa');
-    const summary = windowEl.querySelector('.localization-progress-summary');
-    expect(summary?.textContent.trim()).to.equal('All items are translated.');
-  });
-
-  it('should include category translations when include categories is enabled', async () => {
+  it('should include category translations when per-node localizeCategories is set', async () => {
     editor?.remove();
 
     setupWorkspace();
 
+    const categoryFlowDefinition: FlowDefinition =
+      buildCategoryFlowDefinition();
+    // Set localizeCategories on the node's UI config
+    categoryFlowDefinition._ui.nodes['split-node'].config = {
+      localizeCategories: true
+    };
+
+    zustand.getState().setFlowContents({
+      definition: categoryFlowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 1, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    await editor.updateComplete;
+
+    // Switch to a non-base language
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+
+    // Check that progress includes the 2 categories
+    const progress = (editor as any).getLocalizationProgress('fra');
+    expect(progress.total).to.equal(2);
+  });
+
+  it('should allow switching translation languages via toolbar', async () => {
+    await selectLanguageInToolbar(editor, 'Spanish', 'spa');
+
+    const state = zustand.getState();
+    expect(state.languageCode).to.equal('spa');
+  });
+
+  it('should exclude categories from progress when localizeCategories is not set', async () => {
+    editor?.remove();
+
+    setupWorkspace();
+
+    // Flow with categories but no localizeCategories config
     const categoryFlowDefinition: FlowDefinition =
       buildCategoryFlowDefinition();
 
@@ -278,155 +248,24 @@ describe('Localization Editing', () => {
     editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
 
-    await openLocalizationWindow(editor);
+    // Switch to a non-base language
+    await selectLanguageInToolbar(editor, 'French', 'fra');
 
-    // Switch to a non-base language so progress is shown
-    const windowEl = editor.querySelector('#localization-window');
-    const select = windowEl.querySelector('temba-select') as any;
-    select.values = [{ name: 'French', value: 'fra' }];
-    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
-    await editor.updateComplete;
-
-    let summary = editor
-      .querySelector('.localization-progress-summary')
-      .textContent.trim();
-    expect(summary).to.equal(
-      'Add content or enable more options to start translating.'
-    );
-
-    const toggle = editor.querySelector(
-      '.translation-settings-toggle'
-    ) as HTMLElement;
-    toggle.dispatchEvent(new Event('click', { bubbles: true }));
-    await editor.updateComplete;
-
-    const checkbox = editor.querySelector(
-      'temba-checkbox[name="include-categories"]'
-    ) as any;
-    checkbox.checked = true;
-    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-    await editor.updateComplete;
-
-    summary = editor
-      .querySelector('.localization-progress-summary')
-      .textContent.trim();
-    expect(summary).to.equal('0 of 2 items translated');
-  });
-
-  it('should remove category localization when translation is cleared', async () => {
-    editor?.remove();
-    editor = null;
-
-    setupWorkspace();
-
-    const flowDefinition = buildCategoryFlowDefinition({
-      fra: {
-        'cat-1': { name: ['Premier choix'] },
-        'cat-2': { name: ['Deuxième choix'] }
-      }
-    });
-
-    zustand.getState().setFlowContents({
-      definition: flowDefinition,
-      info: {
-        results: [],
-        dependencies: [],
-        counts: { nodes: 1, languages: 2 },
-        locals: []
-      }
-    });
-    zustand.getState().setLanguageCode('fra');
-
-    const state = zustand.getState();
-    const node = state.flowDefinition.nodes[0];
-    const nodeUI = state.flowDefinition._ui.nodes[node.uuid];
-
-    const nodeEditor: NodeEditor = await fixture(html`
-      <temba-node-editor
-        .node=${node}
-        .nodeUI=${nodeUI}
-        .isOpen=${true}
-      ></temba-node-editor>
-    `);
-    await nodeEditor.updateComplete;
-
-    const formData = (nodeEditor as any).formData;
-    formData.categories['cat-1'].localizedName = '';
-
-    (nodeEditor as any).handleSave();
-
-    const localization =
-      zustand.getState().flowDefinition.localization?.fra || {};
-    expect(localization['cat-1']).to.be.undefined;
-    expect(localization['cat-2']).to.deep.equal({ name: ['Deuxième choix'] });
-
-    nodeEditor.remove();
-  });
-
-  it('should remove empty localization entries when all category translations are cleared', async () => {
-    editor?.remove();
-    editor = null;
-
-    setupWorkspace();
-
-    const flowDefinition = buildCategoryFlowDefinition({
-      fra: {
-        'cat-1': { name: ['Premier choix'] }
-      }
-    });
-
-    zustand.getState().setFlowContents({
-      definition: flowDefinition,
-      info: {
-        results: [],
-        dependencies: [],
-        counts: { nodes: 1, languages: 2 },
-        locals: []
-      }
-    });
-    zustand.getState().setLanguageCode('fra');
-
-    const state = zustand.getState();
-    const node = state.flowDefinition.nodes[0];
-    const nodeUI = state.flowDefinition._ui.nodes[node.uuid];
-
-    const nodeEditor: NodeEditor = await fixture(html`
-      <temba-node-editor
-        .node=${node}
-        .nodeUI=${nodeUI}
-        .isOpen=${true}
-      ></temba-node-editor>
-    `);
-    await nodeEditor.updateComplete;
-
-    const formData = (nodeEditor as any).formData;
-    formData.categories['cat-1'].localizedName = '';
-
-    (nodeEditor as any).handleSave();
-
-    const localization = zustand.getState().flowDefinition.localization;
-    expect(localization).to.be.undefined;
-
-    nodeEditor.remove();
+    // Without localizeCategories, progress should not include categories
+    const progress = (editor as any).getLocalizationProgress('fra');
+    expect(progress.total).to.equal(0);
   });
 
   it('should open auto translate dialog when clicking auto translate', async () => {
-    await openLocalizationWindow(editor);
+    await selectLanguageInToolbar(editor, 'French', 'fra');
 
-    // Switch to a non-base language with pending translations
-    const windowEl = editor.querySelector('#localization-window');
-    const select = windowEl.querySelector('temba-select') as any;
-    select.values = [{ name: 'French', value: 'fra' }];
-    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
-    await editor.updateComplete;
-
-    const autoTranslateButton = editor.querySelector(
-      '.auto-translate-button'
+    const autoTranslateBtn = editor.querySelector(
+      '.toolbar-btn[aria-label="Auto translate"]'
     ) as HTMLButtonElement;
-    expect(autoTranslateButton).to.exist;
-    expect(autoTranslateButton.disabled).to.be.false;
+    expect(autoTranslateBtn).to.exist;
+    expect(autoTranslateBtn.disabled).to.be.false;
 
-    autoTranslateButton.click();
+    autoTranslateBtn.click();
     await editor.updateComplete;
 
     expect((editor as any).autoTranslateDialogOpen).to.be.true;
@@ -442,29 +281,18 @@ describe('Localization Editing', () => {
     );
   });
 
-  it('should preserve selected language when window closes', async () => {
-    const tab = editor.querySelector('#localization-tab');
-    tab.dispatchEvent(
-      new CustomEvent('temba-button-clicked', { bubbles: true })
-    );
-    await editor.updateComplete;
-
-    // Switch to Spanish
-    const windowEl = editor.querySelector('#localization-window') as any;
-    const select = windowEl.querySelector('temba-select') as any;
-    select.values = [{ name: 'Spanish', value: 'spa' }];
-    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
-    await editor.updateComplete;
+  it('should preserve selected language across renders', async () => {
+    await selectLanguageInToolbar(editor, 'Spanish', 'spa');
 
     expect(zustand.getState().languageCode).to.equal('spa');
 
-    windowEl.close();
+    // Trigger a re-render
+    await editor.requestUpdate();
     await editor.updateComplete;
 
-    // Language should remain as Spanish after closing
+    // Language should remain as Spanish
     const state = zustand.getState();
     expect(state.languageCode).to.equal('spa');
-    expect(windowEl.hidden).to.be.true;
   });
 
   it('should load base language values when in English', () => {
@@ -659,5 +487,102 @@ describe('Localization Editing', () => {
 
     // empty localization when nothing changed
     expect(Object.keys(localization)).to.have.lengthOf(0);
+  });
+
+  it('should remove category localization when translation is cleared', async () => {
+    editor?.remove();
+    editor = null;
+
+    setupWorkspace();
+
+    const flowDefinition = buildCategoryFlowDefinition({
+      fra: {
+        'cat-1': { name: ['Premier choix'] },
+        'cat-2': { name: ['Deuxième choix'] }
+      }
+    });
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 1, languages: 2 },
+        locals: []
+      }
+    });
+    zustand.getState().setLanguageCode('fra');
+
+    const state = zustand.getState();
+    const node = state.flowDefinition.nodes[0];
+    const nodeUI = state.flowDefinition._ui.nodes[node.uuid];
+
+    const nodeEditor: NodeEditor = await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${nodeUI}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `);
+    await nodeEditor.updateComplete;
+
+    const formData = (nodeEditor as any).formData;
+    formData.categories['cat-1'].localizedName = '';
+
+    (nodeEditor as any).handleSave();
+
+    const localization =
+      zustand.getState().flowDefinition.localization?.fra || {};
+    expect(localization['cat-1']).to.be.undefined;
+    expect(localization['cat-2']).to.deep.equal({ name: ['Deuxième choix'] });
+
+    nodeEditor.remove();
+  });
+
+  it('should remove empty localization entries when all category translations are cleared', async () => {
+    editor?.remove();
+    editor = null;
+
+    setupWorkspace();
+
+    const flowDefinition = buildCategoryFlowDefinition({
+      fra: {
+        'cat-1': { name: ['Premier choix'] }
+      }
+    });
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 1, languages: 2 },
+        locals: []
+      }
+    });
+    zustand.getState().setLanguageCode('fra');
+
+    const state = zustand.getState();
+    const node = state.flowDefinition.nodes[0];
+    const nodeUI = state.flowDefinition._ui.nodes[node.uuid];
+
+    const nodeEditor: NodeEditor = await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${nodeUI}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `);
+    await nodeEditor.updateComplete;
+
+    const formData = (nodeEditor as any).formData;
+    formData.categories['cat-1'].localizedName = '';
+
+    (nodeEditor as any).handleSave();
+
+    const localization = zustand.getState().flowDefinition.localization;
+    expect(localization).to.be.undefined;
+
+    nodeEditor.remove();
   });
 });

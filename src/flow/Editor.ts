@@ -40,6 +40,7 @@ import {
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
 import { FloatingTab } from '../display/FloatingTab';
+import { getTranslatableCategoriesForNode } from './categoryLocalization';
 
 interface Revision {
   id: number;
@@ -55,7 +56,6 @@ interface Revision {
 }
 
 import { ACTION_GROUP_METADATA } from './types';
-import { Checkbox } from '../form/Checkbox';
 
 import {
   Plumber,
@@ -134,6 +134,7 @@ interface LocalizationUpdate {
 }
 
 const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
+const PRIMARY_LANGUAGE_OPTION_VALUE = '__primary_language__';
 const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 
 // How long the pending-changes auto-save countdown runs (in ms).
@@ -328,11 +329,6 @@ export class Editor extends RapidElement {
   private localizationWindowHidden = true;
 
   @state()
-  private translationFilters: { categories: boolean } = {
-    categories: false
-  };
-
-  @state()
   private translationSettingsExpanded = false;
 
   @state()
@@ -429,6 +425,7 @@ export class Editor extends RapidElement {
     definition: FlowDefinition;
     dirtyDate: Date | null;
   } | null = null;
+  private revisionsBrowseLanguageCode: string | null = null;
 
   private deleteDialog: Dialog | null = null;
   private translationCache = new Map<string, string>();
@@ -456,6 +453,13 @@ export class Editor extends RapidElement {
   private editingAction: Action | null = null;
 
   private dialogOrigin: { x: number; y: number } | null = null;
+
+  // Message table view toggle
+  @property({ type: Boolean, reflect: true, attribute: 'message-view' })
+  showMessageTable = false;
+
+  @state()
+  private showLanguageOptions = false;
 
   @state()
   private isCreatingNewNode = false;
@@ -541,6 +545,7 @@ export class Editor extends RapidElement {
   private boundTouchEnd = this.handleTouchEnd.bind(this);
   private boundTouchCancel = this.handleTouchCancel.bind(this);
   private boundCanvasTouchStart = this.handleCanvasTouchStart.bind(this);
+  private boundWindowResize = this.updateZoomControlPositioning.bind(this);
 
   static get styles() {
     return css`
@@ -548,7 +553,190 @@ export class Editor extends RapidElement {
         position: relative;
         flex: 1;
         display: flex;
+        flex-direction: column;
         min-height: 0;
+      }
+
+      .editor-toolbar {
+        --toolbar-control-height: 28px;
+        --toolbar-translation-control-height: 28px;
+        display: flex;
+        align-items: center;
+        padding: 6px 12px;
+        background: #fff;
+        border-bottom: 1px solid #e8e8e8;
+        flex-shrink: 0;
+        gap: 8px;
+      }
+
+      .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: auto;
+      }
+
+      .toolbar-btn {
+        width: var(--toolbar-control-height);
+        height: var(--toolbar-control-height);
+        border: none;
+        background: transparent;
+        border-radius: var(--curvature);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        color: #888;
+        font-size: 16px;
+        line-height: 1;
+        outline: none;
+      }
+
+      .toolbar-btn:focus {
+        outline: none;
+      }
+
+      .toolbar-btn:focus-visible {
+        outline: 2px solid #0064c8;
+        outline-offset: 2px;
+      }
+
+      .toolbar-btn:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: #555;
+      }
+
+      .toolbar-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+        background: transparent;
+      }
+
+      .toolbar-btn.active {
+        background: rgba(0, 100, 200, 0.1);
+        color: #0064c8;
+      }
+
+      .toolbar-btn.active:hover {
+        background: rgba(0, 100, 200, 0.15);
+      }
+
+      .toolbar-tip {
+        display: flex;
+        align-items: center;
+      }
+
+      .toolbar-divider {
+        width: 1px;
+        height: 16px;
+        background: #e0e0e0;
+        margin: 0 4px;
+      }
+
+      .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        height: var(--toolbar-control-height);
+        box-sizing: border-box;
+        padding: 0 3px;
+        border: 1px solid #d7dce2;
+        border-radius: calc(var(--curvature) + 2px);
+        background: #f7f9fb;
+      }
+
+      .toolbar-group-divider {
+        width: 1px;
+        height: 18px;
+        background: #d7dce2;
+        margin: 0 2px;
+      }
+
+      .toolbar-language {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .toolbar-language-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 2px;
+      }
+
+      .toolbar-zoom-group {
+        gap: 2px;
+      }
+
+      .language-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #e9eef4;
+        color: #0064c8;
+        height: var(--toolbar-translation-control-height);
+        padding: 0 8px;
+        border-radius: var(--curvature);
+        box-sizing: border-box;
+        font-size: 13px;
+        font-weight: 400;
+        white-space: nowrap;
+        cursor: pointer;
+        --icon-color: #0064c8;
+        --icon-size: 16px;
+        border: none;
+        outline: none;
+      }
+
+      .language-pill:hover {
+        filter: brightness(1.04);
+      }
+
+      .language-pill.primary {
+        background: #fff;
+        border: 1px solid #d7dce2;
+      }
+
+      .language-pill-caret {
+        margin-left: 1px;
+        --icon-color: currentColor;
+        --icon-size: 12px;
+      }
+
+      .language-percent {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+        color: #0064c8;
+        white-space: nowrap;
+      }
+
+      .toolbar-zoom-level {
+        font-size: 12px;
+        min-width: 40px;
+        text-align: center;
+        color: #555;
+        font-weight: 500;
+      }
+
+      .toolbar-translation {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .toolbar-btn.language-tool {
+        width: var(--toolbar-translation-control-height);
+        height: var(--toolbar-translation-control-height);
       }
 
       #editor {
@@ -674,6 +862,14 @@ export class Editor extends RapidElement {
       #canvas.read-only-connections svg.plumb-connector * {
         pointer-events: none !important;
         cursor: default !important;
+      }
+
+      #canvas.read-only-connections svg.plumb-connector path {
+        stroke: #e0e0e0;
+      }
+
+      #canvas.read-only-connections svg.plumb-connector .plumb-arrow {
+        fill: #e0e0e0;
       }
 
       svg.plumb-connector.removing path {
@@ -844,42 +1040,7 @@ export class Editor extends RapidElement {
         border-radius: var(--curvature);
       }
 
-      .language-banner {
-        position: absolute;
-        top: 12px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: #5b7ea6;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 500;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .language-banner-text {
-        white-space: nowrap;
-      }
-
-      .language-banner-close {
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        color: white;
-        cursor: pointer;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        white-space: nowrap;
-      }
-
-      .language-banner-close:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
+      /* Language banner replaced by toolbar language selector */
 
       .localization-window-content {
         display: flex;
@@ -1144,62 +1305,7 @@ export class Editor extends RapidElement {
         opacity: 0.9;
       }
 
-      .zoom-controls {
-        position: absolute;
-        top: 8px;
-        right: 16px;
-        z-index: 4999;
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        background: white;
-        border-radius: var(--curvature);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-        padding: 4px;
-        user-select: none;
-      }
-
-      .zoom-controls button {
-        width: 28px;
-        height: 28px;
-        border: none;
-        background: transparent;
-        border-radius: var(--curvature);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        color: #555;
-        font-size: 16px;
-        line-height: 1;
-        outline: none;
-      }
-
-      .zoom-controls button:hover {
-        background: rgba(0, 0, 0, 0.06);
-      }
-
-      .zoom-controls button:disabled {
-        opacity: 0.3;
-        cursor: default;
-        background: transparent;
-      }
-
-      .zoom-controls .zoom-level {
-        font-size: 12px;
-        min-width: 40px;
-        text-align: center;
-        color: #555;
-        font-weight: 500;
-      }
-
-      .zoom-controls .zoom-divider {
-        width: 1px;
-        height: 16px;
-        background: #e0e0e0;
-        margin: 0 2px;
-      }
+      /* Legacy zoom-controls kept for compat — now in toolbar */
 
       .loupe,
       .loupe * {
@@ -1545,17 +1651,6 @@ export class Editor extends RapidElement {
         this.flowType = this.getFlowTypeFromDefinition(this.definition.type);
       }
 
-      const filters = this.definition?._ui?.translation_filters || {
-        categories: false
-      };
-      const normalizedFilters = {
-        categories: !!filters.categories
-      };
-
-      if (this.translationFilters.categories !== normalizedFilters.categories) {
-        this.translationFilters = normalizedFilters;
-      }
-
       // Pre-sync zoom state so we don't mutate reactive state in updated().
       this.restoreInitialZoomFromSettings();
     }
@@ -1595,6 +1690,18 @@ export class Editor extends RapidElement {
     this.zoomInitialized = true;
   }
 
+  private setSimulatorTabHidden(hidden: boolean): void {
+    const simulator = document.querySelector('temba-simulator') as HTMLElement & {
+      shadowRoot?: ShadowRoot;
+    };
+    const phoneTab = simulator?.shadowRoot?.querySelector(
+      '#phone-tab'
+    ) as any;
+    if (phoneTab) {
+      phoneTab.hidden = hidden;
+    }
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -1602,8 +1709,26 @@ export class Editor extends RapidElement {
     if (changes.has('features')) {
       zustand.getState().setFeatures(this.features);
     }
+    if (changes.has('revisionsWindowHidden')) {
+      this.setSimulatorTabHidden(!this.revisionsWindowHidden);
+    }
     if (changes.has('canvasSize')) {
-      // console.log('Setting canvas size', this.canvasSize);
+      this.updateZoomControlPositioning();
+    }
+
+    if (changes.has('showMessageTable') && !this.showMessageTable && this.plumber) {
+      // Canvas was re-added to the DOM; rebind the plumber and repaint connections
+      requestAnimationFrame(() => {
+        const canvas = this.querySelector('#canvas');
+        if (canvas) {
+          this.plumber.setContainer(canvas as HTMLElement);
+          this.plumber.repaintEverything();
+        }
+      });
+    }
+
+    if (changes.has('showMessageTable')) {
+      this.updateZoomControlPositioning();
     }
 
     if (changes.has('definition')) {
@@ -1928,6 +2053,7 @@ export class Editor extends RapidElement {
     document.removeEventListener('touchmove', this.boundTouchMove);
     document.removeEventListener('touchend', this.boundTouchEnd);
     document.removeEventListener('touchcancel', this.boundTouchCancel);
+    window.removeEventListener('resize', this.boundWindowResize);
 
     const canvas = this.querySelector('#canvas');
     if (canvas) {
@@ -1961,6 +2087,7 @@ export class Editor extends RapidElement {
     });
     document.addEventListener('touchend', this.boundTouchEnd);
     document.addEventListener('touchcancel', this.boundTouchCancel);
+    window.addEventListener('resize', this.boundWindowResize);
 
     // Fallback: on first touch, mark as touch device in case
     // navigator.maxTouchPoints wasn't detected in firstUpdated.
@@ -2260,17 +2387,39 @@ export class Editor extends RapidElement {
     }
   }
 
+  private openFlowSearch(): void {
+    if (this.viewingRevision) {
+      return;
+    }
+
+    if (this.isDialogOrMenuOpen()) {
+      return;
+    }
+
+    const search = this.querySelector('temba-flow-search') as FlowSearch;
+    if (!search) {
+      return;
+    }
+
+    search.definition = this.definition;
+    search.languageCode = this.languageCode || '';
+    search.scope = this.showMessageTable ? 'table' : 'flow';
+    search.includeCategories = this.isTranslating && this.hasAnyNodeWithLocalizeCategories();
+    search.show();
+  }
+
+  private closeFlowSearch(): void {
+    const search = this.querySelector('temba-flow-search') as FlowSearch;
+    if (search?.open) {
+      search.hide();
+    }
+  }
+
   private handleKeyDown(event: KeyboardEvent): void {
     // Cmd/Ctrl+F opens flow search (unless a dialog is already open)
     if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
-      if (this.isDialogOrMenuOpen()) return;
       event.preventDefault();
-      const search = this.querySelector('temba-flow-search') as FlowSearch;
-      if (search) {
-        search.definition = this.definition;
-        search.languageCode = this.languageCode || '';
-        search.show();
-      }
+      this.openFlowSearch();
       return;
     }
 
@@ -2455,26 +2604,26 @@ export class Editor extends RapidElement {
     this.setZoom(1.0);
   }
 
-  /** Adjust zoom control right offset and floating tab positions */
+  /** Adjust floating tab positioning relative to toolbar and editor scrollbar */
   private updateZoomControlPositioning(): void {
     requestAnimationFrame(() => {
       const editor = this.querySelector('#editor') as HTMLElement;
-      const zoomControls = this.querySelector('.zoom-controls') as HTMLElement;
-      if (editor && zoomControls) {
-        // Match right spacing to the top spacing (8px) by accounting for
-        // the scrollbar width
-        const scrollbarWidth = editor.offsetWidth - editor.clientWidth;
-        zoomControls.style.right = `${8 + scrollbarWidth}px`;
-
-        // Clip floating tabs so they appear to go under the scrollbar
+      if (editor) {
+        const scrollbarWidth = Math.max(
+          editor.offsetWidth - editor.clientWidth,
+          0
+        );
+        // Keep floating tabs just left of the vertical scrollbar.
         document.documentElement.style.setProperty(
           '--floating-tab-clip',
           `${scrollbarWidth}px`
         );
       }
-      if (zoomControls) {
-        const rect = zoomControls.getBoundingClientRect();
-        FloatingTab.START_TOP = rect.bottom + 8;
+
+      const toolbar = this.querySelector('.editor-toolbar') as HTMLElement;
+      if (toolbar) {
+        const rect = toolbar.getBoundingClientRect();
+        FloatingTab.START_TOP = rect.bottom + 20;
         FloatingTab.updateAllPositions();
       }
     });
@@ -2530,8 +2679,10 @@ export class Editor extends RapidElement {
   }
 
   private handleLoupeKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Control' && event.key !== 'Shift') return;
-    if (event.ctrlKey && event.shiftKey) {
+    // Cmd+Ctrl+A (Mac) / Ctrl+Meta+A (Windows)
+    if (event.key.toLowerCase() !== 'a') return;
+    if (event.metaKey && event.ctrlKey) {
+      event.preventDefault();
       this.loupeKeyHeld = true;
       // Show loupe immediately at last known mouse position
       if (this.loupeLastMouse) {
@@ -2541,8 +2692,9 @@ export class Editor extends RapidElement {
   }
 
   private handleLoupeKeyUp(event: KeyboardEvent): void {
-    if (event.key !== 'Control' && event.key !== 'Shift') return;
-    if (this.loupeKeyHeld) {
+    if (!this.loupeKeyHeld) return;
+    // Hide when any modifier is released
+    if (event.key === 'a' || event.key === 'Meta' || event.key === 'Control') {
       this.loupeKeyHeld = false;
       this.hideLoupe();
     }
@@ -2560,7 +2712,7 @@ export class Editor extends RapidElement {
   private handleLoupeMouseMove(event: MouseEvent): void {
     this.loupeLastMouse = { clientX: event.clientX, clientY: event.clientY };
 
-    // Require Ctrl+Shift held, hide while mouse is down, during interactions, or with dialogs open
+    // Require Cmd+Ctrl+A held, hide while mouse is down, during interactions, or with dialogs open
     if (
       !this.loupeKeyHeld ||
       this.loupeMouseIsDown ||
@@ -4478,9 +4630,12 @@ export class Editor extends RapidElement {
     }
   }
 
+  private editForceBase = false;
+
   private handleActionEditRequested(event: CustomEvent): void {
     // For action editing, we set the action and find the corresponding node
     this.editingAction = event.detail.action;
+    this.editForceBase = !!event.detail.forceBase;
     this.dialogOrigin =
       event.detail.originX != null
         ? { x: event.detail.originX, y: event.detail.originY }
@@ -4528,6 +4683,8 @@ export class Editor extends RapidElement {
   }
 
   private handleNodeEditRequested(event: CustomEvent): void {
+    this.editForceBase = !!event.detail.forceBase;
+    this.editingAction = null;
     this.editingNode = event.detail.node;
     this.editingNodeUI = event.detail.nodeUI;
     this.dialogOrigin =
@@ -4624,6 +4781,7 @@ export class Editor extends RapidElement {
     this.editingNodeUI = null;
     this.editingAction = null;
     this.dialogOrigin = null;
+    this.editForceBase = false;
   }
 
   private handleActionEditCanceled(): void {
@@ -5060,10 +5218,7 @@ export class Editor extends RapidElement {
       return { total: 0, localized: 0 };
     }
 
-    const bundles = this.buildTranslationBundles(
-      this.translationFilters.categories,
-      languageCode
-    );
+    const bundles = this.buildTranslationBundles(languageCode);
     return this.getTranslationCounts(bundles);
   }
 
@@ -5075,7 +5230,6 @@ export class Editor extends RapidElement {
   }
 
   private buildTranslationBundles(
-    includeCategories: boolean,
     languageCode: string = this.languageCode
   ): TranslationBundle[] {
     if (
@@ -5120,10 +5274,6 @@ export class Editor extends RapidElement {
         }
       });
 
-      if (!includeCategories) {
-        return;
-      }
-
       const nodeUI = this.definition._ui?.nodes?.[node.uuid];
       const nodeType = nodeUI?.type;
       if (!nodeType) {
@@ -5131,11 +5281,38 @@ export class Editor extends RapidElement {
       }
 
       const nodeConfig = NODE_CONFIG[nodeType];
+      // Include rule (case argument) translations when localizeRules is set
+      if (nodeUI?.config?.localizeRules && node.router?.cases?.length) {
+        const ruleTranslations = node.router.cases
+          .filter((c) => c.arguments?.length > 0 && c.arguments.some((a) => a))
+          .flatMap((c) =>
+            this.findTranslations(
+              'property',
+              c.uuid,
+              ['arguments'],
+              c,
+              languageLocalization
+            )
+          );
+
+        if (ruleTranslations.length > 0) {
+          bundles.push({
+            nodeUuid: node.uuid,
+            translations: ruleTranslations
+          });
+        }
+      }
+
       if (
+        nodeUI?.config?.localizeCategories &&
         nodeConfig?.localizable === 'categories' &&
         node.router?.categories?.length
       ) {
-        const categoryTranslations = node.router.categories.flatMap(
+        const translatableCategories = getTranslatableCategoriesForNode(
+          nodeType,
+          node.router.categories
+        );
+        const categoryTranslations = translatableCategories.flatMap(
           (category) =>
             this.findTranslations(
               'category',
@@ -5269,21 +5446,6 @@ export class Editor extends RapidElement {
     );
   }
 
-  private handleLocalizationTabClick(): void {
-    const languages = this.getLocalizationLanguages();
-    if (!languages.length) {
-      return;
-    }
-
-    if (!this.localizationWindowHidden) {
-      this.handleLocalizationWindowClosed();
-      return;
-    }
-
-    this.closeOpenWindows();
-    this.localizationWindowHidden = false;
-  }
-
   private handleLocalizationLanguageSelect(languageCode: string): void {
     if (languageCode === this.languageCode) {
       return;
@@ -5328,17 +5490,19 @@ export class Editor extends RapidElement {
     }
   }
 
-  private handleIncludeCategoriesChange(event: Event): void {
-    const checkbox = event.target as Checkbox;
-    const categories = checkbox?.checked ?? false;
-    this.translationFilters = { categories };
-    getStore()?.getState().setTranslationFilters({ categories });
-    this.requestUpdate();
+  private hasAnyNodeWithLocalizeCategories(): boolean {
+    if (!this.definition?._ui?.nodes) return false;
+    return Object.values(this.definition._ui.nodes).some(
+      (nodeUI: any) => nodeUI?.config?.localizeCategories
+    );
   }
 
-  private async handleAutoTranslateClick(event: Event): Promise<void> {
-    event.preventDefault();
-    event.stopPropagation();
+  private async handleAutoTranslateClick(event?: Event): Promise<void> {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (this.viewingRevision) {
+      return;
+    }
 
     if (this.autoTranslating) {
       this.autoTranslating = false;
@@ -5470,9 +5634,7 @@ export class Editor extends RapidElement {
       return;
     }
 
-    const bundles = this.buildTranslationBundles(
-      this.translationFilters.categories
-    );
+    const bundles = this.buildTranslationBundles();
 
     for (const bundle of bundles) {
       if (!this.autoTranslating) {
@@ -5656,9 +5818,11 @@ export class Editor extends RapidElement {
         definition: this.definition,
         dirtyDate: this.dirtyDate
       };
+      this.revisionsBrowseLanguageCode = this.languageCode;
     }
 
     this.viewingRevision = revision;
+    this.closeFlowSearch();
     this.isLoadingRevisions = true;
     this.plumber?.reset();
 
@@ -5666,6 +5830,9 @@ export class Editor extends RapidElement {
       await getStore()
         .getState()
         .fetchRevision(`/flow/revisions/${this.flow}`, revision.id.toString());
+      if (this.revisionsBrowseLanguageCode) {
+        this.handleLanguageChange(this.revisionsBrowseLanguageCode);
+      }
     } catch (e) {
       console.error('Error fetching revision details', e);
       this.handleCancelRevisionView();
@@ -5676,6 +5843,8 @@ export class Editor extends RapidElement {
 
   private handleCancelRevisionView() {
     this.plumber?.reset();
+    const preservedLanguageCode =
+      this.revisionsBrowseLanguageCode || this.languageCode;
     if (this.preRevertState) {
       const currentInfo = getStore().getState().flowInfo;
       getStore().getState().setFlowContents({
@@ -5685,18 +5854,31 @@ export class Editor extends RapidElement {
       if (this.preRevertState.dirtyDate) {
         getStore().getState().setDirtyDate(this.preRevertState.dirtyDate);
       }
+      if (preservedLanguageCode) {
+        this.handleLanguageChange(preservedLanguageCode);
+      }
     } else {
       // Fallback if no pre-revert definition
-      getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+      getStore()
+        .getState()
+        .fetchRevision(`/flow/revisions/${this.flow}`)
+        .finally(() => {
+          if (preservedLanguageCode) {
+            this.handleLanguageChange(preservedLanguageCode);
+          }
+        });
     }
 
     this.viewingRevision = null;
     this.preRevertState = null;
+    this.revisionsBrowseLanguageCode = null;
   }
 
   private async handleRevertClick() {
     if (!this.viewingRevision || !this.preRevertState) return;
     this.plumber?.reset();
+    const preservedLanguageCode =
+      this.revisionsBrowseLanguageCode || this.languageCode;
 
     // Use the content of the viewing revision (this.definition)
     // but the revision number of the current head (preRevertState)
@@ -5720,7 +5902,15 @@ export class Editor extends RapidElement {
     this.fetchRevisions();
 
     // Fetch the latest version of the flow to ensure the store is up to date
-    getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+    getStore()
+      .getState()
+      .fetchRevision(`/flow/revisions/${this.flow}`)
+      .finally(() => {
+        if (preservedLanguageCode) {
+          this.handleLanguageChange(preservedLanguageCode);
+        }
+      });
+    this.revisionsBrowseLanguageCode = null;
   }
 
   private renderIssuesTab(): TemplateResult | string {
@@ -5767,21 +5957,6 @@ export class Editor extends RapidElement {
           )}
         </div>
       </temba-floating-window>
-    `;
-  }
-
-  private renderRevisionsTab(): TemplateResult | string {
-    return html`
-      <temba-floating-tab
-        id="revisions-tab"
-        icon="revisions"
-        label="Revisions"
-        color="rgb(142, 94, 167)"
-        order="0"
-        .saving=${this.isSaving}
-        .active=${!this.revisionsWindowHidden}
-        @temba-button-clicked=${this.handleRevisionsTabClick}
-      ></temba-floating-tab>
     `;
   }
 
@@ -5890,7 +6065,6 @@ export class Editor extends RapidElement {
     const progress = this.getLocalizationProgress(
       isBaseSelected ? '' : this.languageCode
     );
-    const includeCategories = this.translationFilters.categories;
     const settingsPanelId = 'translation-settings-panel';
     const remainingTranslations = Math.max(
       progress.total - progress.localized,
@@ -5902,8 +6076,9 @@ export class Editor extends RapidElement {
       ? 'Stop Auto Translate'
       : 'Auto Translate';
     const showAutoTranslate = !isBaseSelected && hasPendingTranslations;
+    const disableTranslationControls = Boolean(this.viewingRevision);
     const autoTranslateButtonDisabled =
-      !this.autoTranslating && !hasTranslations;
+      disableTranslationControls || (!this.autoTranslating && !hasTranslations);
 
     return html`
       <temba-floating-window
@@ -6011,15 +6186,6 @@ export class Editor extends RapidElement {
                   id="${settingsPanelId}"
                   class="translation-settings"
                 >
-                  <div class="translation-settings-row">
-                    <temba-checkbox
-                      name="include-categories"
-                      label="Include categories"
-                      ?checked=${includeCategories}
-                      style="--checkbox-padding:5px; border-radius:var(--curvature);"
-                      @change=${this.handleIncludeCategoriesChange}
-                    ></temba-checkbox>
-                  </div>
                 </div>`
               : ''}
           </div>
@@ -6076,61 +6242,353 @@ export class Editor extends RapidElement {
     `;
   }
 
-  private handleLanguageBannerClose(): void {
-    const baseLanguage = this.definition?.language;
-    if (baseLanguage) {
-      this.handleLanguageChange(baseLanguage);
+  private handleLanguageIconClick(): void {
+    if (this.showLanguageOptions) {
+      this.showLanguageOptions = false;
+      return;
     }
+    this.showLanguageOptions = true;
+    // Close on next click anywhere outside
+    requestAnimationFrame(() => {
+      const close = () => {
+        this.showLanguageOptions = false;
+        document.removeEventListener('click', close);
+      };
+      document.addEventListener('click', close, { once: true });
+    });
   }
 
-  private renderLanguageBanner(): TemplateResult | string {
-    const baseLanguage = this.definition?.language;
-    if (
-      !baseLanguage ||
-      !this.languageCode ||
-      this.languageCode === baseLanguage
-    ) {
-      return '';
+  private handleLanguageOptionSelected(event: CustomEvent): void {
+    if (!this.showLanguageOptions) return;
+    const selected = event.detail?.selected;
+    if (selected?.value === PRIMARY_LANGUAGE_OPTION_VALUE) {
+      this.handleLanguageChange(this.definition?.language || '');
+    } else if (selected?.value) {
+      this.handleLanguageChange(selected.value);
+    }
+    this.showLanguageOptions = false;
+  }
+
+  private renderToolbarTip(
+    text: string | TemplateResult,
+    content: TemplateResult
+  ): TemplateResult {
+    const tipContent = text;
+    return html`
+      <temba-tip
+        class="toolbar-tip"
+        .text=${typeof tipContent === 'string' ? tipContent : ''}
+        .content=${typeof tipContent === 'string' ? null : tipContent}
+        position="top"
+      >
+        ${content}
+      </temba-tip>
+    `;
+  }
+
+  private isMacPlatform(): boolean {
+    return (
+      typeof navigator !== 'undefined' &&
+      /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+    );
+  }
+
+  private getSearchShortcutLabel(): string {
+    return this.isMacPlatform() ? '⌘F' : 'Ctrl+F';
+  }
+
+  private renderToolbarShortcutLabel(
+    label: string,
+    shortcut: string
+  ): TemplateResult {
+    return html`<span style="display:inline-flex; align-items:center; gap:8px;">
+      <span>${label}</span>
+      <kbd>${shortcut}</kbd>
+    </span>`;
+  }
+
+  private renderToolbarLanguageOption(
+    option: { name: string; value: string; percent?: number },
+    selected: boolean
+  ): TemplateResult {
+    if (option.value === PRIMARY_LANGUAGE_OPTION_VALUE) {
+      const primaryBackground = selected ? '#e1e8ef' : '#edf1f5';
+      return html`
+        <div
+          style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:${primaryBackground}; color:#2f3f52; border-radius:4px; padding:6px 10px;"
+        >
+          <span>${option.name}</span>
+          <span
+            style="display:inline-flex; align-items:center; border-radius:999px; background:rgba(47, 63, 82, 0.12); color:#2f3f52; font-size:10px; font-weight:700; line-height:1; padding:3px 7px;"
+            >Original</span
+          >
+        </div>
+      `;
     }
 
-    const availableLanguages = this.getAvailableLanguages();
-    const currentName =
-      availableLanguages.find((lang) => lang.code === this.languageCode)
-        ?.name || this.languageCode;
-
     return html`
-      <div class="language-banner">
-        <span class="language-banner-text"
-          >Viewing <strong>${currentName}</strong></span
+      <div
+        style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px;"
+      >
+        <span>${option.name}</span>
+        <span style="font-size:11px; font-weight:600; color:#5f6b7a;"
+          >${option.percent ?? 0}%</span
         >
-        <button
-          class="language-banner-close"
-          type="button"
-          @click=${this.handleLanguageBannerClose}
-        >
-          Done
-        </button>
       </div>
     `;
   }
 
-  private renderLocalizationTab(): TemplateResult | string {
-    if (this.definition?.nodes.length === 0) return '';
+  private renderToolbar(): TemplateResult {
     const languages = this.getLocalizationLanguages();
-    if (!languages.length) {
-      return html``;
-    }
+    const availableLanguages = this.getAvailableLanguages();
+    const baseLanguage = this.definition?.language;
+    const languageOptionCount = (baseLanguage ? 1 : 0) + languages.length;
+    const showLanguageControls = languageOptionCount > 1;
+    const baseLanguageName =
+      availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
+      baseLanguage ||
+      'Primary language';
+    const isBaseSelected =
+      !this.languageCode ||
+      this.languageCode === baseLanguage ||
+      !languages.some((lang) => lang.code === this.languageCode);
+    const activeLanguage = !isBaseSelected
+      ? languages.find((lang) => lang.code === this.languageCode)
+      : null;
+    const currentLanguage = activeLanguage || {
+      code: baseLanguage || '',
+      name: baseLanguageName
+    };
+    const progress = this.getLocalizationProgress(
+      isBaseSelected ? '' : this.languageCode
+    );
+    const percent = Math.round(
+      (progress.localized / Math.max(progress.total, 1)) * 100
+    );
+    const hasTranslations = progress.total > 0;
+    const showLocalizationTools = Boolean(activeLanguage);
+    const searchTargetLabel = this.showMessageTable
+      ? 'Search table'
+      : 'Search flow';
+    const languageOptions = [
+      {
+        name: baseLanguageName,
+        value: PRIMARY_LANGUAGE_OPTION_VALUE
+      },
+      ...languages.map((lang) => {
+        const localizationProgress = this.getLocalizationProgress(lang.code);
+        const localizationPercent = Math.round(
+          (localizationProgress.localized /
+            Math.max(localizationProgress.total, 1)) *
+            100
+        );
+        return {
+          name: lang.name,
+          value: lang.code,
+          percent: localizationPercent
+        };
+      })
+    ];
 
     return html`
-      <temba-floating-tab
-        id="localization-tab"
-        icon="language"
-        label="Translate Flow"
-        color="#5b7ea6"
-        order="3"
-        .active=${!this.localizationWindowHidden}
-        @temba-button-clicked=${this.handleLocalizationTabClick}
-      ></temba-floating-tab>
+      <div class="editor-toolbar">
+        <div class="toolbar-left">
+          ${this.renderToolbarTip(
+            'Flow View',
+            html`
+              <button
+                class="toolbar-btn ${!this.showMessageTable ? 'active' : ''}"
+                @click=${() => { this.showMessageTable = false; }}
+                aria-label="Flow View"
+              >
+                <temba-icon name="flow" size="1"></temba-icon>
+              </button>
+            `
+          )}
+          ${this.renderToolbarTip(
+            'Table View',
+            html`
+              <button
+                class="toolbar-btn ${this.showMessageTable ? 'active' : ''}"
+                @click=${() => { this.showMessageTable = true; }}
+                aria-label="Table View"
+              >
+                <temba-icon name=${Icon.quick_replies} size="1"></temba-icon>
+              </button>
+            `
+          )}
+          ${showLanguageControls
+            ? html`
+              <div class="toolbar-divider"></div>
+              <div class="toolbar-language-group">
+                <div class="toolbar-language">
+                  ${this.renderToolbarTip(
+                    'Change language',
+                    html`
+                      <button
+                        class="language-pill ${isBaseSelected ? 'primary' : ''}"
+                        id="language-btn"
+                        @click=${this.handleLanguageIconClick}
+                        aria-label="Change language"
+                      >
+                        <temba-icon name=${Icon.language}></temba-icon>
+                        <span>${currentLanguage.name}</span>
+                        ${!isBaseSelected
+                          ? html`<span class="language-percent">${percent}%</span>`
+                          : ''}
+                        <temba-icon
+                          class="language-pill-caret"
+                          name=${this.showLanguageOptions
+                            ? Icon.arrow_up
+                            : Icon.arrow_down}
+                        ></temba-icon>
+                      </button>
+                    `
+                  )}
+                  <temba-options
+                    .anchorTo=${this.querySelector('#language-btn') as HTMLElement}
+                    .options=${languageOptions}
+                    .renderOption=${this.renderToolbarLanguageOption}
+                    ?visible=${this.showLanguageOptions}
+                    @temba-selection=${this.handleLanguageOptionSelected}
+                    style="--temba-options-option-margin:4px; --temba-options-option-padding:0; --temba-options-option-radius:4px;"
+                    min-width="230"
+                  ></temba-options>
+                </div>
+                ${showLocalizationTools
+                  ? this.renderToolbarTranslationTools(hasTranslations)
+                  : ''}
+              </div>
+            `
+            : ''}
+        </div>
+        <div class="toolbar-right">
+          ${!this.showMessageTable ? html`
+            ${this.renderToolbarTip(
+              'Zoom to fit',
+              html`
+                <button
+                  class="toolbar-btn"
+                  @click=${this.zoomToFit}
+                  ?disabled=${!this.zoomInitialized || this.zoomFitted}
+                  aria-label="Zoom to fit"
+                >
+                  <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
+                </button>
+              `
+            )}
+            <div class="toolbar-divider"></div>
+            ${this.renderToolbarTip(
+              'Zoom out',
+              html`
+                <button
+                  class="toolbar-btn"
+                  @click=${this.zoomOut}
+                  ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+              `
+            )}
+            <span class="toolbar-zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
+            ${this.renderToolbarTip(
+              'Zoom in',
+              html`
+                <button
+                  class="toolbar-btn"
+                  @click=${this.zoomIn}
+                  ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+              `
+            )}
+            <div class="toolbar-divider"></div>
+            ${this.renderToolbarTip(
+              'Zoom to 100%',
+              html`
+                <button
+                  class="toolbar-btn"
+                  @click=${this.zoomToFull}
+                  ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
+                  aria-label="Zoom to 100%"
+                >
+                  <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
+                </button>
+              `
+            )}
+            <div class="toolbar-divider"></div>
+          ` : ''}
+            ${this.renderToolbarTip(
+              'Revisions',
+              html`
+                <button
+                class="toolbar-btn ${!this.revisionsWindowHidden
+                  ? 'active'
+                  : ''}"
+                @click=${this.handleRevisionsTabClick}
+                aria-label="Revisions"
+              >
+                <temba-icon
+                  name=${this.isSaving ? 'progress_spinner' : 'revisions'}
+                  size="1"
+                  ?spin=${this.isSaving}
+                ></temba-icon>
+                </button>
+              `
+            )}
+            <div class="toolbar-divider"></div>
+            ${this.renderToolbarTip(
+              this.renderToolbarShortcutLabel(
+                searchTargetLabel,
+                this.getSearchShortcutLabel()
+              ),
+              html`
+                <button
+                  class="toolbar-btn"
+                  @click=${this.openFlowSearch}
+                  ?disabled=${!!this.viewingRevision}
+                  aria-label=${searchTargetLabel}
+                >
+                  <temba-icon name=${Icon.search} size="1"></temba-icon>
+                </button>
+              `
+            )}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderToolbarTranslationTools(hasTranslations: boolean): TemplateResult {
+    const disableTranslationControls = Boolean(this.viewingRevision);
+    const autoTranslateLabel = this.autoTranslating
+      ? 'Stop auto translate'
+      : 'Auto translate';
+    return html`
+      <div class="toolbar-translation">
+        ${this.renderToolbarTip(
+          autoTranslateLabel,
+          html`
+            <button
+              class="toolbar-btn language-tool ${this.autoTranslating
+                ? 'active'
+                : ''}"
+              @click=${this.handleAutoTranslateClick}
+              ?disabled=${disableTranslationControls ||
+              (!this.autoTranslating && !hasTranslations)}
+              aria-label=${autoTranslateLabel}
+            >
+              <temba-icon
+                name=${this.autoTranslating ? 'progress_spinner' : Icon.ai}
+                size="0.9"
+                ?spin=${this.autoTranslating}
+              ></temba-icon>
+            </button>
+          `
+        )}
+      </div>
     `;
   }
 
@@ -6192,8 +6650,23 @@ export class Editor extends RapidElement {
 
     const nodeUI = this.definition._ui?.nodes[result.nodeUuid];
 
-    // Scroll to the node
-    this.focusNode(result.nodeUuid);
+    if (this.showMessageTable) {
+      const messageTable = this.querySelector('temba-message-table') as
+        | (HTMLElement & {
+            focusSearchResult?: (
+              nodeUuid: string,
+              actionUuid: string | null
+            ) => void;
+          })
+        | null;
+      messageTable?.focusSearchResult?.(
+        result.nodeUuid,
+        result.action?.uuid || null
+      );
+    } else {
+      // Scroll to the node on canvas
+      this.focusNode(result.nodeUuid);
+    }
 
     // Open editor after a short delay so scroll can start
     setTimeout(() => {
@@ -6276,8 +6749,11 @@ export class Editor extends RapidElement {
       ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
       ${this.renderAutoTranslateDialog()}
       <div id="editor-container">
-        ${this.renderLanguageBanner()}
+        ${this.renderToolbar()}
         <div id="editor">
+          ${this.showMessageTable
+            ? html`<temba-message-table></temba-message-table>`
+            : html`
           ${hasCorruptedUI
             ? html`<div class="empty-flow">
                 <div class="empty-flow-content">
@@ -6401,39 +6877,7 @@ export class Editor extends RapidElement {
               ${this.renderConnectionPlaceholder()}
             </div>
           </div>
-        </div>
-        <div class="zoom-controls">
-          <button
-            @click=${this.zoomToFit}
-            ?disabled=${!this.zoomInitialized || this.zoomFitted}
-            title="Zoom to fit"
-          >
-            <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
-          </button>
-          <div class="zoom-divider"></div>
-          <button
-            @click=${this.zoomOut}
-            ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
-            title="Zoom out"
-          >
-            −
-          </button>
-          <span class="zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
-          <button
-            @click=${this.zoomIn}
-            ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-            title="Zoom in"
-          >
-            +
-          </button>
-          <div class="zoom-divider"></div>
-          <button
-            @click=${this.zoomToFull}
-            ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-            title="Zoom to 100%"
-          >
-            <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
-          </button>
+          `}
         </div>
         ${this.renderPendingCard()}
       </div>
@@ -6449,6 +6893,7 @@ export class Editor extends RapidElement {
             .nodeUI=${this.editingNodeUI}
             .action=${this.editingAction}
             .dialogOrigin=${this.dialogOrigin}
+            ?force-base=${this.editForceBase}
             @temba-node-saved=${(e: CustomEvent) =>
               this.handleNodeSaved(e.detail.node, e.detail.uiConfig)}
             @temba-action-saved=${(e: CustomEvent) =>
@@ -6465,9 +6910,12 @@ export class Editor extends RapidElement {
           ></temba-node-type-selector>`
         : ''}
       <temba-flow-search
+        .scope=${this.showMessageTable ? 'table' : 'flow'}
+        .includeCategories=${this.isTranslating && this.hasAnyNodeWithLocalizeCategories()}
         @temba-search-result-selected=${this.handleSearchResultSelected}
       ></temba-flow-search>
-      ${this.renderIssuesTab()} ${this.renderRevisionsTab()}
-      ${this.renderLocalizationTab()} `;
+      ${!this.showMessageTable ? html`
+        ${this.renderIssuesTab()}
+      ` : ''} `;
   }
 }

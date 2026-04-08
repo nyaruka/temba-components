@@ -8,6 +8,9 @@ import {
 } from '../operators';
 import {
   resultNameField,
+  localizeRulesField,
+  localizeCategoriesField,
+  nodeOptionsAccordion,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -28,7 +31,9 @@ export const wait_for_digits: NodeConfig = {
       operatorsToSelectOptions(getDigitOperators()),
       ''
     ),
-    result_name: resultNameField
+    result_name: resultNameField,
+    localizeRules: localizeRulesField,
+    localizeCategories: localizeCategoriesField
   },
   layout: [
     {
@@ -36,7 +41,7 @@ export const wait_for_digits: NodeConfig = {
       text: 'Rules match against all digits pressed by the caller followed by the # sign.'
     },
     'rules',
-    'result_name'
+    nodeOptionsAccordion
   ],
   validate: (_formData: FormData) => {
     return {
@@ -44,13 +49,21 @@ export const wait_for_digits: NodeConfig = {
       errors: {}
     };
   },
-  toFormData: (node: Node) => {
+  toFormData: (node: Node, nodeUI?: any) => {
     const rules = casesToFormRules(node);
     return {
       uuid: node.uuid,
       rules,
-      result_name: node.router?.result_name || ''
+      result_name: node.router?.result_name || '',
+      localizeRules: nodeUI?.config?.localizeRules || false,
+      localizeCategories: nodeUI?.config?.localizeCategories || false
     };
+  },
+  toUIConfig: (formData: FormData) => {
+    const config: Record<string, any> = {};
+    config.localizeRules = !!formData.localizeRules;
+    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    return config;
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
     const userRules = extractUserRules(formData);

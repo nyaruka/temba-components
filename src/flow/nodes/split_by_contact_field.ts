@@ -8,6 +8,9 @@ import {
 } from '../operators';
 import {
   resultNameField,
+  localizeRulesField,
+  localizeCategoriesField,
+  nodeOptionsAccordion,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -81,9 +84,11 @@ export const split_by_contact_field: NodeConfig = {
       operatorsToSelectOptions(getWaitForResponseOperators()),
       ''
     ),
-    result_name: resultNameField
+    result_name: resultNameField,
+    localizeRules: localizeRulesField,
+    localizeCategories: localizeCategoriesField
   },
-  layout: ['field', 'rules', 'result_name'],
+  layout: ['field', 'rules', nodeOptionsAccordion],
   validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
@@ -118,7 +123,9 @@ export const split_by_contact_field: NodeConfig = {
       uuid: node.uuid,
       field: [field],
       rules: rules,
-      result_name: node.router?.result_name || ''
+      result_name: node.router?.result_name || '',
+      localizeRules: nodeUI?.config?.localizeRules || false,
+      localizeCategories: nodeUI?.config?.localizeCategories || false
     };
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -191,13 +198,16 @@ export const split_by_contact_field: NodeConfig = {
     }
 
     // Return UI config with operand information for persistence
-    return {
+    const config: Record<string, any> = {
       operand: {
         id: operandId,
         name: selectedField.name || selectedField.label,
         type
       }
     };
+    config.localizeRules = !!formData.localizeRules;
+    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    return config;
   },
   renderTitle: (node: Node, nodeUI?: any) => {
     return html`<div>Split by ${nodeUI.config.operand.name}</div>`;

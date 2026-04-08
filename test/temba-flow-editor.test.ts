@@ -909,7 +909,7 @@ describe('Editor', () => {
       expect((editor as any).isSaving).to.be.true;
     });
 
-    it('shows revisions tab even with no revisions', async () => {
+    it('shows revisions button even with no revisions', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="canvas"></div>
@@ -921,9 +921,8 @@ describe('Editor', () => {
       (editor as any).isSaving = false;
       await editor.updateComplete;
 
-      const tab = editor.querySelector('#revisions-tab') as any;
-      expect(tab).to.exist;
-      expect(tab.saving).to.be.false;
+      const btn = editor.querySelector('.toolbar-btn[aria-label="Revisions"]') as any;
+      expect(btn).to.exist;
     });
 
     it('clears viewingRevision state when exiting revision view', async () => {
@@ -974,7 +973,7 @@ describe('Editor', () => {
       expect(zustand.getState().viewingRevision).to.be.false;
     });
 
-    it('passes saving state to revisions tab when saving', async () => {
+    it('shows spinner icon in revisions button when saving', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="canvas"></div>
@@ -989,9 +988,10 @@ describe('Editor', () => {
       (editor as any).isSaving = true;
       await editor.updateComplete;
 
-      const tab = editor.querySelector('#revisions-tab') as any;
-      expect(tab).to.exist;
-      expect(tab.saving).to.be.true;
+      const btn = editor.querySelector('.toolbar-btn[aria-label="Revisions"]') as any;
+      expect(btn).to.exist;
+      const icon = btn.querySelector('temba-icon');
+      expect(icon.getAttribute('name')).to.equal('progress_spinner');
     });
 
     it('passes saving state to revisions window when saving', async () => {
@@ -1015,7 +1015,7 @@ describe('Editor', () => {
       expect(revisionsWindow.saving).to.be.true;
     });
 
-    it('revisions tab not saving when not saving', async () => {
+    it('shows revisions icon in button when not saving', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="canvas"></div>
@@ -1030,9 +1030,10 @@ describe('Editor', () => {
       (editor as any).isSaving = false;
       await editor.updateComplete;
 
-      const tab = editor.querySelector('#revisions-tab') as any;
-      expect(tab).to.exist;
-      expect(tab.saving).to.be.false;
+      const btn = editor.querySelector('.toolbar-btn[aria-label="Revisions"]') as any;
+      expect(btn).to.exist;
+      const icon = btn.querySelector('temba-icon');
+      expect(icon.getAttribute('name')).to.equal('revisions');
     });
 
     it('clears isSaving after successful save', async () => {

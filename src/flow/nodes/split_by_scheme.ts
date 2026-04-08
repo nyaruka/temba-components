@@ -4,6 +4,7 @@ import { generateUUID } from '../../utils';
 import { SCHEMES } from '../utils';
 import {
   resultNameField,
+  nodeOptionsAccordionSimple,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -125,7 +126,7 @@ export const split_by_scheme: NodeConfig = {
     },
     result_name: resultNameField
   },
-  layout: ['schemes', 'result_name'],
+  layout: ['schemes', nodeOptionsAccordionSimple],
   validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 

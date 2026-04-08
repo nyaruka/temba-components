@@ -302,6 +302,11 @@ export class FieldRenderer {
         ? config.label(formData)
         : config.label;
 
+    const helpText =
+      typeof config.helpText === 'function'
+        ? config.helpText(formData)
+        : config.helpText;
+
     // Build custom style including labelPadding
     const customStyle = config.labelPadding
       ? `--checkbox-padding: ${config.labelPadding}; ${style || ''}`
@@ -311,7 +316,7 @@ export class FieldRenderer {
       <temba-checkbox
         name="${fieldName}"
         label="${label}"
-        .helpText="${config.helpText || ''}"
+        .helpText="${helpText || ''}"
         ?required="${config.required}"
         .errors="${errors}"
         ?checked="${value || false}"

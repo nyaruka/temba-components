@@ -1,5 +1,11 @@
-import { FormData, TextFieldConfig } from '../types';
+import {
+  FormData,
+  TextFieldConfig,
+  AccordionLayoutConfig,
+  CheckboxFieldConfig
+} from '../types';
 import { Node } from '../../store/flow-definition';
+import { getOperatorConfig } from '../operators';
 
 /**
  * Shared result_name field configuration for router nodes.
@@ -11,11 +17,65 @@ import { Node } from '../../store/flow-definition';
  */
 export const resultNameField: TextFieldConfig = {
   type: 'text',
-  label: 'Result Name',
   required: false,
   placeholder: '(optional)',
-  helpText: 'The name to use to reference this result in the flow',
-  optionalLink: 'Save result as...'
+  helpText: 'The name to use to reference this result in the flow'
+};
+
+/**
+ * Shared localization requirement fields for router nodes.
+ * These provide checkboxes for "Require rules to be localized" and
+ * "Require categories to be localized" in a collapsible accordion.
+ */
+export const localizeRulesField: CheckboxFieldConfig = {
+  type: 'checkbox',
+  label: 'Require rules to be localized',
+  helpText: 'Each language must specify its own rules for this node'
+};
+
+export const localizeCategoriesField: CheckboxFieldConfig = {
+  type: 'checkbox',
+  label: 'Require categories to be localized',
+  helpText: (formData: FormData) => {
+    const name = formData.result_name?.trim();
+    if (name) {
+      const key = name.toLowerCase().replace(/\s+/g, '_');
+      return `Only enable if you plan to use @results.${key}.category_localized`;
+    }
+    return 'Only enable if you plan to use category_localized in your expressions for this result';
+  },
+  conditions: {
+    visible: (formData: FormData) => !!formData.result_name
+  }
+};
+
+const resultNameSection = {
+  label: 'Save Result',
+  localizable: false,
+  items: ['result_name'],
+  collapsed: (formData: FormData) => !(formData._isNew && formData.result_name),
+  getValueCount: (formData: FormData) => !!formData.result_name
+};
+
+const advancedSection = {
+  label: 'Localization',
+  localizable: false,
+  items: ['localizeRules', 'localizeCategories'],
+  collapsed: true,
+  getValueCount: (formData: FormData) =>
+    !!(formData.localizeRules || formData.localizeCategories)
+};
+
+export const nodeOptionsAccordion: AccordionLayoutConfig = {
+  type: 'accordion',
+  multi: true,
+  sections: [resultNameSection, advancedSection]
+};
+
+export const nodeOptionsAccordionSimple: AccordionLayoutConfig = {
+  type: 'accordion',
+  multi: true,
+  sections: [resultNameSection]
 };
 
 /**
@@ -51,8 +111,28 @@ export function categoriesToLocalizationFormData(
     };
   });
 
+  // Also include rule (case) argument localizations
+  const cases = node.router?.cases || [];
+  const rulesData: Record<string, any> = {};
+
+  cases.forEach((c: any) => {
+    if (!c.arguments?.length || !c.arguments.some((a: string) => a)) return;
+
+    const caseLocalization = localization[c.uuid];
+    const operatorName = getOperatorConfig(c.type)?.name || c.type;
+    rulesData[c.uuid] = {
+      operatorName,
+      originalArguments: [...c.arguments],
+      localizedArguments:
+        caseLocalization?.arguments
+          ? [...caseLocalization.arguments]
+          : c.arguments.map(() => '')
+    };
+  });
+
   return {
-    categories: localizationData
+    categories: localizationData,
+    rules: rulesData
   };
 }
 
@@ -78,6 +158,26 @@ export function localizationFormDataToCategories(
       if (localizedName && localizedName !== originalName) {
         localizationData[categoryUuid] = {
           name: [localizedName]
+        };
+      }
+    });
+  }
+
+  // Also process rule localizations
+  if (formData.rules) {
+    Object.keys(formData.rules).forEach((caseUuid) => {
+      const ruleData = formData.rules[caseUuid];
+      const localized = ruleData.localizedArguments || [];
+      const original = ruleData.originalArguments || [];
+
+      // Save if any argument differs from original and is non-empty
+      const hasLocalization = localized.some(
+        (arg: string, i: number) => arg?.trim() && arg.trim() !== (original[i] || '')
+      );
+
+      if (hasLocalization) {
+        localizationData[caseUuid] = {
+          arguments: localized.map((a: string) => a?.trim() || '')
         };
       }
     });

@@ -181,6 +181,7 @@ export const split_by_llm_categorize: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
+  nonTranslatableCategories: ['Failure'],
   toLocalizationFormData: categoriesToLocalizationFormData,
   fromLocalizationFormData: localizationFormDataToCategories
 };

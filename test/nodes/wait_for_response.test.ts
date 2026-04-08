@@ -28,7 +28,9 @@ describe('wait_for_response node config', () => {
 
     it('has layout configuration', () => {
       expect(wait_for_response.layout).to.exist;
-      expect(wait_for_response.layout).to.deep.equal(['rules', 'result_name']);
+      expect(wait_for_response.layout).to.have.lengthOf(2);
+      expect(wait_for_response.layout[0]).to.equal('rules');
+      expect((wait_for_response.layout[1] as any).type).to.equal('accordion');
     });
   });
 

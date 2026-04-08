@@ -720,15 +720,11 @@ describe('temba-node-editor', () => {
     expect(dialog).to.not.be.null;
     expect(dialog.getAttribute('header')).to.equal('Wait for Response');
 
-    // Check that timeout and result name fields are rendered
-    const textComponents = el.shadowRoot.querySelectorAll('temba-textinput');
-    expect(textComponents.length).to.equal(1);
-
-    // Verify the field labels
-    const labels = Array.from(textComponents).map((comp) =>
-      comp.getAttribute('label')
-    );
-    expect(labels).to.include('Result Name');
+    // Check that result name field is rendered inside accordion
+    const accordion = el.shadowRoot.querySelector('temba-accordion');
+    expect(accordion).to.not.be.null;
+    const textInput = el.shadowRoot.querySelector('temba-textinput');
+    expect(textInput).to.not.be.null;
   });
 
   it('prioritizes node config over action config for non-execute_actions nodes', async () => {

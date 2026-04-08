@@ -171,6 +171,7 @@ export const wait_for_dial: NodeConfig = {
     };
   },
   localizable: 'categories',
+  nonTranslatableCategories: 'all',
   toLocalizationFormData: categoriesToLocalizationFormData,
   fromLocalizationFormData: localizationFormDataToCategories
 };

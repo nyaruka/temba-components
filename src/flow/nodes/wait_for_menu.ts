@@ -3,6 +3,9 @@ import { Node, Category, Exit } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import {
   resultNameField,
+  localizeRulesField,
+  localizeCategoriesField,
+  nodeOptionsAccordion,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -31,7 +34,9 @@ export const wait_for_menu: NodeConfig = {
         }
       ])
     ),
-    result_name: resultNameField
+    result_name: resultNameField,
+    localizeRules: localizeRulesField,
+    localizeCategories: localizeCategoriesField
   },
   layout: [
     {
@@ -65,9 +70,9 @@ export const wait_for_menu: NodeConfig = {
       gap: '2rem',
       inlineLabels: { digit_0: '0' }
     },
-    'result_name'
+    nodeOptionsAccordion
   ],
-  toFormData: (node: Node) => {
+  toFormData: (node: Node, nodeUI?: any) => {
     const formData: FormData = {
       uuid: node.uuid,
       result_name: node.router?.result_name || ''
@@ -93,7 +98,15 @@ export const wait_for_menu: NodeConfig = {
       }
     }
 
+    formData.localizeRules = nodeUI?.config?.localizeRules || false;
+    formData.localizeCategories = nodeUI?.config?.localizeCategories || false;
     return formData;
+  },
+  toUIConfig: (formData: FormData) => {
+    const config: Record<string, any> = {};
+    config.localizeRules = !!formData.localizeRules;
+    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    return config;
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
     const existingCategories = originalNode.router?.categories || [];
