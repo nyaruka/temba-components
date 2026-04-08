@@ -6072,13 +6072,6 @@ export class Editor extends RapidElement {
     );
     const hasTranslations = progress.total > 0;
     const hasPendingTranslations = remainingTranslations > 0;
-    const autoTranslateButtonLabel = this.autoTranslating
-      ? 'Stop Auto Translate'
-      : 'Auto Translate';
-    const showAutoTranslate = !isBaseSelected && hasPendingTranslations;
-    const disableTranslationControls = Boolean(this.viewingRevision);
-    const autoTranslateButtonDisabled =
-      disableTranslationControls || (!this.autoTranslating && !hasTranslations);
 
     return html`
       <temba-floating-window
