@@ -76,6 +76,7 @@ export const send_broadcast: ActionConfig = {
       required: true,
       evaluated: true,
       placeholder: 'Type your message here...',
+      maxLength: 640,
       maxAttachments: 10,
       accept: '',
       endpoint: '/api/v2/media.json',
@@ -180,5 +181,52 @@ export const send_broadcast: ActionConfig = {
     if (formData.text && typeof formData.text === 'string') {
       formData.text = formData.text.trim();
     }
+  },
+  localizable: ['text', 'attachments'],
+  toLocalizationFormData: (
+    action: SendBroadcast,
+    localization: Record<string, any>
+  ) => {
+    const formData: FormData = {
+      uuid: action.uuid
+    };
+
+    if (localization.text && Array.isArray(localization.text)) {
+      formData.text = localization.text[0] || '';
+    } else {
+      formData.text = '';
+    }
+
+    if (localization.attachments && Array.isArray(localization.attachments)) {
+      formData.attachments = localization.attachments;
+    } else {
+      formData.attachments = [];
+    }
+
+    return formData;
+  },
+  fromLocalizationFormData: (formData: FormData, action: SendBroadcast) => {
+    const localization: Record<string, any> = {};
+
+    if (formData.text && formData.text.trim() !== '') {
+      if (formData.text !== action.text) {
+        localization.text = [formData.text];
+      }
+    }
+
+    const attachments = (formData.attachments || []).filter(
+      (att: string) => att && att.trim() !== ''
+    );
+
+    if (attachments.length > 0) {
+      if (
+        JSON.stringify(attachments) !==
+        JSON.stringify(action.attachments || [])
+      ) {
+        localization.attachments = attachments;
+      }
+    }
+
+    return localization;
   }
 };

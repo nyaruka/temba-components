@@ -1928,6 +1928,15 @@ export class NodeEditor extends RapidElement {
 
     switch (item.type) {
       case 'field':
+        // In translation mode, skip fields not in the localizable list
+        if (
+          this.isTranslating &&
+          Array.isArray((config as ActionConfig).localizable) &&
+          !(config as ActionConfig).localizable!.includes(item.field)
+        ) {
+          renderedFields.add(item.field);
+          return html``;
+        }
         if (config.form![item.field] && !renderedFields.has(item.field)) {
           renderedFields.add(item.field);
           const fieldConfig = config.form![item.field] as FieldConfig;
@@ -2484,6 +2493,14 @@ export class NodeEditor extends RapidElement {
                 !renderedFields.has(fieldName) &&
                 !gutterFields.has(fieldName)
               ) {
+                // In translation mode, skip fields not in the localizable list
+                if (
+                  this.isTranslating &&
+                  Array.isArray((config as ActionConfig).localizable) &&
+                  !(config as ActionConfig).localizable!.includes(fieldName)
+                ) {
+                  return html``;
+                }
                 return this.renderNewField(
                   fieldName,
                   fieldConfig as FieldConfig,
@@ -2497,13 +2514,21 @@ export class NodeEditor extends RapidElement {
       } else {
         // Default rendering without layout
         return html`
-          ${Object.entries(config.form).map(([fieldName, fieldConfig]) =>
-            this.renderNewField(
+          ${Object.entries(config.form).map(([fieldName, fieldConfig]) => {
+            // In translation mode, skip fields not in the localizable list
+            if (
+              this.isTranslating &&
+              Array.isArray((config as ActionConfig).localizable) &&
+              !(config as ActionConfig).localizable!.includes(fieldName)
+            ) {
+              return html``;
+            }
+            return this.renderNewField(
               fieldName,
               fieldConfig as FieldConfig,
               this.formData[fieldName]
-            )
-          )}
+            );
+          })}
         `;
       }
     }

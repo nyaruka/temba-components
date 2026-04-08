@@ -45,12 +45,13 @@ export const send_email: ActionConfig = {
       required: true,
       evaluated: true,
       placeholder: 'Enter email subject',
-      maxLength: 255
+      maxLength: 1000
     },
     body: {
       type: 'textarea',
       required: true,
       evaluated: true,
+      maxLength: 10000,
       minHeight: 175
     }
   },
@@ -64,6 +65,46 @@ export const send_email: ActionConfig = {
       subject: formData.subject,
       body: formData.body
     };
+  },
+  localizable: ['subject', 'body'],
+  toLocalizationFormData: (
+    action: SendEmail,
+    localization: Record<string, any>
+  ) => {
+    const formData: FormData = {
+      uuid: action.uuid
+    };
+
+    if (localization.subject && Array.isArray(localization.subject)) {
+      formData.subject = localization.subject[0] || '';
+    } else {
+      formData.subject = '';
+    }
+
+    if (localization.body && Array.isArray(localization.body)) {
+      formData.body = localization.body[0] || '';
+    } else {
+      formData.body = '';
+    }
+
+    return formData;
+  },
+  fromLocalizationFormData: (formData: FormData, action: SendEmail) => {
+    const localization: Record<string, any> = {};
+
+    if (formData.subject && formData.subject.trim() !== '') {
+      if (formData.subject !== action.subject) {
+        localization.subject = [formData.subject];
+      }
+    }
+
+    if (formData.body && formData.body.trim() !== '') {
+      if (formData.body !== action.body) {
+        localization.body = [formData.body];
+      }
+    }
+
+    return localization;
   },
   validate: (formData: FormData): ValidationResult => {
     const errors: { [key: string]: string } = {};

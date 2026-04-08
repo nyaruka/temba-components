@@ -57,6 +57,7 @@ export const set_run_result: ActionConfig = {
       label: 'Category',
       helpText: 'Optional category for this result',
       required: false,
+      maxLength: 36,
       placeholder: 'Enter category...'
     }
   },

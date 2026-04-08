@@ -28,6 +28,7 @@ export const say_msg: ActionConfig = {
       required: true,
       evaluated: true,
       placeholder: 'Enter message to speak...',
+      maxLength: 10000,
       minHeight: 80
     },
     audio_url: {

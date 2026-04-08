@@ -189,6 +189,7 @@ export const createRulesItemConfig = () => ({
     type: 'text' as const,
     placeholder: 'Category',
     required: true,
+    maxLength: 36,
     maxWidth: '120px',
     flavor: 'xsmall' as const
   }

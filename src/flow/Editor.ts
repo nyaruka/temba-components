@@ -6542,35 +6542,9 @@ export class Editor extends RapidElement {
     `;
   }
 
-  private renderToolbarTranslationTools(hasTranslations: boolean): TemplateResult {
-    const disableTranslationControls = Boolean(this.viewingRevision);
-    const autoTranslateLabel = this.autoTranslating
-      ? 'Stop auto translate'
-      : 'Auto translate';
-    return html`
-      <div class="toolbar-translation">
-        ${this.renderToolbarTip(
-          autoTranslateLabel,
-          html`
-            <button
-              class="toolbar-btn language-tool ${this.autoTranslating
-                ? 'active'
-                : ''}"
-              @click=${this.handleAutoTranslateClick}
-              ?disabled=${disableTranslationControls ||
-              (!this.autoTranslating && !hasTranslations)}
-              aria-label=${autoTranslateLabel}
-            >
-              <temba-icon
-                name=${this.autoTranslating ? 'progress_spinner' : Icon.ai}
-                size="0.9"
-                ?spin=${this.autoTranslating}
-              ></temba-icon>
-            </button>
-          `
-        )}
-      </div>
-    `;
+  private renderToolbarTranslationTools(_hasTranslations: boolean): TemplateResult {
+    // auto translate button hidden pending backend changes
+    return html``;
   }
 
   /**

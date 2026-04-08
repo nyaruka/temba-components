@@ -18,6 +18,7 @@ import { getOperatorConfig } from '../operators';
 export const resultNameField: TextFieldConfig = {
   type: 'text',
   required: false,
+  maxLength: 64,
   placeholder: '(optional)',
   helpText: 'The name to use to reference this result in the flow'
 };
