@@ -5,8 +5,7 @@ import {
   Action,
   Category,
   FlowDefinition,
-  Node,
-  SendMsg
+  Node
 } from '../store/flow-definition';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { CustomEventType } from '../interfaces';
