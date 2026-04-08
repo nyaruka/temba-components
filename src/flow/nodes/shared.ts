@@ -58,18 +58,9 @@ const resultNameSection = {
 };
 
 const advancedSection = {
-  label: 'Advanced',
+  label: 'Localization',
   localizable: false,
-  items: [
-    {
-      type: 'group' as const,
-      label: 'Localization Settings',
-      icon: 'language',
-      items: ['localizeRules', 'localizeCategories'],
-      bordered: false,
-      gap: '4px'
-    }
-  ],
+  items: ['localizeRules', 'localizeCategories'],
   collapsed: true,
   getValueCount: (formData: FormData) =>
     !!(formData.localizeRules || formData.localizeCategories)
