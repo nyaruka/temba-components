@@ -1480,6 +1480,7 @@ export class Simulator extends RapidElement {
                 <a
                   href="#"
                   class="webhook-event-url"
+                  data-webhook-details="true"
                   title="View webhook call details"
                   @click=${(clickEvent: MouseEvent) => {
                     clickEvent.preventDefault();
