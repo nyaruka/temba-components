@@ -705,6 +705,12 @@ export class Editor extends RapidElement {
         border: 1px solid #d7dce2;
       }
 
+      .language-pill.complete {
+        background: #d4f5e0;
+        color: #1a7f37;
+        --icon-color: #1a7f37;
+      }
+
       .language-pill-caret {
         margin-left: 1px;
         --icon-color: currentColor;
@@ -718,6 +724,10 @@ export class Editor extends RapidElement {
         line-height: 1;
         color: #0064c8;
         white-space: nowrap;
+      }
+
+      .language-pill.complete .language-percent {
+        color: #1a7f37;
       }
 
       .toolbar-zoom-level {
@@ -6307,12 +6317,20 @@ export class Editor extends RapidElement {
       `;
     }
 
+    const isComplete = option.percent === 100;
+    const optionBg = isComplete ? '#d4f5e0' : '';
+    const optionHoverBg = isComplete ? '#c0edce' : '';
+    const optionRadius = isComplete ? 'border-radius:4px;' : '';
+    const percentColor = isComplete ? 'color:#1a7f37;' : 'color:#5f6b7a;';
+
     return html`
       <div
-        style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px;"
+        style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; ${optionBg ? `background:${optionBg};` : ''} ${optionRadius}"
+        @mouseenter=${isComplete ? (e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = optionHoverBg; } : null}
+        @mouseleave=${isComplete ? (e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = optionBg; } : null}
       >
-        <span>${option.name}</span>
-        <span style="font-size:11px; font-weight:600; color:#5f6b7a;"
+        <span style="${isComplete ? 'color:#1a7f37;' : ''}">${option.name}</span>
+        <span style="font-size:11px; font-weight:600; ${percentColor}"
           >${option.percent ?? 0}%</span
         >
       </div>
@@ -6407,7 +6425,7 @@ export class Editor extends RapidElement {
                     'Change language',
                     html`
                       <button
-                        class="language-pill ${isBaseSelected ? 'primary' : ''}"
+                        class="language-pill ${isBaseSelected ? 'primary' : percent === 100 ? 'complete' : ''}"
                         id="language-btn"
                         @click=${this.handleLanguageIconClick}
                         aria-label="Change language"
