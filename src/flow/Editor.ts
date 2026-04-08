@@ -6076,13 +6076,6 @@ export class Editor extends RapidElement {
     );
     const hasTranslations = progress.total > 0;
     const hasPendingTranslations = remainingTranslations > 0;
-    const autoTranslateButtonLabel = this.autoTranslating
-      ? 'Stop Auto Translate'
-      : 'Auto Translate';
-    const showAutoTranslate = !isBaseSelected && hasPendingTranslations;
-    const disableTranslationControls = Boolean(this.viewingRevision);
-    const autoTranslateButtonDisabled =
-      disableTranslationControls || (!this.autoTranslating && !hasTranslations);
 
     return html`
       <temba-floating-window
@@ -6120,25 +6113,13 @@ export class Editor extends RapidElement {
                   ></temba-option>`
               )}
             </temba-select>
-            ${showAutoTranslate || this.autoTranslating
-              ? html`<button
-                  class="auto-translate-button"
-                  type="button"
-                  ?disabled=${autoTranslateButtonDisabled}
-                  @click=${this.handleAutoTranslateClick}
-                >
-                  ${autoTranslateButtonLabel}
-                </button>`
-              : ''}
+            ${''/* auto translate button hidden pending backend changes */}
           </div>
           <div
             class="localization-progress ${isBaseSelected ? 'disabled' : ''}"
           >
             <div class="localization-progress-summary">
-              ${this.autoTranslating
-                ? html`<temba-loading units="3" size="8"></temba-loading>
-                    <span>Auto translating remaining text…</span>`
-                : isBaseSelected
+              ${isBaseSelected
                   ? html`<span
                       >Select a language to see translation progress.</span
                     >`
@@ -6150,11 +6131,7 @@ export class Editor extends RapidElement {
                         html`<span>${progress.localized} of ${progress.total} items translated</span>`
                       : html`<span>All items are translated.</span>`}
             </div>
-            ${this.autoTranslateError
-              ? html`<div class="auto-translate-error">
-                  ${this.autoTranslateError}
-                </div>`
-              : ''}
+            ${''/* auto translate error hidden pending backend changes */}
             <div class="localization-progress-bar-row">
               <div
                 class="localization-progress-trigger"
@@ -6751,7 +6728,6 @@ export class Editor extends RapidElement {
 
     return html`${style} ${this.renderIssuesWindow()}
       ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
-      ${this.renderAutoTranslateDialog()}
       <div id="editor-container">
         ${this.renderToolbar()}
         <div id="editor">

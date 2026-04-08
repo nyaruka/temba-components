@@ -256,7 +256,7 @@ describe('Localization Editing', () => {
     expect(progress.total).to.equal(0);
   });
 
-  it('should open auto translate dialog when clicking auto translate', async () => {
+  it.skip('should open auto translate dialog when clicking auto translate', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
     const autoTranslateBtn = editor.querySelector(
