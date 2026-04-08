@@ -34,6 +34,9 @@ const TEST_LOCATIONS = [
   'geo:-1.9536,30.0606' // Kigali
 ];
 
+const truncateUrl = (url: string, maxLen = 50): string =>
+  url && url.length > maxLen ? url.slice(0, maxLen) + '…' : url;
+
 interface Contact {
   uuid: string;
   name?: string;
@@ -1472,18 +1475,20 @@ export class Simulator extends RapidElement {
       const renderedEvent =
         event.type === Events.WEBHOOK_CALLED && this.hasWebhookDetails(event)
           ? html`<div class="webhook-event">
-              <div class="webhook-event-text">${rendered}</div>
-              <button
-                type="button"
-                data-webhook-details="true"
-                class="webhook-event-log-link"
-                title="View webhook call details"
-                aria-label="View webhook call details"
-                @click=${(clickEvent: MouseEvent) =>
-                  this.handleWebhookDetailsClick(event, clickEvent)}
-              >
-                <temba-icon name="log" size="0.8"></temba-icon>
-              </button>
+              <div class="webhook-event-text">
+                Called
+                <a
+                  href="#"
+                  class="webhook-event-url"
+                  data-webhook-details="true"
+                  title="View webhook call details"
+                  @click=${(clickEvent: MouseEvent) => {
+                    clickEvent.preventDefault();
+                    this.handleWebhookDetailsClick(event, clickEvent);
+                  }}
+                  >${truncateUrl((event as any).url)}</a
+                >
+              </div>
             </div>`
           : rendered;
 

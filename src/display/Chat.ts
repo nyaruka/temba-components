@@ -583,34 +583,36 @@ export class Chat extends RapidElement {
         text-align: center;
         font-size: 11px;
         color: #8e8e93;
+        max-width: 100%;
+        overflow: hidden;
       }
 
       .event .webhook-event {
         display: inline-flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 6px;
+        max-width: 100%;
+        min-width: 0;
       }
 
-      .event .webhook-event-log-link {
-        all: unset;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: #9ca3af;
+      .event .webhook-event-text {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        word-break: break-all;
+        min-width: 0;
+        padding: 4px 0;
+      }
+
+      .event .webhook-event-url {
+        color: inherit;
+        text-decoration: underline;
         cursor: pointer;
-        line-height: 1;
-        border-radius: 4px;
-        transition: color var(--animation-time, 200ms) ease;
       }
 
-      .event .webhook-event-log-link:hover,
-      .event .webhook-event-log-link:focus-visible {
-        color: var(--color-primary-dark, #007aff);
-      }
-
-      .event .webhook-event-log-link:focus-visible {
-        outline: 1px solid currentColor;
-        outline-offset: 2px;
+      .event .webhook-event-url:hover {
+        text-decoration: none;
       }
 
       .event p {
