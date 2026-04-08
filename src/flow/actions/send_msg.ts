@@ -65,6 +65,7 @@ export const send_msg: ActionConfig = {
       required: true,
       evaluated: true,
       placeholder: 'Type your message here...',
+      maxLength: 10000,
       maxAttachments: 10,
       accept: '',
       endpoint: '/api/v2/media.json',

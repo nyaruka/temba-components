@@ -221,10 +221,23 @@ function getActionSearchTexts(action: Action): string[] {
   return texts;
 }
 
-function getTableMessageSearchTexts(action: SendMsg): string[] {
+function getTableSearchTexts(action: Action): string[] {
   const texts: string[] = [];
-  if (action.text) texts.push(action.text);
-  if (action.quick_replies) texts.push(...action.quick_replies);
+  const config = ACTION_CONFIG[action.type];
+  if (!config?.localizable) return texts;
+  const a = action as Record<string, any>;
+  for (const key of config.localizable) {
+    const val = a[key];
+    if (typeof val === 'string' && val.trim()) {
+      texts.push(val);
+    } else if (Array.isArray(val)) {
+      for (const item of val) {
+        if (typeof item === 'string' && item.trim()) {
+          texts.push(item);
+        }
+      }
+    }
+  }
   return texts;
 }
 
@@ -729,20 +742,37 @@ export class FlowSearch extends LitElement {
       const nodeUI = this.definition._ui?.nodes[node.uuid];
       const nodeType = nodeUI?.type || 'execute_actions';
 
-      // Message table rows: one row per send_msg action
+      // Message table rows: one row per action with localizable fields
       if (node.actions) {
         for (const action of node.actions) {
-          if (action.type !== 'send_msg') {
+          const actionConfig = ACTION_CONFIG[action.type];
+          if (
+            action.type !== 'send_msg' &&
+            (!actionConfig?.localizable || actionConfig.localizable.length === 0)
+          ) {
             continue;
           }
 
-          const actionConfig = ACTION_CONFIG[action.type];
-          const searchAction = localizeAction(
+          // Search both original and localized texts, but only add one result per action
+          const originalTexts = getTableSearchTexts(action);
+          const localizedAction = localizeAction(
             action,
             langLocalization?.[action.uuid]
-          ) as SendMsg;
-          const texts = getTableMessageSearchTexts(searchAction);
-          for (const text of texts) {
+          );
+          const localizedTexts = getTableSearchTexts(localizedAction);
+
+          // Deduplicate: combine both, originals first
+          const allTexts: string[] = [];
+          const seen = new Set<string>();
+          for (const text of [...originalTexts, ...localizedTexts]) {
+            if (!seen.has(text)) {
+              seen.add(text);
+              allTexts.push(text);
+            }
+          }
+
+          let found = false;
+          for (const text of allTexts) {
             const idx = text.toLowerCase().indexOf(query);
             if (idx !== -1) {
               results.push({
@@ -754,9 +784,11 @@ export class FlowSearch extends LitElement {
                 matchStart: idx,
                 matchLength: query.length
               });
+              found = true;
               break;
             }
           }
+          if (found) continue;
         }
       }
 
