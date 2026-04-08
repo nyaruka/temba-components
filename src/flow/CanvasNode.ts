@@ -361,6 +361,9 @@ export class CanvasNode extends RapidElement {
 
       .router .body {
         padding: 0.75em;
+      }
+
+      .router .body > div {
         max-width: 180px;
       }
 
@@ -368,7 +371,32 @@ export class CanvasNode extends RapidElement {
         font-weight: 500;
         display: inline-block;
       }
-      
+
+      .router {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .rules-count {
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #fff8dc;
+        border-radius: 10px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #333;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        box-sizing: border-box;
+      }
+
       .exit-wrapper {
         display: flex;
         justify-content: center;
@@ -1611,9 +1639,10 @@ export class CanvasNode extends RapidElement {
       ? ACTION_GROUP_METADATA[config.group]?.color ||
         SPLIT_GROUP_METADATA[config.group]?.color
       : '#aaaaaa';
+    const untranslatedRules = this.getUntranslatedRulesCount();
     return html`<div
       class="cn-title ${isRemoving ? 'removing' : ''}"
-      style="background:${color}"
+      style="background:${color}; position: relative;"
     >
       <div class="title-spacer"></div>
       <div class="name">
@@ -1630,6 +1659,9 @@ export class CanvasNode extends RapidElement {
       >
         ✕
       </div>
+      ${untranslatedRules > 0
+        ? html`<div class="rules-count">${untranslatedRules}</div>`
+        : null}
     </div>`;
   }
 
@@ -1750,6 +1782,21 @@ export class CanvasNode extends RapidElement {
     }
 
     return result;
+  }
+
+  private getUntranslatedRulesCount(): number {
+    if (!this.isTranslating || !this.ui?.config?.localizeRules) return 0;
+    const cases = this.node?.router?.cases;
+    if (!cases?.length) return 0;
+
+    const langLocalization =
+      this.flowDefinition?.localization?.[this.languageCode] || {};
+
+    return cases.filter((c) => {
+      if (!c.arguments?.length || !c.arguments.some((a) => a)) return false;
+      const localized = langLocalization[c.uuid]?.arguments;
+      return !Array.isArray(localized) || !localized.some((a: string) => a);
+    }).length;
   }
 
   private renderRouter(router: Router, ui: NodeUI) {
