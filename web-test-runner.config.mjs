@@ -282,6 +282,8 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
 
   await page.exposeFunction('click', async (element) => {
     if (page.isClosed()) return;
+    // reset mouse state to avoid "already pressed" errors
+    await page.mouse.up().catch(() => {});
     const frame = await page.frames().find((f) => {
       return true;
     });
