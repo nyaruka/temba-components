@@ -389,7 +389,12 @@ export const renderResthookCalled = (event: any): TemplateResult | null => {
 };
 
 export const renderWebhookCalled = (event: any): TemplateResult | null => {
-  return html`<div>Called <strong>${event.url}</strong></div>`;
+  const maxLen = 50;
+  const displayUrl =
+    event.url && event.url.length > maxLen
+      ? event.url.slice(0, maxLen) + '...'
+      : event.url;
+  return html`<div>Called <strong>${displayUrl}</strong></div>`;
 };
 
 export const renderServiceCalled = (event: any): TemplateResult | null => {
