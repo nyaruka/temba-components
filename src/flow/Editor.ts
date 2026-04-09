@@ -3716,6 +3716,11 @@ export class Editor extends RapidElement {
 
     this.currentDragIsCopy = false;
 
+    // The remove calls above set dirtyDate, but we're just reverting a
+    // mid-drag copy — there's nothing to save yet.  Clear it so no
+    // revision is created while the drag is still in progress.
+    getStore().getState().setDirtyDate(null);
+
     // Restore drag context to originals
     this.currentDragItem = { ...this.originalDragItem };
     if (this.originalSelectedItems) {
