@@ -26,9 +26,13 @@ export class StickyNote extends RapidElement {
   @property({ type: Boolean })
   private removing = false;
 
-  // On touch devices, contenteditable starts false to prevent Apple Pencil
-  // Scribble from hijacking touches. It is set to true on explicit tap.
-  private isTouchDevice = navigator.maxTouchPoints > 0;
+  // On Apple touch devices, contenteditable starts false to prevent Apple
+  // Pencil Scribble from hijacking touches. It is set to true on explicit tap.
+  // Only Apple platforms have Scribble, so we avoid disabling contenteditable
+  // on Windows touchscreen laptops where it would block mouse-based editing.
+  private isTouchDevice =
+    navigator.maxTouchPoints > 0 &&
+    /iPad|iPhone|Macintosh/.test(navigator.userAgent);
   private editingField: HTMLElement | null = null;
   private removalTimeout: number | null = null;
 
