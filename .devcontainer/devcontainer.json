@@ -3,7 +3,9 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "features": {},
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   "forwardPorts": [
     3010
   ],
@@ -19,8 +21,12 @@
     "source=${localEnv:NYARUKA_HOME}/temba-components,target=/workspaces/temba-components,type=bind,consistency=cached",
     "source=${localEnv:WORKTREES},target=/workspaces/worktrees,type=bind,consistency=cached",
     "source=temba-node-modules,target=/workspaces/temba-components/node_modules,type=volume",
-    "source=temba-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
+    "source=temba-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume",
+    "source=${localEnv:HOME}/.config/gh,target=/home/node/.config/gh,type=bind,readonly",
+    "source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,type=bind,readonly",
+    "source=${localEnv:HOME}/.gitconfig,target=/home/node/.gitconfig,type=bind,readonly"
   ],
+  "initializeCommand": "mkdir -p ~/.config/gh ~/.ssh && touch ~/.gitconfig",
   "workspaceMount": "",
   "workspaceFolder": "/workspaces/temba-components",
   "postCreateCommand": "sudo chown -R node:node /workspaces/temba-components/node_modules /home/node/.local/share/pnpm",
