@@ -4990,9 +4990,7 @@ export class Editor extends RapidElement {
     } = event.detail;
 
     // Track action external drag state for shift-copy support
-    if (!this.isActionExternalDrag && !this.actionDragIsCopy) {
-      this.showDragHint();
-    }
+    const isFirstExternalEvent = !this.isActionExternalDrag;
     this.isActionExternalDrag = true;
     this.actionDragLastDetail = {
       action,
@@ -5003,6 +5001,19 @@ export class Editor extends RapidElement {
       actionHeight,
       isLastAction
     };
+
+    // Initialize copy mode from current shift state (handles shift held before drag)
+    if (isFirstExternalEvent) {
+      const shiftHeld =
+        this.querySelector('#canvas')?.classList.contains('shift-held') ??
+        false;
+      if (shiftHeld) {
+        this.actionDragIsCopy = true;
+        this.showActionOriginal(true);
+      } else {
+        this.showDragHint();
+      }
+    }
 
     // Check if mouse is over another execute_actions node
     const targetNode = this.getNodeAtPosition(mouseX, mouseY);
@@ -5248,6 +5259,7 @@ export class Editor extends RapidElement {
     this.isActionExternalDrag = false;
     this.actionDragIsCopy = false;
     this.actionDragLastDetail = null;
+    this.previousActionDragTargetNodeUuid = null;
     this.hideDragHint();
 
     // Check if we're dropping on an existing execute_actions node
