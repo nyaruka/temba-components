@@ -3864,7 +3864,7 @@ export class Editor extends RapidElement {
             (editor.scrollLeft + editor.clientWidth + scrollDx) / this.zoom;
           const neededHeight =
             (editor.scrollTop + editor.clientHeight + scrollDy) / this.zoom;
-          getStore().getState().expandCanvas(neededWidth, neededHeight);
+          getStore()?.getState()?.expandCanvas(neededWidth, neededHeight);
         }
 
         editor.scrollLeft += scrollDx;
