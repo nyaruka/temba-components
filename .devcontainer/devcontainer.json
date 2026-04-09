@@ -26,6 +26,7 @@
     "source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,type=bind,readonly",
     "source=${localEnv:HOME}/.gitconfig,target=/home/node/.gitconfig,type=bind,readonly"
   ],
+  "initializeCommand": "mkdir -p ~/.config/gh ~/.ssh && touch ~/.gitconfig",
   "workspaceMount": "",
   "workspaceFolder": "/workspaces/temba-components",
   "postCreateCommand": "sudo chown -R node:node /workspaces/temba-components/node_modules /home/node/.local/share/pnpm",
