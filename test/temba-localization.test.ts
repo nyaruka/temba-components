@@ -77,18 +77,25 @@ describe('Localization Editing', () => {
     }
   });
 
+  const getToolbar = async (flowEditor: Editor) => {
+    const toolbar = flowEditor.querySelector('temba-editor-toolbar') as any;
+    if (toolbar) await toolbar.updateComplete;
+    return toolbar;
+  };
+
   const selectLanguageInToolbar = async (
     flowEditor: Editor,
     languageName: string,
     languageCode: string
   ): Promise<void> => {
+    const toolbar = await getToolbar(flowEditor);
     // Open language options dropdown
-    const languageBtn = flowEditor.querySelector('#language-btn') as HTMLElement;
+    const languageBtn = toolbar.shadowRoot.querySelector('#language-btn') as HTMLElement;
     languageBtn.click();
-    await flowEditor.updateComplete;
+    await toolbar.updateComplete;
 
-    // Select the language via the handler
-    (flowEditor as any).handleLanguageOptionSelected(
+    // Select the language via the toolbar's handler
+    (toolbar as any).handleLanguageOptionSelected(
       new CustomEvent('temba-selection', {
         detail: { selected: { name: languageName, value: languageCode } }
       })
@@ -170,19 +177,21 @@ describe('Localization Editing', () => {
     await editor.updateComplete;
   });
 
-  it('should render language controls in toolbar when translations exist', () => {
-    const languageBtn = editor.querySelector('#language-btn');
+  it('should render language controls in toolbar when translations exist', async () => {
+    const toolbar = await getToolbar(editor);
+    const languageBtn = toolbar.shadowRoot.querySelector('#language-btn');
     expect(languageBtn).to.exist;
   });
 
   it('should show language options with non-base languages', async () => {
+    const toolbar = await getToolbar(editor);
     // Open language dropdown
-    const languageBtn = editor.querySelector('#language-btn') as HTMLElement;
+    const languageBtn = toolbar.shadowRoot.querySelector('#language-btn') as HTMLElement;
     languageBtn.click();
-    await editor.updateComplete;
+    await toolbar.updateComplete;
 
     // The options should contain non-base languages
-    const options = editor.querySelector('temba-options');
+    const options = toolbar.shadowRoot.querySelector('temba-options');
     expect(options).to.exist;
   });
 
@@ -259,7 +268,7 @@ describe('Localization Editing', () => {
   it.skip('should open auto translate dialog when clicking auto translate', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
-    const autoTranslateBtn = editor.querySelector(
+    const autoTranslateBtn = editor.querySelector('temba-editor-toolbar')?.shadowRoot?.querySelector(
       '.toolbar-btn[aria-label="Auto translate"]'
     ) as HTMLButtonElement;
     expect(autoTranslateBtn).to.exist;

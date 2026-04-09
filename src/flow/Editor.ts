@@ -71,8 +71,8 @@ import { Dialog } from '../layout/Dialog';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import { FloatingWindow } from '../layout/FloatingWindow';
-import { Icon } from '../Icons';
 import { FlowSearch, SearchResult } from './FlowSearch';
+import { PRIMARY_LANGUAGE_OPTION_VALUE } from './EditorToolbar';
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -135,7 +135,15 @@ interface LocalizationUpdate {
 }
 
 const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
-const PRIMARY_LANGUAGE_OPTION_VALUE = '__primary_language__';
+export type ToolbarAction =
+  | { action: 'view-change'; view: 'flow' | 'table' }
+  | { action: 'zoom-in' }
+  | { action: 'zoom-out' }
+  | { action: 'zoom-to-fit' }
+  | { action: 'zoom-to-full' }
+  | { action: 'revisions' }
+  | { action: 'search' }
+  | { action: 'language-change'; isPrimary?: boolean; languageCode?: string };
 const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 
 // How long the pending-changes auto-save countdown runs (in ms).
@@ -460,9 +468,6 @@ export class Editor extends RapidElement {
   showMessageTable = false;
 
   @state()
-  private showLanguageOptions = false;
-
-  @state()
   private isCreatingNewNode = false;
 
   @state()
@@ -548,198 +553,6 @@ export class Editor extends RapidElement {
         display: flex;
         flex-direction: column;
         min-height: 0;
-      }
-
-      .editor-toolbar {
-        --toolbar-control-height: 28px;
-        --toolbar-translation-control-height: 28px;
-        display: flex;
-        align-items: center;
-        padding: 6px 12px;
-        background: #fff;
-        border-bottom: 1px solid #e8e8e8;
-        flex-shrink: 0;
-        gap: 8px;
-      }
-
-      .toolbar-left {
-        display: flex;
-        align-items: center;
-        gap: 2px;
-      }
-
-      .toolbar-right {
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        margin-left: auto;
-      }
-
-      .toolbar-btn {
-        width: var(--toolbar-control-height);
-        height: var(--toolbar-control-height);
-        border: none;
-        background: transparent;
-        border-radius: var(--curvature);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        color: #888;
-        font-size: 16px;
-        line-height: 1;
-        outline: none;
-      }
-
-      .toolbar-btn:focus {
-        outline: none;
-      }
-
-      .toolbar-btn:focus-visible {
-        outline: 2px solid #0064c8;
-        outline-offset: 2px;
-      }
-
-      .toolbar-btn:hover {
-        background: rgba(0, 0, 0, 0.06);
-        color: #555;
-      }
-
-      .toolbar-btn:disabled {
-        opacity: 0.3;
-        cursor: default;
-        background: transparent;
-      }
-
-      .toolbar-btn.active {
-        background: rgba(0, 100, 200, 0.1);
-        color: #0064c8;
-      }
-
-      .toolbar-btn.active:hover {
-        background: rgba(0, 100, 200, 0.15);
-      }
-
-      .toolbar-tip {
-        display: flex;
-        align-items: center;
-      }
-
-      .toolbar-divider {
-        width: 1px;
-        height: 16px;
-        background: #e0e0e0;
-        margin: 0 4px;
-      }
-
-      .toolbar-group {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        height: var(--toolbar-control-height);
-        box-sizing: border-box;
-        padding: 0 3px;
-        border: 1px solid #d7dce2;
-        border-radius: calc(var(--curvature) + 2px);
-        background: #f7f9fb;
-      }
-
-      .toolbar-group-divider {
-        width: 1px;
-        height: 18px;
-        background: #d7dce2;
-        margin: 0 2px;
-      }
-
-      .toolbar-language {
-        position: relative;
-        display: flex;
-        align-items: center;
-      }
-
-      .toolbar-language-group {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-left: 2px;
-      }
-
-      .toolbar-zoom-group {
-        gap: 2px;
-      }
-
-      .language-pill {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: #e9eef4;
-        color: #0064c8;
-        height: var(--toolbar-translation-control-height);
-        padding: 0 8px;
-        border-radius: var(--curvature);
-        box-sizing: border-box;
-        font-size: 13px;
-        font-weight: 400;
-        white-space: nowrap;
-        cursor: pointer;
-        --icon-color: #0064c8;
-        --icon-size: 16px;
-        border: none;
-        outline: none;
-      }
-
-      .language-pill:hover {
-        filter: brightness(1.04);
-      }
-
-      .language-pill.primary {
-        background: #fff;
-        border: 1px solid #d7dce2;
-      }
-
-      .language-pill.complete {
-        background: #d4f5e0;
-        color: #1a7f37;
-        --icon-color: #1a7f37;
-      }
-
-      .language-pill-caret {
-        margin-left: 1px;
-        --icon-color: currentColor;
-        --icon-size: 12px;
-      }
-
-      .language-percent {
-        display: inline-block;
-        font-size: 12px;
-        font-weight: 700;
-        line-height: 1;
-        color: #0064c8;
-        white-space: nowrap;
-      }
-
-      .language-pill.complete .language-percent {
-        color: #1a7f37;
-      }
-
-      .toolbar-zoom-level {
-        font-size: 12px;
-        min-width: 40px;
-        text-align: center;
-        color: #555;
-        font-weight: 500;
-      }
-
-      .toolbar-translation {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .toolbar-btn.language-tool {
-        width: var(--toolbar-translation-control-height);
-        height: var(--toolbar-translation-control-height);
       }
 
       #editor {
@@ -6226,116 +6039,10 @@ export class Editor extends RapidElement {
     `;
   }
 
-  private handleLanguageIconClick(): void {
-    if (this.showLanguageOptions) {
-      this.showLanguageOptions = false;
-      return;
-    }
-    this.showLanguageOptions = true;
-    // Close on next click anywhere outside
-    requestAnimationFrame(() => {
-      const close = () => {
-        this.showLanguageOptions = false;
-        document.removeEventListener('click', close);
-      };
-      document.addEventListener('click', close, { once: true });
-    });
-  }
-
-  private handleLanguageOptionSelected(event: CustomEvent): void {
-    if (!this.showLanguageOptions) return;
-    const selected = event.detail?.selected;
-    if (selected?.value === PRIMARY_LANGUAGE_OPTION_VALUE) {
-      this.handleLanguageChange(this.definition?.language || '');
-    } else if (selected?.value) {
-      this.handleLanguageChange(selected.value);
-    }
-    this.showLanguageOptions = false;
-  }
-
-  private renderToolbarTip(
-    text: string | TemplateResult,
-    content: TemplateResult
-  ): TemplateResult {
-    const tipContent = text;
-    return html`
-      <temba-tip
-        class="toolbar-tip"
-        .text=${typeof tipContent === 'string' ? tipContent : ''}
-        .content=${typeof tipContent === 'string' ? null : tipContent}
-        position="top"
-      >
-        ${content}
-      </temba-tip>
-    `;
-  }
-
-  private isMacPlatform(): boolean {
-    return (
-      typeof navigator !== 'undefined' &&
-      /Mac|iPod|iPhone|iPad/.test(navigator.platform)
-    );
-  }
-
-  private getSearchShortcutLabel(): string {
-    return this.isMacPlatform() ? '⌘F' : 'Ctrl+F';
-  }
-
-  private renderToolbarShortcutLabel(
-    label: string,
-    shortcut: string
-  ): TemplateResult {
-    return html`<span style="display:inline-flex; align-items:center; gap:8px;">
-      <span>${label}</span>
-      <kbd>${shortcut}</kbd>
-    </span>`;
-  }
-
-  private renderToolbarLanguageOption(
-    option: { name: string; value: string; percent?: number },
-    selected: boolean
-  ): TemplateResult {
-    if (option.value === PRIMARY_LANGUAGE_OPTION_VALUE) {
-      const primaryBackground = selected ? '#e1e8ef' : '#edf1f5';
-      return html`
-        <div
-          style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:${primaryBackground}; color:#2f3f52; border-radius:4px; padding:6px 10px;"
-        >
-          <span>${option.name}</span>
-          <span
-            style="display:inline-flex; align-items:center; border-radius:999px; background:rgba(47, 63, 82, 0.12); color:#2f3f52; font-size:10px; font-weight:700; line-height:1; padding:3px 7px;"
-            >Original</span
-          >
-        </div>
-      `;
-    }
-
-    const isComplete = option.percent === 100;
-    const optionBg = isComplete ? '#d4f5e0' : '';
-    const optionHoverBg = isComplete ? '#c0edce' : '';
-    const optionRadius = isComplete ? 'border-radius:4px;' : '';
-    const percentColor = isComplete ? 'color:#1a7f37;' : 'color:#5f6b7a;';
-
-    return html`
-      <div
-        style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; ${optionBg ? `background:${optionBg};` : ''} ${optionRadius}"
-        @mouseenter=${isComplete ? (e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = optionHoverBg; } : null}
-        @mouseleave=${isComplete ? (e: MouseEvent) => { (e.currentTarget as HTMLElement).style.background = optionBg; } : null}
-      >
-        <span style="${isComplete ? 'color:#1a7f37;' : ''}">${option.name}</span>
-        <span style="font-size:11px; font-weight:600; ${percentColor}"
-          >${option.percent ?? 0}%</span
-        >
-      </div>
-    `;
-  }
-
-  private renderToolbar(): TemplateResult {
+  private renderToolbarElement(): TemplateResult {
     const languages = this.getLocalizationLanguages();
     const availableLanguages = this.getAvailableLanguages();
     const baseLanguage = this.definition?.language;
-    const languageOptionCount = (baseLanguage ? 1 : 0) + languages.length;
-    const showLanguageControls = languageOptionCount > 1;
     const baseLanguageName =
       availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
       baseLanguage ||
@@ -6357,11 +6064,6 @@ export class Editor extends RapidElement {
     const percent = Math.round(
       (progress.localized / Math.max(progress.total, 1)) * 100
     );
-    const hasTranslations = progress.total > 0;
-    const showLocalizationTools = Boolean(activeLanguage);
-    const searchTargetLabel = this.showMessageTable
-      ? 'Search table'
-      : 'Search flow';
     const languageOptions = [
       {
         name: baseLanguageName,
@@ -6383,179 +6085,56 @@ export class Editor extends RapidElement {
     ];
 
     return html`
-      <div class="editor-toolbar">
-        <div class="toolbar-left">
-          ${this.renderToolbarTip(
-            'Flow View',
-            html`
-              <button
-                class="toolbar-btn ${!this.showMessageTable ? 'active' : ''}"
-                @click=${() => { this.showMessageTable = false; }}
-                aria-label="Flow View"
-              >
-                <temba-icon name="flow" size="1"></temba-icon>
-              </button>
-            `
-          )}
-          ${this.renderToolbarTip(
-            'Table View',
-            html`
-              <button
-                class="toolbar-btn ${this.showMessageTable ? 'active' : ''}"
-                @click=${() => { this.showMessageTable = true; }}
-                aria-label="Table View"
-              >
-                <temba-icon name=${Icon.quick_replies} size="1"></temba-icon>
-              </button>
-            `
-          )}
-          ${showLanguageControls
-            ? html`
-              <div class="toolbar-divider"></div>
-              <div class="toolbar-language-group">
-                <div class="toolbar-language">
-                  ${this.renderToolbarTip(
-                    'Change language',
-                    html`
-                      <button
-                        class="language-pill ${isBaseSelected ? 'primary' : percent === 100 ? 'complete' : ''}"
-                        id="language-btn"
-                        @click=${this.handleLanguageIconClick}
-                        aria-label="Change language"
-                      >
-                        <temba-icon name=${Icon.language}></temba-icon>
-                        <span>${currentLanguage.name}</span>
-                        ${!isBaseSelected
-                          ? html`<span class="language-percent">${percent}%</span>`
-                          : ''}
-                        <temba-icon
-                          class="language-pill-caret"
-                          name=${this.showLanguageOptions
-                            ? Icon.arrow_up
-                            : Icon.arrow_down}
-                        ></temba-icon>
-                      </button>
-                    `
-                  )}
-                  <temba-options
-                    .anchorTo=${this.querySelector('#language-btn') as HTMLElement}
-                    .options=${languageOptions}
-                    .renderOption=${this.renderToolbarLanguageOption}
-                    ?visible=${this.showLanguageOptions}
-                    @temba-selection=${this.handleLanguageOptionSelected}
-                    style="--temba-options-option-margin:4px; --temba-options-option-padding:0; --temba-options-option-radius:4px;"
-                    min-width="230"
-                  ></temba-options>
-                </div>
-                ${showLocalizationTools
-                  ? this.renderToolbarTranslationTools(hasTranslations)
-                  : ''}
-              </div>
-            `
-            : ''}
-        </div>
-        <div class="toolbar-right">
-          ${!this.showMessageTable ? html`
-            ${this.renderToolbarTip(
-              'Zoom to fit',
-              html`
-                <button
-                  class="toolbar-btn"
-                  @click=${this.zoomToFit}
-                  ?disabled=${!this.zoomInitialized || this.zoomFitted}
-                  aria-label="Zoom to fit"
-                >
-                  <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
-                </button>
-              `
-            )}
-            <div class="toolbar-divider"></div>
-            ${this.renderToolbarTip(
-              'Zoom out',
-              html`
-                <button
-                  class="toolbar-btn"
-                  @click=${this.zoomOut}
-                  ?disabled=${!this.zoomInitialized || this.zoom <= 0.3}
-                  aria-label="Zoom out"
-                >
-                  −
-                </button>
-              `
-            )}
-            <span class="toolbar-zoom-level">${this.zoomInitialized ? `${Math.round(this.zoom * 100)}%` : ''}</span>
-            ${this.renderToolbarTip(
-              'Zoom in',
-              html`
-                <button
-                  class="toolbar-btn"
-                  @click=${this.zoomIn}
-                  ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-                  aria-label="Zoom in"
-                >
-                  +
-                </button>
-              `
-            )}
-            <div class="toolbar-divider"></div>
-            ${this.renderToolbarTip(
-              'Zoom to 100%',
-              html`
-                <button
-                  class="toolbar-btn"
-                  @click=${this.zoomToFull}
-                  ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
-                  aria-label="Zoom to 100%"
-                >
-                  <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
-                </button>
-              `
-            )}
-            <div class="toolbar-divider"></div>
-          ` : ''}
-            ${this.renderToolbarTip(
-              'Revisions',
-              html`
-                <button
-                class="toolbar-btn ${!this.revisionsWindowHidden
-                  ? 'active'
-                  : ''}"
-                @click=${this.handleRevisionsTabClick}
-                aria-label="Revisions"
-              >
-                <temba-icon
-                  name=${this.isSaving ? 'progress_spinner' : 'revisions'}
-                  size="1"
-                  ?spin=${this.isSaving}
-                ></temba-icon>
-                </button>
-              `
-            )}
-            <div class="toolbar-divider"></div>
-            ${this.renderToolbarTip(
-              this.renderToolbarShortcutLabel(
-                searchTargetLabel,
-                this.getSearchShortcutLabel()
-              ),
-              html`
-                <button
-                  class="toolbar-btn"
-                  @click=${this.openFlowSearch}
-                  ?disabled=${!!this.viewingRevision}
-                  aria-label=${searchTargetLabel}
-                >
-                  <temba-icon name=${Icon.search} size="1"></temba-icon>
-                </button>
-              `
-            )}
-        </div>
-      </div>
+      <temba-editor-toolbar
+        ?message-view=${this.showMessageTable}
+        .zoom=${this.zoom}
+        ?zoom-initialized=${this.zoomInitialized}
+        ?zoom-fitted=${this.zoomFitted}
+        ?revisions-active=${!this.revisionsWindowHidden}
+        ?is-saving=${this.isSaving}
+        ?search-disabled=${!!this.viewingRevision}
+        .languageOptions=${languageOptions}
+        current-language-name=${currentLanguage.name}
+        ?is-base-language=${isBaseSelected}
+        .languagePercent=${percent}
+        ?show-localization-tools=${Boolean(activeLanguage)}
+        @temba-button-clicked=${this.handleToolbarAction}
+      ></temba-editor-toolbar>
     `;
   }
 
-  private renderToolbarTranslationTools(_hasTranslations: boolean): TemplateResult {
-    // auto translate button hidden pending backend changes
-    return html``;
+  private handleToolbarAction(e: CustomEvent): void {
+    const detail = e.detail as ToolbarAction;
+    switch (detail.action) {
+      case 'view-change':
+        this.showMessageTable = detail.view === 'table';
+        break;
+      case 'zoom-in':
+        this.zoomIn();
+        break;
+      case 'zoom-out':
+        this.zoomOut();
+        break;
+      case 'zoom-to-fit':
+        this.zoomToFit();
+        break;
+      case 'zoom-to-full':
+        this.zoomToFull();
+        break;
+      case 'revisions':
+        this.handleRevisionsTabClick();
+        break;
+      case 'search':
+        this.openFlowSearch();
+        break;
+      case 'language-change':
+        if (detail.isPrimary) {
+          this.handleLanguageChange(this.definition?.language || '');
+        } else if (detail.languageCode) {
+          this.handleLanguageChange(detail.languageCode);
+        }
+        break;
+    }
   }
 
   /**
@@ -6714,7 +6293,7 @@ export class Editor extends RapidElement {
     return html`${style} ${this.renderIssuesWindow()}
       ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
       <div id="editor-container">
-        ${this.renderToolbar()}
+        ${this.renderToolbarElement()}
         <div id="editor">
           ${this.showMessageTable
             ? html`<temba-message-table></temba-message-table>`

@@ -1,12 +1,23 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
+import { EditorToolbar } from '../src/flow/EditorToolbar';
 import { Plumber } from '../src/flow/Plumber';
 import { stub, restore, useFakeTimers } from 'sinon';
 import { zustand } from '../src/store/AppState';
 import { TEMBA_COMPONENTS_VERSION } from '../src/version';
 
-// Register the component
+// Register the components
 customElements.define('temba-flow-editor', Editor);
+if (!customElements.get('temba-editor-toolbar')) {
+  customElements.define('temba-editor-toolbar', EditorToolbar);
+}
+
+async function getToolbarButton(editor: Editor, ariaLabel: string): Promise<HTMLElement | null> {
+  const toolbar = editor.querySelector('temba-editor-toolbar');
+  if (!toolbar) return null;
+  await (toolbar as any).updateComplete;
+  return toolbar.shadowRoot?.querySelector(`.toolbar-btn[aria-label="${ariaLabel}"]`) as HTMLElement | null;
+}
 
 describe('Editor', () => {
   let editor: Editor;
@@ -921,7 +932,7 @@ describe('Editor', () => {
       (editor as any).isSaving = false;
       await editor.updateComplete;
 
-      const btn = editor.querySelector('.toolbar-btn[aria-label="Revisions"]') as any;
+      const btn = await getToolbarButton(editor, 'Revisions');
       expect(btn).to.exist;
     });
 
@@ -988,7 +999,7 @@ describe('Editor', () => {
       (editor as any).isSaving = true;
       await editor.updateComplete;
 
-      const btn = editor.querySelector('.toolbar-btn[aria-label="Revisions"]') as any;
+      const btn = await getToolbarButton(editor, 'Revisions');
       expect(btn).to.exist;
       const icon = btn.querySelector('temba-icon');
       expect(icon.getAttribute('name')).to.equal('progress_spinner');
@@ -1030,7 +1041,7 @@ describe('Editor', () => {
       (editor as any).isSaving = false;
       await editor.updateComplete;
 
-      const btn = editor.querySelector('.toolbar-btn[aria-label="Revisions"]') as any;
+      const btn = await getToolbarButton(editor, 'Revisions');
       expect(btn).to.exist;
       const icon = btn.querySelector('temba-icon');
       expect(icon.getAttribute('name')).to.equal('revisions');
