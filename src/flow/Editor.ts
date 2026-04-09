@@ -269,6 +269,13 @@ export class Editor extends RapidElement {
   private currentDragIsCopy = false;
   private dragStartPos = { x: 0, y: 0 };
 
+  // Mid-drag shift toggle: remember originals so we can switch between move/copy
+  private originalDragItem: DraggableItem | null = null;
+  private originalSelectedItems: Set<string> | null = null;
+
+  // Drag hint tooltip
+  private dragHintTimer: ReturnType<typeof setTimeout> | null = null;
+
   // Public getter for drag state
   public get dragging(): boolean {
     return this.isDragging;
@@ -532,6 +539,8 @@ export class Editor extends RapidElement {
   private boundMouseUp = this.handleMouseUp.bind(this);
   private boundGlobalMouseDown = this.handleGlobalMouseDown.bind(this);
   private boundKeyDown = this.handleKeyDown.bind(this);
+  private boundKeyUp = this.handleKeyUp.bind(this);
+  private boundWindowBlur = this.handleWindowBlur.bind(this);
   private boundCanvasContextMenu = this.handleCanvasContextMenu.bind(this);
   private boundWheel = this.handleWheel.bind(this);
   private boundTouchMove = this.handleTouchMove.bind(this);
@@ -809,6 +818,10 @@ export class Editor extends RapidElement {
         transition: none !important;
       }
 
+      #canvas.shift-held {
+        --shift-held-cursor: copy;
+      }
+
       #canvas.viewing-revision {
         pointer-events: none;
       }
@@ -1041,6 +1054,10 @@ export class Editor extends RapidElement {
         outline: 3px solid #6298f0ff;
         outline-offset: 0px;
         border-radius: var(--curvature);
+      }
+
+      .draggable.selected.drag-copy {
+        outline: none;
       }
 
       /* Language banner replaced by toolbar language selector */
@@ -1432,6 +1449,36 @@ export class Editor extends RapidElement {
 
       .loupe-clone .node.execute-actions .add-action-button {
         opacity: 0.8;
+      }
+
+      .drag-hint {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100000;
+        pointer-events: none;
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(6px);
+        color: #555;
+        font-size: 18px;
+        font-weight: 300;
+        padding: 10px 32px;
+        border-radius: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        white-space: nowrap;
+        display: none;
+      }
+
+      .drag-hint.visible {
+        display: block;
+        animation: drag-hint-in 0.15s ease forwards;
+      }
+
+      @keyframes drag-hint-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
 
       .reflow-card {
@@ -2057,6 +2104,8 @@ export class Editor extends RapidElement {
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousedown', this.boundGlobalMouseDown);
     document.removeEventListener('keydown', this.boundKeyDown);
+    document.removeEventListener('keyup', this.boundKeyUp);
+    window.removeEventListener('blur', this.boundWindowBlur);
     document.removeEventListener('touchmove', this.boundTouchMove);
     document.removeEventListener('touchend', this.boundTouchEnd);
     document.removeEventListener('touchcancel', this.boundTouchCancel);
@@ -2089,6 +2138,8 @@ export class Editor extends RapidElement {
     document.addEventListener('mouseup', this.boundMouseUp);
     document.addEventListener('mousedown', this.boundGlobalMouseDown);
     document.addEventListener('keydown', this.boundKeyDown);
+    document.addEventListener('keyup', this.boundKeyUp);
+    window.addEventListener('blur', this.boundWindowBlur);
     document.addEventListener('touchmove', this.boundTouchMove, {
       passive: false
     });
@@ -2422,7 +2473,44 @@ export class Editor extends RapidElement {
     }
   }
 
+  private showDragHint(): void {
+    if (this.isReadOnly()) return;
+    const hint = this.querySelector('#drag-hint') as HTMLElement;
+    if (!hint) return;
+    this.dragHintTimer = setTimeout(() => {
+      hint.classList.add('visible');
+      this.dragHintTimer = null;
+    }, 600);
+  }
+
+  private hideDragHint(): void {
+    if (this.dragHintTimer) {
+      clearTimeout(this.dragHintTimer);
+      this.dragHintTimer = null;
+    }
+    const hint = this.querySelector('#drag-hint') as HTMLElement;
+    if (hint) {
+      hint.classList.remove('visible');
+    }
+  }
+
   private handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Shift') {
+      this.querySelector('#canvas')?.classList.add('shift-held');
+
+      // Toggle to copy mode mid-drag
+      if (this.isDragging && !this.currentDragIsCopy) {
+        this.hideDragHint();
+        this.performShiftDragCopy();
+        // Clone elements aren't in the DOM until Lit re-renders;
+        // schedule position update after the next frame.
+        requestAnimationFrame(() => {
+          this.markCopyElements();
+          this.updateDragPositions();
+        });
+      }
+    }
+
     // Cmd/Ctrl+F opens flow search (unless a dialog is already open)
     if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
       event.preventDefault();
@@ -2450,6 +2538,22 @@ export class Editor extends RapidElement {
       this.selectedItems.clear();
       this.requestUpdate();
     }
+  }
+
+  private handleKeyUp(event: KeyboardEvent): void {
+    if (event.key === 'Shift') {
+      this.querySelector('#canvas')?.classList.remove('shift-held');
+
+      // Toggle back to move mode mid-drag
+      if (this.isDragging && this.currentDragIsCopy) {
+        this.revertShiftDragCopy();
+        requestAnimationFrame(() => this.updateDragPositions());
+      }
+    }
+  }
+
+  private handleWindowBlur(): void {
+    this.querySelector('#canvas')?.classList.remove('shift-held');
   }
 
   // --- Flow settings cookie (LRU, max 50 flows) ---
@@ -3676,9 +3780,15 @@ export class Editor extends RapidElement {
       this.isDragging = true;
       this.startAutoScroll();
 
-      if (this.shiftDragCopy) {
+      // Snapshot the original drag context before any copy occurs
+      this.originalDragItem = { ...this.currentDragItem };
+      this.originalSelectedItems = new Set(this.selectedItems);
+
+      if (this.shiftDragCopy || event.shiftKey) {
         this.performShiftDragCopy();
         this.shiftDragCopy = false;
+      } else {
+        this.showDragHint();
       }
     }
 
@@ -3689,14 +3799,14 @@ export class Editor extends RapidElement {
   }
 
   private performShiftDragCopy(): void {
-    if (!this.currentDragItem) return;
+    if (!this.originalDragItem) return;
 
-    // Determine which items to copy (same logic as itemsToMove)
+    // Always use the original items as the source for copying
     const itemsToCopy =
-      this.selectedItems.has(this.currentDragItem.uuid) &&
-      this.selectedItems.size > 1
-        ? Array.from(this.selectedItems)
-        : [this.currentDragItem.uuid];
+      this.originalSelectedItems?.has(this.originalDragItem.uuid) &&
+      (this.originalSelectedItems?.size ?? 0) > 1
+        ? Array.from(this.originalSelectedItems!)
+        : [this.originalDragItem.uuid];
 
     if (itemsToCopy.length === 0) return;
 
@@ -3712,23 +3822,92 @@ export class Editor extends RapidElement {
     }
     this.currentDragIsCopy = true;
 
+    // Snap original items back to their start positions.
+    // Set position while 'dragging' class is still applied so
+    // transitions are disabled and the move is instant.
+    for (const uuid of itemsToCopy) {
+      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      const type =
+        element?.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
+      const position = this.getPosition(uuid, type);
+      if (element && position) {
+        element.style.left = `${position.left}px`;
+        element.style.top = `${position.top}px`;
+      }
+    }
+    this.plumber.revalidate(itemsToCopy);
+    // Force layout so the position is committed with transitions
+    // disabled, then remove the dragging class.
+    for (const uuid of itemsToCopy) {
+      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      if (element) {
+        // Reading offsetHeight forces a synchronous layout
+        void element.offsetHeight;
+        element.classList.remove('dragging');
+      }
+    }
+
     // Update drag item to reference the copy
-    const newDragUuid = uuidMapping[this.currentDragItem.uuid];
+    const newDragUuid = uuidMapping[this.originalDragItem.uuid];
     if (newDragUuid) {
       this.currentDragItem = {
-        ...this.currentDragItem,
+        ...this.originalDragItem,
         uuid: newDragUuid
       };
     }
 
     // Update selected items to reference copies
-    if (this.selectedItems.size > 1) {
+    if ((this.originalSelectedItems?.size ?? 0) > 1) {
       const newSelectedItems = new Set<string>();
-      for (const uuid of this.selectedItems) {
+      for (const uuid of this.originalSelectedItems!) {
         const newUuid = uuidMapping[uuid];
         newSelectedItems.add(newUuid || uuid);
       }
       this.selectedItems = newSelectedItems;
+    }
+  }
+
+  private markCopyElements(): void {
+    for (const uuid of this.copiedItemUuids) {
+      const el = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      el?.classList.add('drag-copy');
+    }
+  }
+
+  private unmarkCopyElements(): void {
+    for (const uuid of this.copiedItemUuids) {
+      const el = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      el?.classList.remove('drag-copy');
+    }
+  }
+
+  private revertShiftDragCopy(): void {
+    if (!this.originalDragItem) return;
+
+    // Remove the cloned items
+    if (this.copiedItemUuids.length > 0) {
+      const nodeUuids = this.copiedItemUuids.filter((uuid) =>
+        this.definition.nodes.some((n) => n.uuid === uuid)
+      );
+      const stickyUuids = this.copiedItemUuids.filter(
+        (uuid) => this.definition._ui?.stickies?.[uuid]
+      );
+
+      if (nodeUuids.length > 0) {
+        getStore().getState().removeNodes(nodeUuids);
+      }
+      if (stickyUuids.length > 0) {
+        getStore().getState().removeStickyNotes(stickyUuids);
+      }
+      this.copiedItemUuids = [];
+    }
+
+    this.currentDragIsCopy = false;
+
+    // Restore drag context to originals
+    this.currentDragItem = { ...this.originalDragItem };
+    if (this.originalSelectedItems) {
+      this.selectedItems = new Set(this.originalSelectedItems);
     }
   }
 
@@ -3763,11 +3942,15 @@ export class Editor extends RapidElement {
           element.style.left = `${position.left + deltaX}px`;
           element.style.top = `${position.top + deltaY}px`;
           element.classList.add('dragging');
+          if (this.currentDragIsCopy) {
+            element.classList.add('drag-copy');
+          }
         }
       }
     });
 
     this.plumber.revalidate(itemsToMove);
+
   }
 
   private startAutoScroll(): void {
@@ -3916,10 +4099,10 @@ export class Editor extends RapidElement {
           const newPosition = { left: snappedLeft, top: snappedTop };
           newPositions[uuid] = newPosition;
 
-          // Remove dragging class
+          // Remove dragging/copy classes
           const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
           if (element) {
-            element.classList.remove('dragging');
+            element.classList.remove('dragging', 'drag-copy');
             element.style.left = `${snappedLeft}px`;
             element.style.top = `${snappedTop}px`;
           }
@@ -3953,11 +4136,14 @@ export class Editor extends RapidElement {
     }
 
     // Reset all drag state
+    this.hideDragHint();
     this.isDragging = false;
     this.isMouseDown = false;
     this.shiftDragCopy = false;
     this.currentDragIsCopy = false;
     this.currentDragItem = null;
+    this.originalDragItem = null;
+    this.originalSelectedItems = null;
     this.canvasMouseDown = false;
     this.autoScrollDeltaX = 0;
     this.autoScrollDeltaY = 0;
@@ -6845,6 +7031,7 @@ export class Editor extends RapidElement {
           `}
         </div>
         ${this.renderPendingCard()}
+        <div class="drag-hint" id="drag-hint">Hold ⇧ to duplicate</div>
       </div>
       <div class="loupe" id="loupe">
         <div class="loupe-content" id="loupe-content"></div>
