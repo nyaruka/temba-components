@@ -5,7 +5,8 @@ import { ACTION_GROUP_METADATA, SPLIT_GROUP_METADATA } from './types';
 import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
-import { getClasses } from '../utils';
+import { generateUUID, getClasses } from '../utils';
+import { SortableList } from '../list/SortableList';
 import { isRightClick, localizeAction, renderClamped } from './utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
@@ -594,6 +595,8 @@ export class CanvasNode extends RapidElement {
       this.handleExternalActionDragLeave.bind(this);
     this.handleActionShowGhost = this.handleActionShowGhost.bind(this);
     this.handleActionHideGhost = this.handleActionHideGhost.bind(this);
+    this.handleActionShowOriginal = this.handleActionShowOriginal.bind(this);
+    this.handleActionHideOriginal = this.handleActionHideOriginal.bind(this);
   }
 
   connectedCallback() {
@@ -619,6 +622,14 @@ export class CanvasNode extends RapidElement {
     this.addEventListener(
       'action-hide-ghost',
       this.handleActionHideGhost as EventListener
+    );
+    this.addEventListener(
+      'action-show-original',
+      this.handleActionShowOriginal as EventListener
+    );
+    this.addEventListener(
+      'action-hide-original',
+      this.handleActionHideOriginal as EventListener
     );
 
     // Observe size changes to revalidate plumbing connections
@@ -730,6 +741,14 @@ export class CanvasNode extends RapidElement {
     this.removeEventListener(
       'action-hide-ghost',
       this.handleActionHideGhost as EventListener
+    );
+    this.removeEventListener(
+      'action-show-original',
+      this.handleActionShowOriginal as EventListener
+    );
+    this.removeEventListener(
+      'action-hide-original',
+      this.handleActionHideOriginal as EventListener
     );
 
     // Clear any pending exit removal timeouts
@@ -1551,11 +1570,32 @@ export class CanvasNode extends RapidElement {
     }
   }
 
+  private handleActionShowOriginal(_event: CustomEvent): void {
+    const sortableList = this.querySelector(
+      'temba-sortable-list'
+    ) as SortableList;
+    sortableList?.setOriginalVisible(true);
+    this.showLastActionPlaceholder = false;
+    this.requestUpdate();
+  }
+
+  private handleActionHideOriginal(_event: CustomEvent): void {
+    const sortableList = this.querySelector(
+      'temba-sortable-list'
+    ) as SortableList;
+    sortableList?.setOriginalVisible(false);
+    // Restore the placeholder if this is the last action
+    if (this.node.actions.length === 1) {
+      this.showLastActionPlaceholder = true;
+    }
+    this.requestUpdate();
+  }
+
   private handleExternalActionDrop(event: CustomEvent): void {
     // Only handle if this is an execute_actions node
     if (this.ui.type !== 'execute_actions') return;
 
-    const { action, sourceNodeUuid, actionIndex } = event.detail;
+    const { action, sourceNodeUuid, actionIndex, isCopy } = event.detail;
 
     // Don't accept drops from the same node
     if (sourceNodeUuid === this.node.uuid) return;
@@ -1581,30 +1621,35 @@ export class CanvasNode extends RapidElement {
 
     // IMPORTANT: Add the action to this node FIRST, before removing from source
     // This ensures we don't lose the action if the source node gets deleted
+    const droppedAction = isCopy
+      ? { ...action, uuid: generateUUID() }
+      : action;
     const newActions = [...this.node.actions];
-    newActions.splice(dropIndex, 0, action);
+    newActions.splice(dropIndex, 0, droppedAction);
 
     const updatedNode = { ...this.node, actions: newActions };
     getStore()?.getState().updateNode(this.node.uuid, updatedNode);
 
-    // Now remove the action from the source node
-    const updatedSourceActions = sourceNode.actions.filter(
-      (_a, idx) => idx !== actionIndex
-    );
+    if (!isCopy) {
+      // Remove the action from the source node
+      const updatedSourceActions = sourceNode.actions.filter(
+        (_a, idx) => idx !== actionIndex
+      );
 
-    // If source node has no actions left, remove it
-    if (updatedSourceActions.length === 0) {
-      // Fire event to Editor so it can clean up jsPlumb connections properly
-      this.fireCustomEvent(CustomEventType.NodeDeleted, {
-        uuid: sourceNodeUuid
-      });
-    } else {
-      // Update source node
-      const updatedSourceNode = {
-        ...sourceNode,
-        actions: updatedSourceActions
-      };
-      getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
+      // If source node has no actions left, remove it
+      if (updatedSourceActions.length === 0) {
+        // Fire event to Editor so it can clean up jsPlumb connections properly
+        this.fireCustomEvent(CustomEventType.NodeDeleted, {
+          uuid: sourceNodeUuid
+        });
+      } else {
+        // Update source node
+        const updatedSourceNode = {
+          ...sourceNode,
+          actions: updatedSourceActions
+        };
+        getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
+      }
     }
 
     // Request update and notify that this node's size changed
