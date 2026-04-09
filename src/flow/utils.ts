@@ -6,6 +6,17 @@ import { tokenize, TokenType } from '../excellent/tokenizer';
 import { TOKEN_COLORS } from '../excellent/token-styles';
 import { messageParser, sessionParser } from '../excellent/helpers';
 
+const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
+
+export function getLanguageDisplayName(code: string): string {
+  if (code === 'und') return 'Unknown';
+  try {
+    return languageNames.of(code) || code;
+  } catch {
+    return code;
+  }
+}
+
 const IS_MAC =
   typeof navigator !== 'undefined' &&
   /Mac|iPod|iPhone|iPad/.test(navigator.platform);
