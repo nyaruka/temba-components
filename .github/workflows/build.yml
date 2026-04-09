@@ -128,15 +128,19 @@ jobs:
             }
 
       - name: Configure AWS credentials
-        if: success() || failure()
+        if: (success() || failure()) && env.AWS_ACCESS_KEY_ID != ''
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
       - name: Upload coverage report to S3
-        if: success() || failure()
+        if: (success() || failure()) && env.AWS_ACCESS_KEY_ID != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         run: |
           # Check if coverage directory exists
           if [ -d "coverage/lcov-report" ]; then
