@@ -364,6 +364,7 @@ export class CanvasNode extends RapidElement {
       /* Localizable category - yellow background */
       .category.localizable {
         background-color: #fff8dc;
+        border-color: #e8daa0;
       }
 
       .action-exits {
