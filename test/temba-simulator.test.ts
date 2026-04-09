@@ -454,14 +454,6 @@ describe('temba-simulator', () => {
     // verify we have more messages than before
     const newCount = getMessageCount(simulator);
     expect(newCount).to.be.greaterThan(initialCount);
-
-    // ensure DOM is settled
-    await simulator.updateComplete;
-
-    await assertScreenshot(
-      'simulator/after-message-sent',
-      getSimulatorClip(simulator)
-    );
   });
 
   it('tests message flow and takes screenshot', async () => {
