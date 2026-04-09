@@ -104,8 +104,9 @@ export interface SelectionBox {
 }
 
 const DRAG_THRESHOLD = 5;
-const AUTO_SCROLL_EDGE_ZONE = 100;
+const AUTO_SCROLL_EDGE_ZONE = 150;
 const AUTO_SCROLL_MAX_SPEED = 15;
+const AUTO_SCROLL_BEYOND_MULTIPLIER = 5;
 
 type TranslationType = 'property' | 'category';
 
@@ -1429,6 +1430,11 @@ export class Editor extends RapidElement {
   }
 
   private makeConnection(info) {
+    this.stopAutoScroll();
+    this.autoScrollDeltaX = 0;
+    this.autoScrollDeltaY = 0;
+    this.lastPointerPos = null;
+
     if (this.sourceId && this.targetId && this.isValidTarget) {
       // going to the same target, just put it back
       if (info.target.id === this.targetId) {
@@ -3561,6 +3567,9 @@ export class Editor extends RapidElement {
     }
 
     if (this.plumber.connectionDragging) {
+      this.lastPointerPos = { clientX: event.clientX, clientY: event.clientY };
+      this.startAutoScroll();
+
       const targetNode = document.querySelector('temba-flow-node:hover');
 
       // Clear previous target styles
@@ -3825,7 +3834,10 @@ export class Editor extends RapidElement {
     if (!editor) return;
 
     const tick = () => {
-      if (!this.isDragging || !this.lastPointerPos) {
+      if (
+        (!this.isDragging && !this.plumber?.connectionDragging) ||
+        !this.lastPointerPos
+      ) {
         this.autoScrollAnimationId = null;
         return;
       }
@@ -3837,32 +3849,56 @@ export class Editor extends RapidElement {
       let scrollDx = 0;
       let scrollDy = 0;
 
-      // Left edge
+      // Left edge (including beyond)
       const distFromLeft = mouseX - editorRect.left;
-      if (distFromLeft >= 0 && distFromLeft < AUTO_SCROLL_EDGE_ZONE) {
-        const ratio = 1 - distFromLeft / AUTO_SCROLL_EDGE_ZONE;
-        scrollDx = -(ratio * AUTO_SCROLL_MAX_SPEED);
+      if (distFromLeft < AUTO_SCROLL_EDGE_ZONE) {
+        const beyond = distFromLeft < 0;
+        const ratio = Math.min(
+          1,
+          1 - distFromLeft / AUTO_SCROLL_EDGE_ZONE
+        );
+        const speed =
+          AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
+        scrollDx = -(ratio * speed);
       }
 
-      // Right edge
+      // Right edge (including beyond)
       const distFromRight = editorRect.right - mouseX;
-      if (distFromRight >= 0 && distFromRight < AUTO_SCROLL_EDGE_ZONE) {
-        const ratio = 1 - distFromRight / AUTO_SCROLL_EDGE_ZONE;
-        scrollDx = ratio * AUTO_SCROLL_MAX_SPEED;
+      if (distFromRight < AUTO_SCROLL_EDGE_ZONE) {
+        const beyond = distFromRight < 0;
+        const ratio = Math.min(
+          1,
+          1 - distFromRight / AUTO_SCROLL_EDGE_ZONE
+        );
+        const speed =
+          AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
+        scrollDx = ratio * speed;
       }
 
-      // Top edge
+      // Top edge (including beyond)
       const distFromTop = mouseY - editorRect.top;
-      if (distFromTop >= 0 && distFromTop < AUTO_SCROLL_EDGE_ZONE) {
-        const ratio = 1 - distFromTop / AUTO_SCROLL_EDGE_ZONE;
-        scrollDy = -(ratio * AUTO_SCROLL_MAX_SPEED);
+      if (distFromTop < AUTO_SCROLL_EDGE_ZONE) {
+        const beyond = distFromTop < 0;
+        const ratio = Math.min(
+          1,
+          1 - distFromTop / AUTO_SCROLL_EDGE_ZONE
+        );
+        const speed =
+          AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
+        scrollDy = -(ratio * speed);
       }
 
-      // Bottom edge
+      // Bottom edge (including beyond)
       const distFromBottom = editorRect.bottom - mouseY;
-      if (distFromBottom >= 0 && distFromBottom < AUTO_SCROLL_EDGE_ZONE) {
-        const ratio = 1 - distFromBottom / AUTO_SCROLL_EDGE_ZONE;
-        scrollDy = ratio * AUTO_SCROLL_MAX_SPEED;
+      if (distFromBottom < AUTO_SCROLL_EDGE_ZONE) {
+        const beyond = distFromBottom < 0;
+        const ratio = Math.min(
+          1,
+          1 - distFromBottom / AUTO_SCROLL_EDGE_ZONE
+        );
+        const speed =
+          AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
+        scrollDy = ratio * speed;
       }
 
       if (scrollDx !== 0 || scrollDy !== 0) {
@@ -3876,7 +3912,7 @@ export class Editor extends RapidElement {
             (editor.scrollLeft + editor.clientWidth + scrollDx) / this.zoom;
           const neededHeight =
             (editor.scrollTop + editor.clientHeight + scrollDy) / this.zoom;
-          getStore().getState().expandCanvas(neededWidth, neededHeight);
+          getStore()?.getState()?.expandCanvas(neededWidth, neededHeight);
         }
 
         editor.scrollLeft += scrollDx;
