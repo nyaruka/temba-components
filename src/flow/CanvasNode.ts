@@ -107,6 +107,26 @@ export class CanvasNode extends RapidElement {
         user-select: none;
       }
 
+      .shift-held > temba-flow-node,
+      .shift-held > temba-flow-node * {
+        cursor: copy !important;
+      }
+
+      .shift-held > temba-flow-node .exit,
+      .shift-held > temba-flow-node .exit *,
+      .shift-held > temba-flow-node .linked-name,
+      .shift-held > temba-flow-node .linked-name *,
+      .shift-held > temba-flow-node .remove-button,
+      .shift-held > temba-flow-node .remove-button * {
+        cursor: pointer !important;
+      }
+
+      temba-flow-node.drag-copy .node {
+        outline: 3px dashed var(--color-primary, #3b82f6);
+        outline-offset: 2px;
+        opacity: 0.7;
+      }
+
       /* Flow start indicator */
       temba-flow-node.flow-start .node::before {
         content: 'FLOW START';

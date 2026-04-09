@@ -92,6 +92,24 @@ export class StickyNote extends RapidElement {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
 
+      :host(.drag-copy) .sticky-note {
+        outline: 3px dashed var(--color-primary, #3b82f6);
+        outline-offset: 2px;
+        opacity: 0.7;
+      }
+
+      .sticky-note.selected {
+        cursor: var(--shift-held-cursor, move) !important;
+      }
+
+      .sticky-note.selected .remove-button {
+        cursor: pointer !important;
+      }
+
+      .sticky-note.selected [contenteditable] {
+        cursor: text !important;
+      }
+
       /* Color themes */
       .sticky-note.yellow {
         --sticky-color: #fef08a;
@@ -195,7 +213,7 @@ export class StickyNote extends RapidElement {
       /* Drag icon */
       .sticky-title-container > .drag-handle {
         --icon-color: var(--sticky-border-color);
-        cursor: move;
+        cursor: var(--shift-held-cursor, move);
         max-width: 20px;
         padding-left: 8px;
         padding-top: 10px;
@@ -773,7 +791,9 @@ export class StickyNote extends RapidElement {
       <div
         class="sticky-note ${this.data.color} ${this.dragging
           ? 'dragging'
-          : ''} ${this.removing ? 'removing' : ''}"
+          : ''} ${this.removing ? 'removing' : ''} ${this.selected
+          ? 'selected'
+          : ''}"
         style="${style}"
         data-uuid="${this.uuid}"
       >
