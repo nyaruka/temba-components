@@ -1630,6 +1630,23 @@ export class CanvasNode extends RapidElement {
     const updatedNode = { ...this.node, actions: newActions };
     getStore()?.getState().updateNode(this.node.uuid, updatedNode);
 
+    // Copy localizations from the original action to the new one
+    if (isCopy) {
+      const localization = flowDefinition.localization;
+      if (localization) {
+        for (const langCode of Object.keys(localization)) {
+          const entry = localization[langCode]?.[action.uuid];
+          if (entry) {
+            store.getState().updateLocalization(
+              langCode,
+              droppedAction.uuid,
+              JSON.parse(JSON.stringify(entry))
+            );
+          }
+        }
+      }
+    }
+
     if (!isCopy) {
       // Remove the action from the source node
       const updatedSourceActions = sourceNode.actions.filter(

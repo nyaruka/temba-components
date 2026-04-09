@@ -5339,6 +5339,11 @@ export class Editor extends RapidElement {
     // add the new node
     getStore()?.getState().addNode(newNode, newNodeUI);
 
+    // Copy localizations from the original action to the new one
+    if (isCopy) {
+      this.copyActionLocalizations(action.uuid, droppedAction.uuid);
+    }
+
     // clear the preview
     this.canvasDropPreview = null;
     this.actionDragTargetNodeUuid = null;
@@ -5347,6 +5352,27 @@ export class Editor extends RapidElement {
     requestAnimationFrame(() => {
       this.checkCollisionsAndReflow([newNode.uuid]);
     });
+  }
+
+  /** Copy all localization entries from one action UUID to another. */
+  private copyActionLocalizations(
+    sourceUuid: string,
+    targetUuid: string
+  ): void {
+    const localization = this.definition?.localization;
+    if (!localization) return;
+    const store = getStore()?.getState();
+    if (!store) return;
+    for (const langCode of Object.keys(localization)) {
+      const entry = localization[langCode]?.[sourceUuid];
+      if (entry) {
+        store.updateLocalization(
+          langCode,
+          targetUuid,
+          JSON.parse(JSON.stringify(entry))
+        );
+      }
+    }
   }
 
   private getLocalizationLanguages(): Array<{ code: string; name: string }> {
