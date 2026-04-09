@@ -77,15 +77,18 @@ describe('Localization Editing', () => {
     }
   });
 
-  const getToolbar = (flowEditor: Editor) =>
-    flowEditor.querySelector('temba-editor-toolbar') as any;
+  const getToolbar = async (flowEditor: Editor) => {
+    const toolbar = flowEditor.querySelector('temba-editor-toolbar') as any;
+    if (toolbar) await toolbar.updateComplete;
+    return toolbar;
+  };
 
   const selectLanguageInToolbar = async (
     flowEditor: Editor,
     languageName: string,
     languageCode: string
   ): Promise<void> => {
-    const toolbar = getToolbar(flowEditor);
+    const toolbar = await getToolbar(flowEditor);
     // Open language options dropdown
     const languageBtn = toolbar.shadowRoot.querySelector('#language-btn') as HTMLElement;
     languageBtn.click();
@@ -174,14 +177,14 @@ describe('Localization Editing', () => {
     await editor.updateComplete;
   });
 
-  it('should render language controls in toolbar when translations exist', () => {
-    const toolbar = getToolbar(editor);
+  it('should render language controls in toolbar when translations exist', async () => {
+    const toolbar = await getToolbar(editor);
     const languageBtn = toolbar.shadowRoot.querySelector('#language-btn');
     expect(languageBtn).to.exist;
   });
 
   it('should show language options with non-base languages', async () => {
-    const toolbar = getToolbar(editor);
+    const toolbar = await getToolbar(editor);
     // Open language dropdown
     const languageBtn = toolbar.shadowRoot.querySelector('#language-btn') as HTMLElement;
     languageBtn.click();

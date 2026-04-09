@@ -10,7 +10,7 @@ export interface LanguageOption {
   percent?: number;
 }
 
-const PRIMARY_LANGUAGE_OPTION_VALUE = '__primary_language__';
+export const PRIMARY_LANGUAGE_OPTION_VALUE = '__primary_language__';
 
 export class EditorToolbar extends RapidElement {
   static get styles() {
@@ -248,9 +248,6 @@ export class EditorToolbar extends RapidElement {
 
   @property({ type: Boolean, attribute: 'show-localization-tools' })
   showLocalizationTools = false;
-
-  @property({ type: Boolean, attribute: 'has-translations' })
-  hasTranslations = false;
 
   @state()
   private showLanguageOptions = false;

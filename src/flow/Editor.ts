@@ -72,6 +72,7 @@ import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import { FloatingWindow } from '../layout/FloatingWindow';
 import { FlowSearch, SearchResult } from './FlowSearch';
+import { PRIMARY_LANGUAGE_OPTION_VALUE } from './EditorToolbar';
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -134,8 +135,6 @@ interface LocalizationUpdate {
 }
 
 const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
-const PRIMARY_LANGUAGE_OPTION_VALUE = '__primary_language__';
-
 export type ToolbarAction =
   | { action: 'view-change'; view: 'flow' | 'table' }
   | { action: 'zoom-in' }
@@ -6065,7 +6064,6 @@ export class Editor extends RapidElement {
     const percent = Math.round(
       (progress.localized / Math.max(progress.total, 1)) * 100
     );
-    const hasTranslations = progress.total > 0;
     const languageOptions = [
       {
         name: baseLanguageName,
@@ -6100,7 +6098,6 @@ export class Editor extends RapidElement {
         ?is-base-language=${isBaseSelected}
         .languagePercent=${percent}
         ?show-localization-tools=${Boolean(activeLanguage)}
-        ?has-translations=${hasTranslations}
         @temba-button-clicked=${this.handleToolbarAction}
       ></temba-editor-toolbar>
     `;
