@@ -499,6 +499,19 @@ export class Editor extends RapidElement {
   // Track previous target node to clear placeholder when moving between nodes
   private previousActionDragTargetNodeUuid: string | null = null;
 
+  // Track action external drag state for shift-copy support
+  private isActionExternalDrag = false;
+  private actionDragIsCopy = false;
+  private actionDragLastDetail: {
+    action: Action;
+    nodeUuid: string;
+    actionIndex: number;
+    mouseX: number;
+    mouseY: number;
+    actionHeight: number;
+    isLastAction: boolean;
+  } | null = null;
+
   // Connection placeholder state for dropping connections on empty canvas
   @state()
   private connectionPlaceholder: {
@@ -633,6 +646,7 @@ export class Editor extends RapidElement {
 
       #canvas.shift-held {
         --shift-held-cursor: copy;
+        cursor: copy;
       }
 
       #canvas.viewing-revision {
@@ -2311,7 +2325,7 @@ export class Editor extends RapidElement {
     if (event.key === 'Shift') {
       this.querySelector('#canvas')?.classList.add('shift-held');
 
-      // Toggle to copy mode mid-drag
+      // Toggle to copy mode mid-drag (nodes)
       if (this.isDragging && !this.currentDragIsCopy) {
         this.hideDragHint();
         this.performShiftDragCopy();
@@ -2321,6 +2335,18 @@ export class Editor extends RapidElement {
           this.markCopyElements();
           this.updateDragPositions();
         });
+      }
+
+      // Toggle to copy mode mid-drag (actions)
+      if (this.isActionExternalDrag && !this.actionDragIsCopy) {
+        this.actionDragIsCopy = true;
+        this.hideDragHint();
+        this.showActionOriginal(true);
+        // If this is a last-action drag, now show the canvas preview
+        if (this.actionDragLastDetail?.isLastAction) {
+          this.reprocessActionDrag();
+        }
+        this.requestUpdate();
       }
     }
 
@@ -2357,10 +2383,22 @@ export class Editor extends RapidElement {
     if (event.key === 'Shift') {
       this.querySelector('#canvas')?.classList.remove('shift-held');
 
-      // Toggle back to move mode mid-drag
+      // Toggle back to move mode mid-drag (nodes)
       if (this.isDragging && this.currentDragIsCopy) {
         this.revertShiftDragCopy();
         requestAnimationFrame(() => this.updateDragPositions());
+      }
+
+      // Toggle back to move mode mid-drag (actions)
+      if (this.isActionExternalDrag && this.actionDragIsCopy) {
+        this.actionDragIsCopy = false;
+        this.showDragHint();
+        this.showActionOriginal(false);
+        // If this is a last-action drag, hide the canvas preview again
+        if (this.actionDragLastDetail?.isLastAction) {
+          this.reprocessActionDrag();
+        }
+        this.requestUpdate();
       }
     }
   }
@@ -2372,6 +2410,16 @@ export class Editor extends RapidElement {
     if (this.isDragging && this.currentDragIsCopy) {
       this.revertShiftDragCopy();
       requestAnimationFrame(() => this.updateDragPositions());
+    }
+
+    // Revert action copy mode on blur
+    if (this.isActionExternalDrag && this.actionDragIsCopy) {
+      this.actionDragIsCopy = false;
+      this.showActionOriginal(false);
+      if (this.actionDragLastDetail?.isLastAction) {
+        this.reprocessActionDrag();
+      }
+      this.requestUpdate();
     }
   }
 
@@ -4946,6 +4994,32 @@ export class Editor extends RapidElement {
       isLastAction = false
     } = event.detail;
 
+    // Track action external drag state for shift-copy support
+    const isFirstExternalEvent = !this.isActionExternalDrag;
+    this.isActionExternalDrag = true;
+    this.actionDragLastDetail = {
+      action,
+      nodeUuid,
+      actionIndex,
+      mouseX,
+      mouseY,
+      actionHeight,
+      isLastAction
+    };
+
+    // Initialize copy mode from current shift state (handles shift held before drag)
+    if (isFirstExternalEvent) {
+      const shiftHeld =
+        this.querySelector('#canvas')?.classList.contains('shift-held') ??
+        false;
+      if (shiftHeld) {
+        this.actionDragIsCopy = true;
+        this.showActionOriginal(true);
+      } else {
+        this.showDragHint();
+      }
+    }
+
     // Check if mouse is over another execute_actions node
     const targetNode = this.getNodeAtPosition(mouseX, mouseY);
 
@@ -5042,9 +5116,9 @@ export class Editor extends RapidElement {
       `temba-flow-node[data-node-uuid="${nodeUuid}"]`
     );
 
-    // Show canvas drop preview only if this is NOT the last action
-    // Last actions can only be dropped on other nodes, not on canvas
-    if (!isLastAction) {
+    // Show canvas drop preview if this is not the last action,
+    // or if shift-copy is active (copying allows canvas drop for last action too)
+    if (!isLastAction || this.actionDragIsCopy) {
       // Hide ghost when showing canvas preview (for canvas drops)
       if (sourceElement) {
         sourceElement.dispatchEvent(
@@ -5066,7 +5140,7 @@ export class Editor extends RapidElement {
         actionHeight
       };
     } else {
-      // For last action, keep ghost visible (can't drop on canvas)
+      // For last action without copy, keep ghost visible (can't drop on canvas)
       if (sourceElement) {
         sourceElement.dispatchEvent(
           new CustomEvent('action-show-ghost', {
@@ -5103,6 +5177,75 @@ export class Editor extends RapidElement {
 
     this.canvasDropPreview = null;
     this.actionDragTargetNodeUuid = null;
+    this.isActionExternalDrag = false;
+    this.actionDragIsCopy = false;
+    this.hideDragHint();
+    this.actionDragLastDetail = null;
+  }
+
+  /** Show or hide the original action element in the source node. */
+  private showActionOriginal(visible: boolean): void {
+    if (!this.actionDragLastDetail) return;
+    const sourceElement = this.querySelector(
+      `temba-flow-node[data-node-uuid="${this.actionDragLastDetail.nodeUuid}"]`
+    );
+    if (sourceElement) {
+      sourceElement.dispatchEvent(
+        new CustomEvent(
+          visible ? 'action-show-original' : 'action-hide-original',
+          { detail: {}, bubbles: false }
+        )
+      );
+    }
+  }
+
+  /**
+   * Reprocess the last action drag event with the current shift-copy state.
+   * Used when shift is toggled mid-drag to show/hide the canvas preview
+   * for last-action drags.
+   */
+  private reprocessActionDrag(): void {
+    if (!this.actionDragLastDetail) return;
+    const { action, nodeUuid, actionIndex, mouseX, mouseY, actionHeight } =
+      this.actionDragLastDetail;
+
+    const sourceElement = this.querySelector(
+      `temba-flow-node[data-node-uuid="${nodeUuid}"]`
+    );
+
+    // Only relevant when not hovering a target node
+    if (this.actionDragTargetNodeUuid) return;
+
+    if (this.actionDragIsCopy) {
+      // Shift pressed: show canvas preview
+      if (sourceElement) {
+        sourceElement.dispatchEvent(
+          new CustomEvent('action-hide-ghost', {
+            detail: {},
+            bubbles: false
+          })
+        );
+      }
+      const position = this.calculateCanvasDropPosition(mouseX, mouseY, false);
+      this.canvasDropPreview = {
+        action,
+        nodeUuid,
+        actionIndex,
+        position,
+        actionHeight
+      };
+    } else {
+      // Shift released: hide canvas preview, show ghost
+      if (sourceElement) {
+        sourceElement.dispatchEvent(
+          new CustomEvent('action-show-ghost', {
+            detail: {},
+            bubbles: false
+          })
+        );
+      }
+      this.canvasDropPreview = null;
+    }
   }
 
   private handleActionDropExternal(event: CustomEvent): void {
@@ -5114,6 +5257,15 @@ export class Editor extends RapidElement {
       mouseY,
       isLastAction = false
     } = event.detail;
+
+    const isCopy = this.actionDragIsCopy;
+
+    // Reset action drag state
+    this.isActionExternalDrag = false;
+    this.actionDragIsCopy = false;
+    this.actionDragLastDetail = null;
+    this.previousActionDragTargetNodeUuid = null;
+    this.hideDragHint();
 
     // Check if we're dropping on an existing execute_actions node
     const targetNodeUuid = this.actionDragTargetNodeUuid;
@@ -5131,7 +5283,8 @@ export class Editor extends RapidElement {
               sourceNodeUuid: nodeUuid,
               actionIndex,
               mouseX,
-              mouseY
+              mouseY,
+              isCopy
             },
             bubbles: false
           })
@@ -5144,9 +5297,9 @@ export class Editor extends RapidElement {
       return;
     }
 
-    // If this is the last action and we're not dropping on another node, do nothing
+    // If this is the last action and not copying, do nothing
     // Last actions can only be moved to other nodes, not dropped on canvas
-    if (isLastAction) {
+    if (isLastAction && !isCopy) {
       this.canvasDropPreview = null;
       this.actionDragTargetNodeUuid = null;
       return;
@@ -5156,28 +5309,36 @@ export class Editor extends RapidElement {
     // Snap to grid for the final drop position
     const position = this.calculateCanvasDropPosition(mouseX, mouseY, true);
 
-    // remove the action from the original node
-    const originalNode = this.definition.nodes.find((n) => n.uuid === nodeUuid);
-    if (!originalNode) return;
+    if (!isCopy) {
+      // remove the action from the original node
+      const originalNode = this.definition.nodes.find(
+        (n) => n.uuid === nodeUuid
+      );
+      if (!originalNode) return;
 
-    const updatedActions = originalNode.actions.filter(
-      (_a, idx) => idx !== actionIndex
-    );
+      const updatedActions = originalNode.actions.filter(
+        (_a, idx) => idx !== actionIndex
+      );
 
-    // if no actions remain, delete the node
-    if (updatedActions.length === 0) {
-      // Use deleteNodes to properly clean up Plumber connections before removing
-      this.deleteNodes([nodeUuid]);
-    } else {
-      // update the node
-      const updatedNode = { ...originalNode, actions: updatedActions };
-      getStore()?.getState().updateNode(nodeUuid, updatedNode);
+      // if no actions remain, delete the node
+      if (updatedActions.length === 0) {
+        // Use deleteNodes to properly clean up Plumber connections before removing
+        this.deleteNodes([nodeUuid]);
+      } else {
+        // update the node
+        const updatedNode = { ...originalNode, actions: updatedActions };
+        getStore()?.getState().updateNode(nodeUuid, updatedNode);
+      }
     }
 
     // create a new execute_actions node with the dropped action
+    // When copying, generate a fresh UUID so the clone doesn't share the original's
+    const droppedAction = isCopy
+      ? { ...action, uuid: generateUUID() }
+      : action;
     const newNode: Node = {
       uuid: generateUUID(),
-      actions: [action],
+      actions: [droppedAction],
       exits: [
         {
           uuid: generateUUID(),
@@ -5195,6 +5356,11 @@ export class Editor extends RapidElement {
     // add the new node
     getStore()?.getState().addNode(newNode, newNodeUI);
 
+    // Copy localizations from the original action to the new one
+    if (isCopy) {
+      this.copyActionLocalizations(action.uuid, droppedAction.uuid);
+    }
+
     // clear the preview
     this.canvasDropPreview = null;
     this.actionDragTargetNodeUuid = null;
@@ -5203,6 +5369,27 @@ export class Editor extends RapidElement {
     requestAnimationFrame(() => {
       this.checkCollisionsAndReflow([newNode.uuid]);
     });
+  }
+
+  /** Copy all localization entries from one action UUID to another. */
+  private copyActionLocalizations(
+    sourceUuid: string,
+    targetUuid: string
+  ): void {
+    const localization = this.definition?.localization;
+    if (!localization) return;
+    const store = getStore()?.getState();
+    if (!store) return;
+    for (const langCode of Object.keys(localization)) {
+      const entry = localization[langCode]?.[sourceUuid];
+      if (entry) {
+        store.updateLocalization(
+          langCode,
+          targetUuid,
+          JSON.parse(JSON.stringify(entry))
+        );
+      }
+    }
   }
 
   private getLocalizationLanguages(): Array<{ code: string; name: string }> {

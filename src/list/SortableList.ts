@@ -731,6 +731,12 @@ export class SortableList extends RapidElement {
   }
   /* c8 ignore stop */
 
+  /** Show or hide the original element that is being dragged. */
+  public setOriginalVisible(visible: boolean): void {
+    if (!this.downEle) return;
+    this.downEle.style.display = visible ? this.originalDownDisplay : 'none';
+  }
+
   public render(): TemplateResult {
     return html`
       <div

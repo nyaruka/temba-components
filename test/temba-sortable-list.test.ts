@@ -337,4 +337,43 @@ describe('temba-sortable-list', () => {
       expect(list.originalLayoutSize.height).to.equal(20);
     });
   });
+
+  describe('setOriginalVisible', () => {
+    it('toggles the original element display during drag', async () => {
+      const list: SortableList = await createSorter(BORING_LIST);
+      list.externalDrag = true;
+      await list.updateComplete;
+
+      const bounds = list.getBoundingClientRect();
+
+      // Start dragging to set up downEle
+      await moveMouse(bounds.left + 20, bounds.bottom - 10);
+      await mouseDown();
+      await moveMouse(bounds.left + 30, bounds.bottom - 10);
+      clock.runAll();
+
+      // downEle should be hidden during drag
+      expect(list.downEle).to.exist;
+      expect(list.downEle.style.display).to.equal('none');
+
+      // Show original
+      list.setOriginalVisible(true);
+      expect(list.downEle.style.display).to.not.equal('none');
+
+      // Hide original again
+      list.setOriginalVisible(false);
+      expect(list.downEle.style.display).to.equal('none');
+
+      // Clean up
+      await mouseUp();
+      clock.runAll();
+    });
+
+    it('is a no-op when no element is being dragged', () => {
+      const list = new SortableList();
+      // Should not throw when downEle is null
+      list.setOriginalVisible(true);
+      list.setOriginalVisible(false);
+    });
+  });
 });
