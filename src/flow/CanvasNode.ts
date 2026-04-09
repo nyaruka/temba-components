@@ -115,7 +115,9 @@ export class CanvasNode extends RapidElement {
       .shift-held > temba-flow-node .exit,
       .shift-held > temba-flow-node .exit *,
       .shift-held > temba-flow-node .linked-name,
-      .shift-held > temba-flow-node .linked-name * {
+      .shift-held > temba-flow-node .linked-name *,
+      .shift-held > temba-flow-node .remove-button,
+      .shift-held > temba-flow-node .remove-button * {
         cursor: pointer !important;
       }
 

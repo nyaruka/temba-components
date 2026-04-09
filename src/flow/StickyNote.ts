@@ -98,9 +98,16 @@ export class StickyNote extends RapidElement {
         opacity: 0.7;
       }
 
-      .sticky-note.selected,
-      .sticky-note.selected * {
+      .sticky-note.selected {
         cursor: var(--shift-held-cursor, move) !important;
+      }
+
+      .sticky-note.selected .remove-button {
+        cursor: pointer !important;
+      }
+
+      .sticky-note.selected [contenteditable] {
+        cursor: text !important;
       }
 
       /* Color themes */

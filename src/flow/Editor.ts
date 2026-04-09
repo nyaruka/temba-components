@@ -2554,6 +2554,12 @@ export class Editor extends RapidElement {
 
   private handleWindowBlur(): void {
     this.querySelector('#canvas')?.classList.remove('shift-held');
+
+    // Revert copy mode if blur happens mid-drag (keyup may never fire)
+    if (this.isDragging && this.currentDragIsCopy) {
+      this.revertShiftDragCopy();
+      requestAnimationFrame(() => this.updateDragPositions());
+    }
   }
 
   // --- Flow settings cookie (LRU, max 50 flows) ---
@@ -3871,13 +3877,6 @@ export class Editor extends RapidElement {
     for (const uuid of this.copiedItemUuids) {
       const el = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
       el?.classList.add('drag-copy');
-    }
-  }
-
-  private unmarkCopyElements(): void {
-    for (const uuid of this.copiedItemUuids) {
-      const el = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-      el?.classList.remove('drag-copy');
     }
   }
 
