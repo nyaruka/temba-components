@@ -597,6 +597,128 @@ describe('temba-select', () => {
     });
   });
 
+  describe('beforeinput handling (Android virtual keyboards)', () => {
+    it('adds tag via insertLineBreak beforeinput', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter tags',
+          multi: true,
+          searchable: true,
+          tags: true
+        })
+      );
+
+      await typeInto('temba-select', 'hello', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      const searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      const evt = new InputEvent('beforeinput', {
+        inputType: 'insertLineBreak',
+        bubbles: true,
+        cancelable: true
+      });
+      searchbox.dispatchEvent(evt);
+      await select.updateComplete;
+
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].value).to.equal('hello');
+      expect(evt.defaultPrevented).to.be.true;
+    });
+
+    it('adds tag via insertParagraph beforeinput', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter tags',
+          multi: true,
+          searchable: true,
+          tags: true
+        })
+      );
+
+      await typeInto('temba-select', 'world', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      const searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      const evt = new InputEvent('beforeinput', {
+        inputType: 'insertParagraph',
+        bubbles: true,
+        cancelable: true
+      });
+      searchbox.dispatchEvent(evt);
+      await select.updateComplete;
+
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].value).to.equal('world');
+      expect(evt.defaultPrevented).to.be.true;
+    });
+
+    it('adds email via beforeinput', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter email addresses',
+          searchable: true,
+          emails: true
+        })
+      );
+
+      await typeInto('temba-select', 'test@example.com', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      const searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      const evt = new InputEvent('beforeinput', {
+        inputType: 'insertLineBreak',
+        bubbles: true,
+        cancelable: true
+      });
+      searchbox.dispatchEvent(evt);
+      await select.updateComplete;
+
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].value).to.equal('test@example.com');
+    });
+
+    it('does not add invalid email via beforeinput', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter email addresses',
+          searchable: true,
+          emails: true
+        })
+      );
+
+      await typeInto('temba-select', 'invalid-email', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      const searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      searchbox.dispatchEvent(
+        new InputEvent('beforeinput', {
+          inputType: 'insertLineBreak',
+          bubbles: true,
+          cancelable: true
+        })
+      );
+      await select.updateComplete;
+
+      expect(select.values.length).to.equal(0);
+    });
+  });
+
   describe('emails functionality', () => {
     it('only allows valid email addresses as options', async () => {
       const select = await createSelect(
