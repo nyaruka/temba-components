@@ -1721,6 +1721,22 @@ export class Select<T extends SelectOption> extends FieldElement {
     }
   }
 
+  private handleBeforeInput(evt: InputEvent) {
+    // Android virtual keyboards often don't fire keydown with key='Enter'.
+    // Instead they fire beforeinput with inputType 'insertLineBreak' or
+    // 'insertParagraph'. Handle these the same as Enter for tags/emails.
+    if (
+      (evt.inputType === 'insertLineBreak' ||
+        evt.inputType === 'insertParagraph') &&
+      this.completionOptions.length === 0 &&
+      (this.emails || this.tags || this.expressions) &&
+      this.isAcceptableInput(this.input)
+    ) {
+      evt.preventDefault();
+      this.addInputAsValue();
+    }
+  }
+
   private handleKeyDown(evt: KeyboardEvent) {
     // Prevent Enter from inserting newlines in contenteditable
     if (evt.key === 'Enter' && this.useExpressionInput) {
@@ -2143,6 +2159,7 @@ export class Select<T extends SelectOption> extends FieldElement {
                   spellcheck="false"
                   style=${styleMap(inputStyles)}
                   @input=${this.handleInput}
+                  @beforeinput=${this.handleBeforeInput}
                   @keydown=${this.handleKeyDown}
                   @click=${this.handleClick}
                 ></div>`
@@ -2150,6 +2167,7 @@ export class Select<T extends SelectOption> extends FieldElement {
                   class="searchbox"
                   style=${styleMap(inputStyles)}
                   @input=${this.handleInput}
+                  @beforeinput=${this.handleBeforeInput}
                   @keydown=${this.handleKeyDown}
                   @click=${this.handleClick}
                   type="text"
