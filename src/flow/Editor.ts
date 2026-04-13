@@ -21,7 +21,6 @@ import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType, DirtyTrackable, Workspace } from '../interfaces';
 import {
   generateUUID,
-  postJSON,
   fetchResults,
   getClasses,
   getCookie,
@@ -31,18 +30,13 @@ import {
 import { TEMBA_COMPONENTS_VERSION } from '../version';
 import {
   formatIssueMessage,
-  getLanguageDisplayName,
   getNodeBounds,
   calculateReflowPositions,
-  isRightClick,
   NodeBounds,
   snapToGrid
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
-import { FloatingTab } from '../display/FloatingTab';
-import { getTranslatableCategoriesForNode } from './categoryLocalization';
-
 interface Revision {
   id: number;
   user: {
@@ -62,17 +56,17 @@ import {
   Plumber,
   calculateFlowchartPath,
   ARROW_LENGTH,
-  ARROW_HALF_WIDTH,
-  CURSOR_GAP
+  ARROW_HALF_WIDTH
 } from './Plumber';
 import { CanvasNode } from './CanvasNode';
+import { DragManager } from './DragManager';
+import { ZoomManager } from './ZoomManager';
 import { Dialog } from '../layout/Dialog';
 
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import { FloatingWindow } from '../layout/FloatingWindow';
 import { FlowSearch, SearchResult } from './FlowSearch';
-import { PRIMARY_LANGUAGE_OPTION_VALUE } from './EditorToolbar';
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -103,40 +97,6 @@ export interface SelectionBox {
   endY: number;
 }
 
-const DRAG_THRESHOLD = 5;
-const AUTO_SCROLL_EDGE_ZONE = 150;
-const AUTO_SCROLL_EDGE_ZONE_TOUCH = 40;
-const AUTO_SCROLL_MAX_SPEED = 15;
-const AUTO_SCROLL_BEYOND_MULTIPLIER = 5;
-
-type TranslationType = 'property' | 'category';
-
-interface TranslationEntry {
-  uuid: string;
-  type: TranslationType;
-  attribute: string;
-  from: string;
-  to: string | null;
-}
-
-interface TranslationBundle {
-  nodeUuid: string;
-  actionUuid?: string;
-  translations: TranslationEntry[];
-}
-
-interface TranslationModel {
-  uuid: string;
-  name: string;
-  description?: string;
-}
-
-interface LocalizationUpdate {
-  uuid: string;
-  translations: Record<string, string>;
-}
-
-const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
 export type ToolbarAction =
   | { action: 'view-change'; view: 'flow' | 'table' }
   | { action: 'zoom-in' }
@@ -144,8 +104,7 @@ export type ToolbarAction =
   | { action: 'zoom-to-fit' }
   | { action: 'zoom-to-full' }
   | { action: 'revisions' }
-  | { action: 'search' }
-  | { action: 'language-change'; isPrimary?: boolean; languageCode?: string };
+  | { action: 'search' };
 const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 
 // How long the pending-changes auto-save countdown runs (in ms).
@@ -224,7 +183,13 @@ export class Editor extends RapidElement {
   }
 
   // this is the master plumber
-  private plumber: Plumber;
+  public plumber: Plumber;
+
+  // drag/selection manager
+  public dragManager: DragManager;
+
+  // zoom/pan/loupe manager
+  public zoomManager: ZoomManager;
 
   // timer for debounced saving
   private saveTimer: number | null = null;
@@ -245,7 +210,7 @@ export class Editor extends RapidElement {
   private activityInterval = 100; // Start with 100ms interval for fast initial load
 
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
-  private definition!: FlowDefinition;
+  public definition!: FlowDefinition;
 
   @fromStore(zustand, (state: AppState) => state.simulatorActive)
   private simulatorActive!: boolean;
@@ -271,20 +236,9 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.flowInfo?.issues ?? EMPTY_FLOW_ISSUES)
   private flowIssues!: FlowIssue[];
 
-  // Drag state
+  // Drag state (managed by DragManager, kept on Editor for Lit reactivity)
   @state()
-  private isDragging = false;
-  private isMouseDown = false;
-  private shiftDragCopy = false;
-  private currentDragIsCopy = false;
-  private dragStartPos = { x: 0, y: 0 };
-
-  // Mid-drag shift toggle: remember originals so we can switch between move/copy
-  private originalDragItem: DraggableItem | null = null;
-  private originalSelectedItems: Set<string> | null = null;
-
-  // Drag hint tooltip
-  private dragHintTimer: ReturnType<typeof setTimeout> | null = null;
+  public isDragging = false;
 
   // Public getter for drag state
   public get dragging(): boolean {
@@ -292,75 +246,40 @@ export class Editor extends RapidElement {
   }
 
   @state()
-  private currentDragItem: DraggableItem | null = null;
-  private startPos = { left: 0, top: 0 };
-
-  // Auto-scroll state
-  private autoScrollAnimationId: number | null = null;
-  private autoScrollDeltaX = 0;
-  private autoScrollDeltaY = 0;
-  private lastPointerPos: { clientX: number; clientY: number } | null = null;
-  private activeDragIsTouch = false;
+  public currentDragItem: DraggableItem | null = null;
 
   // Selection state
   @state()
-  private selectedItems: Set<string> = new Set();
+  public selectedItems: Set<string> = new Set();
 
   @state()
-  private isSelecting = false;
+  public isSelecting = false;
 
   @state()
-  private selectionBox: SelectionBox | null = null;
-
-  // Touch device state
-  private isTouchDevice = false;
-  private isTwoFingerPanning = false;
-  private twoFingerDidPan = false;
-  private twoFingerStartMidX = 0;
-  private twoFingerStartMidY = 0;
-  private twoFingerOnCanvas = false;
-  private lastPanX = 0;
-  private lastPanY = 0;
+  public selectionBox: SelectionBox | null = null;
 
   @state()
-  private targetId: string | null = null;
+  public targetId: string | null = null;
 
   @state()
-  private sourceId: string | null = null;
+  public sourceId: string | null = null;
 
   @state()
-  private dragFromNodeId: string | null = null;
+  public dragFromNodeId: string | null = null;
 
   @state()
-  private originalConnectionTargetId: string | null = null;
+  public originalConnectionTargetId: string | null = null;
 
   @state()
-  private isValidTarget = true;
+  public isValidTarget = true;
 
   // Canvas-relative source exit position (set at drag start)
-  private connectionSourceX: number | null = null;
-  private connectionSourceY: number | null = null;
+  public connectionSourceX: number | null = null;
+  public connectionSourceY: number | null = null;
 
   @state()
   private issuesWindowHidden = true;
 
-  @state()
-  private localizationWindowHidden = true;
-
-  @state()
-  private translationSettingsExpanded = false;
-
-  @state()
-  private autoTranslateDialogOpen = false;
-
-  @state()
-  private autoTranslating = false;
-
-  @state()
-  private autoTranslateModel: TranslationModel | null = null;
-
-  @state()
-  private autoTranslateError: string | null = null;
 
   @state()
   private revisionsWindowHidden = true;
@@ -381,19 +300,8 @@ export class Editor extends RapidElement {
   private saveError: string | null = null;
 
   @state()
-  private zoom = 1.0;
+  public zoom = 1.0;
 
-  @state()
-  private zoomInitialized = false;
-
-  @state()
-  private zoomFitted = false;
-
-  // Loupe magnifier state - tracked via direct DOM updates for performance
-  private loupeEl: HTMLElement | null = null;
-  private loupeContentEl: HTMLElement | null = null;
-  private loupeRAF: number | null = null;
-  private hiddenTitles: { el: Element; title: string }[] = [];
 
   // Non-reactive flag set in willUpdate to suppress the debouncedSave
   // call in updated() when the dirtyDate change comes from a reflow/copy
@@ -404,7 +312,7 @@ export class Editor extends RapidElement {
 
   // --- Pending-changes timer (shared by reflow + copy) ---
 
-  private pendingTimer = new PendingChangesTimer(
+  public pendingTimer = new PendingChangesTimer(
     'Unsaved Changes',
     PENDING_SAVE_DELAY,
     this,
@@ -419,10 +327,10 @@ export class Editor extends RapidElement {
   private pendingPositions: Record<string, FlowPosition> | null = null;
 
   /** UUIDs of items created by shift+drag copy during the pending window. */
-  private copiedItemUuids: string[] = [];
+  public copiedItemUuids: string[] = [];
 
   /** Save all current canvas positions if not already saved. */
-  private capturePositionsOnce(): void {
+  public capturePositionsOnce(): void {
     if (this.pendingPositions) return;
     const saved: Record<string, FlowPosition> = {};
     for (const node of this.definition.nodes) {
@@ -446,8 +354,7 @@ export class Editor extends RapidElement {
   } | null = null;
   private revisionsBrowseLanguageCode: string | null = null;
 
-  private deleteDialog: Dialog | null = null;
-  private translationCache = new Map<string, string>();
+  public deleteDialog: Dialog | null = null;
 
   private dirtyAdapter: DirtyTrackable = {
     dirtyMessage:
@@ -463,13 +370,13 @@ export class Editor extends RapidElement {
 
   // NodeEditor state - handles both node and action editing
   @state()
-  private editingNode: Node | null = null;
+  public editingNode: Node | null = null;
 
   @state()
-  private editingNodeUI: NodeUI | null = null;
+  public editingNodeUI: NodeUI | null = null;
 
   @state()
-  private editingAction: Action | null = null;
+  public editingAction: Action | null = null;
 
   private dialogOrigin: { x: number; y: number } | null = null;
 
@@ -517,7 +424,7 @@ export class Editor extends RapidElement {
 
   // Connection placeholder state for dropping connections on empty canvas
   @state()
-  private connectionPlaceholder: {
+  public connectionPlaceholder: {
     position: FlowPosition;
     visible: boolean;
     dragUp?: boolean;
@@ -530,45 +437,12 @@ export class Editor extends RapidElement {
     position: FlowPosition;
   } | null = null;
 
-  private canvasMouseDown = false;
 
-  private getAvailableLanguages(): Array<{ code: string; name: string }> {
-    // Use languages from workspace if available
-    if (this.workspace?.languages && this.workspace.languages.length > 0) {
-      return this.workspace.languages
-        .map((code) => ({ code, name: getLanguageDisplayName(code) }))
-        .filter((lang) => lang.code && lang.name);
-    }
-
-    // Fall back to flow definition languages if available
-    if (
-      this.definition?._ui?.languages &&
-      this.definition._ui.languages.length > 0
-    ) {
-      return this.definition._ui.languages.map((lang: any) => ({
-        code: typeof lang === 'string' ? lang : lang.iso || lang.code,
-        name: typeof lang === 'string' ? lang : lang.name
-      }));
-    }
-
-    // No languages available
-    return [];
-  }
 
   // Bound event handlers to maintain proper 'this' context
-  private boundMouseMove = this.handleMouseMove.bind(this);
-  private boundMouseUp = this.handleMouseUp.bind(this);
-  private boundGlobalMouseDown = this.handleGlobalMouseDown.bind(this);
-  private boundKeyDown = this.handleKeyDown.bind(this);
-  private boundKeyUp = this.handleKeyUp.bind(this);
-  private boundWindowBlur = this.handleWindowBlur.bind(this);
   private boundCanvasContextMenu = this.handleCanvasContextMenu.bind(this);
-  private boundWheel = this.handleWheel.bind(this);
-  private boundTouchMove = this.handleTouchMove.bind(this);
-  private boundTouchEnd = this.handleTouchEnd.bind(this);
-  private boundTouchCancel = this.handleTouchCancel.bind(this);
-  private boundCanvasTouchStart = this.handleCanvasTouchStart.bind(this);
-  private boundWindowResize = this.updateZoomControlPositioning.bind(this);
+  private boundWheel = (e: WheelEvent) => this.zoomManager.handleWheel(e);
+  private boundWindowResize = () => this.zoomManager.updateZoomControlPositioning();
 
   static get styles() {
     return css`
@@ -1380,6 +1254,8 @@ export class Editor extends RapidElement {
 
   constructor() {
     super();
+    this.dragManager = new DragManager(this);
+    this.zoomManager = new ZoomManager(this);
   }
 
   protected firstUpdated(
@@ -1395,12 +1271,15 @@ export class Editor extends RapidElement {
     // Eagerly detect touch capability so hover-only controls are visible
     // from the start and scrollbar/touch-action CSS is applied immediately.
     if (navigator.maxTouchPoints > 0) {
-      this.markTouchDevice();
+      this.querySelector('#canvas')?.classList.add('touch-device');
+      this.querySelector('#editor')?.classList.add('touch-device');
     }
-    this.updateZoomControlPositioning();
-    this.loupeEl = this.querySelector('#loupe') as HTMLElement;
-    this.loupeContentEl = this.querySelector('#loupe-content') as HTMLElement;
-    this.initLoupe();
+    this.zoomManager.updateZoomControlPositioning();
+    this.zoomManager.setLoupeElements(
+      this.querySelector('#loupe') as HTMLElement,
+      this.querySelector('#loupe-content') as HTMLElement
+    );
+    this.zoomManager.initLoupe();
     if (changes.has('flow') && this.flow) {
       // Defer revision fetch so reactive state changes in fetchRevisions()
       // don't run inside firstUpdated().
@@ -1432,11 +1311,6 @@ export class Editor extends RapidElement {
   }
 
   private makeConnection(info) {
-    this.stopAutoScroll();
-    this.autoScrollDeltaX = 0;
-    this.autoScrollDeltaY = 0;
-    this.lastPointerPos = null;
-
     if (this.sourceId && this.targetId && this.isValidTarget) {
       // going to the same target, just put it back
       if (info.target.id === this.targetId) {
@@ -1537,7 +1411,7 @@ export class Editor extends RapidElement {
       }
 
       // Pre-sync zoom state so we don't mutate reactive state in updated().
-      this.restoreInitialZoomFromSettings();
+      this.zoomManager.restoreInitialZoomFromSettings();
     }
 
     if (changes.has('dirtyDate')) {
@@ -1557,22 +1431,6 @@ export class Editor extends RapidElement {
         }
       }
     }
-  }
-
-  private restoreInitialZoomFromSettings(): void {
-    if (this.zoomInitialized || !this.definition) {
-      return;
-    }
-
-    const savedZoom = this.getFlowSetting<number>('zoom');
-    if (typeof savedZoom === 'number' && Number.isFinite(savedZoom)) {
-      const clamped = Math.max(0.3, Math.min(1.0, Math.round(savedZoom * 100) / 100));
-      this.zoom = clamped;
-      if (this.plumber) {
-        this.plumber.zoom = clamped;
-      }
-    }
-    this.zoomInitialized = true;
   }
 
   private setSimulatorTabHidden(hidden: boolean): void {
@@ -1598,7 +1456,7 @@ export class Editor extends RapidElement {
       this.setSimulatorTabHidden(!this.revisionsWindowHidden);
     }
     if (changes.has('canvasSize')) {
-      this.updateZoomControlPositioning();
+      this.zoomManager.updateZoomControlPositioning();
     }
 
     if (changes.has('showMessageTable') && !this.showMessageTable && this.plumber) {
@@ -1609,22 +1467,17 @@ export class Editor extends RapidElement {
           this.plumber.setContainer(canvas as HTMLElement);
           this.plumber.repaintEverything();
           canvas.addEventListener('contextmenu', this.boundCanvasContextMenu);
-          canvas.addEventListener('touchstart', this.boundCanvasTouchStart, {
-            passive: false
-          });
         }
       });
     }
 
     if (changes.has('showMessageTable')) {
-      this.updateZoomControlPositioning();
+      this.zoomManager.updateZoomControlPositioning();
     }
 
     if (changes.has('definition')) {
       // defer to avoid triggering a reactive canvasSize update during this cycle
       setTimeout(() => this.updateCanvasSize(), 0);
-
-      this.translationCache.clear();
 
       // Start fetching activity data when definition is loaded
       if (this.definition?.uuid) {
@@ -1684,9 +1537,6 @@ export class Editor extends RapidElement {
       }, 0);
     }
 
-    if (changes.has('languageCode')) {
-      this.translationCache.clear();
-    }
   }
 
   /**
@@ -1918,9 +1768,9 @@ export class Editor extends RapidElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.teardownLoupe();
+    this.zoomManager.teardownLoupe();
     getStore()?.getState().setFlushSave(null);
-    this.stopAutoScroll();
+    this.dragManager.teardownListeners();
     window.removeEventListener('beforeunload', this.boundBeforeUnload);
     const store = document.querySelector('temba-store') as Store;
     if (store?.markClean) {
@@ -1935,21 +1785,11 @@ export class Editor extends RapidElement {
       this.activityTimer = null;
     }
     this.pendingTimer.clearTimer();
-    document.removeEventListener('mousemove', this.boundMouseMove);
-    document.removeEventListener('mouseup', this.boundMouseUp);
-    document.removeEventListener('mousedown', this.boundGlobalMouseDown);
-    document.removeEventListener('keydown', this.boundKeyDown);
-    document.removeEventListener('keyup', this.boundKeyUp);
-    window.removeEventListener('blur', this.boundWindowBlur);
-    document.removeEventListener('touchmove', this.boundTouchMove);
-    document.removeEventListener('touchend', this.boundTouchEnd);
-    document.removeEventListener('touchcancel', this.boundTouchCancel);
     window.removeEventListener('resize', this.boundWindowResize);
 
     const canvas = this.querySelector('#canvas');
     if (canvas) {
       canvas.removeEventListener('contextmenu', this.boundCanvasContextMenu);
-      canvas.removeEventListener('touchstart', this.boundCanvasTouchStart);
     }
 
     const editor = this.querySelector('#editor');
@@ -1969,33 +1809,14 @@ export class Editor extends RapidElement {
   }
 
   private setupGlobalEventListeners(): void {
-    document.addEventListener('mousemove', this.boundMouseMove);
-    document.addEventListener('mouseup', this.boundMouseUp);
-    document.addEventListener('mousedown', this.boundGlobalMouseDown);
-    document.addEventListener('keydown', this.boundKeyDown);
-    document.addEventListener('keyup', this.boundKeyUp);
-    window.addEventListener('blur', this.boundWindowBlur);
-    document.addEventListener('touchmove', this.boundTouchMove, {
-      passive: false
-    });
-    document.addEventListener('touchend', this.boundTouchEnd);
-    document.addEventListener('touchcancel', this.boundTouchCancel);
-    window.addEventListener('resize', this.boundWindowResize);
+    // Drag/selection listeners managed by DragManager
+    this.dragManager.setupListeners();
 
-    // Fallback: on first touch, mark as touch device in case
-    // navigator.maxTouchPoints wasn't detected in firstUpdated.
-    const markTouchOnce = () => {
-      this.markTouchDevice();
-      document.removeEventListener('touchstart', markTouchOnce);
-    };
-    document.addEventListener('touchstart', markTouchOnce);
+    window.addEventListener('resize', this.boundWindowResize);
 
     const canvas = this.querySelector('#canvas');
     if (canvas) {
       canvas.addEventListener('contextmenu', this.boundCanvasContextMenu);
-      canvas.addEventListener('touchstart', this.boundCanvasTouchStart, {
-        passive: false
-      });
     }
 
     const editor = this.querySelector('#editor');
@@ -2084,210 +1905,13 @@ export class Editor extends RapidElement {
     });
   }
 
-  private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
-    if (type === 'node') {
-      return this.definition._ui.nodes[uuid]?.position;
-    } else {
-      return this.definition._ui.stickies?.[uuid]?.position;
-    }
-  }
-
-  private handleMouseDown(event: MouseEvent): void {
-    if (isRightClick(event)) return;
-
-    if (this.isReadOnly()) return;
-    this.blurActiveContentEditable();
-
-    const element = event.currentTarget as HTMLElement;
-    // Only start dragging if clicking on the element itself, not on exits or other interactive elements
-    const target = event.target as HTMLElement;
-    if (
-      target.classList.contains('exit') ||
-      target.closest('.exit') ||
-      target.closest('.linked-name')
-    ) {
-      return;
-    }
-
-    const uuid = element.getAttribute('uuid');
-    const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
-
-    const position = this.getPosition(uuid, type);
-    if (!position) return;
-
-    // If clicking on a non-selected item, clear selection unless Ctrl/Cmd is held
-    if (!this.selectedItems.has(uuid) && !event.ctrlKey && !event.metaKey) {
-      this.selectedItems.clear();
-      // Don't add single items to selection - single clicks just clear existing selection
-    } else if (!this.selectedItems.has(uuid)) {
-      // Add this item to selection only if Ctrl/Cmd is held
-      this.selectedItems.add(uuid);
-    }
-
-    // Always set up drag state regardless of selection status
-    // This allows single nodes to be dragged without being selected
-    this.isMouseDown = true;
-    this.activeDragIsTouch = false;
-    this.shiftDragCopy = event.shiftKey;
-    this.dragStartPos = { x: event.clientX, y: event.clientY };
-    this.startPos = { left: position.left, top: position.top };
-    this.currentDragItem = {
-      uuid,
-      position,
-      element,
-      type
-    };
-
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  /**
-   * Mirror of handleMouseDown for touch devices.
-   * Sets up the same drag state so handleTouchMove/End can drive the drag.
-   */
-  /* c8 ignore start -- touch-only handlers untestable in headless Chromium */
-
-  /**
-   * Mark the editor as a touch device — adds classes to #canvas and
-   * #editor so touch-specific CSS activates (visible controls,
-   * always-on scrollbars, touch-action: none).
-   */
-  private markTouchDevice(): void {
-    if (this.isTouchDevice) return;
-    this.isTouchDevice = true;
-    this.querySelector('#canvas')?.classList.add('touch-device');
-    this.querySelector('#editor')?.classList.add('touch-device');
-  }
-
-  private handleItemTouchStart(event: TouchEvent): void {
-    this.markTouchDevice();
-
-    if (this.isReadOnly()) return;
-    this.blurActiveContentEditable();
-
-    const touch = event.touches[0];
-    if (!touch) return;
-
-    const element = event.currentTarget as HTMLElement;
-    const target = event.target as HTMLElement;
-    if (
-      target.classList.contains('exit') ||
-      target.closest('.exit') ||
-      target.closest('.linked-name')
-    ) {
-      return;
-    }
-
-    const uuid = element.getAttribute('uuid');
-    const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
-
-    const position = this.getPosition(uuid, type);
-    if (!position) return;
-
-    // Touch doesn't support Ctrl/Cmd selection — just clear
-    if (!this.selectedItems.has(uuid)) {
-      this.selectedItems.clear();
-    }
-
-    this.isMouseDown = true;
-    this.activeDragIsTouch = true;
-    this.dragStartPos = { x: touch.clientX, y: touch.clientY };
-    this.startPos = { left: position.left, top: position.top };
-    this.currentDragItem = {
-      uuid,
-      position,
-      element,
-      type
-    };
-
-    // Don't preventDefault here — allow the threshold check in touchmove
-    // to decide whether this is a drag or a tap
-    event.stopPropagation();
-  }
-
-  /* c8 ignore stop */
-
-  private handleGlobalMouseDown(event: MouseEvent): void {
-    if (isRightClick(event)) return;
-
-    // Check if the click is within our canvas
-    const canvasRect = this.querySelector('#grid')?.getBoundingClientRect();
-
-    if (!canvasRect) return;
-
-    const isWithinCanvas =
-      event.clientX >= canvasRect.left &&
-      event.clientX <= canvasRect.right &&
-      event.clientY >= canvasRect.top &&
-      event.clientY <= canvasRect.bottom;
-
-    if (!isWithinCanvas) return;
-
-    // Check if we clicked on a draggable item (node or sticky)
-    const target = event.target as HTMLElement;
-    const clickedOnDraggable = target.closest('.draggable');
-
-    if (clickedOnDraggable) {
-      // This is handled by the individual item mousedown handlers
-      return;
-    }
-
-    // We clicked on empty canvas space, start selection
-    this.handleCanvasMouseDown(event);
-  }
-
-  private blurActiveContentEditable(): void {
-    let active: Element | null = document.activeElement;
-    while (active?.shadowRoot?.activeElement) {
-      active = active.shadowRoot.activeElement;
-    }
-    if (
-      active instanceof HTMLElement &&
-      active.getAttribute('contenteditable') === 'true'
-    ) {
-      active.blur();
-    }
-  }
-
-  private handleCanvasMouseDown(event: MouseEvent): void {
-    if (this.isReadOnly()) return;
-    this.blurActiveContentEditable();
-
-    const target = event.target as HTMLElement;
-    if (target.id === 'canvas' || target.id === 'grid') {
-      // Ignore clicks on exits
-
-      // Start selection box
-      this.canvasMouseDown = true;
-      this.dragStartPos = { x: event.clientX, y: event.clientY };
-
-      const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
-      if (canvasRect) {
-        // Clear current selection
-        this.selectedItems.clear();
-
-        const relativeX = (event.clientX - canvasRect.left) / this.zoom;
-        const relativeY = (event.clientY - canvasRect.top) / this.zoom;
-
-        this.selectionBox = {
-          startX: relativeX,
-          startY: relativeY,
-          endX: relativeX,
-          endY: relativeY
-        };
-      }
-
-      event.preventDefault();
-    }
-  }
 
   private openFlowSearch(): void {
     if (this.viewingRevision) {
       return;
     }
 
-    if (this.isDialogOrMenuOpen()) {
+    if (this.zoomManager.isDialogOrMenuOpen()) {
       return;
     }
 
@@ -2299,7 +1923,7 @@ export class Editor extends RapidElement {
     search.definition = this.definition;
     search.languageCode = this.languageCode || '';
     search.scope = this.showMessageTable ? 'table' : 'flow';
-    search.includeCategories = this.isTranslating && this.hasAnyNodeWithLocalizeCategories();
+    search.includeCategories = false;
     search.show();
   }
 
@@ -2310,49 +1934,14 @@ export class Editor extends RapidElement {
     }
   }
 
-  private showDragHint(): void {
-    if (this.isReadOnly()) return;
-    const hint = this.querySelector('#drag-hint') as HTMLElement;
-    if (!hint) return;
-    this.dragHintTimer = setTimeout(() => {
-      hint.classList.add('visible');
-      this.dragHintTimer = null;
-    }, 600);
-  }
 
-  private hideDragHint(): void {
-    if (this.dragHintTimer) {
-      clearTimeout(this.dragHintTimer);
-      this.dragHintTimer = null;
-    }
-    const hint = this.querySelector('#drag-hint') as HTMLElement;
-    if (hint) {
-      hint.classList.remove('visible');
-    }
-  }
-
-  private handleKeyDown(event: KeyboardEvent): void {
+  // Called by DragManager for non-drag keyboard handling
+  public handleKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Shift') {
-      this.querySelector('#canvas')?.classList.add('shift-held');
-
-      // Toggle to copy mode mid-drag (nodes)
-      if (this.isDragging && !this.currentDragIsCopy) {
-        this.hideDragHint();
-        this.performShiftDragCopy();
-        // Clone elements aren't in the DOM until Lit re-renders;
-        // schedule position update after the next frame.
-        requestAnimationFrame(() => {
-          this.markCopyElements();
-          this.updateDragPositions();
-        });
-      }
-
       // Toggle to copy mode mid-drag (actions)
       if (this.isActionExternalDrag && !this.actionDragIsCopy) {
         this.actionDragIsCopy = true;
-        this.hideDragHint();
         this.showActionOriginal(true);
-        // If this is a last-action drag, now show the canvas preview
         if (this.actionDragLastDetail?.isLastAction) {
           this.reprocessActionDrag();
         }
@@ -2372,7 +1961,6 @@ export class Editor extends RapidElement {
     if (search?.open) return;
 
     if (event.key === 'Delete' || event.key === 'Backspace') {
-      // If delete confirmation dialog is already showing, confirm it
       if (this.deleteDialog?.open) {
         this.deleteSelectedItems();
         this.deleteDialog.open = false;
@@ -2389,22 +1977,12 @@ export class Editor extends RapidElement {
     }
   }
 
-  private handleKeyUp(event: KeyboardEvent): void {
+  // Called by DragManager for action drag shift-copy
+  public handleKeyUp(event: KeyboardEvent): void {
     if (event.key === 'Shift') {
-      this.querySelector('#canvas')?.classList.remove('shift-held');
-
-      // Toggle back to move mode mid-drag (nodes)
-      if (this.isDragging && this.currentDragIsCopy) {
-        this.revertShiftDragCopy();
-        requestAnimationFrame(() => this.updateDragPositions());
-      }
-
-      // Toggle back to move mode mid-drag (actions)
       if (this.isActionExternalDrag && this.actionDragIsCopy) {
         this.actionDragIsCopy = false;
-        this.showDragHint();
         this.showActionOriginal(false);
-        // If this is a last-action drag, hide the canvas preview again
         if (this.actionDragLastDetail?.isLastAction) {
           this.reprocessActionDrag();
         }
@@ -2413,16 +1991,8 @@ export class Editor extends RapidElement {
     }
   }
 
-  private handleWindowBlur(): void {
-    this.querySelector('#canvas')?.classList.remove('shift-held');
-
-    // Revert copy mode if blur happens mid-drag (keyup may never fire)
-    if (this.isDragging && this.currentDragIsCopy) {
-      this.revertShiftDragCopy();
-      requestAnimationFrame(() => this.updateDragPositions());
-    }
-
-    // Revert action copy mode on blur
+  // Called by DragManager on window blur
+  public handleWindowBlur(): void {
     if (this.isActionExternalDrag && this.actionDragIsCopy) {
       this.actionDragIsCopy = false;
       this.showActionOriginal(false);
@@ -2437,7 +2007,7 @@ export class Editor extends RapidElement {
 
   static MAX_FLOW_SETTINGS = 50;
 
-  private getFlowSettings(): Record<string, any> {
+  public getFlowSettings(): Record<string, any> {
     try {
       return JSON.parse(getCookie('flow-settings') || '{}');
     } catch {
@@ -2445,7 +2015,7 @@ export class Editor extends RapidElement {
     }
   }
 
-  private saveFlowSetting(key: string, value: any): void {
+  public saveFlowSetting(key: string, value: any): void {
     if (!this.flow) return;
     const settings = this.getFlowSettings();
 
@@ -2467,492 +2037,11 @@ export class Editor extends RapidElement {
     setCookie('flow-settings', JSON.stringify(settings));
   }
 
-  private getFlowSetting<T>(key: string): T | undefined {
+  public getFlowSetting<T>(key: string): T | undefined {
     if (!this.flow) return undefined;
     return this.getFlowSettings()[this.flow]?.[key];
   }
 
-  // --- Zoom ---
-
-  private setZoom(
-    newZoom: number,
-    center?: { clientX: number; clientY: number }
-  ): void {
-    const clamped = Math.max(
-      0.3,
-      Math.min(1.0, Math.round(newZoom * 100) / 100)
-    );
-    if (clamped === this.zoom) return;
-
-    const editor = this.querySelector('#editor') as HTMLElement;
-    const oldZoom = this.zoom;
-    this.zoom = clamped;
-    this.plumber.zoom = clamped;
-    this.zoomFitted = false;
-    this.saveFlowSetting('zoom', clamped);
-
-    if (editor && center) {
-      const editorRect = editor.getBoundingClientRect();
-      const ox = center.clientX - editorRect.left;
-      const oy = center.clientY - editorRect.top;
-      // Canvas point under cursor at old zoom
-      const cx = (editor.scrollLeft + ox) / oldZoom;
-      const cy = (editor.scrollTop + oy) / oldZoom;
-
-      requestAnimationFrame(() => {
-        editor.scrollLeft = cx * clamped - ox;
-        editor.scrollTop = cy * clamped - oy;
-        this.plumber.repaintEverything();
-      });
-    } else {
-      requestAnimationFrame(() => this.plumber.repaintEverything());
-    }
-  }
-
-  private zoomIn(): void {
-    this.setZoom(this.zoom + 0.05);
-  }
-
-  private zoomOut(): void {
-    this.setZoom(this.zoom - 0.05);
-  }
-
-  private zoomToFit(): void {
-    if (!this.definition || this.definition.nodes.length === 0) return;
-
-    const editor = this.querySelector('#editor') as HTMLElement;
-    if (!editor) return;
-
-    // Calculate bounding box of all content in canvas coordinates
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-
-    this.definition.nodes.forEach((node) => {
-      const ui = this.definition._ui?.nodes[node.uuid];
-      if (!ui?.position) return;
-      const el = this.querySelector(`[id="${node.uuid}"]`) as HTMLElement;
-      if (!el) return;
-      const w = el.offsetWidth;
-      const h = el.offsetHeight;
-      minX = Math.min(minX, ui.position.left);
-      minY = Math.min(minY, ui.position.top);
-      maxX = Math.max(maxX, ui.position.left + w);
-      maxY = Math.max(maxY, ui.position.top + h);
-    });
-
-    const stickies = this.definition._ui?.stickies || {};
-    Object.entries(stickies).forEach(([uuid, sticky]) => {
-      if (!sticky.position) return;
-      const el = this.querySelector(
-        `temba-sticky-note[uuid="${uuid}"]`
-      ) as HTMLElement;
-      if (!el) return;
-      const w = el.offsetWidth;
-      const h = el.offsetHeight;
-      minX = Math.min(minX, sticky.position.left);
-      minY = Math.min(minY, sticky.position.top);
-      maxX = Math.max(maxX, sticky.position.left + w);
-      maxY = Math.max(maxY, sticky.position.top + h);
-    });
-
-    if (minX === Infinity) return;
-
-    const contentWidth = maxX - minX;
-    const contentHeight = maxY - minY;
-    const padding = 40;
-
-    const availWidth = editor.clientWidth - padding * 2;
-    const availHeight = editor.clientHeight - padding * 2;
-
-    const scaleX = availWidth / contentWidth;
-    const scaleY = availHeight / contentHeight;
-    let fitZoom = Math.min(scaleX, scaleY, 1.0);
-    fitZoom = Math.max(fitZoom, 0.3);
-    fitZoom = Math.round(fitZoom * 20) / 20; // round to nearest 0.05
-
-    this.zoom = fitZoom;
-    this.plumber.zoom = fitZoom;
-    this.zoomFitted = true;
-    this.saveFlowSetting('zoom', fitZoom);
-
-    // Center of content in canvas coordinates, plus grid/canvas margin offset
-    const centerX = (minX + maxX) / 2 + 40;
-    const centerY = (minY + maxY) / 2 + 40;
-
-    requestAnimationFrame(() => {
-      editor.scrollLeft = centerX * fitZoom - editor.clientWidth / 2;
-      editor.scrollTop = centerY * fitZoom - editor.clientHeight / 2;
-      this.plumber.repaintEverything();
-    });
-  }
-
-  private zoomToFull(): void {
-    this.setZoom(1.0);
-  }
-
-  /** Adjust floating tab positioning relative to toolbar and editor scrollbar */
-  private updateZoomControlPositioning(): void {
-    requestAnimationFrame(() => {
-      const editor = this.querySelector('#editor') as HTMLElement;
-      if (editor) {
-        const scrollbarWidth = Math.max(
-          editor.offsetWidth - editor.clientWidth,
-          0
-        );
-        // Keep floating tabs just left of the vertical scrollbar.
-        document.documentElement.style.setProperty(
-          '--floating-tab-clip',
-          `${scrollbarWidth}px`
-        );
-      }
-
-      const toolbar = this.querySelector('.editor-toolbar') as HTMLElement;
-      if (toolbar) {
-        const rect = toolbar.getBoundingClientRect();
-        FloatingTab.START_TOP = rect.bottom + 20;
-        FloatingTab.updateAllPositions();
-      }
-    });
-  }
-
-  private handleWheel(event: WheelEvent): void {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-
-    const delta = event.deltaY > 0 ? -0.05 : 0.05;
-    this.setZoom(this.zoom + delta, {
-      clientX: event.clientX,
-      clientY: event.clientY
-    });
-  }
-
-  // --- Loupe magnifier ---
-
-  private static readonly LOUPE_DIAMETER = 280;
-
-  private readonly boundLoupeMouseMove = this.handleLoupeMouseMove.bind(this);
-  private readonly boundLoupeMouseDown = this.handleLoupeMouseDown.bind(this);
-  private readonly boundLoupeMouseUp = this.handleLoupeMouseUp.bind(this);
-  private readonly boundLoupeKeyDown = this.handleLoupeKeyDown.bind(this);
-  private readonly boundLoupeKeyUp = this.handleLoupeKeyUp.bind(this);
-  private loupeKeyHeld = false;
-  private loupeMouseIsDown = false;
-  private loupeLastMouse: { clientX: number; clientY: number } | null = null;
-
-  private initLoupe(): void {
-    document.addEventListener('mousemove', this.boundLoupeMouseMove);
-    document.addEventListener('keydown', this.boundLoupeKeyDown);
-    document.addEventListener('keyup', this.boundLoupeKeyUp);
-    document.addEventListener('mouseup', this.boundLoupeMouseUp);
-    // Capture-phase listener catches all mousedowns (including those where
-    // Plumber calls stopPropagation, e.g. exits and connection re-routing)
-    const editor = this.querySelector('#editor') as HTMLElement;
-    if (editor) {
-      editor.addEventListener('mousedown', this.boundLoupeMouseDown, true);
-    }
-  }
-
-  private teardownLoupe(): void {
-    document.removeEventListener('mousemove', this.boundLoupeMouseMove);
-    document.removeEventListener('keydown', this.boundLoupeKeyDown);
-    document.removeEventListener('keyup', this.boundLoupeKeyUp);
-    document.removeEventListener('mouseup', this.boundLoupeMouseUp);
-    const editor = this.querySelector('#editor') as HTMLElement;
-    if (editor) {
-      editor.removeEventListener('mousedown', this.boundLoupeMouseDown, true);
-    }
-    this.hideLoupe();
-  }
-
-  private handleLoupeKeyDown(event: KeyboardEvent): void {
-    // Cmd+Ctrl+A (Mac) / Ctrl+Meta+A (Windows)
-    if (event.key.toLowerCase() !== 'a') return;
-    if (event.metaKey && event.ctrlKey) {
-      event.preventDefault();
-      this.loupeKeyHeld = true;
-      // Show loupe immediately at last known mouse position
-      if (this.loupeLastMouse) {
-        this.handleLoupeMouseMove(this.loupeLastMouse as MouseEvent);
-      }
-    }
-  }
-
-  private handleLoupeKeyUp(event: KeyboardEvent): void {
-    if (!this.loupeKeyHeld) return;
-    // Hide when any modifier is released
-    if (event.key === 'a' || event.key === 'Meta' || event.key === 'Control') {
-      this.loupeKeyHeld = false;
-      this.hideLoupe();
-    }
-  }
-
-  private handleLoupeMouseDown(): void {
-    this.loupeMouseIsDown = true;
-    this.hideLoupe();
-  }
-
-  private handleLoupeMouseUp(): void {
-    this.loupeMouseIsDown = false;
-  }
-
-  private handleLoupeMouseMove(event: MouseEvent): void {
-    this.loupeLastMouse = { clientX: event.clientX, clientY: event.clientY };
-
-    // Require Cmd+Ctrl+A held, hide while mouse is down, during interactions, or with dialogs open
-    if (
-      !this.loupeKeyHeld ||
-      this.loupeMouseIsDown ||
-      this.isDragging ||
-      this.isSelecting ||
-      this.plumber?.connectionDragging ||
-      this.isDialogOrMenuOpen()
-    ) {
-      this.hideLoupe();
-      return;
-    }
-
-    // Check if cursor is within the editor bounds
-    const editor = this.querySelector('#editor') as HTMLElement;
-    if (!editor) return;
-    const rect = editor.getBoundingClientRect();
-    if (
-      event.clientX < rect.left ||
-      event.clientX > rect.right ||
-      event.clientY < rect.top ||
-      event.clientY > rect.bottom
-    ) {
-      this.hideLoupe();
-      return;
-    }
-
-    if (this.loupeRAF) cancelAnimationFrame(this.loupeRAF);
-    this.loupeRAF = requestAnimationFrame(() => {
-      this.updateLoupe(event.clientX, event.clientY);
-    });
-  }
-
-  private isDialogOrMenuOpen(): boolean {
-    if (this.editingNode || this.editingAction) return true;
-    if (this.deleteDialog?.open) return true;
-    const canvasMenu = this.querySelector('temba-canvas-menu') as any;
-    if (canvasMenu?.open) return true;
-    return false;
-  }
-
-  private hideLoupe(): void {
-    if (this.loupeEl) {
-      this.loupeEl.classList.remove('visible');
-    }
-    this.restoreTitles();
-    if (this.loupeClone) {
-      this.loupeClone.remove();
-      this.loupeClone = null;
-    }
-    if (this.loupeRAF) {
-      cancelAnimationFrame(this.loupeRAF);
-      this.loupeRAF = null;
-    }
-  }
-
-  private suppressTitles(): void {
-    this.hiddenTitles = [];
-    const canvas = this.querySelector('#canvas');
-    if (!canvas) return;
-    for (const el of canvas.querySelectorAll('[title]')) {
-      this.hiddenTitles.push({ el, title: el.getAttribute('title')! });
-      el.removeAttribute('title');
-    }
-    // Also check shadow DOMs of canvas nodes and sticky notes
-    for (const node of canvas.querySelectorAll(
-      'temba-canvas-node, temba-sticky-note'
-    )) {
-      if (node.shadowRoot) {
-        for (const el of node.shadowRoot.querySelectorAll('[title]')) {
-          this.hiddenTitles.push({ el, title: el.getAttribute('title')! });
-          el.removeAttribute('title');
-        }
-      }
-    }
-  }
-
-  private restoreTitles(): void {
-    for (const { el, title } of this.hiddenTitles) {
-      el.setAttribute('title', title);
-    }
-    this.hiddenTitles = [];
-  }
-
-  private loupeCloneTime = 0;
-  private loupeClone: HTMLElement | null = null;
-  private loupeCursorCanvas: { x: number; y: number } = { x: 0, y: 0 };
-  private static readonly LOUPE_CLONE_INTERVAL = 200;
-
-  private rebuildLoupeClone(
-    canvas: HTMLElement,
-    canvasX: number,
-    canvasY: number,
-    visibleRadius: number
-  ): void {
-    const contentEl = this.loupeContentEl;
-    if (!contentEl) return;
-
-    if (this.loupeClone) {
-      this.loupeClone.remove();
-    }
-
-    const clone = document.createElement('div');
-    clone.className = 'loupe-clone';
-    clone.style.width = `${canvas.scrollWidth}px`;
-    clone.style.height = `${canvas.scrollHeight}px`;
-
-    const pad = 50; // extra padding for partially visible elements
-
-    // Clone only nearby nodes (light DOM — innerHTML captures rendered content)
-    const nodeEls = canvas.querySelectorAll('[data-node-uuid]');
-    for (const el of nodeEls) {
-      const htmlEl = el as HTMLElement;
-      const left = parseFloat(htmlEl.style.left) || 0;
-      const top = parseFloat(htmlEl.style.top) || 0;
-      const w = htmlEl.offsetWidth;
-      const h = htmlEl.offsetHeight;
-
-      // Bounding-box vs visible circle check
-      if (
-        left + w < canvasX - visibleRadius - pad ||
-        left > canvasX + visibleRadius + pad ||
-        top + h < canvasY - visibleRadius - pad ||
-        top > canvasY + visibleRadius + pad
-      )
-        continue;
-
-      // Wrap innerHTML in a plain div to avoid custom element upgrade
-      const div = document.createElement('div');
-      div.className = htmlEl.className;
-      div.style.cssText = htmlEl.style.cssText;
-      div.innerHTML = htmlEl.innerHTML;
-      clone.appendChild(div);
-    }
-
-    // Clone SVG connections (standard elements, no upgrade issue)
-    const svgs = canvas.querySelectorAll('svg.plumb-connector');
-    for (const svg of svgs) {
-      clone.appendChild(svg.cloneNode(true));
-    }
-
-    // Clone activity overlays
-    const overlays = canvas.querySelectorAll('.activity-overlay');
-    for (const overlay of overlays) {
-      clone.appendChild(overlay.cloneNode(true));
-    }
-
-    // Clone sticky notes from their shadow DOM
-    const stickyEls = canvas.querySelectorAll('temba-sticky-note');
-    for (const el of stickyEls) {
-      const stickyEl = el as HTMLElement;
-      const sw = stickyEl.offsetWidth;
-      const sh = stickyEl.offsetHeight;
-      const left = parseFloat(stickyEl.style.left) || 0;
-      const top = parseFloat(stickyEl.style.top) || 0;
-
-      if (
-        left + sw < canvasX - visibleRadius - pad ||
-        left > canvasX + visibleRadius + pad ||
-        top + sh < canvasY - visibleRadius - pad ||
-        top > canvasY + visibleRadius + pad
-      )
-        continue;
-
-      if (!stickyEl.shadowRoot) continue;
-
-      const div = document.createElement('div');
-      div.className = stickyEl.className;
-      div.style.cssText = stickyEl.style.cssText;
-      // Extract adopted stylesheets from the shadow root (Lit uses these
-      // instead of inline <style> tags), scoping all rules under .loupe-sticky
-      // to prevent them from leaking into the light DOM
-      div.classList.add('loupe-sticky');
-      const sheets = stickyEl.shadowRoot.adoptedStyleSheets;
-      let cssText = '';
-      for (const sheet of sheets) {
-        for (const rule of sheet.cssRules) {
-          const ruleText = rule.cssText;
-          if (ruleText.startsWith(':host')) {
-            cssText += ruleText.replace(/:host/g, '.loupe-sticky') + '\n';
-          } else {
-            // Scope non-:host rules under .loupe-sticky
-            const braceIdx = ruleText.indexOf('{');
-            if (braceIdx !== -1) {
-              const selector = ruleText.substring(0, braceIdx).trim();
-              const body = ruleText.substring(braceIdx);
-              cssText += `.loupe-sticky ${selector} ${body}\n`;
-            }
-          }
-        }
-      }
-      div.innerHTML =
-        `<style>${cssText}</style>` + stickyEl.shadowRoot.innerHTML;
-      clone.appendChild(div);
-    }
-
-    contentEl.appendChild(clone);
-    this.loupeClone = clone;
-  }
-
-  private updateLoupe(clientX: number, clientY: number): void {
-    const loupeEl = this.loupeEl;
-    const contentEl = this.loupeContentEl;
-    if (!loupeEl || !contentEl || !this.definition) return;
-
-    const canvas = this.querySelector('#canvas') as HTMLElement;
-    if (!canvas) return;
-    const canvasRect = canvas.getBoundingClientRect();
-
-    // Canvas coordinates under cursor
-    const canvasX = (clientX - canvasRect.left) / this.zoom;
-    const canvasY = (clientY - canvasRect.top) / this.zoom;
-
-    const D = Editor.LOUPE_DIAMETER;
-    const R = D / 2;
-    // Show content at a fixed comfortable scale inside the loupe
-    const loupeScale = Math.min(1.5, this.zoom * 2.5);
-    const visibleRadius = R / loupeScale;
-
-    // Position loupe at cursor
-    loupeEl.style.left = `${clientX}px`;
-    loupeEl.style.top = `${clientY}px`;
-    loupeEl.classList.add('visible');
-    if (this.hiddenTitles.length === 0) {
-      this.suppressTitles();
-    }
-
-    // Grid background
-    const bgSize = 20 * loupeScale;
-    contentEl.style.backgroundSize = `${bgSize}px ${bgSize}px`;
-    contentEl.style.backgroundPosition = `${R - canvasX * loupeScale}px ${R - canvasY * loupeScale}px`;
-
-    // Rebuild clone periodically or when cursor has moved significantly
-    const now = performance.now();
-    const dx = canvasX - this.loupeCursorCanvas.x;
-    const dy = canvasY - this.loupeCursorCanvas.y;
-    const moved =
-      Math.abs(dx) > visibleRadius * 0.5 || Math.abs(dy) > visibleRadius * 0.5;
-
-    if (
-      !this.loupeClone ||
-      (now - this.loupeCloneTime > Editor.LOUPE_CLONE_INTERVAL && moved)
-    ) {
-      this.rebuildLoupeClone(canvas, canvasX, canvasY, visibleRadius);
-      this.loupeCloneTime = now;
-      this.loupeCursorCanvas = { x: canvasX, y: canvasY };
-    }
-
-    // Position the clone so the canvas point under the cursor is at the loupe center
-    if (this.loupeClone) {
-      this.loupeClone.style.transform = `translate(${R - canvasX * loupeScale}px, ${R - canvasY * loupeScale}px) scale(${loupeScale})`;
-    }
-  }
 
   private showDeleteConfirmation(): void {
     const itemCount = this.selectedItems.size;
@@ -3197,118 +2286,6 @@ export class Editor extends RapidElement {
     this.selectedItems.clear();
   }
 
-  private updateSelectionBox(event: MouseEvent): void {
-    if (!this.selectionBox || !this.canvasMouseDown) return;
-
-    const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
-    if (!canvasRect) return;
-
-    const relativeX = (event.clientX - canvasRect.left) / this.zoom;
-    const relativeY = (event.clientY - canvasRect.top) / this.zoom;
-
-    this.selectionBox = {
-      ...this.selectionBox,
-      endX: relativeX,
-      endY: relativeY
-    };
-
-    // Update selected items based on selection box
-    this.updateSelectedItemsFromBox();
-  }
-
-  private updateSelectedItemsFromBox(): void {
-    if (!this.selectionBox) return;
-
-    const newSelection = new Set<string>();
-
-    const boxLeft = Math.min(this.selectionBox.startX, this.selectionBox.endX);
-    const boxTop = Math.min(this.selectionBox.startY, this.selectionBox.endY);
-    const boxRight = Math.max(this.selectionBox.startX, this.selectionBox.endX);
-    const boxBottom = Math.max(
-      this.selectionBox.startY,
-      this.selectionBox.endY
-    );
-
-    // Check nodes
-    this.definition?.nodes.forEach((node) => {
-      const nodeElement = this.querySelector(
-        `[id="${node.uuid}"]`
-      ) as HTMLElement;
-      if (nodeElement) {
-        const position = this.definition._ui?.nodes[node.uuid]?.position;
-        if (position) {
-          const canvasRect =
-            this.querySelector('#canvas')?.getBoundingClientRect();
-
-          if (canvasRect) {
-            const nodeLeft = position.left;
-            const nodeTop = position.top;
-            const nodeRight = nodeLeft + nodeElement.offsetWidth;
-            const nodeBottom = nodeTop + nodeElement.offsetHeight;
-
-            // Check if selection box intersects with node
-            if (
-              boxLeft < nodeRight &&
-              boxRight > nodeLeft &&
-              boxTop < nodeBottom &&
-              boxBottom > nodeTop
-            ) {
-              newSelection.add(node.uuid);
-            }
-          }
-        }
-      }
-    });
-
-    // Check sticky notes
-    const stickies = this.definition?._ui?.stickies || {};
-    Object.entries(stickies).forEach(([uuid, sticky]) => {
-      if (sticky.position) {
-        const stickyElement = this.querySelector(
-          `temba-sticky-note[uuid="${uuid}"]`
-        ) as HTMLElement;
-
-        if (stickyElement) {
-          // Use clientWidth/clientHeight instead of getBoundingClientRect() to get element dimensions
-          // This avoids the coordinate system mismatch between viewport and canvas coordinates
-          const width = stickyElement.clientWidth;
-          const height = stickyElement.clientHeight;
-
-          // Use the canvas coordinates from the sticky's position
-          const stickyLeft = sticky.position.left;
-          const stickyTop = sticky.position.top;
-          const stickyRight = stickyLeft + width;
-          const stickyBottom = stickyTop + height;
-
-          // Check if selection box intersects with sticky
-          if (
-            boxLeft < stickyRight &&
-            boxRight > stickyLeft &&
-            boxTop < stickyBottom &&
-            boxBottom > stickyTop
-          ) {
-            newSelection.add(uuid);
-          }
-        }
-      }
-    });
-
-    this.selectedItems = newSelection;
-  }
-
-  private renderSelectionBox(): TemplateResult | string {
-    if (!this.selectionBox || !this.isSelecting) return '';
-
-    const left = Math.min(this.selectionBox.startX, this.selectionBox.endX);
-    const top = Math.min(this.selectionBox.startY, this.selectionBox.endY);
-    const width = Math.abs(this.selectionBox.endX - this.selectionBox.startX);
-    const height = Math.abs(this.selectionBox.endY - this.selectionBox.startY);
-
-    return html`<div
-      class="selection-box"
-      style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;"
-    ></div>`;
-  }
 
   private renderCanvasDropPreview(): TemplateResult | string {
     if (!this.canvasDropPreview) return '';
@@ -3449,7 +2426,7 @@ export class Editor extends RapidElement {
    * as needed. Sacred items (just moved/dropped/resized) keep their
    * positions while other items are moved in the least-disruptive direction.
    */
-  private checkCollisionsAndReflow(sacredUuids: string[]): void {
+  public checkCollisionsAndReflow(sacredUuids: string[] = []): void {
     if (!this.definition) return;
 
     const allBounds: NodeBounds[] = [];
@@ -3493,874 +2470,11 @@ export class Editor extends RapidElement {
    * Find the temba-flow-node element at the given viewport coordinates.
    * Uses elementFromPoint which works for both mouse and touch input.
    */
-  private findTargetNodeAt(clientX: number, clientY: number): Element | null {
+  public findTargetNodeAt(clientX: number, clientY: number): Element | null {
     const el = document.elementFromPoint(clientX, clientY);
     return el?.closest('temba-flow-node') ?? null;
   }
 
-  /**
-   * Handle touchstart on the canvas element. Mirrors handleGlobalMouseDown
-   * + handleCanvasMouseDown for touch: starts selection on empty canvas,
-   * and detects double-tap to show the context menu.
-   */
-  private handleCanvasTouchStart(event: TouchEvent): void {
-    this.markTouchDevice();
-
-    const touch = event.touches[0];
-    if (!touch) return;
-
-    // Only handle touches directly on canvas/grid (not on nodes)
-    const target = event.target as HTMLElement;
-    if (target.closest('.draggable')) return;
-    if (target.id !== 'canvas' && target.id !== 'grid') return;
-
-    // Two-finger touch on canvas — record start position and enter the
-    // two-finger state immediately (even before any touchmove). If the
-    // fingers lift without panning, we show the context menu (handleTouchEnd).
-    if (event.touches.length >= 2) {
-      // Cancel any single-finger selection that the first touch started
-      this.canvasMouseDown = false;
-      this.isSelecting = false;
-      this.selectionBox = null;
-
-      this.isTwoFingerPanning = true;
-      this.twoFingerOnCanvas = true;
-      this.twoFingerDidPan = false;
-      this.twoFingerStartMidX =
-        (event.touches[0].clientX + event.touches[1].clientX) / 2;
-      this.twoFingerStartMidY =
-        (event.touches[0].clientY + event.touches[1].clientY) / 2;
-      this.lastPanX = this.twoFingerStartMidX;
-      this.lastPanY = this.twoFingerStartMidY;
-      return;
-    }
-
-    // Start selection box (mirrors handleCanvasMouseDown)
-    if (this.isReadOnly()) return;
-
-    this.canvasMouseDown = true;
-    this.dragStartPos = { x: touch.clientX, y: touch.clientY };
-
-    const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
-    if (canvasRect) {
-      this.selectedItems.clear();
-
-      const relativeX = (touch.clientX - canvasRect.left) / this.zoom;
-      const relativeY = (touch.clientY - canvasRect.top) / this.zoom;
-
-      this.selectionBox = {
-        startX: relativeX,
-        startY: relativeY,
-        endX: relativeX,
-        endY: relativeY
-      };
-    }
-
-    event.preventDefault();
-  }
-
-  /* c8 ignore stop */
-
-  private handleMouseMove(event: MouseEvent): void {
-    // Handle selection box drawing
-    if (this.canvasMouseDown && !this.isMouseDown) {
-      this.isSelecting = true;
-      this.updateSelectionBox(event);
-      this.requestUpdate(); // Force re-render
-      return;
-    }
-
-    if (this.plumber.connectionDragging) {
-      this.activeDragIsTouch = false;
-      this.lastPointerPos = { clientX: event.clientX, clientY: event.clientY };
-      this.startAutoScroll();
-
-      const targetNode = document.querySelector('temba-flow-node:hover');
-
-      // Clear previous target styles
-      document.querySelectorAll('temba-flow-node').forEach((node) => {
-        node.classList.remove(
-          'connection-target-valid',
-          'connection-target-invalid'
-        );
-      });
-
-      if (targetNode) {
-        this.targetId = targetNode.getAttribute('uuid');
-        // Check if target is different from source node (prevent self-targeting)
-        this.isValidTarget = this.targetId !== this.dragFromNodeId;
-
-        // Apply visual feedback based on validity
-        if (this.isValidTarget) {
-          targetNode.classList.add('connection-target-valid');
-        } else {
-          targetNode.classList.add('connection-target-invalid');
-        }
-
-        // Hide connection placeholder when over a node
-        this.connectionPlaceholder = null;
-      } else {
-        this.targetId = null;
-        this.isValidTarget = true;
-
-        // Show connection placeholder when over empty canvas
-        const canvas = this.querySelector('#canvas');
-        if (canvas) {
-          const canvasRect = canvas.getBoundingClientRect();
-          const relativeX = (event.clientX - canvasRect.left) / this.zoom;
-          const relativeY = (event.clientY - canvasRect.top) / this.zoom;
-
-          const placeholderWidth = 200;
-          const placeholderHeight = 64;
-          const arrowLength = ARROW_LENGTH;
-          const cursorGap = CURSOR_GAP;
-
-          // Determine if cursor is above the source exit using stored sourceY
-          const dragUp =
-            this.connectionSourceY != null
-              ? relativeY < this.connectionSourceY
-              : false;
-
-          let top: number;
-          if (dragUp) {
-            // Arrow points up: tip at cy + cursorGap.
-            // Placeholder bottom should sit just above the arrow tip.
-            top = relativeY + cursorGap - placeholderHeight;
-          } else {
-            // Arrow points down: tip at cy - cursorGap + arrowLength.
-            // Placeholder top sits just below the arrow tip.
-            top = relativeY - cursorGap + arrowLength;
-          }
-
-          this.connectionPlaceholder = {
-            position: {
-              left: relativeX - placeholderWidth / 2,
-              top
-            },
-            visible: true,
-            dragUp
-          };
-        }
-      }
-
-      // Force update to show/hide placeholder
-      this.requestUpdate();
-    }
-
-    // Handle item dragging
-    if (!this.isMouseDown || !this.currentDragItem) return;
-
-    this.lastPointerPos = { clientX: event.clientX, clientY: event.clientY };
-
-    const deltaX = event.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
-    const deltaY = event.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-    // Only start dragging if we've moved beyond the threshold
-    if (!this.isDragging && distance > DRAG_THRESHOLD) {
-      this.isDragging = true;
-      this.startAutoScroll();
-
-      // Snapshot the original drag context before any copy occurs
-      this.originalDragItem = { ...this.currentDragItem };
-      this.originalSelectedItems = new Set(this.selectedItems);
-
-      if (this.shiftDragCopy || event.shiftKey) {
-        this.performShiftDragCopy();
-        this.shiftDragCopy = false;
-      } else {
-        this.showDragHint();
-      }
-    }
-
-    // If we're actually dragging, update positions
-    if (this.isDragging) {
-      this.updateDragPositions();
-    }
-  }
-
-  private performShiftDragCopy(): void {
-    if (!this.originalDragItem) return;
-
-    // Always use the original items as the source for copying
-    const itemsToCopy =
-      this.originalSelectedItems?.has(this.originalDragItem.uuid) &&
-      (this.originalSelectedItems?.size ?? 0) > 1
-        ? Array.from(this.originalSelectedItems!)
-        : [this.originalDragItem.uuid];
-
-    if (itemsToCopy.length === 0) return;
-
-    const uuidMapping = getStore().getState().duplicateNodes(itemsToCopy);
-
-    // Track only the top-level duplicated item UUIDs (not internal
-    // action/exit/category UUIDs). Accumulate across the discard window.
-    for (const uuid of itemsToCopy) {
-      const newUuid = uuidMapping[uuid];
-      if (newUuid && !this.copiedItemUuids.includes(newUuid)) {
-        this.copiedItemUuids.push(newUuid);
-      }
-    }
-    this.currentDragIsCopy = true;
-
-    // Snap original items back to their start positions.
-    // Set position while 'dragging' class is still applied so
-    // transitions are disabled and the move is instant.
-    for (const uuid of itemsToCopy) {
-      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-      const type =
-        element?.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
-      const position = this.getPosition(uuid, type);
-      if (element && position) {
-        element.style.left = `${position.left}px`;
-        element.style.top = `${position.top}px`;
-      }
-    }
-    this.plumber.revalidate(itemsToCopy);
-    // Force layout so the position is committed with transitions
-    // disabled, then remove the dragging class.
-    for (const uuid of itemsToCopy) {
-      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-      if (element) {
-        // Reading offsetHeight forces a synchronous layout
-        void element.offsetHeight;
-        element.classList.remove('dragging');
-      }
-    }
-
-    // Update drag item to reference the copy
-    const newDragUuid = uuidMapping[this.originalDragItem.uuid];
-    if (newDragUuid) {
-      this.currentDragItem = {
-        ...this.originalDragItem,
-        uuid: newDragUuid
-      };
-    }
-
-    // Update selected items to reference copies
-    if ((this.originalSelectedItems?.size ?? 0) > 1) {
-      const newSelectedItems = new Set<string>();
-      for (const uuid of this.originalSelectedItems!) {
-        const newUuid = uuidMapping[uuid];
-        newSelectedItems.add(newUuid || uuid);
-      }
-      this.selectedItems = newSelectedItems;
-    }
-  }
-
-  private markCopyElements(): void {
-    for (const uuid of this.copiedItemUuids) {
-      const el = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-      el?.classList.add('drag-copy');
-    }
-  }
-
-  private revertShiftDragCopy(): void {
-    if (!this.originalDragItem) return;
-
-    // Remove the cloned items
-    if (this.copiedItemUuids.length > 0) {
-      const nodeUuids = this.copiedItemUuids.filter((uuid) =>
-        this.definition.nodes.some((n) => n.uuid === uuid)
-      );
-      const stickyUuids = this.copiedItemUuids.filter(
-        (uuid) => this.definition._ui?.stickies?.[uuid]
-      );
-
-      if (nodeUuids.length > 0) {
-        getStore().getState().removeNodes(nodeUuids);
-      }
-      if (stickyUuids.length > 0) {
-        getStore().getState().removeStickyNotes(stickyUuids);
-      }
-      this.copiedItemUuids = [];
-    }
-
-    this.currentDragIsCopy = false;
-
-    // The remove calls above set dirtyDate, but we're just reverting a
-    // mid-drag copy — there's nothing to save yet.  Clear it so no
-    // revision is created while the drag is still in progress.
-    getStore().getState().setDirtyDate(null);
-
-    // Restore drag context to originals
-    this.currentDragItem = { ...this.originalDragItem };
-    if (this.originalSelectedItems) {
-      this.selectedItems = new Set(this.originalSelectedItems);
-    }
-  }
-
-  private updateDragPositions(): void {
-    if (!this.currentDragItem || !this.lastPointerPos) return;
-
-    // Convert screen + scroll delta to canvas delta
-    const deltaX =
-      (this.lastPointerPos.clientX -
-        this.dragStartPos.x +
-        this.autoScrollDeltaX) /
-      this.zoom;
-    const deltaY =
-      (this.lastPointerPos.clientY -
-        this.dragStartPos.y +
-        this.autoScrollDeltaY) /
-      this.zoom;
-
-    const itemsToMove =
-      this.selectedItems.has(this.currentDragItem.uuid) &&
-      this.selectedItems.size > 1
-        ? Array.from(this.selectedItems)
-        : [this.currentDragItem.uuid];
-
-    itemsToMove.forEach((uuid) => {
-      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-      if (element) {
-        const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
-        const position = this.getPosition(uuid, type);
-
-        if (position) {
-          element.style.left = `${position.left + deltaX}px`;
-          element.style.top = `${position.top + deltaY}px`;
-          element.classList.add('dragging');
-          if (this.currentDragIsCopy) {
-            element.classList.add('drag-copy');
-          }
-        }
-      }
-    });
-
-    this.plumber.revalidate(itemsToMove);
-
-  }
-
-  private startAutoScroll(): void {
-    if (this.autoScrollAnimationId !== null) return;
-
-    const editor = this.querySelector('#editor') as HTMLElement;
-    if (!editor) return;
-
-    const tick = () => {
-      if (
-        (!this.isDragging && !this.plumber?.connectionDragging) ||
-        !this.lastPointerPos
-      ) {
-        this.autoScrollAnimationId = null;
-        return;
-      }
-
-      const editorRect = editor.getBoundingClientRect();
-      const mouseX = this.lastPointerPos.clientX;
-      const mouseY = this.lastPointerPos.clientY;
-      const edgeZone = this.activeDragIsTouch
-        ? AUTO_SCROLL_EDGE_ZONE_TOUCH
-        : AUTO_SCROLL_EDGE_ZONE;
-
-      let scrollDx = 0;
-      let scrollDy = 0;
-
-      // Left edge (including beyond)
-      const distFromLeft = mouseX - editorRect.left;
-      if (distFromLeft < edgeZone) {
-        const beyond = distFromLeft < 0;
-        const ratio = Math.min(1, 1 - distFromLeft / edgeZone);
-        const speed =
-          AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
-        scrollDx = -(ratio * speed);
-      }
-
-      // Right edge (including beyond)
-      const distFromRight = editorRect.right - mouseX;
-      if (distFromRight < edgeZone) {
-        const beyond = distFromRight < 0;
-        const ratio = Math.min(1, 1 - distFromRight / edgeZone);
-        const speed =
-          AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
-        scrollDx = ratio * speed;
-      }
-
-      // Top edge (including beyond)
-      const distFromTop = mouseY - editorRect.top;
-      if (distFromTop < edgeZone) {
-        const beyond = distFromTop < 0;
-        const ratio = Math.min(1, 1 - distFromTop / edgeZone);
-        const speed =
-          AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
-        scrollDy = -(ratio * speed);
-      }
-
-      // Bottom edge (including beyond)
-      const distFromBottom = editorRect.bottom - mouseY;
-      if (distFromBottom < edgeZone) {
-        const beyond = distFromBottom < 0;
-        const ratio = Math.min(1, 1 - distFromBottom / edgeZone);
-        const speed =
-          AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
-        scrollDy = ratio * speed;
-      }
-
-      if (scrollDx !== 0 || scrollDy !== 0) {
-        const beforeScrollLeft = editor.scrollLeft;
-        const beforeScrollTop = editor.scrollTop;
-
-        // Expand canvas if scrolling toward bottom/right edges
-        // Convert from scroll space to canvas space for expandCanvas
-        if (scrollDx > 0 || scrollDy > 0) {
-          const neededWidth =
-            (editor.scrollLeft + editor.clientWidth + scrollDx) / this.zoom;
-          const neededHeight =
-            (editor.scrollTop + editor.clientHeight + scrollDy) / this.zoom;
-          getStore()?.getState()?.expandCanvas(neededWidth, neededHeight);
-        }
-
-        editor.scrollLeft += scrollDx;
-        editor.scrollTop += scrollDy;
-
-        // Track actual scroll delta (browser clamps at boundaries)
-        const actualDx = editor.scrollLeft - beforeScrollLeft;
-        const actualDy = editor.scrollTop - beforeScrollTop;
-        this.autoScrollDeltaX += actualDx;
-        this.autoScrollDeltaY += actualDy;
-
-        if (actualDx !== 0 || actualDy !== 0) {
-          this.updateDragPositions();
-        }
-      }
-
-      this.autoScrollAnimationId = requestAnimationFrame(tick);
-    };
-
-    this.autoScrollAnimationId = requestAnimationFrame(tick);
-  }
-
-  private stopAutoScroll(): void {
-    if (this.autoScrollAnimationId !== null) {
-      cancelAnimationFrame(this.autoScrollAnimationId);
-      this.autoScrollAnimationId = null;
-    }
-  }
-
-  private handleMouseUp(event: MouseEvent): void {
-    // Handle selection box completion
-    if (this.canvasMouseDown && this.isSelecting) {
-      this.isSelecting = false;
-      this.selectionBox = null;
-      this.canvasMouseDown = false;
-      this.requestUpdate();
-      return;
-    }
-
-    // Handle canvas click (clear selection)
-    if (this.canvasMouseDown && !this.isSelecting) {
-      this.canvasMouseDown = false;
-      return;
-    }
-
-    // Handle item drag completion
-    if (!this.isMouseDown || !this.currentDragItem) return;
-
-    this.stopAutoScroll();
-
-    // If we were actually dragging, handle the drag end
-    if (this.isDragging) {
-      // Convert screen + scroll delta to canvas delta
-      const deltaX =
-        (event.clientX - this.dragStartPos.x + this.autoScrollDeltaX) /
-        this.zoom;
-      const deltaY =
-        (event.clientY - this.dragStartPos.y + this.autoScrollDeltaY) /
-        this.zoom;
-
-      // Determine what items were moved
-      const itemsToMove =
-        this.selectedItems.has(this.currentDragItem.uuid) &&
-        this.selectedItems.size > 1
-          ? Array.from(this.selectedItems)
-          : [this.currentDragItem.uuid];
-
-      // Update positions for all moved items
-      const newPositions: { [uuid: string]: FlowPosition } = {};
-
-      itemsToMove.forEach((uuid) => {
-        const type = this.definition.nodes.find((node) => node.uuid === uuid)
-          ? 'node'
-          : 'sticky';
-        const position = this.getPosition(uuid, type);
-
-        if (position) {
-          const newLeft = position.left + deltaX;
-          const newTop = position.top + deltaY;
-
-          // Snap to 20px grid for final position
-          const snappedLeft = snapToGrid(newLeft);
-          const snappedTop = snapToGrid(newTop);
-
-          const newPosition = { left: snappedLeft, top: snappedTop };
-          newPositions[uuid] = newPosition;
-
-          // Remove dragging/copy classes
-          const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-          if (element) {
-            element.classList.remove('dragging', 'drag-copy');
-            element.style.left = `${snappedLeft}px`;
-            element.style.top = `${snappedTop}px`;
-          }
-        }
-      });
-
-      if (Object.keys(newPositions).length > 0) {
-        // Suppress save if this was a shift+drag copy — the pending card
-        // gives the user a chance to abandon before the revision is saved.
-        if (this.currentDragIsCopy) {
-          this.pendingTimer.pending = true;
-          this.capturePositionsOnce();
-        }
-
-        getStore().getState().updateCanvasPositions(newPositions);
-
-        // Check for collisions and reflow after updating positions
-        // Allow DOM to update before checking collisions
-        setTimeout(() => {
-          this.checkCollisionsAndReflow(itemsToMove);
-          this.plumber.repaintEverything();
-        }, 0);
-      }
-
-      // Show/reset pending-changes card for shift+drag copy
-      if (this.currentDragIsCopy) {
-        this.pendingTimer.start();
-      }
-
-      this.selectedItems.clear();
-    }
-
-    // Reset all drag state
-    this.hideDragHint();
-    this.isDragging = false;
-    this.isMouseDown = false;
-    this.shiftDragCopy = false;
-    this.currentDragIsCopy = false;
-    this.currentDragItem = null;
-    this.originalDragItem = null;
-    this.originalSelectedItems = null;
-    this.canvasMouseDown = false;
-    this.autoScrollDeltaX = 0;
-    this.autoScrollDeltaY = 0;
-    this.lastPointerPos = null;
-  }
-
-  /* c8 ignore start -- touch-only handlers */
-
-  /**
-   * Handle touch move on the document — mirrors handleMouseMove for
-   * both connection dragging and node/sticky dragging on touch devices.
-   */
-  private handleTouchMove(event: TouchEvent): void {
-    // --- Two-finger panning ---
-    if (event.touches.length >= 2) {
-      event.preventDefault();
-      const midX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
-      const midY = (event.touches[0].clientY + event.touches[1].clientY) / 2;
-
-      if (this.isTwoFingerPanning) {
-        const dx = this.lastPanX - midX;
-        const dy = this.lastPanY - midY;
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-          this.twoFingerDidPan = true;
-        }
-        const editor = this.querySelector('#editor') as HTMLElement;
-        if (editor) {
-          editor.scrollBy(dx, dy);
-        }
-      }
-
-      // Cancel any in-progress single-finger actions
-      this.canvasMouseDown = false;
-      this.isSelecting = false;
-      this.selectionBox = null;
-
-      this.isTwoFingerPanning = true;
-      this.lastPanX = midX;
-      this.lastPanY = midY;
-      return;
-    }
-
-    const touch = event.touches[0];
-    if (!touch) return;
-
-    // --- Selection box drawing ---
-    if (this.canvasMouseDown && !this.isMouseDown) {
-      event.preventDefault();
-      this.isSelecting = true;
-
-      const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
-      if (canvasRect && this.selectionBox) {
-        this.selectionBox = {
-          ...this.selectionBox,
-          endX: (touch.clientX - canvasRect.left) / this.zoom,
-          endY: (touch.clientY - canvasRect.top) / this.zoom
-        };
-        this.updateSelectedItemsFromBox();
-      }
-
-      this.requestUpdate();
-      return;
-    }
-
-    // --- Connection dragging ---
-    if (this.plumber.connectionDragging) {
-      event.preventDefault();
-
-      const targetNode = this.findTargetNodeAt(touch.clientX, touch.clientY);
-
-      // Clear previous target styles
-      document.querySelectorAll('temba-flow-node').forEach((node) => {
-        node.classList.remove(
-          'connection-target-valid',
-          'connection-target-invalid'
-        );
-      });
-
-      if (targetNode) {
-        this.targetId = targetNode.getAttribute('uuid');
-        this.isValidTarget = this.targetId !== this.dragFromNodeId;
-
-        if (this.isValidTarget) {
-          targetNode.classList.add('connection-target-valid');
-        } else {
-          targetNode.classList.add('connection-target-invalid');
-        }
-
-        this.connectionPlaceholder = null;
-      } else {
-        this.targetId = null;
-        this.isValidTarget = true;
-
-        const canvas = this.querySelector('#canvas');
-        if (canvas) {
-          const canvasRect = canvas.getBoundingClientRect();
-          const relativeX = (touch.clientX - canvasRect.left) / this.zoom;
-          const relativeY = (touch.clientY - canvasRect.top) / this.zoom;
-
-          const placeholderWidth = 200;
-          const placeholderHeight = 64;
-          const arrowLength = ARROW_LENGTH;
-          const cursorGap = CURSOR_GAP;
-
-          const dragUp =
-            this.connectionSourceY != null
-              ? relativeY < this.connectionSourceY
-              : false;
-
-          let top: number;
-          if (dragUp) {
-            top = relativeY + cursorGap - placeholderHeight;
-          } else {
-            top = relativeY - cursorGap + arrowLength;
-          }
-
-          this.connectionPlaceholder = {
-            position: {
-              left: relativeX - placeholderWidth / 2,
-              top
-            },
-            visible: true,
-            dragUp
-          };
-        }
-      }
-
-      this.requestUpdate();
-      return;
-    }
-
-    // --- Node/sticky dragging ---
-    if (!this.isMouseDown || !this.currentDragItem) return;
-
-    this.lastPointerPos = { clientX: touch.clientX, clientY: touch.clientY };
-
-    const deltaX = touch.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
-    const deltaY = touch.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-    if (!this.isDragging && distance > DRAG_THRESHOLD) {
-      this.isDragging = true;
-      this.startAutoScroll();
-    }
-
-    // Only prevent default scrolling once we're actually dragging.
-    // Before the threshold, allow the browser to fire synthetic click
-    // events for taps on buttons (remove, add-action, etc.).
-    if (this.isDragging) {
-      event.preventDefault();
-      this.updateDragPositions();
-    }
-  }
-
-  /**
-   * Handle touch end on the document — mirrors handleMouseUp for
-   * both connection dragging and node/sticky dragging on touch devices.
-   */
-  private handleTouchEnd(event: TouchEvent): void {
-    // --- Two-finger gesture end ---
-    if (this.isTwoFingerPanning) {
-      if (event.touches.length === 0) {
-        const didPan = this.twoFingerDidPan;
-        const onCanvas = this.twoFingerOnCanvas;
-        const midX = this.twoFingerStartMidX;
-        const midY = this.twoFingerStartMidY;
-
-        // Reset state
-        this.isTwoFingerPanning = false;
-        this.twoFingerOnCanvas = false;
-        this.twoFingerDidPan = false;
-
-        // Two-finger tap (no pan) on canvas → show context menu
-        if (!didPan && onCanvas) {
-          this.showContextMenuAt(midX, midY);
-        }
-      }
-      return;
-    }
-
-    const touch = event.changedTouches[0];
-
-    // --- Selection box completion ---
-    if (this.canvasMouseDown && this.isSelecting) {
-      this.isSelecting = false;
-      this.selectionBox = null;
-      this.canvasMouseDown = false;
-      this.requestUpdate();
-      return;
-    }
-
-    // --- Canvas tap (no drag) — clear selection ---
-    if (this.canvasMouseDown && !this.isSelecting) {
-      this.canvasMouseDown = false;
-      return;
-    }
-
-    // --- Connection dragging ---
-    if (this.plumber.connectionDragging) {
-      if (touch) {
-        const targetNode = this.findTargetNodeAt(touch.clientX, touch.clientY);
-        if (targetNode) {
-          this.targetId = targetNode.getAttribute('uuid');
-          this.isValidTarget = this.targetId !== this.dragFromNodeId;
-        }
-      }
-      return;
-    }
-
-    // --- Node/sticky dragging ---
-    if (!this.isMouseDown || !this.currentDragItem) return;
-
-    this.stopAutoScroll();
-
-    if (this.isDragging && touch) {
-      const deltaX =
-        (touch.clientX - this.dragStartPos.x + this.autoScrollDeltaX) /
-        this.zoom;
-      const deltaY =
-        (touch.clientY - this.dragStartPos.y + this.autoScrollDeltaY) /
-        this.zoom;
-
-      const itemsToMove =
-        this.selectedItems.has(this.currentDragItem.uuid) &&
-        this.selectedItems.size > 1
-          ? Array.from(this.selectedItems)
-          : [this.currentDragItem.uuid];
-
-      const newPositions: { [uuid: string]: FlowPosition } = {};
-
-      itemsToMove.forEach((uuid) => {
-        const type = this.definition.nodes.find((node) => node.uuid === uuid)
-          ? 'node'
-          : 'sticky';
-        const position = this.getPosition(uuid, type);
-
-        if (position) {
-          const newLeft = position.left + deltaX;
-          const newTop = position.top + deltaY;
-          const snappedLeft = snapToGrid(newLeft);
-          const snappedTop = snapToGrid(newTop);
-
-          newPositions[uuid] = { left: snappedLeft, top: snappedTop };
-
-          const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-          if (element) {
-            element.classList.remove('dragging');
-            element.style.left = `${snappedLeft}px`;
-            element.style.top = `${snappedTop}px`;
-          }
-        }
-      });
-
-      if (Object.keys(newPositions).length > 0) {
-        getStore().getState().updateCanvasPositions(newPositions);
-
-        // Check for collisions and reflow after updating positions
-        setTimeout(() => {
-          this.checkCollisionsAndReflow(itemsToMove);
-          this.plumber.repaintEverything();
-        }, 0);
-      }
-
-      this.selectedItems.clear();
-    }
-
-    // Reset all drag state
-    this.isDragging = false;
-    this.isMouseDown = false;
-    this.currentDragItem = null;
-    this.canvasMouseDown = false;
-    this.autoScrollDeltaX = 0;
-    this.autoScrollDeltaY = 0;
-    this.lastPointerPos = null;
-  }
-
-  /**
-   * Handle touchcancel — reset all touch-related state so the editor
-   * doesn't get stuck in a partial drag/selection mode.
-   */
-  private handleTouchCancel(): void {
-    this.isTwoFingerPanning = false;
-    this.isSelecting = false;
-    this.selectionBox = null;
-    this.canvasMouseDown = false;
-
-    if (this.isDragging && this.currentDragItem) {
-      // Remove dragging class from all moved items
-      const itemsToReset =
-        this.selectedItems.has(this.currentDragItem.uuid) &&
-        this.selectedItems.size > 1
-          ? Array.from(this.selectedItems)
-          : [this.currentDragItem.uuid];
-      itemsToReset.forEach((uuid) => {
-        const el = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-        if (el) el.classList.remove('dragging');
-      });
-    }
-
-    this.stopAutoScroll();
-    this.isDragging = false;
-    this.isMouseDown = false;
-    this.currentDragItem = null;
-    this.autoScrollDeltaX = 0;
-    this.autoScrollDeltaY = 0;
-    this.lastPointerPos = null;
-
-    // Clear connection drag visual state
-    document.querySelectorAll('temba-flow-node').forEach((node) => {
-      node.classList.remove(
-        'connection-target-valid',
-        'connection-target-invalid'
-      );
-    });
-    this.connectionPlaceholder = null;
-
-    this.requestUpdate();
-  }
-
-  /* c8 ignore stop */
 
   private updateCanvasSize(): void {
     if (!this.definition) return;
@@ -4444,7 +2558,7 @@ export class Editor extends RapidElement {
     event.stopPropagation();
 
     // Ensure no sticky note contenteditable retains focus
-    this.blurActiveContentEditable();
+    this.dragManager.blurActiveContentEditable();
 
     this.showContextMenuAt(event.clientX, event.clientY);
   }
@@ -4453,7 +2567,7 @@ export class Editor extends RapidElement {
    * Show the canvas context menu at the given viewport coordinates.
    * Shared by right-click (mouse) and double-tap (touch).
    */
-  private showContextMenuAt(clientX: number, clientY: number): void {
+  public showContextMenuAt(clientX: number, clientY: number): void {
     if (this.isReadOnly()) return;
 
     const canvas = this.querySelector('#canvas');
@@ -5048,7 +3162,7 @@ export class Editor extends RapidElement {
         this.actionDragIsCopy = true;
         this.showActionOriginal(true);
       } else {
-        this.showDragHint();
+        (this.querySelector('#drag-hint') as HTMLElement)?.classList.add('visible');
       }
     }
 
@@ -5211,7 +3325,7 @@ export class Editor extends RapidElement {
     this.actionDragTargetNodeUuid = null;
     this.isActionExternalDrag = false;
     this.actionDragIsCopy = false;
-    this.hideDragHint();
+    (this.querySelector('#drag-hint') as HTMLElement)?.classList.remove('visible');
     this.actionDragLastDetail = null;
   }
 
@@ -5297,7 +3411,7 @@ export class Editor extends RapidElement {
     this.actionDragIsCopy = false;
     this.actionDragLastDetail = null;
     this.previousActionDragTargetNodeUuid = null;
-    this.hideDragHint();
+    (this.querySelector('#drag-hint') as HTMLElement)?.classList.remove('visible');
 
     // Check if we're dropping on an existing execute_actions node
     const targetNodeUuid = this.actionDragTargetNodeUuid;
@@ -5424,509 +3538,8 @@ export class Editor extends RapidElement {
     }
   }
 
-  private getLocalizationLanguages(): Array<{ code: string; name: string }> {
-    if (!this.definition) {
-      return [];
-    }
 
-    const baseLanguage = this.definition.language;
-    return this.getAvailableLanguages().filter(
-      (lang) => lang.code !== baseLanguage
-    );
-  }
 
-  private getLocalizationProgress(languageCode: string): {
-    total: number;
-    localized: number;
-  } {
-    if (
-      !this.definition ||
-      !languageCode ||
-      languageCode === this.definition.language
-    ) {
-      return { total: 0, localized: 0 };
-    }
-
-    const bundles = this.buildTranslationBundles(languageCode);
-    return this.getTranslationCounts(bundles);
-  }
-
-  private getLanguageLocalization(languageCode: string): Record<string, any> {
-    if (!this.definition?.localization) {
-      return {};
-    }
-    return this.definition.localization[languageCode] || {};
-  }
-
-  private buildTranslationBundles(
-    languageCode: string = this.languageCode
-  ): TranslationBundle[] {
-    if (
-      !this.definition ||
-      !languageCode ||
-      languageCode === this.definition.language
-    ) {
-      return [];
-    }
-
-    const languageLocalization = this.getLanguageLocalization(languageCode);
-    const bundles: TranslationBundle[] = [];
-
-    this.definition.nodes.forEach((node) => {
-      node.actions?.forEach((action) => {
-        const config = ACTION_CONFIG[action.type];
-        if (!config?.localizable || config.localizable.length === 0) {
-          return;
-        }
-
-        // For send_msg actions, only count 'text' for progress tracking
-        // (quick_replies and attachments are still localizable but don't count toward progress)
-        const localizableKeys =
-          action.type === 'send_msg'
-            ? config.localizable.filter((key) => key === 'text')
-            : config.localizable;
-
-        const translations = this.findTranslations(
-          'property',
-          action.uuid,
-          localizableKeys,
-          action,
-          languageLocalization
-        );
-
-        if (translations.length > 0) {
-          bundles.push({
-            nodeUuid: node.uuid,
-            actionUuid: action.uuid,
-            translations
-          });
-        }
-      });
-
-      const nodeUI = this.definition._ui?.nodes?.[node.uuid];
-      const nodeType = nodeUI?.type;
-      if (!nodeType) {
-        return;
-      }
-
-      const nodeConfig = NODE_CONFIG[nodeType];
-      // Include rule (case argument) translations when localizeRules is set
-      if (nodeUI?.config?.localizeRules && node.router?.cases?.length) {
-        const ruleTranslations = node.router.cases
-          .filter((c) => c.arguments?.length > 0 && c.arguments.some((a) => a))
-          .flatMap((c) =>
-            this.findTranslations(
-              'property',
-              c.uuid,
-              ['arguments'],
-              c,
-              languageLocalization
-            )
-          );
-
-        if (ruleTranslations.length > 0) {
-          bundles.push({
-            nodeUuid: node.uuid,
-            translations: ruleTranslations
-          });
-        }
-      }
-
-      if (
-        nodeUI?.config?.localizeCategories &&
-        nodeConfig?.localizable === 'categories' &&
-        node.router?.categories?.length
-      ) {
-        const translatableCategories = getTranslatableCategoriesForNode(
-          nodeType,
-          node.router.categories
-        );
-        const categoryTranslations = translatableCategories.flatMap(
-          (category) =>
-            this.findTranslations(
-              'category',
-              category.uuid,
-              ['name'],
-              category,
-              languageLocalization
-            )
-        );
-
-        if (categoryTranslations.length > 0) {
-          bundles.push({
-            nodeUuid: node.uuid,
-            translations: categoryTranslations
-          });
-        }
-      }
-    });
-
-    return bundles;
-  }
-
-  private findTranslations(
-    type: TranslationType,
-    uuid: string,
-    localizeableKeys: string[],
-    source: any,
-    localization: Record<string, any>
-  ): TranslationEntry[] {
-    const translations: TranslationEntry[] = [];
-
-    localizeableKeys.forEach((attribute) => {
-      if (attribute === 'quick_replies') {
-        return;
-      }
-
-      const pathSegments = attribute.split('.');
-      let from: any = source;
-      let to: any = [];
-
-      while (pathSegments.length > 0 && from) {
-        if (from.uuid) {
-          to = localization[from.uuid];
-        }
-
-        const path = pathSegments.shift();
-        if (!path) {
-          break;
-        }
-
-        if (to) {
-          to = to[path];
-        }
-        from = from[path];
-      }
-
-      if (!from) {
-        return;
-      }
-
-      const fromValue = this.formatTranslationValue(from);
-      if (!fromValue) {
-        return;
-      }
-
-      const toValue = to ? this.formatTranslationValue(to) : null;
-
-      translations.push({
-        uuid,
-        type,
-        attribute,
-        from: fromValue,
-        to: toValue
-      });
-    });
-
-    return translations;
-  }
-
-  private formatTranslationValue(value: any): string | null {
-    if (value === null || value === undefined) {
-      return null;
-    }
-
-    if (Array.isArray(value)) {
-      const normalized = value
-        .map((entry) => this.formatTranslationValue(entry))
-        .filter((entry) => !!entry) as string[];
-      return normalized.length > 0 ? normalized.join(', ') : null;
-    }
-
-    if (typeof value === 'object') {
-      if ('name' in value && value.name) {
-        return String(value.name);
-      }
-
-      if ('arguments' in value && Array.isArray(value.arguments)) {
-        return value.arguments.join(' ');
-      }
-
-      return null;
-    }
-
-    if (typeof value === 'number') {
-      return value.toString();
-    }
-
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    }
-
-    return null;
-  }
-
-  private getTranslationCounts(bundles: TranslationBundle[]): {
-    total: number;
-    localized: number;
-  } {
-    return bundles.reduce(
-      (counts, bundle) => {
-        bundle.translations.forEach((translation) => {
-          counts.total += 1;
-          if (translation.to && translation.to.trim().length > 0) {
-            counts.localized += 1;
-          }
-        });
-        return counts;
-      },
-      { total: 0, localized: 0 }
-    );
-  }
-
-  private handleLocalizationLanguageSelect(languageCode: string): void {
-    if (languageCode === this.languageCode) {
-      return;
-    }
-    this.handleLanguageChange(languageCode);
-  }
-
-  private handleLocalizationLanguageSelectChange(event: CustomEvent): void {
-    const select = event.target as any;
-    const nextValue = select?.values?.[0]?.value;
-    if (nextValue) {
-      this.handleLocalizationLanguageSelect(nextValue);
-    } else {
-      // Cleared — return to base language
-      const baseLanguage = this.definition?.language;
-      if (baseLanguage) {
-        this.handleLanguageChange(baseLanguage);
-      }
-    }
-  }
-
-  private handleLocalizationWindowClosed(): void {
-    this.localizationWindowHidden = true;
-  }
-
-  private toggleTranslationSettings(): void {
-    this.translationSettingsExpanded = !this.translationSettingsExpanded;
-  }
-
-  private handleLocalizationProgressToggleClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (target.closest('.translation-settings-toggle')) {
-      return;
-    }
-    this.toggleTranslationSettings();
-  }
-
-  private handleLocalizationProgressToggleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this.toggleTranslationSettings();
-    }
-  }
-
-  private hasAnyNodeWithLocalizeCategories(): boolean {
-    if (!this.definition?._ui?.nodes) return false;
-    return Object.values(this.definition._ui.nodes).some(
-      (nodeUI: any) => nodeUI?.config?.localizeCategories
-    );
-  }
-
-  private async handleAutoTranslateClick(event?: Event): Promise<void> {
-    event?.preventDefault();
-    event?.stopPropagation();
-    if (this.viewingRevision) {
-      return;
-    }
-
-    if (this.autoTranslating) {
-      this.autoTranslating = false;
-      return;
-    }
-
-    this.autoTranslateDialogOpen = true;
-  }
-
-  private handleAutoTranslateDialogButton(event: CustomEvent): void {
-    const button = event.detail?.button;
-    if (!button) {
-      return;
-    }
-
-    if (button.name === 'Translate') {
-      if (!this.autoTranslateModel) {
-        return;
-      }
-      this.autoTranslateDialogOpen = false;
-      this.autoTranslateError = null;
-      this.autoTranslating = true;
-      this.runAutoTranslation().catch((error) => {
-        console.error('Auto translation failed', error);
-        this.autoTranslateError = 'Auto translation failed. Please try again.';
-        this.autoTranslating = false;
-      });
-    } else if (button.name === 'Cancel' || button.name === 'Close') {
-      this.autoTranslateDialogOpen = false;
-    }
-  }
-
-  private handleAutoTranslateModelChange(event: Event): void {
-    const select = event.target as any;
-    const nextModel = select?.values?.[0] || null;
-    this.autoTranslateModel = nextModel;
-  }
-
-  private shouldTranslateValue(text: string): boolean {
-    if (!text) {
-      return false;
-    }
-    const trimmed = text.trim();
-    if (trimmed.length <= 1) {
-      return false;
-    }
-    if (/^\d+$/.test(trimmed)) {
-      return false;
-    }
-    return true;
-  }
-
-  private async requestAutoTranslation(text: string): Promise<string | null> {
-    if (!this.autoTranslateModel || !this.definition) {
-      return null;
-    }
-
-    const payload = {
-      text,
-      lang: {
-        from: this.definition.language,
-        to: this.languageCode
-      }
-    };
-
-    const response = await postJSON(
-      `/llm/translate/${this.autoTranslateModel.uuid}/`,
-      payload
-    );
-
-    if (response?.status === 200) {
-      const result = response.json?.result || response.json?.text;
-      return result ? String(result) : null;
-    }
-
-    throw new Error('Auto translation request failed');
-  }
-
-  private applyLocalizationUpdates(
-    updates: LocalizationUpdate[],
-    autoTranslated = false
-  ): void {
-    if (!updates.length || !this.definition) {
-      return;
-    }
-
-    const store = getStore();
-    if (!store) {
-      return;
-    }
-
-    updates.forEach(({ uuid, translations }) => {
-      const normalized = Object.entries(translations).reduce(
-        (acc, [key, value]) => {
-          if (!value) {
-            return acc;
-          }
-          acc[key] = Array.isArray(value) ? value : [value];
-          return acc;
-        },
-        {} as Record<string, any>
-      );
-
-      const existing =
-        this.definition.localization?.[this.languageCode]?.[uuid] || {};
-      const merged = { ...existing, ...normalized };
-
-      store.getState().updateLocalization(this.languageCode, uuid, merged);
-
-      if (autoTranslated) {
-        zustand
-          .getState()
-          .markAutoTranslated(
-            this.languageCode,
-            uuid,
-            Object.keys(translations)
-          );
-      }
-    });
-  }
-
-  private async runAutoTranslation(): Promise<void> {
-    if (
-      !this.definition ||
-      this.languageCode === this.definition.language ||
-      !this.autoTranslateModel
-    ) {
-      this.autoTranslating = false;
-      return;
-    }
-
-    const bundles = this.buildTranslationBundles();
-
-    for (const bundle of bundles) {
-      if (!this.autoTranslating) {
-        break;
-      }
-
-      const untranslated = bundle.translations.filter(
-        (translation) => !translation.to || translation.to.trim().length === 0
-      );
-
-      if (untranslated.length === 0) {
-        continue;
-      }
-
-      const updates: LocalizationUpdate[] = [];
-
-      for (const translation of untranslated) {
-        if (!this.autoTranslating) {
-          break;
-        }
-
-        if (!this.shouldTranslateValue(translation.from)) {
-          continue;
-        }
-
-        const cached = this.translationCache.get(translation.from);
-        if (cached) {
-          updates.push({
-            uuid: translation.uuid,
-            translations: { [translation.attribute]: cached }
-          });
-          continue;
-        }
-
-        try {
-          const result = await this.requestAutoTranslation(translation.from);
-          if (result) {
-            this.translationCache.set(translation.from, result);
-            updates.push({
-              uuid: translation.uuid,
-              translations: { [translation.attribute]: result }
-            });
-          }
-        } catch (error) {
-          console.error('Auto translation request failed', error);
-          this.autoTranslateError =
-            'Auto translation failed. Please try again.';
-          this.autoTranslating = false;
-          break;
-        }
-      }
-
-      if (updates.length > 0) {
-        this.applyLocalizationUpdates(updates, true);
-      }
-
-      if (!this.autoTranslating) {
-        break;
-      }
-    }
-
-    this.autoTranslating = false;
-  }
 
   private closeOpenWindows(): void {
     if (!this.issuesWindowHidden) {
@@ -5934,9 +3547,6 @@ export class Editor extends RapidElement {
     }
     if (!this.revisionsWindowHidden) {
       this.handleRevisionsWindowClosed();
-    }
-    if (!this.localizationWindowHidden) {
-      this.handleLocalizationWindowClosed();
     }
     if (this.simulatorActive) {
       const simulator = document.querySelector('temba-simulator') as any;
@@ -5950,9 +3560,6 @@ export class Editor extends RapidElement {
     }
     if (!this.revisionsWindowHidden) {
       this.handleRevisionsWindowClosed();
-    }
-    if (!this.localizationWindowHidden) {
-      this.handleLocalizationWindowClosed();
     }
   }
 
@@ -6277,236 +3884,17 @@ export class Editor extends RapidElement {
     `;
   }
 
-  private renderLocalizationWindow(): TemplateResult | string {
-    const languages = this.getLocalizationLanguages();
-    if (!languages.length) {
-      return html``;
-    }
-
-    const baseLanguage = this.definition?.language;
-    const isBaseSelected =
-      !this.languageCode ||
-      this.languageCode === baseLanguage ||
-      !languages.some((lang) => lang.code === this.languageCode);
-    const activeLanguage = !isBaseSelected
-      ? languages.find((lang) => lang.code === this.languageCode)
-      : null;
-    const progress = this.getLocalizationProgress(
-      isBaseSelected ? '' : this.languageCode
-    );
-    const settingsPanelId = 'translation-settings-panel';
-    const remainingTranslations = Math.max(
-      progress.total - progress.localized,
-      0
-    );
-    const hasTranslations = progress.total > 0;
-    const hasPendingTranslations = remainingTranslations > 0;
-
-    return html`
-      <temba-floating-window
-        id="localization-window"
-        name="localization"
-        header="Translations"
-        icon="language"
-        .width=${360}
-        .maxHeight=${600}
-        .top=${120}
-        color="#5b7ea6"
-        .hidden=${this.localizationWindowHidden}
-        @temba-dialog-hidden=${this.handleLocalizationWindowClosed}
-      >
-        <div class="localization-window-content">
-          <div class="localization-header">
-            Select a language to view or translate your flow content.
-          </div>
-          <div class="localization-language-row">
-            <temba-select
-              flavor="small"
-              class="localization-language-select"
-              placeholder="Select a language"
-              ?clearable=${true}
-              .values=${activeLanguage
-                ? [{ name: activeLanguage.name, value: activeLanguage.code }]
-                : []}
-              @change=${this.handleLocalizationLanguageSelectChange}
-            >
-              ${languages.map(
-                (lang) =>
-                  html`<temba-option
-                    value="${lang.code}"
-                    name="${lang.name}"
-                  ></temba-option>`
-              )}
-            </temba-select>
-            ${''/* auto translate button hidden pending backend changes */}
-          </div>
-          <div
-            class="localization-progress ${isBaseSelected ? 'disabled' : ''}"
-          >
-            <div class="localization-progress-summary">
-              ${isBaseSelected
-                  ? html`<span
-                      >Select a language to see translation progress.</span
-                    >`
-                  : !hasTranslations
-                    ? // prettier-ignore
-                      html`<span>Add content or enable more options to start translating.</span>`
-                    : hasPendingTranslations
-                      ? // prettier-ignore
-                        html`<span>${progress.localized} of ${progress.total} items translated</span>`
-                      : html`<span>All items are translated.</span>`}
-            </div>
-            ${''/* auto translate error hidden pending backend changes */}
-            <div class="localization-progress-bar-row">
-              <div
-                class="localization-progress-trigger"
-                role="button"
-                tabindex="0"
-                aria-expanded="${this.translationSettingsExpanded}"
-                aria-controls="${settingsPanelId}"
-                @click=${this.handleLocalizationProgressToggleClick}
-                @keydown=${this.handleLocalizationProgressToggleKeydown}
-              >
-                <temba-progress
-                  .current=${progress.localized}
-                  .total=${Math.max(progress.total, 1)}
-                  .animated=${false}
-                ></temba-progress>
-              </div>
-              <div
-                class="translation-settings-toggle"
-                @click=${this.toggleTranslationSettings}
-                aria-expanded="${this.translationSettingsExpanded}"
-                aria-controls="${settingsPanelId}"
-              >
-                <span
-                  class="translation-settings-arrow ${this
-                    .translationSettingsExpanded
-                    ? 'expanded'
-                    : ''}"
-                ></span>
-              </div>
-            </div>
-            ${this.translationSettingsExpanded
-              ? html`<div
-                  id="${settingsPanelId}"
-                  class="translation-settings"
-                >
-                </div>`
-              : ''}
-          </div>
-        </div>
-      </temba-floating-window>
-    `;
-  }
-
-  private renderAutoTranslateDialog(): TemplateResult | string {
-    if (!this.autoTranslateDialogOpen) {
-      return html``;
-    }
-
-    const selectedModel = this.autoTranslateModel
-      ? [this.autoTranslateModel]
-      : [];
-    const disableTranslate = !this.autoTranslateModel;
-
-    return html`
-      <temba-dialog
-        header="Auto translate"
-        .open=${this.autoTranslateDialogOpen}
-        primaryButtonName="Translate"
-        cancelButtonName="Cancel"
-        size="small"
-        .disabled=${disableTranslate}
-        @temba-button-clicked=${this.handleAutoTranslateDialogButton}
-      >
-        <div class="auto-translate-dialog-content">
-          <p>
-            We'll send any untranslated text to the selected AI model and save
-            the responses automatically.
-          </p>
-          <div class="auto-translate-models">
-            <temba-select
-              class="auto-translate-model-select"
-              endpoint="${AUTO_TRANSLATE_MODELS_ENDPOINT}"
-              .valueKey=${'uuid'}
-              .values=${selectedModel}
-              ?searchable=${true}
-              ?clearable=${true}
-              placeholder="Select an AI model"
-              @change=${this.handleAutoTranslateModelChange}
-            ></temba-select>
-          </div>
-          <p>Only text without translations will be sent.</p>
-          ${this.autoTranslateError
-            ? html`<div class="auto-translate-error">
-                ${this.autoTranslateError}
-              </div>`
-            : ''}
-        </div>
-      </temba-dialog>
-    `;
-  }
 
   private renderToolbarElement(): TemplateResult {
-    const languages = this.getLocalizationLanguages();
-    const availableLanguages = this.getAvailableLanguages();
-    const baseLanguage = this.definition?.language;
-    const baseLanguageName =
-      availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
-      baseLanguage ||
-      'Primary language';
-    const isBaseSelected =
-      !this.languageCode ||
-      this.languageCode === baseLanguage ||
-      !languages.some((lang) => lang.code === this.languageCode);
-    const activeLanguage = !isBaseSelected
-      ? languages.find((lang) => lang.code === this.languageCode)
-      : null;
-    const currentLanguage = activeLanguage || {
-      code: baseLanguage || '',
-      name: baseLanguageName
-    };
-    const progress = this.getLocalizationProgress(
-      isBaseSelected ? '' : this.languageCode
-    );
-    const percent = Math.round(
-      (progress.localized / Math.max(progress.total, 1)) * 100
-    );
-    const languageOptions = [
-      {
-        name: baseLanguageName,
-        value: PRIMARY_LANGUAGE_OPTION_VALUE
-      },
-      ...languages.map((lang) => {
-        const localizationProgress = this.getLocalizationProgress(lang.code);
-        const localizationPercent = Math.round(
-          (localizationProgress.localized /
-            Math.max(localizationProgress.total, 1)) *
-            100
-        );
-        return {
-          name: lang.name,
-          value: lang.code,
-          percent: localizationPercent
-        };
-      })
-    ];
-
     return html`
       <temba-editor-toolbar
         ?message-view=${this.showMessageTable}
         .zoom=${this.zoom}
-        ?zoom-initialized=${this.zoomInitialized}
-        ?zoom-fitted=${this.zoomFitted}
+        ?zoom-initialized=${this.zoomManager.isZoomInitialized}
+        ?zoom-fitted=${this.zoomManager.isZoomFitted}
         ?revisions-active=${!this.revisionsWindowHidden}
         ?is-saving=${this.isSaving}
         ?search-disabled=${!!this.viewingRevision}
-        .languageOptions=${languageOptions}
-        current-language-name=${currentLanguage.name}
-        ?is-base-language=${isBaseSelected}
-        .languagePercent=${percent}
-        ?show-localization-tools=${Boolean(activeLanguage)}
         @temba-button-clicked=${this.handleToolbarAction}
       ></temba-editor-toolbar>
     `;
@@ -6519,29 +3907,22 @@ export class Editor extends RapidElement {
         this.showMessageTable = detail.view === 'table';
         break;
       case 'zoom-in':
-        this.zoomIn();
+        this.zoomManager.zoomIn();
         break;
       case 'zoom-out':
-        this.zoomOut();
+        this.zoomManager.zoomOut();
         break;
       case 'zoom-to-fit':
-        this.zoomToFit();
+        this.zoomManager.zoomToFit();
         break;
       case 'zoom-to-full':
-        this.zoomToFull();
+        this.zoomManager.zoomToFull();
         break;
       case 'revisions':
         this.handleRevisionsTabClick();
         break;
       case 'search':
         this.openFlowSearch();
-        break;
-      case 'language-change':
-        if (detail.isPrimary) {
-          this.handleLanguageChange(this.definition?.language || '');
-        } else if (detail.languageCode) {
-          this.handleLanguageChange(detail.languageCode);
-        }
         break;
     }
   }
@@ -6676,7 +4057,7 @@ export class Editor extends RapidElement {
     }
   }
 
-  private isReadOnly(): boolean {
+  public isReadOnly(): boolean {
     return this.viewingRevision !== null || this.isTranslating;
   }
 
@@ -6700,7 +4081,7 @@ export class Editor extends RapidElement {
       );
 
     return html`${style} ${this.renderIssuesWindow()}
-      ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
+      ${this.renderRevisionsWindow()}
       <div id="editor-container">
         ${this.renderToolbarElement()}
         <div id="editor">
@@ -6787,8 +4168,8 @@ export class Editor extends RapidElement {
                           : ''} ${selected ? 'selected' : ''} ${isFlowStart
                           ? 'flow-start'
                           : ''}"
-                        @mousedown=${this.handleMouseDown.bind(this)}
-                        @touchstart=${this.handleItemTouchStart.bind(this)}
+                        @mousedown=${(e: MouseEvent) => this.dragManager.handleMouseDown(e)}
+                        @touchstart=${(e: TouchEvent) => this.dragManager.handleItemTouchStart(e)}
                         uuid=${node.uuid}
                         data-node-uuid=${node.uuid}
                         style="left:${position.left}px; top:${position.top}px;transition: all 0.2s ease-in-out;"
@@ -6816,8 +4197,8 @@ export class Editor extends RapidElement {
                     class="draggable ${dragging ? 'dragging' : ''} ${selected
                       ? 'selected'
                       : ''}"
-                    @mousedown=${this.handleMouseDown.bind(this)}
-                    @touchstart=${this.handleItemTouchStart.bind(this)}
+                    @mousedown=${(e: MouseEvent) => this.dragManager.handleMouseDown(e)}
+                    @touchstart=${(e: TouchEvent) => this.dragManager.handleItemTouchStart(e)}
                     style="left:${position.left}px; top:${position.top}px;"
                     uuid=${uuid}
                     .data=${sticky}
@@ -6826,7 +4207,7 @@ export class Editor extends RapidElement {
                   ></temba-sticky-note>`;
                 }
               )}
-              ${this.renderSelectionBox()} ${this.renderCanvasDropPreview()}
+              ${this.dragManager.renderSelectionBox()} ${this.renderCanvasDropPreview()}
               ${this.renderConnectionPlaceholder()}
             </div>
           </div>
@@ -6865,7 +4246,7 @@ export class Editor extends RapidElement {
         : ''}
       <temba-flow-search
         .scope=${this.showMessageTable ? 'table' : 'flow'}
-        .includeCategories=${this.isTranslating && this.hasAnyNodeWithLocalizeCategories()}
+        .includeCategories=${false}
         @temba-search-result-selected=${this.handleSearchResultSelected}
       ></temba-flow-search>
       ${!this.showMessageTable ? html`
