@@ -31,28 +31,28 @@ describe('Editor Zoom', () => {
     it('clamps to minimum of 0.3', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
-      (editor as any).setZoom(0.02);
+      (editor as any).zoomManager.setZoom(0.02);
       expect((editor as any).zoom).to.equal(0.3);
     });
 
     it('clamps to maximum of 1.0', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
-      (editor as any).setZoom(1.5);
+      (editor as any).zoomManager.setZoom(1.5);
       expect((editor as any).zoom).to.equal(1.0);
     });
 
     it('rounds to 2 decimal places', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
-      (editor as any).setZoom(0.333);
+      (editor as any).zoomManager.setZoom(0.333);
       expect((editor as any).zoom).to.equal(0.33);
     });
 
     it('rounds 0.555 to 0.56', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
-      (editor as any).setZoom(0.555);
+      (editor as any).zoomManager.setZoom(0.555);
       expect((editor as any).zoom).to.equal(0.56);
     });
 
@@ -60,7 +60,7 @@ describe('Editor Zoom', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
       const rafSpy = spy(window, 'requestAnimationFrame');
-      (editor as any).setZoom(0.5);
+      (editor as any).zoomManager.setZoom(0.5);
       expect((editor as any).zoom).to.equal(0.5);
       expect(rafSpy).to.not.have.been.called;
       rafSpy.restore();
@@ -69,16 +69,16 @@ describe('Editor Zoom', () => {
     it('syncs plumber.zoom', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
-      (editor as any).setZoom(0.75);
+      (editor as any).zoomManager.setZoom(0.75);
       expect((editor as any).plumber.zoom).to.equal(0.75);
     });
 
     it('clears zoomFitted flag', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
-      (editor as any).zoomFitted = true;
-      (editor as any).setZoom(0.8);
-      expect((editor as any).zoomFitted).to.be.false;
+      (editor as any).zoomManager.zoomFitted = true;
+      (editor as any).zoomManager.setZoom(0.8);
+      expect((editor as any).zoomManager.isZoomFitted).to.be.false;
     });
 
     it('preserves viewport center point when center is provided', () => {
@@ -107,7 +107,7 @@ describe('Editor Zoom', () => {
       );
 
       const center = { clientX: 450, clientY: 350 };
-      (editor as any).setZoom(0.5, center);
+      (editor as any).zoomManager.setZoom(0.5, center);
 
       // Verify scroll math:
       // ox = 450 - 50 = 400, oy = 350 - 50 = 300
@@ -127,14 +127,14 @@ describe('Editor Zoom', () => {
     it('increments zoom by 0.05', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
-      (editor as any).zoomIn();
+      (editor as any).zoomManager.zoomIn();
       expect((editor as any).zoom).to.equal(0.55);
     });
 
     it('stays at 1.0 when already at maximum', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 1.0;
-      (editor as any).zoomIn();
+      (editor as any).zoomManager.zoomIn();
       expect((editor as any).zoom).to.equal(1.0);
     });
   });
@@ -143,14 +143,14 @@ describe('Editor Zoom', () => {
     it('decrements zoom by 0.05', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.5;
-      (editor as any).zoomOut();
+      (editor as any).zoomManager.zoomOut();
       expect((editor as any).zoom).to.equal(0.45);
     });
 
     it('stays at 0.3 when already at minimum', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.3;
-      (editor as any).zoomOut();
+      (editor as any).zoomManager.zoomOut();
       expect((editor as any).zoom).to.equal(0.3);
     });
   });
@@ -159,7 +159,7 @@ describe('Editor Zoom', () => {
     it('resets zoom to 1.0', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).zoom = 0.4;
-      (editor as any).zoomToFull();
+      (editor as any).zoomManager.zoomToFull();
       expect((editor as any).zoom).to.equal(1.0);
     });
   });
@@ -170,14 +170,14 @@ describe('Editor Zoom', () => {
     it('returns early when no definition', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).definition = null;
-      (editor as any).zoomToFit();
+      (editor as any).zoomManager.zoomToFit();
       expect((editor as any).zoom).to.equal(1.0);
     });
 
     it('returns early when definition has zero nodes', () => {
       const editor = createEditorWithMockPlumber();
       (editor as any).definition = { nodes: [], _ui: { nodes: {} } };
-      (editor as any).zoomToFit();
+      (editor as any).zoomManager.zoomToFit();
       expect((editor as any).zoom).to.equal(1.0);
     });
 
@@ -233,8 +233,8 @@ describe('Editor Zoom', () => {
         }
       );
 
-      (editor as any).zoomToFit();
-      expect((editor as any).zoomFitted).to.be.true;
+      (editor as any).zoomManager.zoomToFit();
+      expect((editor as any).zoomManager.isZoomFitted).to.be.true;
 
       el1.remove();
       el2.remove();
@@ -280,7 +280,7 @@ describe('Editor Zoom', () => {
         }
       );
 
-      (editor as any).zoomToFit();
+      (editor as any).zoomManager.zoomToFit();
       expect((editor as any).zoom).to.equal(1.0);
 
       el.remove();
@@ -335,7 +335,7 @@ describe('Editor Zoom', () => {
         }
       );
 
-      (editor as any).zoomToFit();
+      (editor as any).zoomManager.zoomToFit();
 
       const zoom = (editor as any).zoom;
       // Zoom should be a multiple of 0.05 (within float tolerance)
@@ -360,7 +360,7 @@ describe('Editor Zoom', () => {
         clientY: 300
       });
 
-      (editor as any).handleWheel(event);
+      (editor as any).zoomManager.handleWheel(event);
       expect((editor as any).zoom).to.equal(0.5);
     });
 
@@ -378,7 +378,7 @@ describe('Editor Zoom', () => {
         clientY: 300
       });
 
-      (editor as any).handleWheel(event);
+      (editor as any).zoomManager.handleWheel(event);
       expect((editor as any).zoom).to.equal(0.45);
     });
 
@@ -395,7 +395,7 @@ describe('Editor Zoom', () => {
         clientY: 300
       });
 
-      (editor as any).handleWheel(event);
+      (editor as any).zoomManager.handleWheel(event);
       expect((editor as any).zoom).to.equal(0.55);
     });
 
@@ -414,7 +414,7 @@ describe('Editor Zoom', () => {
       });
 
       const preventDefaultSpy = spy(event, 'preventDefault');
-      (editor as any).handleWheel(event);
+      (editor as any).zoomManager.handleWheel(event);
       expect(preventDefaultSpy).to.have.been.calledOnce;
     });
   });
@@ -599,7 +599,7 @@ describe('Editor Zoom', () => {
       (editor as any).zoom = 0.5;
       stub(editor, 'querySelector').returns(null);
 
-      (editor as any).setZoom(0.75);
+      (editor as any).zoomManager.setZoom(0.75);
 
       const settings = JSON.parse(getCookie('flow-settings') || '{}');
       expect(settings['flow-abc']).to.exist;
@@ -646,7 +646,7 @@ describe('Editor Zoom', () => {
         }
       );
 
-      (editor as any).zoomToFit();
+      (editor as any).zoomManager.zoomToFit();
 
       const settings = JSON.parse(getCookie('flow-settings') || '{}');
       expect(settings['flow-def']).to.exist;
@@ -720,7 +720,7 @@ describe('Editor Zoom', () => {
       (editor as any).zoom = 0.5;
       stub(editor, 'querySelector').returns(null);
 
-      (editor as any).setZoom(0.8);
+      (editor as any).zoomManager.setZoom(0.8);
 
       const result = JSON.parse(getCookie('flow-settings') || '{}');
       const keys = Object.keys(result);

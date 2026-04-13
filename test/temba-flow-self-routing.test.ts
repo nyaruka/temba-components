@@ -166,7 +166,7 @@ describe('Flow Editor Self-Routing Prevention', () => {
       (editor as any).isValidTarget = true;
 
       // Simulate mouse move over different node
-      (editor as any).handleMouseMove(new MouseEvent('mousemove'));
+      (editor as any).dragManager.handleMouseMove(new MouseEvent('mousemove'));
       await editor.updateComplete;
 
       // Allow time for DOM updates
@@ -187,7 +187,7 @@ describe('Flow Editor Self-Routing Prevention', () => {
       (editor as any).isValidTarget = false;
 
       // Simulate mouse move over same node
-      (editor as any).handleMouseMove(new MouseEvent('mousemove'));
+      (editor as any).dragManager.handleMouseMove(new MouseEvent('mousemove'));
       await editor.updateComplete;
 
       // Allow time for DOM updates
