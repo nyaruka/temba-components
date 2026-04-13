@@ -105,6 +105,7 @@ export interface SelectionBox {
 
 const DRAG_THRESHOLD = 5;
 const AUTO_SCROLL_EDGE_ZONE = 150;
+const AUTO_SCROLL_EDGE_ZONE_TOUCH = 40;
 const AUTO_SCROLL_MAX_SPEED = 15;
 const AUTO_SCROLL_BEYOND_MULTIPLIER = 5;
 
@@ -3845,18 +3846,18 @@ export class Editor extends RapidElement {
       const editorRect = editor.getBoundingClientRect();
       const mouseX = this.lastPointerPos.clientX;
       const mouseY = this.lastPointerPos.clientY;
+      const edgeZone = this.isTouchDevice
+        ? AUTO_SCROLL_EDGE_ZONE_TOUCH
+        : AUTO_SCROLL_EDGE_ZONE;
 
       let scrollDx = 0;
       let scrollDy = 0;
 
       // Left edge (including beyond)
       const distFromLeft = mouseX - editorRect.left;
-      if (distFromLeft < AUTO_SCROLL_EDGE_ZONE) {
+      if (distFromLeft < edgeZone) {
         const beyond = distFromLeft < 0;
-        const ratio = Math.min(
-          1,
-          1 - distFromLeft / AUTO_SCROLL_EDGE_ZONE
-        );
+        const ratio = Math.min(1, 1 - distFromLeft / edgeZone);
         const speed =
           AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
         scrollDx = -(ratio * speed);
@@ -3864,12 +3865,9 @@ export class Editor extends RapidElement {
 
       // Right edge (including beyond)
       const distFromRight = editorRect.right - mouseX;
-      if (distFromRight < AUTO_SCROLL_EDGE_ZONE) {
+      if (distFromRight < edgeZone) {
         const beyond = distFromRight < 0;
-        const ratio = Math.min(
-          1,
-          1 - distFromRight / AUTO_SCROLL_EDGE_ZONE
-        );
+        const ratio = Math.min(1, 1 - distFromRight / edgeZone);
         const speed =
           AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
         scrollDx = ratio * speed;
@@ -3877,12 +3875,9 @@ export class Editor extends RapidElement {
 
       // Top edge (including beyond)
       const distFromTop = mouseY - editorRect.top;
-      if (distFromTop < AUTO_SCROLL_EDGE_ZONE) {
+      if (distFromTop < edgeZone) {
         const beyond = distFromTop < 0;
-        const ratio = Math.min(
-          1,
-          1 - distFromTop / AUTO_SCROLL_EDGE_ZONE
-        );
+        const ratio = Math.min(1, 1 - distFromTop / edgeZone);
         const speed =
           AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
         scrollDy = -(ratio * speed);
@@ -3890,12 +3885,9 @@ export class Editor extends RapidElement {
 
       // Bottom edge (including beyond)
       const distFromBottom = editorRect.bottom - mouseY;
-      if (distFromBottom < AUTO_SCROLL_EDGE_ZONE) {
+      if (distFromBottom < edgeZone) {
         const beyond = distFromBottom < 0;
-        const ratio = Math.min(
-          1,
-          1 - distFromBottom / AUTO_SCROLL_EDGE_ZONE
-        );
+        const ratio = Math.min(1, 1 - distFromBottom / edgeZone);
         const speed =
           AUTO_SCROLL_MAX_SPEED * (beyond ? AUTO_SCROLL_BEYOND_MULTIPLIER : 1);
         scrollDy = ratio * speed;
