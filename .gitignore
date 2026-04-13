@@ -8,6 +8,8 @@
 CLAUDE.md
 AGENTS.md
 start.sh
+setup-worktree.sh
+run.sh
 
 ## npm
 /node_modules
