@@ -300,6 +300,7 @@ export class Editor extends RapidElement {
   private autoScrollDeltaX = 0;
   private autoScrollDeltaY = 0;
   private lastPointerPos: { clientX: number; clientY: number } | null = null;
+  private activeDragIsTouch = false;
 
   // Selection state
   @state()
@@ -2126,6 +2127,7 @@ export class Editor extends RapidElement {
     // Always set up drag state regardless of selection status
     // This allows single nodes to be dragged without being selected
     this.isMouseDown = true;
+    this.activeDragIsTouch = false;
     this.shiftDragCopy = event.shiftKey;
     this.dragStartPos = { x: event.clientX, y: event.clientY };
     this.startPos = { left: position.left, top: position.top };
@@ -2189,6 +2191,7 @@ export class Editor extends RapidElement {
     }
 
     this.isMouseDown = true;
+    this.activeDragIsTouch = true;
     this.dragStartPos = { x: touch.clientX, y: touch.clientY };
     this.startPos = { left: position.left, top: position.top };
     this.currentDragItem = {
@@ -3568,6 +3571,7 @@ export class Editor extends RapidElement {
     }
 
     if (this.plumber.connectionDragging) {
+      this.activeDragIsTouch = false;
       this.lastPointerPos = { clientX: event.clientX, clientY: event.clientY };
       this.startAutoScroll();
 
@@ -3846,7 +3850,7 @@ export class Editor extends RapidElement {
       const editorRect = editor.getBoundingClientRect();
       const mouseX = this.lastPointerPos.clientX;
       const mouseY = this.lastPointerPos.clientY;
-      const edgeZone = this.isTouchDevice
+      const edgeZone = this.activeDragIsTouch
         ? AUTO_SCROLL_EDGE_ZONE_TOUCH
         : AUTO_SCROLL_EDGE_ZONE;
 
