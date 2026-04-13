@@ -21,7 +21,6 @@ import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType, DirtyTrackable, Workspace } from '../interfaces';
 import {
   generateUUID,
-  postJSON,
   fetchResults,
   getClasses,
   getCookie,
@@ -33,14 +32,11 @@ import {
   formatIssueMessage,
   getNodeBounds,
   calculateReflowPositions,
-  isRightClick,
   NodeBounds,
   snapToGrid
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
-import { FloatingTab } from '../display/FloatingTab';
-
 interface Revision {
   id: number;
   user: {
@@ -60,8 +56,7 @@ import {
   Plumber,
   calculateFlowchartPath,
   ARROW_LENGTH,
-  ARROW_HALF_WIDTH,
-  CURSOR_GAP
+  ARROW_HALF_WIDTH
 } from './Plumber';
 import { CanvasNode } from './CanvasNode';
 import { DragManager } from './DragManager';
@@ -101,11 +96,6 @@ export interface SelectionBox {
   endX: number;
   endY: number;
 }
-
-const DRAG_THRESHOLD = 5;
-const AUTO_SCROLL_EDGE_ZONE = 150;
-const AUTO_SCROLL_MAX_SPEED = 15;
-const AUTO_SCROLL_BEYOND_MULTIPLIER = 5;
 
 export type ToolbarAction =
   | { action: 'view-change'; view: 'flow' | 'table' }

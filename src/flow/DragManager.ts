@@ -1,9 +1,9 @@
 import { html, TemplateResult } from 'lit-html';
-import { FlowDefinition, FlowPosition } from '../store/flow-definition';
+import { FlowPosition } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { isRightClick, snapToGrid } from './utils';
 import { ARROW_LENGTH, CURSOR_GAP } from './Plumber';
-import type { Editor, DraggableItem, SelectionBox } from './Editor';
+import type { Editor, DraggableItem } from './Editor';
 
 const DRAG_THRESHOLD = 5;
 const AUTO_SCROLL_EDGE_ZONE = 150;
