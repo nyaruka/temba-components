@@ -52,11 +52,10 @@ describe('Editor Revisions', () => {
 
     fetchStub.resolves(mockResponse);
 
-    // Call fetchRevisions (private)
-    // Note: fetchRevisions calls fetchResults -> fetchResultsPage -> fetch
-    await (element as any).fetchRevisions();
+    // Call fetchRevisions via the revisionsWindow manager
+    await (element.revisionsWindow as any).fetchRevisions();
 
-    const revisions = (element as any).revisions;
+    const revisions = (element.revisionsWindow as any).revisions;
     expect(revisions.length).to.equal(2);
     expect(revisions[0].id).to.equal(2);
     expect(revisions[1].id).to.equal(1);
@@ -68,8 +67,8 @@ describe('Editor Revisions', () => {
     });
     fetchStub.resolves(mockResponse);
 
-    await (element as any).fetchRevisions();
-    const revisions = (element as any).revisions;
+    await (element.revisionsWindow as any).fetchRevisions();
+    const revisions = (element.revisionsWindow as any).revisions;
     expect(revisions.length).to.equal(0);
   });
 
@@ -87,8 +86,8 @@ describe('Editor Revisions', () => {
     );
     fetchStub.resolves(mockResponse);
 
-    await (element as any).fetchRevisions();
-    const revisions = (element as any).revisions;
+    await (element.revisionsWindow as any).fetchRevisions();
+    const revisions = (element.revisionsWindow as any).revisions;
     expect(revisions.length).to.equal(0);
   });
 
@@ -110,8 +109,8 @@ describe('Editor Revisions', () => {
         user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' }
       }
     ];
-    (element as any).revisions = mockRevisions;
-    (element as any).viewingRevision = mockRevisions[0]; // Select the first one
+    (element.revisionsWindow as any).revisions = mockRevisions;
+    (element.revisionsWindow as any).viewingRevision = mockRevisions[0]; // Select the first one
 
     await element.requestUpdate();
 

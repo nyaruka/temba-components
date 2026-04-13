@@ -9,19 +9,12 @@ import {
   NodeUI
 } from '../store/flow-definition';
 import { getStore, Store } from '../store/Store';
-import {
-  AppState,
-  FlowIssue,
-  fromStore,
-  zustand,
-  FLOW_SPEC_VERSION
-} from '../store/AppState';
+import { AppState, FlowIssue, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType, DirtyTrackable, Workspace } from '../interfaces';
 import {
   generateUUID,
-  fetchResults,
   getClasses,
   getCookie,
   setCookie,
@@ -29,7 +22,6 @@ import {
 } from '../utils';
 import { TEMBA_COMPONENTS_VERSION } from '../version';
 import {
-  formatIssueMessage,
   getNodeBounds,
   calculateReflowPositions,
   NodeBounds,
@@ -37,18 +29,8 @@ import {
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
-interface Revision {
-  id: number;
-  user: {
-    id: number;
-    username: string;
-    first_name: string;
-    last_name: string;
-    name?: string;
-  };
-  created_on: string;
-  comment?: string;
-}
+import { IssuesWindow } from './IssuesWindow';
+import { RevisionsWindow } from './RevisionsWindow';
 
 import { ACTION_GROUP_METADATA } from './types';
 
@@ -65,7 +47,6 @@ import { Dialog } from '../layout/Dialog';
 
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
-import { FloatingWindow } from '../layout/FloatingWindow';
 import { FlowSearch, SearchResult } from './FlowSearch';
 
 export function findNodeForExit(
@@ -191,6 +172,9 @@ export class Editor extends RapidElement {
   // zoom/pan/loupe manager
   public zoomManager: ZoomManager;
 
+  public issuesWindow: IssuesWindow;
+  public revisionsWindow: RevisionsWindow;
+
   // timer for debounced saving
   private saveTimer: number | null = null;
 
@@ -219,10 +203,10 @@ export class Editor extends RapidElement {
   private canvasSize!: { width: number; height: number };
 
   @fromStore(zustand, (state: AppState) => state.dirtyDate)
-  private dirtyDate!: Date;
+  public dirtyDate!: Date;
 
   @fromStore(zustand, (state: AppState) => state.languageCode)
-  private languageCode!: string;
+  public languageCode!: string;
 
   @fromStore(zustand, (state: AppState) => state.isTranslating)
   private isTranslating!: boolean;
@@ -233,8 +217,11 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.getCurrentActivity())
   private activityData!: any;
 
-  @fromStore(zustand, (state: AppState) => state.flowInfo?.issues ?? EMPTY_FLOW_ISSUES)
-  private flowIssues!: FlowIssue[];
+  @fromStore(
+    zustand,
+    (state: AppState) => state.flowInfo?.issues ?? EMPTY_FLOW_ISSUES
+  )
+  public flowIssues!: FlowIssue[];
 
   // Drag state (managed by DragManager, kept on Editor for Lit reactivity)
   @state()
@@ -278,30 +265,19 @@ export class Editor extends RapidElement {
   public connectionSourceY: number | null = null;
 
   @state()
-  private issuesWindowHidden = true;
-
-
-  @state()
-  private revisionsWindowHidden = true;
+  public issuesWindowHidden = true;
 
   @state()
-  private revisions: Revision[] = [];
+  public revisionsWindowHidden = true;
 
   @state()
-  private viewingRevision: Revision | null = null;
-
-  @state()
-  private isLoadingRevisions = false;
-
-  @state()
-  private isSaving = false;
+  public isSaving = false;
 
   @state()
   private saveError: string | null = null;
 
   @state()
   public zoom = 1.0;
-
 
   // Non-reactive flag set in willUpdate to suppress the debouncedSave
   // call in updated() when the dirtyDate change comes from a reflow/copy
@@ -347,12 +323,6 @@ export class Editor extends RapidElement {
     }
     this.pendingPositions = saved;
   }
-
-  private preRevertState: {
-    definition: FlowDefinition;
-    dirtyDate: Date | null;
-  } | null = null;
-  private revisionsBrowseLanguageCode: string | null = null;
 
   public deleteDialog: Dialog | null = null;
 
@@ -437,12 +407,11 @@ export class Editor extends RapidElement {
     position: FlowPosition;
   } | null = null;
 
-
-
   // Bound event handlers to maintain proper 'this' context
   private boundCanvasContextMenu = this.handleCanvasContextMenu.bind(this);
   private boundWheel = (e: WheelEvent) => this.zoomManager.handleWheel(e);
-  private boundWindowResize = () => this.zoomManager.updateZoomControlPositioning();
+  private boundWindowResize = () =>
+    this.zoomManager.updateZoomControlPositioning();
 
   static get styles() {
     return css`
@@ -865,7 +834,6 @@ export class Editor extends RapidElement {
         color: #6b7280;
       }
 
-
       .translation-settings-arrow {
         width: 8px;
         height: 8px;
@@ -1181,8 +1149,12 @@ export class Editor extends RapidElement {
       }
 
       @keyframes drag-hint-in {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       .reflow-card {
@@ -1256,6 +1228,8 @@ export class Editor extends RapidElement {
     super();
     this.dragManager = new DragManager(this);
     this.zoomManager = new ZoomManager(this);
+    this.issuesWindow = new IssuesWindow(this);
+    this.revisionsWindow = new RevisionsWindow(this);
   }
 
   protected firstUpdated(
@@ -1288,7 +1262,6 @@ export class Editor extends RapidElement {
           return;
         }
         getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
-        this.fetchRevisions();
       }, 0);
     }
 
@@ -1434,12 +1407,12 @@ export class Editor extends RapidElement {
   }
 
   private setSimulatorTabHidden(hidden: boolean): void {
-    const simulator = document.querySelector('temba-simulator') as HTMLElement & {
+    const simulator = document.querySelector(
+      'temba-simulator'
+    ) as HTMLElement & {
       shadowRoot?: ShadowRoot;
     };
-    const phoneTab = simulator?.shadowRoot?.querySelector(
-      '#phone-tab'
-    ) as any;
+    const phoneTab = simulator?.shadowRoot?.querySelector('#phone-tab') as any;
     if (phoneTab) {
       phoneTab.hidden = hidden;
     }
@@ -1459,7 +1432,11 @@ export class Editor extends RapidElement {
       this.zoomManager.updateZoomControlPositioning();
     }
 
-    if (changes.has('showMessageTable') && !this.showMessageTable && this.plumber) {
+    if (
+      changes.has('showMessageTable') &&
+      !this.showMessageTable &&
+      this.plumber
+    ) {
       // Canvas was re-added to the DOM; rebind the plumber, listeners, and repaint
       requestAnimationFrame(() => {
         const canvas = this.querySelector('#canvas');
@@ -1536,7 +1513,6 @@ export class Editor extends RapidElement {
         this.saveError = null;
       }, 0);
     }
-
   }
 
   /**
@@ -1627,7 +1603,7 @@ export class Editor extends RapidElement {
     };
   }
 
-  private saveChanges(definitionOverride?: FlowDefinition): Promise<void> {
+  public saveChanges(definitionOverride?: FlowDefinition): Promise<void> {
     const definition = this.definitionForSave(
       definitionOverride || this.definition
     );
@@ -1652,9 +1628,6 @@ export class Editor extends RapidElement {
           if (response.json.revision?.revision !== undefined) {
             state.setRevision(response.json.revision.revision);
           }
-
-          // Refresh revisions list so the tab visibility stays up to date
-          this.fetchRevisions();
         }
 
         getStore().getState().setDirtyDate(null);
@@ -1762,7 +1735,7 @@ export class Editor extends RapidElement {
     });
   }
 
-  private handleLanguageChange(languageCode: string): void {
+  public handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
   }
 
@@ -1905,9 +1878,8 @@ export class Editor extends RapidElement {
     });
   }
 
-
   private openFlowSearch(): void {
-    if (this.viewingRevision) {
+    if (this.revisionsWindow.isViewingRevision) {
       return;
     }
 
@@ -1927,13 +1899,12 @@ export class Editor extends RapidElement {
     search.show();
   }
 
-  private closeFlowSearch(): void {
+  public closeFlowSearch(): void {
     const search = this.querySelector('temba-flow-search') as FlowSearch;
     if (search?.open) {
       search.hide();
     }
   }
-
 
   // Called by DragManager for non-drag keyboard handling
   public handleKeyDown(event: KeyboardEvent): void {
@@ -2041,7 +2012,6 @@ export class Editor extends RapidElement {
     if (!this.flow) return undefined;
     return this.getFlowSettings()[this.flow]?.[key];
   }
-
 
   private showDeleteConfirmation(): void {
     const itemCount = this.selectedItems.size;
@@ -2286,7 +2256,6 @@ export class Editor extends RapidElement {
     this.selectedItems.clear();
   }
 
-
   private renderCanvasDropPreview(): TemplateResult | string {
     if (!this.canvasDropPreview) return '';
 
@@ -2474,7 +2443,6 @@ export class Editor extends RapidElement {
     const el = document.elementFromPoint(clientX, clientY);
     return el?.closest('temba-flow-node') ?? null;
   }
-
 
   private updateCanvasSize(): void {
     if (!this.definition) return;
@@ -3162,7 +3130,9 @@ export class Editor extends RapidElement {
         this.actionDragIsCopy = true;
         this.showActionOriginal(true);
       } else {
-        (this.querySelector('#drag-hint') as HTMLElement)?.classList.add('visible');
+        (this.querySelector('#drag-hint') as HTMLElement)?.classList.add(
+          'visible'
+        );
       }
     }
 
@@ -3325,7 +3295,9 @@ export class Editor extends RapidElement {
     this.actionDragTargetNodeUuid = null;
     this.isActionExternalDrag = false;
     this.actionDragIsCopy = false;
-    (this.querySelector('#drag-hint') as HTMLElement)?.classList.remove('visible');
+    (this.querySelector('#drag-hint') as HTMLElement)?.classList.remove(
+      'visible'
+    );
     this.actionDragLastDetail = null;
   }
 
@@ -3411,7 +3383,9 @@ export class Editor extends RapidElement {
     this.actionDragIsCopy = false;
     this.actionDragLastDetail = null;
     this.previousActionDragTargetNodeUuid = null;
-    (this.querySelector('#drag-hint') as HTMLElement)?.classList.remove('visible');
+    (this.querySelector('#drag-hint') as HTMLElement)?.classList.remove(
+      'visible'
+    );
 
     // Check if we're dropping on an existing execute_actions node
     const targetNodeUuid = this.actionDragTargetNodeUuid;
@@ -3479,9 +3453,7 @@ export class Editor extends RapidElement {
 
     // create a new execute_actions node with the dropped action
     // When copying, generate a fresh UUID so the clone doesn't share the original's
-    const droppedAction = isCopy
-      ? { ...action, uuid: generateUUID() }
-      : action;
+    const droppedAction = isCopy ? { ...action, uuid: generateUUID() } : action;
     const newNode: Node = {
       uuid: generateUUID(),
       actions: [droppedAction],
@@ -3538,15 +3510,12 @@ export class Editor extends RapidElement {
     }
   }
 
-
-
-
-  private closeOpenWindows(): void {
-    if (!this.issuesWindowHidden) {
-      this.handleIssuesWindowClosed();
+  public closeOpenWindows(): void {
+    if (this.issuesWindow.isOpen) {
+      this.issuesWindow.close();
     }
-    if (!this.revisionsWindowHidden) {
-      this.handleRevisionsWindowClosed();
+    if (this.revisionsWindow.isOpen) {
+      this.revisionsWindow.close();
     }
     if (this.simulatorActive) {
       const simulator = document.querySelector('temba-simulator') as any;
@@ -3555,335 +3524,13 @@ export class Editor extends RapidElement {
   }
 
   private closeFloatingWindows(): void {
-    if (!this.issuesWindowHidden) {
-      this.handleIssuesWindowClosed();
+    if (this.issuesWindow.isOpen) {
+      this.issuesWindow.close();
     }
-    if (!this.revisionsWindowHidden) {
-      this.handleRevisionsWindowClosed();
-    }
-  }
-
-  private handleIssuesTabClick(): void {
-    if (!this.issuesWindowHidden) {
-      this.handleIssuesWindowClosed();
-      return;
-    }
-    this.closeOpenWindows();
-    this.issuesWindowHidden = false;
-  }
-
-  private handleIssuesWindowClosed(): void {
-    this.issuesWindowHidden = true;
-  }
-
-  private handleIssueItemClick(issue: FlowIssue): void {
-    const issuesWindow = document.getElementById(
-      'issues-window'
-    ) as FloatingWindow;
-    issuesWindow?.handleClose();
-    this.issuesWindowHidden = true;
-
-    this.focusNode(issue.node_uuid);
-
-    const node = this.definition.nodes.find((n) => n.uuid === issue.node_uuid);
-    if (!node) return;
-
-    if (issue.action_uuid) {
-      const action = node.actions?.find((a) => a.uuid === issue.action_uuid);
-      if (action) {
-        this.editingAction = action;
-        this.editingNode = node;
-        this.editingNodeUI = this.definition._ui.nodes[issue.node_uuid];
-      }
-    } else {
-      this.editingNode = node;
-      this.editingNodeUI = this.definition._ui.nodes[issue.node_uuid];
+    if (this.revisionsWindow.isOpen) {
+      this.revisionsWindow.close();
     }
   }
-
-  private handleRevisionsTabClick(): void {
-    if (!this.revisionsWindowHidden) {
-      this.handleRevisionsWindowClosed();
-      return;
-    }
-    this.closeOpenWindows();
-    this.fetchRevisions();
-    this.revisionsWindowHidden = false;
-  }
-
-  private handleRevisionsWindowClosed(): void {
-    this.resetRevisionsScroll();
-    this.revisionsWindowHidden = true;
-    if (this.viewingRevision) {
-      this.handleCancelRevisionView();
-    }
-  }
-
-  private resetRevisionsScroll() {
-    const list =
-      this.querySelector('#revisions-window').shadowRoot?.querySelector(
-        '.body'
-      );
-    if (list) {
-      list.scrollTop = 0;
-    }
-  }
-
-  private async fetchRevisions() {
-    this.isLoadingRevisions = true;
-    try {
-      const results = await fetchResults(
-        `/flow/revisions/${this.flow}/?version=${FLOW_SPEC_VERSION}`
-      );
-      this.revisions = results.slice(1);
-    } catch (e) {
-      console.error('Error fetching revisions', e);
-    } finally {
-      this.isLoadingRevisions = false;
-    }
-  }
-
-  private async handleRevisionClick(revision: Revision) {
-    if (this.viewingRevision?.id === revision.id) {
-      return;
-    }
-
-    if (!this.viewingRevision) {
-      // Save current state first
-      this.preRevertState = {
-        definition: this.definition,
-        dirtyDate: this.dirtyDate
-      };
-      this.revisionsBrowseLanguageCode = this.languageCode;
-    }
-
-    this.viewingRevision = revision;
-    this.closeFlowSearch();
-    this.isLoadingRevisions = true;
-    this.plumber?.reset();
-
-    try {
-      await getStore()
-        .getState()
-        .fetchRevision(`/flow/revisions/${this.flow}`, revision.id.toString());
-      if (this.revisionsBrowseLanguageCode) {
-        this.handleLanguageChange(this.revisionsBrowseLanguageCode);
-      }
-    } catch (e) {
-      console.error('Error fetching revision details', e);
-      this.handleCancelRevisionView();
-    } finally {
-      this.isLoadingRevisions = false;
-    }
-  }
-
-  private handleCancelRevisionView() {
-    this.plumber?.reset();
-    const preservedLanguageCode =
-      this.revisionsBrowseLanguageCode || this.languageCode;
-    if (this.preRevertState) {
-      const currentInfo = getStore().getState().flowInfo;
-      getStore().getState().setFlowContents({
-        definition: this.preRevertState.definition,
-        info: currentInfo
-      });
-      if (this.preRevertState.dirtyDate) {
-        getStore().getState().setDirtyDate(this.preRevertState.dirtyDate);
-      }
-      if (preservedLanguageCode) {
-        this.handleLanguageChange(preservedLanguageCode);
-      }
-    } else {
-      // Fallback if no pre-revert definition
-      getStore()
-        .getState()
-        .fetchRevision(`/flow/revisions/${this.flow}`)
-        .finally(() => {
-          if (preservedLanguageCode) {
-            this.handleLanguageChange(preservedLanguageCode);
-          }
-        });
-    }
-
-    this.viewingRevision = null;
-    this.preRevertState = null;
-    this.revisionsBrowseLanguageCode = null;
-  }
-
-  private async handleRevertClick() {
-    if (!this.viewingRevision || !this.preRevertState) return;
-    this.plumber?.reset();
-    const preservedLanguageCode =
-      this.revisionsBrowseLanguageCode || this.languageCode;
-
-    // Use the content of the viewing revision (this.definition)
-    // but the revision number of the current head (preRevertState)
-    // so the server accepts it as a valid update
-    const definitionToSave = {
-      ...this.definition,
-      revision: this.preRevertState.definition.revision
-    };
-
-    await this.saveChanges(definitionToSave);
-    this.viewingRevision = null;
-    this.preRevertState = null;
-    this.revisionsWindowHidden = true;
-
-    const revisionsWindow = document.getElementById(
-      'revisions-window'
-    ) as FloatingWindow;
-    revisionsWindow.handleClose();
-
-    // Refresh revisions list to show the new one
-    this.fetchRevisions();
-
-    // Fetch the latest version of the flow to ensure the store is up to date
-    getStore()
-      .getState()
-      .fetchRevision(`/flow/revisions/${this.flow}`)
-      .finally(() => {
-        if (preservedLanguageCode) {
-          this.handleLanguageChange(preservedLanguageCode);
-        }
-      });
-    this.revisionsBrowseLanguageCode = null;
-  }
-
-  private renderIssuesTab(): TemplateResult | string {
-    if (!this.flowIssues?.length) return '';
-    return html`
-      <temba-floating-tab
-        id="issues-tab"
-        icon="alert_warning"
-        label="Flow Issues"
-        color="tomato"
-        order="2"
-        .active=${!this.issuesWindowHidden}
-        @temba-button-clicked=${this.handleIssuesTabClick}
-      ></temba-floating-tab>
-    `;
-  }
-
-  private renderIssuesWindow(): TemplateResult | string {
-    if (!this.flowIssues?.length) return '';
-    return html`
-      <temba-floating-window
-        id="issues-window"
-        name="issues"
-        header="Flow Issues"
-        icon="alert_warning"
-        .width=${360}
-        .maxHeight=${600}
-        .top=${120}
-        color="tomato"
-        .hidden=${this.issuesWindowHidden}
-        @temba-dialog-hidden=${this.handleIssuesWindowClosed}
-      >
-        <div style="display:flex; flex-direction:column; gap:2px;">
-          ${this.flowIssues.map(
-            (issue) => html`
-              <div
-                class="issue-list-item"
-                @click=${() => this.handleIssueItemClick(issue)}
-              >
-                <temba-icon name="alert_warning" size="1.2"></temba-icon>
-                <span>${formatIssueMessage(issue)}</span>
-              </div>
-            `
-          )}
-        </div>
-      </temba-floating-window>
-    `;
-  }
-
-  private renderRevisionsWindow(): TemplateResult | string {
-    return html`
-      <temba-floating-window
-        id="revisions-window"
-        name="revisions"
-        header="Revisions"
-        icon="revisions"
-        .width=${240}
-        .maxHeight=${400}
-        .top=${120}
-        color="rgb(142, 94, 167)"
-        .saving=${this.isSaving}
-        .hidden=${this.revisionsWindowHidden}
-        @temba-dialog-hidden=${this.handleRevisionsWindowClosed}
-      >
-        <div class="localization-window-content">
-          <div
-            class="revisions-list"
-            style="display:flex; flex-direction:column; gap:8px; overflow-y:auto; padding-bottom:10px;"
-          >
-            ${this.isLoadingRevisions && !this.revisions.length
-              ? html`<temba-loading></temba-loading>`
-              : this.revisions.map((rev) => {
-                  const isSelected = this.viewingRevision?.id === rev.id;
-                  return html`
-                    <div
-                      class="revision-item ${isSelected ? 'selected' : ''}"
-                      style="padding:8px; border-radius:4px; cursor:pointer; background:${
-                        isSelected
-                          ? '#f0f6ff' // Light blue bg for selected
-                          : '#f9fafb'
-                      }; border:1px solid ${
-                        isSelected ? '#a4cafe' : '#e5e7eb'
-                      }; transition: all 0.2s ease;"
-                      @click=${() => this.handleRevisionClick(rev)}
-                    >
-                      <div
-                        style="display:flex; justify-content:space-between; align-items:center;"
-                      >
-                        <div
-                          class="revision-header"
-                          style="margin-bottom: 2px;"
-                        >
-                          <div
-                            style="font-weight:600; font-size:13px; color:#111827;"
-                          >
-                            <temba-date value=${
-                              rev.created_on
-                            } display="duration"></temba-date>
-                            
-                          </div>
-                          <div style="font-size:11px; color:#6b7280;">
-                            ${rev.user.name || rev.user.username}
-                          </div>
-                        </div>
-                        ${
-                          isSelected
-                            ? html`<button
-                                class="revert-button"
-                                @click=${this.handleRevertClick}
-                              >
-                                Revert
-                              </button>`
-                            : html``
-                        }
-                        
-                        </button>
-                      </div>
-
-                      ${
-                        rev.comment
-                          ? html`<div
-                              style="font-size:12px; color:#4b5563; margin-top:4px;"
-                            >
-                              ${rev.comment}
-                            </div>`
-                          : ''
-                      }
-                      
-                    </div>
-                  `;
-                })}
-          </div>
-        </div>
-      </temba-floating-window>
-    `;
-  }
-
 
   private renderToolbarElement(): TemplateResult {
     return html`
@@ -3894,7 +3541,7 @@ export class Editor extends RapidElement {
         ?zoom-fitted=${this.zoomManager.isZoomFitted}
         ?revisions-active=${!this.revisionsWindowHidden}
         ?is-saving=${this.isSaving}
-        ?search-disabled=${!!this.viewingRevision}
+        ?search-disabled=${this.revisionsWindow.isViewingRevision}
         @temba-button-clicked=${this.handleToolbarAction}
       ></temba-editor-toolbar>
     `;
@@ -3919,7 +3566,11 @@ export class Editor extends RapidElement {
         this.zoomManager.zoomToFull();
         break;
       case 'revisions':
-        this.handleRevisionsTabClick();
+        if (this.revisionsWindow.isOpen) {
+          this.revisionsWindow.close();
+        } else {
+          this.revisionsWindow.open();
+        }
         break;
       case 'search':
         this.openFlowSearch();
@@ -3978,9 +3629,7 @@ export class Editor extends RapidElement {
       return;
     }
 
-    const node = this.definition.nodes.find(
-      (n) => n.uuid === result.nodeUuid
-    );
+    const node = this.definition.nodes.find((n) => n.uuid === result.nodeUuid);
     if (!node) return;
 
     const nodeUI = this.definition._ui?.nodes[result.nodeUuid];
@@ -4058,7 +3707,7 @@ export class Editor extends RapidElement {
   }
 
   public isReadOnly(): boolean {
-    return this.viewingRevision !== null || this.isTranslating;
+    return this.revisionsWindow.isViewingRevision || this.isTranslating;
   }
 
   public render(): TemplateResult {
@@ -4076,142 +3725,152 @@ export class Editor extends RapidElement {
     const hasCorruptedUI =
       this.definition &&
       this.definition.nodes.length > 0 &&
-      this.definition.nodes.some(
-        (n) => !this.definition._ui?.nodes[n.uuid]
-      );
+      this.definition.nodes.some((n) => !this.definition._ui?.nodes[n.uuid]);
 
-    return html`${style} ${this.renderIssuesWindow()}
-      ${this.renderRevisionsWindow()}
+    return html`${style} ${this.issuesWindow.renderWindow()}
+      ${this.revisionsWindow.renderWindow()}
       <div id="editor-container">
         ${this.renderToolbarElement()}
         <div id="editor">
           ${this.showMessageTable
             ? html`<temba-message-table></temba-message-table>`
             : html`
-          ${hasCorruptedUI
-            ? html`<div class="empty-flow">
-                <div class="empty-flow-content">
-                  <div class="empty-flow-title">
-                    Unable to display this flow
-                  </div>
-                  <div class="empty-flow-description">
-                    This flow's layout data does not match its nodes. It may
-                    have been corrupted during an export or migration. Please
-                    re-export the flow from the original workspace and try
-                    importing it again.
+                ${hasCorruptedUI
+                  ? html`<div class="empty-flow">
+                      <div class="empty-flow-content">
+                        <div class="empty-flow-title">
+                          Unable to display this flow
+                        </div>
+                        <div class="empty-flow-description">
+                          This flow's layout data does not match its nodes. It
+                          may have been corrupted during an export or migration.
+                          Please re-export the flow from the original workspace
+                          and try importing it again.
+                        </div>
+                      </div>
+                    </div>`
+                  : this.definition &&
+                      this.definition.nodes.length === 0 &&
+                      !this.isReadOnly()
+                    ? html`<div class="empty-flow">
+                        <div class="empty-flow-content">
+                          <div class="empty-flow-title">This flow is empty</div>
+                          <div class="empty-flow-description">
+                            Get started by adding your first action or split to
+                            define how this flow will work.
+                          </div>
+                          <button
+                            class="empty-flow-button"
+                            @click=${this.handleEmptyFlowClick}
+                          >
+                            Add first step
+                          </button>
+                        </div>
+                      </div>`
+                    : ''}
+                <div
+                  id="grid"
+                  class="${this.revisionsWindow.isViewingRevision
+                    ? 'viewing-revision'
+                    : ''}"
+                  style="min-width:${100 / this.zoom}%;min-height:${100 /
+                  this.zoom}%;width:${this.canvasSize.width}px; height:${this
+                    .canvasSize.height}px;transform:scale(${this.zoom})"
+                >
+                  <div
+                    id="canvas"
+                    class="${getClasses({
+                      'viewing-revision':
+                        this.revisionsWindow.isViewingRevision,
+                      'read-only-connections':
+                        this.revisionsWindow.isViewingRevision ||
+                        this.isTranslating
+                    })}"
+                  >
+                    ${this.definition && !hasCorruptedUI
+                      ? repeat(
+                          [...this.definition.nodes].sort((a, b) =>
+                            a.uuid.localeCompare(b.uuid)
+                          ),
+                          (node) => node.uuid,
+                          (node) => {
+                            const nodeUI = this.definition._ui?.nodes[
+                              node.uuid
+                            ] || {
+                              position: { left: 0, top: 0 },
+                              type: node.router?.wait
+                                ? 'wait_for_response'
+                                : 'execute_actions'
+                            };
+                            const position = nodeUI.position;
+
+                            const dragging =
+                              this.isDragging &&
+                              this.currentDragItem?.uuid === node.uuid;
+
+                            const selected = this.selectedItems.has(node.uuid);
+
+                            // first node is the flow start (nodes are sorted by position)
+                            const isFlowStart =
+                              this.definition.nodes.length > 0 &&
+                              this.definition.nodes[0].uuid === node.uuid;
+
+                            return html`<temba-flow-node
+                              class="draggable ${dragging
+                                ? 'dragging'
+                                : ''} ${selected
+                                ? 'selected'
+                                : ''} ${isFlowStart ? 'flow-start' : ''}"
+                              @mousedown=${(e: MouseEvent) =>
+                                this.dragManager.handleMouseDown(e)}
+                              @touchstart=${(e: TouchEvent) =>
+                                this.dragManager.handleItemTouchStart(e)}
+                              uuid=${node.uuid}
+                              data-node-uuid=${node.uuid}
+                              style="left:${position.left}px; top:${position.top}px;transition: all 0.2s ease-in-out;"
+                              .plumber=${this.plumber}
+                              .node=${node}
+                              .ui=${nodeUI}
+                              @temba-node-deleted=${(event) => {
+                                this.deleteNodes([event.detail.uuid]);
+                              }}
+                            ></temba-flow-node>`;
+                          }
+                        )
+                      : hasCorruptedUI
+                        ? ''
+                        : html`<temba-loading></temba-loading>`}
+                    ${repeat(
+                      Object.entries(stickies),
+                      ([uuid]) => uuid,
+                      ([uuid, sticky]) => {
+                        const position = sticky.position || { left: 0, top: 0 };
+                        const dragging =
+                          this.isDragging &&
+                          this.currentDragItem?.uuid === uuid;
+                        const selected = this.selectedItems.has(uuid);
+                        return html`<temba-sticky-note
+                          class="draggable ${dragging
+                            ? 'dragging'
+                            : ''} ${selected ? 'selected' : ''}"
+                          @mousedown=${(e: MouseEvent) =>
+                            this.dragManager.handleMouseDown(e)}
+                          @touchstart=${(e: TouchEvent) =>
+                            this.dragManager.handleItemTouchStart(e)}
+                          style="left:${position.left}px; top:${position.top}px;"
+                          uuid=${uuid}
+                          .data=${sticky}
+                          .dragging=${dragging}
+                          .selected=${selected}
+                        ></temba-sticky-note>`;
+                      }
+                    )}
+                    ${this.dragManager.renderSelectionBox()}
+                    ${this.renderCanvasDropPreview()}
+                    ${this.renderConnectionPlaceholder()}
                   </div>
                 </div>
-              </div>`
-            : this.definition &&
-                this.definition.nodes.length === 0 &&
-                !this.isReadOnly()
-              ? html`<div class="empty-flow">
-                  <div class="empty-flow-content">
-                    <div class="empty-flow-title">This flow is empty</div>
-                    <div class="empty-flow-description">
-                      Get started by adding your first action or split to define
-                      how this flow will work.
-                    </div>
-                    <button
-                      class="empty-flow-button"
-                      @click=${this.handleEmptyFlowClick}
-                    >
-                      Add first step
-                    </button>
-                  </div>
-                </div>`
-              : ''}
-          <div
-            id="grid"
-            class="${this.viewingRevision ? 'viewing-revision' : ''}"
-            style="min-width:${100 / this.zoom}%;min-height:${100 /
-            this.zoom}%;width:${this.canvasSize.width}px; height:${this
-              .canvasSize.height}px;transform:scale(${this.zoom})"
-          >
-            <div
-              id="canvas"
-              class="${getClasses({
-                'viewing-revision': !!this.viewingRevision,
-                'read-only-connections':
-                  !!this.viewingRevision || this.isTranslating
-              })}"
-            >
-              ${this.definition && !hasCorruptedUI
-                ? repeat(
-                    [...this.definition.nodes].sort((a, b) =>
-                      a.uuid.localeCompare(b.uuid)
-                    ),
-                    (node) => node.uuid,
-                    (node) => {
-                      const nodeUI = this.definition._ui?.nodes[node.uuid] || {
-                        position: { left: 0, top: 0 },
-                        type: node.router?.wait
-                          ? 'wait_for_response'
-                          : 'execute_actions'
-                      };
-                      const position = nodeUI.position;
-
-                      const dragging =
-                        this.isDragging &&
-                        this.currentDragItem?.uuid === node.uuid;
-
-                      const selected = this.selectedItems.has(node.uuid);
-
-                      // first node is the flow start (nodes are sorted by position)
-                      const isFlowStart =
-                        this.definition.nodes.length > 0 &&
-                        this.definition.nodes[0].uuid === node.uuid;
-
-                      return html`<temba-flow-node
-                        class="draggable ${dragging
-                          ? 'dragging'
-                          : ''} ${selected ? 'selected' : ''} ${isFlowStart
-                          ? 'flow-start'
-                          : ''}"
-                        @mousedown=${(e: MouseEvent) => this.dragManager.handleMouseDown(e)}
-                        @touchstart=${(e: TouchEvent) => this.dragManager.handleItemTouchStart(e)}
-                        uuid=${node.uuid}
-                        data-node-uuid=${node.uuid}
-                        style="left:${position.left}px; top:${position.top}px;transition: all 0.2s ease-in-out;"
-                        .plumber=${this.plumber}
-                        .node=${node}
-                        .ui=${nodeUI}
-                        @temba-node-deleted=${(event) => {
-                          this.deleteNodes([event.detail.uuid]);
-                        }}
-                      ></temba-flow-node>`;
-                    }
-                  )
-                : hasCorruptedUI
-                  ? ''
-                  : html`<temba-loading></temba-loading>`}
-              ${repeat(
-                Object.entries(stickies),
-                ([uuid]) => uuid,
-                ([uuid, sticky]) => {
-                  const position = sticky.position || { left: 0, top: 0 };
-                  const dragging =
-                    this.isDragging && this.currentDragItem?.uuid === uuid;
-                  const selected = this.selectedItems.has(uuid);
-                  return html`<temba-sticky-note
-                    class="draggable ${dragging ? 'dragging' : ''} ${selected
-                      ? 'selected'
-                      : ''}"
-                    @mousedown=${(e: MouseEvent) => this.dragManager.handleMouseDown(e)}
-                    @touchstart=${(e: TouchEvent) => this.dragManager.handleItemTouchStart(e)}
-                    style="left:${position.left}px; top:${position.top}px;"
-                    uuid=${uuid}
-                    .data=${sticky}
-                    .dragging=${dragging}
-                    .selected=${selected}
-                  ></temba-sticky-note>`;
-                }
-              )}
-              ${this.dragManager.renderSelectionBox()} ${this.renderCanvasDropPreview()}
-              ${this.renderConnectionPlaceholder()}
-            </div>
-          </div>
-          `}
+              `}
         </div>
         ${this.renderPendingCard()}
         <div class="drag-hint" id="drag-hint">Hold ⇧ to duplicate</div>
@@ -4238,7 +3897,7 @@ export class Editor extends RapidElement {
         : ''}
 
       <temba-canvas-menu></temba-canvas-menu>
-      ${!this.viewingRevision
+      ${!this.revisionsWindow.isViewingRevision
         ? html`<temba-node-type-selector
             .flowType=${this.flowType}
             .features=${this.features}
@@ -4249,8 +3908,6 @@ export class Editor extends RapidElement {
         .includeCategories=${false}
         @temba-search-result-selected=${this.handleSearchResultSelected}
       ></temba-flow-search>
-      ${!this.showMessageTable ? html`
-        ${this.renderIssuesTab()}
-      ` : ''} `;
+      ${!this.showMessageTable ? html` ${this.issuesWindow.renderTab()} ` : ''} `;
   }
 }

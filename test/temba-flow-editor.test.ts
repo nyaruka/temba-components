@@ -12,11 +12,16 @@ if (!customElements.get('temba-editor-toolbar')) {
   customElements.define('temba-editor-toolbar', EditorToolbar);
 }
 
-async function getToolbarButton(editor: Editor, ariaLabel: string): Promise<HTMLElement | null> {
+async function getToolbarButton(
+  editor: Editor,
+  ariaLabel: string
+): Promise<HTMLElement | null> {
   const toolbar = editor.querySelector('temba-editor-toolbar');
   if (!toolbar) return null;
   await (toolbar as any).updateComplete;
-  return toolbar.shadowRoot?.querySelector(`.toolbar-btn[aria-label="${ariaLabel}"]`) as HTMLElement | null;
+  return toolbar.shadowRoot?.querySelector(
+    `.toolbar-btn[aria-label="${ariaLabel}"]`
+  ) as HTMLElement | null;
 }
 
 describe('Editor', () => {
@@ -969,17 +974,17 @@ describe('Editor', () => {
       } as any;
 
       (editor as any).definition = definition;
-      (editor as any).preRevertState = {
+      (editor.revisionsWindow as any).preRevertState = {
         definition,
         dirtyDate: null
       };
-      (editor as any).viewingRevision = {
+      (editor.revisionsWindow as any).viewingRevision = {
         id: 2,
         created_on: '2024-01-02',
         user: { id: 1, username: 'tester' }
       };
 
-      (editor as any).handleCancelRevisionView();
+      (editor.revisionsWindow as any).cancelRevisionView();
 
       expect(zustand.getState().viewingRevision).to.be.false;
     });
