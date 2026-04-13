@@ -17,7 +17,6 @@ export class DragManager {
   private shiftDragCopy = false;
   private currentDragIsCopy = false;
   private dragStartPos = { x: 0, y: 0 };
-  private startPos = { left: 0, top: 0 };
 
   // Mid-drag shift toggle: remember originals so we can switch between move/copy
   private originalDragItem: DraggableItem | null = null;
@@ -149,7 +148,6 @@ export class DragManager {
     this.activeDragIsTouch = false;
     this.shiftDragCopy = event.shiftKey;
     this.dragStartPos = { x: event.clientX, y: event.clientY };
-    this.startPos = { left: position.left, top: position.top };
     this.editor.currentDragItem = {
       uuid,
       position,
@@ -202,7 +200,6 @@ export class DragManager {
     this.isMouseDown = true;
     this.activeDragIsTouch = true;
     this.dragStartPos = { x: touch.clientX, y: touch.clientY };
-    this.startPos = { left: position.left, top: position.top };
     this.editor.currentDragItem = {
       uuid,
       position,
@@ -210,7 +207,8 @@ export class DragManager {
       type
     };
 
-    event.preventDefault();
+    // Don't preventDefault here — allow the threshold check in touchmove
+    // to decide whether this is a drag or a tap
     event.stopPropagation();
   }
 

@@ -47,6 +47,7 @@ export class ZoomManager {
     this.editor.zoom = clamped;
     this.editor.plumber.zoom = clamped;
     this.zoomFitted = false;
+    this.editor.requestUpdate();
     this.editor.saveFlowSetting('zoom', clamped);
 
     if (editor && center) {
@@ -136,6 +137,7 @@ export class ZoomManager {
     this.editor.zoom = fitZoom;
     this.editor.plumber.zoom = fitZoom;
     this.zoomFitted = true;
+    this.editor.requestUpdate();
     this.editor.saveFlowSetting('zoom', fitZoom);
 
     // Center of content in canvas coordinates, plus grid/canvas margin offset
@@ -181,6 +183,7 @@ export class ZoomManager {
       }
     }
     this.zoomInitialized = true;
+    this.editor.requestUpdate();
   }
 
   /** Adjust floating tab positioning relative to toolbar and editor scrollbar */
