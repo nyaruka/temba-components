@@ -1,74 +1,45 @@
 import { html, TemplateResult } from 'lit-html';
+import { css } from 'lit';
+import { property } from 'lit/decorators.js';
+import { RapidElement } from '../RapidElement';
+import { CustomEventType } from '../interfaces';
 import { FlowIssue } from '../store/AppState';
-import { FloatingWindow } from '../layout/FloatingWindow';
 import { formatIssueMessage } from './utils';
-import type { Editor } from './Editor';
 
-export class IssuesWindow {
-  constructor(private editor: Editor) {}
-
-  // --- Public API ---
-
-  public open(): void {
-    this.editor.issuesWindowHidden = false;
-  }
-
-  public close(): void {
-    this.editor.issuesWindowHidden = true;
-  }
-
-  public get isOpen(): boolean {
-    return !this.editor.issuesWindowHidden;
-  }
-
-  public handleItemClick(issue: FlowIssue): void {
-    const issuesWindow = document.getElementById(
-      'issues-window'
-    ) as FloatingWindow;
-    issuesWindow?.handleClose();
-    this.editor.issuesWindowHidden = true;
-
-    this.editor.focusNode(issue.node_uuid);
-
-    const node = this.editor.definition.nodes.find(
-      (n) => n.uuid === issue.node_uuid
-    );
-    if (!node) return;
-
-    if (issue.action_uuid) {
-      const action = node.actions?.find((a) => a.uuid === issue.action_uuid);
-      if (action) {
-        this.editor.editingAction = action;
-        this.editor.editingNode = node;
-        this.editor.editingNodeUI =
-          this.editor.definition._ui.nodes[issue.node_uuid];
+export class IssuesWindow extends RapidElement {
+  static get styles() {
+    return css`
+      :host {
+        display: contents;
       }
-    } else {
-      this.editor.editingNode = node;
-      this.editor.editingNodeUI =
-        this.editor.definition._ui.nodes[issue.node_uuid];
-    }
-  }
 
-  // --- Rendering ---
+      .issue-list-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
 
-  public renderTab(): TemplateResult | string {
-    if (!this.editor.flowIssues?.length) return '';
-    return html`
-      <temba-floating-tab
-        id="issues-tab"
-        icon="alert_warning"
-        label="Flow Issues"
-        color="tomato"
-        order="2"
-        .active=${!this.editor.issuesWindowHidden}
-        @temba-button-clicked=${() => this.handleTabClick()}
-      ></temba-floating-tab>
+      .issue-list-item:hover {
+        background: #fff1f0;
+      }
     `;
   }
 
-  public renderWindow(): TemplateResult | string {
-    if (!this.editor.flowIssues?.length) return '';
+  @property({ type: Array })
+  issues: FlowIssue[] = [];
+
+  @property({ type: Boolean })
+  hidden = true;
+
+  private handleItemClick(issue: FlowIssue): void {
+    this.fireCustomEvent(CustomEventType.IssueSelected, { issue });
+  }
+
+  public render(): TemplateResult | string {
+    if (!this.issues?.length) return '';
     return html`
       <temba-floating-window
         id="issues-window"
@@ -79,11 +50,12 @@ export class IssuesWindow {
         .maxHeight=${600}
         .top=${120}
         color="tomato"
-        .hidden=${this.editor.issuesWindowHidden}
-        @temba-dialog-hidden=${() => this.close()}
+        .hidden=${this.hidden}
+        @temba-dialog-hidden=${() =>
+          this.fireCustomEvent(CustomEventType.IssuesClosed)}
       >
         <div style="display:flex; flex-direction:column; gap:2px;">
-          ${this.editor.flowIssues.map(
+          ${this.issues.map(
             (issue) => html`
               <div
                 class="issue-list-item"
@@ -97,16 +69,5 @@ export class IssuesWindow {
         </div>
       </temba-floating-window>
     `;
-  }
-
-  // --- Private ---
-
-  private handleTabClick(): void {
-    if (!this.editor.issuesWindowHidden) {
-      this.close();
-      return;
-    }
-    this.editor.closeOpenWindows();
-    this.editor.issuesWindowHidden = false;
   }
 }

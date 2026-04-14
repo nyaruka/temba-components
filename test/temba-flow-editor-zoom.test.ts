@@ -1,9 +1,17 @@
 import { expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
+import { IssuesWindow } from '../src/flow/IssuesWindow';
+import { RevisionsWindow } from '../src/flow/RevisionsWindow';
 import { stub, restore, spy } from 'sinon';
 import { getCookie, setCookie } from '../src/utils';
 
 customElements.define('temba-flow-editor-zoom', Editor);
+if (!customElements.get('temba-issues-window')) {
+  customElements.define('temba-issues-window', IssuesWindow);
+}
+if (!customElements.get('temba-revisions-window')) {
+  customElements.define('temba-revisions-window', RevisionsWindow);
+}
 
 /** Create an Editor instance with a mock plumber, suitable for unit-testing
  *  zoom methods without needing a full flow definition. */

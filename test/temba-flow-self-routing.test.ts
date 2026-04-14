@@ -1,10 +1,18 @@
 import { expect, fixture, html } from '@open-wc/testing';
 import { stub, restore, useFakeTimers, SinonFakeTimers } from 'sinon';
 import { Editor } from '../src/flow/Editor';
+import { IssuesWindow } from '../src/flow/IssuesWindow';
+import { RevisionsWindow } from '../src/flow/RevisionsWindow';
 import { FlowDefinition } from '../src/store/flow-definition';
 
 // Register the component
 customElements.define('temba-flow-editor-test', Editor);
+if (!customElements.get('temba-issues-window')) {
+  customElements.define('temba-issues-window', IssuesWindow);
+}
+if (!customElements.get('temba-revisions-window')) {
+  customElements.define('temba-revisions-window', RevisionsWindow);
+}
 
 describe('Flow Editor Self-Routing Prevention', () => {
   let editor: Editor;

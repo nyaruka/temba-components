@@ -29,8 +29,7 @@ import {
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
-import { IssuesWindow } from './IssuesWindow';
-import { RevisionsWindow } from './RevisionsWindow';
+import type { RevisionsWindow } from './RevisionsWindow';
 
 import { ACTION_GROUP_METADATA } from './types';
 
@@ -172,9 +171,6 @@ export class Editor extends RapidElement {
   // zoom/pan/loupe manager
   public zoomManager: ZoomManager;
 
-  public issuesWindow: IssuesWindow;
-  public revisionsWindow: RevisionsWindow;
-
   // timer for debounced saving
   private saveTimer: number | null = null;
 
@@ -203,10 +199,10 @@ export class Editor extends RapidElement {
   private canvasSize!: { width: number; height: number };
 
   @fromStore(zustand, (state: AppState) => state.dirtyDate)
-  public dirtyDate!: Date;
+  private dirtyDate!: Date;
 
   @fromStore(zustand, (state: AppState) => state.languageCode)
-  public languageCode!: string;
+  private languageCode!: string;
 
   @fromStore(zustand, (state: AppState) => state.isTranslating)
   private isTranslating!: boolean;
@@ -221,7 +217,7 @@ export class Editor extends RapidElement {
     zustand,
     (state: AppState) => state.flowInfo?.issues ?? EMPTY_FLOW_ISSUES
   )
-  public flowIssues!: FlowIssue[];
+  private flowIssues!: FlowIssue[];
 
   // Drag state (managed by DragManager, kept on Editor for Lit reactivity)
   @state()
@@ -265,10 +261,13 @@ export class Editor extends RapidElement {
   public connectionSourceY: number | null = null;
 
   @state()
-  public issuesWindowHidden = true;
+  private issuesWindowHidden = true;
 
   @state()
-  public revisionsWindowHidden = true;
+  private revisionsWindowHidden = true;
+
+  @state()
+  private viewingRevision = false;
 
   @state()
   public isSaving = false;
@@ -1228,8 +1227,6 @@ export class Editor extends RapidElement {
     super();
     this.dragManager = new DragManager(this);
     this.zoomManager = new ZoomManager(this);
-    this.issuesWindow = new IssuesWindow(this);
-    this.revisionsWindow = new RevisionsWindow(this);
   }
 
   protected firstUpdated(
@@ -1603,7 +1600,7 @@ export class Editor extends RapidElement {
     };
   }
 
-  public saveChanges(definitionOverride?: FlowDefinition): Promise<void> {
+  private saveChanges(definitionOverride?: FlowDefinition): Promise<void> {
     const definition = this.definitionForSave(
       definitionOverride || this.definition
     );
@@ -1735,7 +1732,7 @@ export class Editor extends RapidElement {
     });
   }
 
-  public handleLanguageChange(languageCode: string): void {
+  private handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
   }
 
@@ -1879,7 +1876,7 @@ export class Editor extends RapidElement {
   }
 
   private openFlowSearch(): void {
-    if (this.revisionsWindow.isViewingRevision) {
+    if (this.viewingRevision) {
       return;
     }
 
@@ -1899,7 +1896,7 @@ export class Editor extends RapidElement {
     search.show();
   }
 
-  public closeFlowSearch(): void {
+  private closeFlowSearch(): void {
     const search = this.querySelector('temba-flow-search') as FlowSearch;
     if (search?.open) {
       search.hide();
@@ -3510,12 +3507,13 @@ export class Editor extends RapidElement {
     }
   }
 
-  public closeOpenWindows(): void {
-    if (this.issuesWindow.isOpen) {
-      this.issuesWindow.close();
+  private closeOpenWindows(): void {
+    if (!this.issuesWindowHidden) {
+      this.issuesWindowHidden = true;
     }
-    if (this.revisionsWindow.isOpen) {
-      this.revisionsWindow.close();
+    if (!this.revisionsWindowHidden) {
+      this.getRevisionsWindow()?.close();
+      this.revisionsWindowHidden = true;
     }
     if (this.simulatorActive) {
       const simulator = document.querySelector('temba-simulator') as any;
@@ -3524,12 +3522,90 @@ export class Editor extends RapidElement {
   }
 
   private closeFloatingWindows(): void {
-    if (this.issuesWindow.isOpen) {
-      this.issuesWindow.close();
+    if (!this.issuesWindowHidden) {
+      this.issuesWindowHidden = true;
     }
-    if (this.revisionsWindow.isOpen) {
-      this.revisionsWindow.close();
+    if (!this.revisionsWindowHidden) {
+      this.getRevisionsWindow()?.close();
+      this.revisionsWindowHidden = true;
     }
+  }
+
+  private getRevisionsWindow(): RevisionsWindow | null {
+    return this.querySelector(
+      'temba-revisions-window'
+    ) as RevisionsWindow | null;
+  }
+
+  // --- Issues window event handlers ---
+
+  private handleIssuesTabClick(): void {
+    if (!this.issuesWindowHidden) {
+      this.issuesWindowHidden = true;
+      return;
+    }
+    this.closeOpenWindows();
+    this.issuesWindowHidden = false;
+  }
+
+  private handleIssueSelected(e: CustomEvent): void {
+    const { issue } = e.detail;
+    this.issuesWindowHidden = true;
+
+    this.focusNode(issue.node_uuid);
+
+    const node = this.definition.nodes.find(
+      (n) => n.uuid === issue.node_uuid
+    );
+    if (!node) return;
+
+    if (issue.action_uuid) {
+      const action = node.actions?.find((a) => a.uuid === issue.action_uuid);
+      if (action) {
+        this.editingAction = action;
+        this.editingNode = node;
+        this.editingNodeUI = this.definition._ui.nodes[issue.node_uuid];
+      }
+    } else {
+      this.editingNode = node;
+      this.editingNodeUI = this.definition._ui.nodes[issue.node_uuid];
+    }
+  }
+
+  // --- Revisions window event handlers ---
+
+  private handleRevisionViewed(): void {
+    this.viewingRevision = true;
+    this.closeFlowSearch();
+    this.plumber?.reset();
+  }
+
+  private handleRevisionCancelled(): void {
+    this.viewingRevision = false;
+    this.plumber?.reset();
+  }
+
+  private handleRevisionsClosed(): void {
+    this.viewingRevision = false;
+    this.revisionsWindowHidden = true;
+  }
+
+  private async handleRevisionReverted(e: CustomEvent): Promise<void> {
+    const { definition, languageCode } = e.detail;
+    this.viewingRevision = false;
+    this.revisionsWindowHidden = true;
+    this.plumber?.reset();
+
+    await this.saveChanges(definition);
+
+    getStore()
+      .getState()
+      .fetchRevision(`/flow/revisions/${this.flow}`)
+      .finally(() => {
+        if (languageCode) {
+          this.handleLanguageChange(languageCode);
+        }
+      });
   }
 
   private renderToolbarElement(): TemplateResult {
@@ -3541,7 +3617,7 @@ export class Editor extends RapidElement {
         ?zoom-fitted=${this.zoomManager.isZoomFitted}
         ?revisions-active=${!this.revisionsWindowHidden}
         ?is-saving=${this.isSaving}
-        ?search-disabled=${this.revisionsWindow.isViewingRevision}
+        ?search-disabled=${this.getRevisionsWindow()?.isViewingRevision ?? false}
         @temba-button-clicked=${this.handleToolbarAction}
       ></temba-editor-toolbar>
     `;
@@ -3566,10 +3642,12 @@ export class Editor extends RapidElement {
         this.zoomManager.zoomToFull();
         break;
       case 'revisions':
-        if (this.revisionsWindow.isOpen) {
-          this.revisionsWindow.close();
+        if (!this.revisionsWindowHidden) {
+          this.getRevisionsWindow()?.close();
+          this.revisionsWindowHidden = true;
         } else {
-          this.revisionsWindow.open();
+          this.closeOpenWindows();
+          this.revisionsWindowHidden = false;
         }
         break;
       case 'search':
@@ -3707,7 +3785,7 @@ export class Editor extends RapidElement {
   }
 
   public isReadOnly(): boolean {
-    return this.revisionsWindow.isViewingRevision || this.isTranslating;
+    return this.viewingRevision || this.isTranslating;
   }
 
   public render(): TemplateResult {
@@ -3727,8 +3805,22 @@ export class Editor extends RapidElement {
       this.definition.nodes.length > 0 &&
       this.definition.nodes.some((n) => !this.definition._ui?.nodes[n.uuid]);
 
-    return html`${style} ${this.issuesWindow.renderWindow()}
-      ${this.revisionsWindow.renderWindow()}
+    return html`${style}
+      <temba-issues-window
+        .issues=${this.flowIssues}
+        ?hidden=${this.issuesWindowHidden}
+        @temba-issue-selected=${this.handleIssueSelected}
+        @temba-issues-closed=${() => (this.issuesWindowHidden = true)}
+      ></temba-issues-window>
+      <temba-revisions-window
+        .flow=${this.flow}
+        ?hidden=${this.revisionsWindowHidden}
+        ?saving=${this.isSaving}
+        @temba-revision-viewed=${this.handleRevisionViewed}
+        @temba-revision-cancelled=${this.handleRevisionCancelled}
+        @temba-revision-reverted=${this.handleRevisionReverted}
+        @temba-revisions-closed=${this.handleRevisionsClosed}
+      ></temba-revisions-window>
       <div id="editor-container">
         ${this.renderToolbarElement()}
         <div id="editor">
@@ -3770,7 +3862,7 @@ export class Editor extends RapidElement {
                     : ''}
                 <div
                   id="grid"
-                  class="${this.revisionsWindow.isViewingRevision
+                  class="${this.viewingRevision
                     ? 'viewing-revision'
                     : ''}"
                   style="min-width:${100 / this.zoom}%;min-height:${100 /
@@ -3781,9 +3873,9 @@ export class Editor extends RapidElement {
                     id="canvas"
                     class="${getClasses({
                       'viewing-revision':
-                        this.revisionsWindow.isViewingRevision,
+                        this.viewingRevision,
                       'read-only-connections':
-                        this.revisionsWindow.isViewingRevision ||
+                        this.viewingRevision ||
                         this.isTranslating
                     })}"
                   >
@@ -3897,7 +3989,7 @@ export class Editor extends RapidElement {
         : ''}
 
       <temba-canvas-menu></temba-canvas-menu>
-      ${!this.revisionsWindow.isViewingRevision
+      ${!this.viewingRevision
         ? html`<temba-node-type-selector
             .flowType=${this.flowType}
             .features=${this.features}
@@ -3908,6 +4000,18 @@ export class Editor extends RapidElement {
         .includeCategories=${false}
         @temba-search-result-selected=${this.handleSearchResultSelected}
       ></temba-flow-search>
-      ${!this.showMessageTable ? html` ${this.issuesWindow.renderTab()} ` : ''} `;
+      ${!this.showMessageTable && this.flowIssues?.length
+        ? html`
+            <temba-floating-tab
+              id="issues-tab"
+              icon="alert_warning"
+              label="Flow Issues"
+              color="tomato"
+              order="2"
+              .active=${!this.issuesWindowHidden}
+              @temba-button-clicked=${() => this.handleIssuesTabClick()}
+            ></temba-floating-tab>
+          `
+        : ''} `;
   }
 }

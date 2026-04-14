@@ -1,10 +1,12 @@
 import { html, TemplateResult } from 'lit-html';
+import { css, PropertyValues } from 'lit';
+import { property, state } from 'lit/decorators.js';
+import { RapidElement } from '../RapidElement';
+import { CustomEventType } from '../interfaces';
 import { getStore } from '../store/Store';
 import { FlowDefinition } from '../store/flow-definition';
-import { FloatingWindow } from '../layout/FloatingWindow';
 import { fetchResults } from '../utils';
 import { FLOW_SPEC_VERSION } from '../store/AppState';
-import type { Editor } from './Editor';
 
 export interface Revision {
   id: number;
@@ -19,45 +21,63 @@ export interface Revision {
   comment?: string;
 }
 
-export class RevisionsWindow {
+export class RevisionsWindow extends RapidElement {
+  static get styles() {
+    return css`
+      :host {
+        display: contents;
+      }
+    `;
+  }
+
+  @property({ type: String })
+  flow = '';
+
+  @property({ type: Boolean })
+  hidden = true;
+
+  @property({ type: Boolean })
+  saving = false;
+
+  @state()
   private revisions: Revision[] = [];
+
+  @state()
   private viewingRevision: Revision | null = null;
+
+  @state()
   private isLoading = false;
+
   private preRevertState: {
     definition: FlowDefinition;
     dirtyDate: Date | null;
   } | null = null;
   private browseLanguageCode: string | null = null;
 
-  constructor(private editor: Editor) {}
-
-  // --- Public API ---
-
-  public get isOpen(): boolean {
-    return !this.editor.revisionsWindowHidden;
-  }
-
   public get isViewingRevision(): boolean {
     return this.viewingRevision !== null;
   }
 
-  public open(): void {
-    this.editor.closeOpenWindows();
-    this.fetchRevisions();
-    this.editor.revisionsWindowHidden = false;
+  protected updated(changes: PropertyValues): void {
+    super.updated(changes);
+    if (
+      changes.has('hidden') &&
+      !this.hidden &&
+      changes.get('hidden') === true
+    ) {
+      this.fetchRevisions();
+    }
   }
 
   public close(): void {
     this.resetScroll();
-    this.editor.revisionsWindowHidden = true;
     if (this.viewingRevision) {
       this.cancelRevisionView();
     }
+    this.fireCustomEvent(CustomEventType.RevisionsClosed);
   }
 
-  // --- Rendering ---
-
-  public renderWindow(): TemplateResult | string {
+  public render(): TemplateResult {
     return html`
       <temba-floating-window
         id="revisions-window"
@@ -68,8 +88,8 @@ export class RevisionsWindow {
         .maxHeight=${400}
         .top=${120}
         color="rgb(142, 94, 167)"
-        .saving=${this.editor.isSaving}
-        .hidden=${this.editor.revisionsWindowHidden}
+        .saving=${this.saving}
+        .hidden=${this.hidden}
         @temba-dialog-hidden=${() => this.close()}
       >
         <div class="localization-window-content">
@@ -85,7 +105,7 @@ export class RevisionsWindow {
                     <div
                       class="revision-item ${isSelected ? 'selected' : ''}"
                       style="padding:8px; border-radius:4px; cursor:pointer; background:${isSelected
-                        ? '#f0f6ff' // Light blue bg for selected
+                        ? '#f0f6ff'
                         : '#f9fafb'}; border:1px solid ${isSelected
                         ? '#a4cafe'
                         : '#e5e7eb'}; transition: all 0.2s ease;"
@@ -113,7 +133,10 @@ export class RevisionsWindow {
                         ${isSelected
                           ? html`<button
                               class="revert-button"
-                              @click=${() => this.handleRevertClick()}
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                this.handleRevertClick();
+                              }}
                             >
                               Revert
                             </button>`
@@ -140,17 +163,15 @@ export class RevisionsWindow {
 
   private async fetchRevisions() {
     this.isLoading = true;
-    this.editor.requestUpdate();
     try {
       const results = await fetchResults(
-        `/flow/revisions/${this.editor.flow}/?version=${FLOW_SPEC_VERSION}`
+        `/flow/revisions/${this.flow}/?version=${FLOW_SPEC_VERSION}`
       );
       this.revisions = results.slice(1);
     } catch (e) {
       console.error('Error fetching revisions', e);
     } finally {
       this.isLoading = false;
-      this.editor.requestUpdate();
     }
   }
 
@@ -159,110 +180,93 @@ export class RevisionsWindow {
       return;
     }
 
+    const store = getStore().getState();
+
     if (!this.viewingRevision) {
       this.preRevertState = {
-        definition: this.editor.definition,
-        dirtyDate: this.editor.dirtyDate
+        definition: store.flowDefinition,
+        dirtyDate: store.dirtyDate
       };
-      this.browseLanguageCode = this.editor.languageCode;
+      this.browseLanguageCode = store.languageCode;
     }
 
     this.viewingRevision = revision;
-    this.editor.closeFlowSearch();
     this.isLoading = true;
-    this.editor.plumber?.reset();
-    this.editor.requestUpdate();
+
+    this.fireCustomEvent(CustomEventType.RevisionViewed, { revision });
 
     try {
-      await getStore()
-        .getState()
-        .fetchRevision(
-          `/flow/revisions/${this.editor.flow}`,
-          revision.id.toString()
-        );
+      await store.fetchRevision(
+        `/flow/revisions/${this.flow}`,
+        revision.id.toString()
+      );
       if (this.browseLanguageCode) {
-        this.editor.handleLanguageChange(this.browseLanguageCode);
+        store.setLanguageCode(this.browseLanguageCode);
       }
     } catch (e) {
       console.error('Error fetching revision details', e);
       this.cancelRevisionView();
     } finally {
       this.isLoading = false;
-      this.editor.requestUpdate();
     }
   }
 
   private cancelRevisionView() {
-    this.editor.plumber?.reset();
+    const store = getStore().getState();
     const preservedLanguageCode =
-      this.browseLanguageCode || this.editor.languageCode;
+      this.browseLanguageCode || store.languageCode;
+
     if (this.preRevertState) {
-      const currentInfo = getStore().getState().flowInfo;
-      getStore().getState().setFlowContents({
+      const currentInfo = store.flowInfo;
+      store.setFlowContents({
         definition: this.preRevertState.definition,
         info: currentInfo
       });
       if (this.preRevertState.dirtyDate) {
-        getStore().getState().setDirtyDate(this.preRevertState.dirtyDate);
+        store.setDirtyDate(this.preRevertState.dirtyDate);
       }
       if (preservedLanguageCode) {
-        this.editor.handleLanguageChange(preservedLanguageCode);
+        store.setLanguageCode(preservedLanguageCode);
       }
     } else {
-      getStore()
-        .getState()
-        .fetchRevision(`/flow/revisions/${this.editor.flow}`)
-        .finally(() => {
-          if (preservedLanguageCode) {
-            this.editor.handleLanguageChange(preservedLanguageCode);
-          }
-        });
+      store.fetchRevision(`/flow/revisions/${this.flow}`).finally(() => {
+        if (preservedLanguageCode) {
+          store.setLanguageCode(preservedLanguageCode);
+        }
+      });
     }
 
     this.viewingRevision = null;
     this.preRevertState = null;
     this.browseLanguageCode = null;
-    this.editor.requestUpdate();
+    this.fireCustomEvent(CustomEventType.RevisionCancelled);
   }
 
   private async handleRevertClick() {
     if (!this.viewingRevision || !this.preRevertState) return;
-    this.editor.plumber?.reset();
+
+    const store = getStore().getState();
     const preservedLanguageCode =
-      this.browseLanguageCode || this.editor.languageCode;
+      this.browseLanguageCode || store.languageCode;
 
     const definitionToSave = {
-      ...this.editor.definition,
+      ...store.flowDefinition,
       revision: this.preRevertState.definition.revision
     };
 
-    await this.editor.saveChanges(definitionToSave);
     this.viewingRevision = null;
     this.preRevertState = null;
-    this.editor.revisionsWindowHidden = true;
-
-    const revisionsWindow = document.getElementById(
-      'revisions-window'
-    ) as FloatingWindow;
-    revisionsWindow.handleClose();
-
-    this.fetchRevisions();
-
-    getStore()
-      .getState()
-      .fetchRevision(`/flow/revisions/${this.editor.flow}`)
-      .finally(() => {
-        if (preservedLanguageCode) {
-          this.editor.handleLanguageChange(preservedLanguageCode);
-        }
-      });
     this.browseLanguageCode = null;
+
+    this.fireCustomEvent(CustomEventType.RevisionReverted, {
+      definition: definitionToSave,
+      languageCode: preservedLanguageCode
+    });
   }
 
   private resetScroll() {
-    const list = this.editor
-      .querySelector('#revisions-window')
-      ?.shadowRoot?.querySelector('.body');
+    const win = this.shadowRoot?.querySelector('temba-floating-window');
+    const list = win?.shadowRoot?.querySelector('.body');
     if (list) {
       list.scrollTop = 0;
     }

@@ -1,6 +1,8 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { EditorToolbar } from '../src/flow/EditorToolbar';
+import { IssuesWindow } from '../src/flow/IssuesWindow';
+import { RevisionsWindow } from '../src/flow/RevisionsWindow';
 import { Plumber } from '../src/flow/Plumber';
 import { stub, restore, useFakeTimers } from 'sinon';
 import { zustand } from '../src/store/AppState';
@@ -10,6 +12,12 @@ import { TEMBA_COMPONENTS_VERSION } from '../src/version';
 customElements.define('temba-flow-editor', Editor);
 if (!customElements.get('temba-editor-toolbar')) {
   customElements.define('temba-editor-toolbar', EditorToolbar);
+}
+if (!customElements.get('temba-issues-window')) {
+  customElements.define('temba-issues-window', IssuesWindow);
+}
+if (!customElements.get('temba-revisions-window')) {
+  customElements.define('temba-revisions-window', RevisionsWindow);
 }
 
 async function getToolbarButton(
@@ -933,7 +941,6 @@ describe('Editor', () => {
       `);
 
       (editor as any).canvasSize = { width: 800, height: 600 };
-      (editor as any).revisions = [];
       (editor as any).isSaving = false;
       await editor.updateComplete;
 
@@ -974,17 +981,20 @@ describe('Editor', () => {
       } as any;
 
       (editor as any).definition = definition;
-      (editor.revisionsWindow as any).preRevertState = {
+      const revisionsWindow = editor.querySelector(
+        'temba-revisions-window'
+      ) as any;
+      (revisionsWindow as any).preRevertState = {
         definition,
         dirtyDate: null
       };
-      (editor.revisionsWindow as any).viewingRevision = {
+      (revisionsWindow as any).viewingRevision = {
         id: 2,
         created_on: '2024-01-02',
         user: { id: 1, username: 'tester' }
       };
 
-      (editor.revisionsWindow as any).cancelRevisionView();
+      (revisionsWindow as any).cancelRevisionView();
 
       expect(zustand.getState().viewingRevision).to.be.false;
     });
@@ -997,10 +1007,6 @@ describe('Editor', () => {
       `);
 
       (editor as any).canvasSize = { width: 800, height: 600 };
-      (editor as any).revisions = [
-        { id: 1, created_on: '2024-01-01', user: { name: 'A' } },
-        { id: 2, created_on: '2024-01-02', user: { name: 'B' } }
-      ];
       (editor as any).isSaving = true;
       await editor.updateComplete;
 
@@ -1018,16 +1024,13 @@ describe('Editor', () => {
       `);
 
       (editor as any).canvasSize = { width: 800, height: 600 };
-      (editor as any).revisions = [
-        { id: 1, created_on: '2024-01-01', user: { name: 'A' } },
-        { id: 2, created_on: '2024-01-02', user: { name: 'B' } }
-      ];
       (editor as any).isSaving = true;
       await editor.updateComplete;
 
-      const revisionsWindow = editor.querySelector('#revisions-window') as any;
+      const revisionsWindow = editor.querySelector(
+        'temba-revisions-window'
+      ) as any;
       expect(revisionsWindow).to.exist;
-      expect(revisionsWindow.getAttribute('icon')).to.equal('revisions');
       expect(revisionsWindow.saving).to.be.true;
     });
 
@@ -1039,10 +1042,6 @@ describe('Editor', () => {
       `);
 
       (editor as any).canvasSize = { width: 800, height: 600 };
-      (editor as any).revisions = [
-        { id: 1, created_on: '2024-01-01', user: { name: 'A' } },
-        { id: 2, created_on: '2024-01-02', user: { name: 'B' } }
-      ];
       (editor as any).isSaving = false;
       await editor.updateComplete;
 

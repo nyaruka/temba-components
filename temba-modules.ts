@@ -83,6 +83,8 @@ import { Accordion } from './src/layout/Accordion';
 import { AccordionSection } from './src/layout/AccordionSection';
 import { Simulator } from './src/simulator/Simulator';
 import { FlowSearch } from './src/flow/FlowSearch';
+import { IssuesWindow } from './src/flow/IssuesWindow';
+import { RevisionsWindow } from './src/flow/RevisionsWindow';
 import { MessageTable } from './src/flow/MessageTable';
 
 export function addCustomElement(name: string, comp: any) {
@@ -178,3 +180,5 @@ addCustomElement('temba-floating-tab', FloatingTab);
 addCustomElement('temba-floating-window', FloatingWindow);
 addCustomElement('temba-simulator', Simulator);
 addCustomElement('temba-flow-search', FlowSearch);
+addCustomElement('temba-issues-window', IssuesWindow);
+addCustomElement('temba-revisions-window', RevisionsWindow);
