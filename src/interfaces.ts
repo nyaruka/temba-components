@@ -315,5 +315,12 @@ export enum CustomEventType {
   FlowClicked = 'temba-flow-clicked',
   GroupClicked = 'temba-group-clicked',
   ShowIssue = 'temba-show-issue',
-  SizeChanged = 'temba-size-changed'
+  SizeChanged = 'temba-size-changed',
+  IssueSelected = 'temba-issue-selected',
+  IssuesClosed = 'temba-issues-closed',
+  IssuesTabClicked = 'temba-issues-tab-clicked',
+  RevisionViewed = 'temba-revision-viewed',
+  RevisionCancelled = 'temba-revision-cancelled',
+  RevisionReverted = 'temba-revision-reverted',
+  RevisionsClosed = 'temba-revisions-closed'
 }

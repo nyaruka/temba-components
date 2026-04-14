@@ -1,11 +1,20 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
+import { IssuesWindow } from '../src/flow/IssuesWindow';
+import { RevisionsWindow } from '../src/flow/RevisionsWindow';
 import { stub, restore, SinonStub } from 'sinon';
 
 customElements.define('temba-flow-editor-revisions', Editor);
+if (!customElements.get('temba-issues-window')) {
+  customElements.define('temba-issues-window', IssuesWindow);
+}
+if (!customElements.get('temba-revisions-window')) {
+  customElements.define('temba-revisions-window', RevisionsWindow);
+}
 
 describe('Editor Revisions', () => {
   let element: Editor;
+  let revisionsWindow: RevisionsWindow;
   let fetchStub: SinonStub;
 
   beforeEach(async () => {
@@ -16,6 +25,9 @@ describe('Editor Revisions', () => {
       html`<temba-flow-editor-revisions></temba-flow-editor-revisions>`
     );
     element.flow = 'test-flow';
+    revisionsWindow = element.querySelector(
+      'temba-revisions-window'
+    ) as RevisionsWindow;
   });
 
   afterEach(() => {
@@ -52,11 +64,9 @@ describe('Editor Revisions', () => {
 
     fetchStub.resolves(mockResponse);
 
-    // Call fetchRevisions (private)
-    // Note: fetchRevisions calls fetchResults -> fetchResultsPage -> fetch
-    await (element as any).fetchRevisions();
+    await (revisionsWindow as any).fetchRevisions();
 
-    const revisions = (element as any).revisions;
+    const revisions = (revisionsWindow as any).revisions;
     expect(revisions.length).to.equal(2);
     expect(revisions[0].id).to.equal(2);
     expect(revisions[1].id).to.equal(1);
@@ -68,8 +78,8 @@ describe('Editor Revisions', () => {
     });
     fetchStub.resolves(mockResponse);
 
-    await (element as any).fetchRevisions();
-    const revisions = (element as any).revisions;
+    await (revisionsWindow as any).fetchRevisions();
+    const revisions = (revisionsWindow as any).revisions;
     expect(revisions.length).to.equal(0);
   });
 
@@ -87,15 +97,15 @@ describe('Editor Revisions', () => {
     );
     fetchStub.resolves(mockResponse);
 
-    await (element as any).fetchRevisions();
-    const revisions = (element as any).revisions;
+    await (revisionsWindow as any).fetchRevisions();
+    const revisions = (revisionsWindow as any).revisions;
     expect(revisions.length).to.equal(0);
   });
 
   it('should have purple color for revisions window and blue for selected item', async () => {
     // Force revisions window to show
     (element as any).revisionsWindowHidden = false;
-    (element as any).localizationWindowHidden = true;
+    await element.requestUpdate();
 
     // Mock revisions so we can see list items
     const mockRevisions = [
@@ -110,18 +120,21 @@ describe('Editor Revisions', () => {
         user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' }
       }
     ];
-    (element as any).revisions = mockRevisions;
-    (element as any).viewingRevision = mockRevisions[0]; // Select the first one
+    (revisionsWindow as any).revisions = mockRevisions;
+    (revisionsWindow as any).viewingRevision = mockRevisions[0]; // Select the first one
 
-    await element.requestUpdate();
+    await revisionsWindow.updateComplete;
 
-    // Check revisions window color
-    const revisionsWindow = element.querySelector('#revisions-window');
-    expect(revisionsWindow).to.exist;
-    expect(revisionsWindow.getAttribute('color')).to.equal('rgb(142, 94, 167)');
+    // Check revisions window color - now inside the component's shadow DOM
+    const floatingWindow =
+      revisionsWindow.shadowRoot?.querySelector('temba-floating-window');
+    expect(floatingWindow).to.exist;
+    expect(floatingWindow.getAttribute('color')).to.equal(
+      'rgb(142, 94, 167)'
+    );
 
-    // Check selected item styles
-    const selectedItem = element.querySelector(
+    // Check selected item styles - inside the component's shadow DOM
+    const selectedItem = revisionsWindow.shadowRoot?.querySelector(
       '.revision-item.selected'
     ) as HTMLElement;
     expect(selectedItem).to.exist;
