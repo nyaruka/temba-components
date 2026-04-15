@@ -53,20 +53,21 @@ describe('temba-resizer', () => {
     const handle = r.shadowRoot.querySelector('.resizer') as HTMLElement;
     assert.isNotNull(handle);
 
-    // dispatch a real mousedown on the handle to trigger the @mousedown binding
-    handle.dispatchEvent(
-      new MouseEvent('mousedown', { bubbles: true, clientX: 0 })
-    );
+    const mousedown = new MouseEvent('mousedown', { bubbles: true });
+    Object.defineProperty(mousedown, 'x', { value: 0 });
+    handle.dispatchEvent(mousedown);
     assert.isTrue(r.resizing);
     const startWidth = r.currentWidth;
 
-    // dispatch mousemove on window (that's where Resizer listens while dragging)
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 50 }));
+    const mousemove = new MouseEvent('mousemove');
+    Object.defineProperty(mousemove, 'x', { value: 50 });
+    window.dispatchEvent(mousemove);
     assert.equal(r.currentWidth, startWidth + 50);
 
-    // final mouseup on window should stop resize and fire Resized
-    const listener = oneEvent(r, CustomEventType.Resized);
-    window.dispatchEvent(new MouseEvent('mouseup', { clientX: 50 }));
+    const mouseup = new MouseEvent('mouseup');
+    Object.defineProperty(mouseup, 'x', { value: 50 });
+    const listener = oneEvent(r, CustomEventType.Resized, false);
+    window.dispatchEvent(mouseup);
     const evt: any = await listener;
 
     assert.isFalse(r.resizing);

@@ -1,0 +1,20 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "temba-components-dev",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "exec",
+        "-w",
+        "/workspaces/worktrees/temba-components/objective-visvesvaraya",
+        "temba-components",
+        "sh",
+        "-c",
+        "lsof -ti:3010 | xargs kill -9 2>/dev/null; pnpm start"
+      ],
+      "port": 3010,
+      "autoPort": false
+    }
+  ]
+}
