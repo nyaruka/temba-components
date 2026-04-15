@@ -37,3 +37,4 @@ run.sh
 
 # codex local artifacts
 CODEX.md
+.claude/
