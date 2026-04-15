@@ -44,7 +44,7 @@ describe('temba-user', () => {
 
   it('renders name when showName set', async () => {
     const user = await createUser(
-      '<temba-user name="Jane Doe" showName scale="1"></temba-user>'
+      '<temba-user name="Jane Doe" showname scale="1"></temba-user>'
     );
     await user.updateComplete;
     const nameEl = user.shadowRoot.querySelector('.name');
