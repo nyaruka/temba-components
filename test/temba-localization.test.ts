@@ -90,7 +90,9 @@ describe('Localization Editing', () => {
   ): Promise<void> => {
     const toolbar = await getToolbar(flowEditor);
     // Open language options dropdown
-    const languageBtn = toolbar.shadowRoot.querySelector('#language-btn') as HTMLElement;
+    const languageBtn = toolbar.shadowRoot.querySelector(
+      '#language-btn'
+    ) as HTMLElement;
     languageBtn.click();
     await toolbar.updateComplete;
 
@@ -186,7 +188,9 @@ describe('Localization Editing', () => {
   it('should show language options with non-base languages', async () => {
     const toolbar = await getToolbar(editor);
     // Open language dropdown
-    const languageBtn = toolbar.shadowRoot.querySelector('#language-btn') as HTMLElement;
+    const languageBtn = toolbar.shadowRoot.querySelector(
+      '#language-btn'
+    ) as HTMLElement;
     languageBtn.click();
     await toolbar.updateComplete;
 
@@ -268,9 +272,11 @@ describe('Localization Editing', () => {
   it.skip('should open auto translate dialog when clicking auto translate', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
-    const autoTranslateBtn = editor.querySelector('temba-editor-toolbar')?.shadowRoot?.querySelector(
-      '.toolbar-btn[aria-label="Auto translate"]'
-    ) as HTMLButtonElement;
+    const autoTranslateBtn = editor
+      .querySelector('temba-editor-toolbar')
+      ?.shadowRoot?.querySelector(
+        '.toolbar-btn[aria-label="Auto translate"]'
+      ) as HTMLButtonElement;
     expect(autoTranslateBtn).to.exist;
     expect(autoTranslateBtn.disabled).to.be.false;
 
