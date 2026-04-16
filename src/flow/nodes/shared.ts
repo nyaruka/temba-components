@@ -4,8 +4,9 @@ import {
   AccordionLayoutConfig,
   CheckboxFieldConfig
 } from '../types';
-import { Node } from '../../store/flow-definition';
+import { Node, Category, Exit, Case } from '../../store/flow-definition';
 import { getOperatorConfig } from '../operators';
+import { generateUUID } from '../../utils';
 
 /**
  * Shared result_name field configuration for router nodes.
@@ -124,10 +125,9 @@ export function categoriesToLocalizationFormData(
     rulesData[c.uuid] = {
       operatorName,
       originalArguments: [...c.arguments],
-      localizedArguments:
-        caseLocalization?.arguments
-          ? [...caseLocalization.arguments]
-          : c.arguments.map(() => '')
+      localizedArguments: caseLocalization?.arguments
+        ? [...caseLocalization.arguments]
+        : c.arguments.map(() => '')
     };
   });
 
@@ -173,7 +173,8 @@ export function localizationFormDataToCategories(
 
       // Save if any argument differs from original and is non-empty
       const hasLocalization = localized.some(
-        (arg: string, i: number) => arg?.trim() && arg.trim() !== (original[i] || '')
+        (arg: string, i: number) =>
+          arg?.trim() && arg.trim() !== (original[i] || '')
       );
 
       if (hasLocalization) {
@@ -185,4 +186,109 @@ export function localizationFormDataToCategories(
   }
 
   return localizationData;
+}
+
+/**
+ * Describes a category to build for a router node. When `case` is provided,
+ * a matching switch-router case is also built and linked to the category.
+ */
+export interface CategoryEntry {
+  name: string;
+  case?: {
+    type: string;
+    arguments: string[];
+  };
+}
+
+/**
+ * Builds categories, exits, and (optionally) cases for a router node,
+ * preserving UUIDs and exit destinations from existing data when possible.
+ * Categories/exits are matched by category name; cases by their first argument.
+ */
+export function buildCategoriesExitsCases(
+  entries: CategoryEntry[],
+  existingCategories: Category[],
+  existingExits: Exit[],
+  existingCases: Case[] = []
+): { categories: Category[]; exits: Exit[]; cases: Case[] } {
+  const categories: Category[] = [];
+  const exits: Exit[] = [];
+  const cases: Case[] = [];
+
+  entries.forEach((entry) => {
+    const existingCategory = existingCategories.find(
+      (cat) => cat.name === entry.name
+    );
+    const existingExit = existingCategory
+      ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
+      : null;
+
+    const exitUuid = existingExit?.uuid || generateUUID();
+    const categoryUuid = existingCategory?.uuid || generateUUID();
+
+    categories.push({
+      uuid: categoryUuid,
+      name: entry.name,
+      exit_uuid: exitUuid
+    });
+
+    exits.push({
+      uuid: exitUuid,
+      destination_uuid: existingExit?.destination_uuid || null
+    });
+
+    if (entry.case) {
+      const matchArg = entry.case.arguments[0];
+      const existingCase = existingCases.find(
+        (c) => c.arguments?.[0] === matchArg
+      );
+      cases.push({
+        uuid: existingCase?.uuid || generateUUID(),
+        type: entry.case.type,
+        arguments: entry.case.arguments,
+        category_uuid: categoryUuid
+      });
+    }
+  });
+
+  return { categories, exits, cases };
+}
+
+/**
+ * Appends a default "Other" category and its exit to the given arrays,
+ * preserving the UUID/destination of an existing "Other" unless the user
+ * selected an item also named "Other" (in which case the existing one was
+ * already consumed by buildCategoriesExitsCases). Returns the Other category
+ * UUID for use as `default_category_uuid`.
+ */
+export function appendOtherCategory(
+  categories: Category[],
+  exits: Exit[],
+  existingCategories: Category[],
+  existingExits: Exit[],
+  userItemNames: string[]
+): string {
+  const userHasOther = userItemNames.includes('Other');
+  const existingOther = userHasOther
+    ? null
+    : existingCategories.find((cat) => cat.name === 'Other');
+  const existingOtherExit = existingOther
+    ? existingExits.find((exit) => exit.uuid === existingOther.exit_uuid)
+    : null;
+
+  const otherExitUuid = existingOtherExit?.uuid || generateUUID();
+  const otherCategoryUuid = existingOther?.uuid || generateUUID();
+
+  categories.push({
+    uuid: otherCategoryUuid,
+    name: 'Other',
+    exit_uuid: otherExitUuid
+  });
+
+  exits.push({
+    uuid: otherExitUuid,
+    destination_uuid: existingOtherExit?.destination_uuid || null
+  });
+
+  return otherCategoryUuid;
 }

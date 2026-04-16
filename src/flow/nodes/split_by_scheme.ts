@@ -1,15 +1,13 @@
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
-import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
-import { generateUUID } from '../../utils';
-import { SCHEMES } from '../utils';
+import { Node, Case } from '../../store/flow-definition.d';
+import { SCHEMES, validateWith } from '../utils';
 import {
   resultNameField,
   nodeOptionsAccordionSimple,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
+  buildCategoriesExitsCases,
+  appendOtherCategory
 } from './shared';
 
-// Helper function to get scheme options for the select dropdown
 const getSchemeOptions = () => {
   return SCHEMES.map((scheme) => ({
     value: scheme.scheme,
@@ -17,95 +15,8 @@ const getSchemeOptions = () => {
   }));
 };
 
-// Helper function to create a switch router with scheme cases
-const createSchemeRouter = (
-  selectedSchemes: string[],
-  existingCategories: Category[] = [],
-  existingExits: Exit[] = [],
-  existingCases: Case[] = [],
-  resultName: string = ''
-) => {
-  const categories: Category[] = [];
-  const exits: Exit[] = [];
-  const cases: Case[] = [];
-
-  // Create categories, exits, and cases for each selected scheme
-  selectedSchemes.forEach((scheme) => {
-    const schemeObj = SCHEMES.find((s) => s.scheme === scheme);
-    const schemeName = schemeObj?.name || scheme;
-
-    // Try to find existing category by scheme name
-    const existingCategory = existingCategories.find(
-      (cat) => cat.name === schemeName
-    );
-    const existingExit = existingCategory
-      ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
-      : null;
-    const existingCase = existingCases.find((c) => c.arguments?.[0] === scheme);
-
-    const exitUuid = existingExit?.uuid || generateUUID();
-    const categoryUuid = existingCategory?.uuid || generateUUID();
-    const caseUuid = existingCase?.uuid || generateUUID();
-
-    categories.push({
-      uuid: categoryUuid,
-      name: schemeName,
-      exit_uuid: exitUuid
-    });
-
-    exits.push({
-      uuid: exitUuid,
-      destination_uuid: existingExit?.destination_uuid || null
-    });
-
-    cases.push({
-      uuid: caseUuid,
-      type: 'has_only_phrase',
-      arguments: [scheme],
-      category_uuid: categoryUuid
-    });
-  });
-
-  // Add default "Other" category for schemes not in the selected list
-  const existingOtherCategory = existingCategories.find((cat) => {
-    const matchesSelected = selectedSchemes.some((scheme) => {
-      const schemeObj = SCHEMES.find((s) => s.scheme === scheme);
-      return schemeObj?.name === cat.name;
-    });
-    return cat.name === 'Other' && !matchesSelected;
-  });
-  const existingOtherExit = existingOtherCategory
-    ? existingExits.find(
-        (exit) => exit.uuid === existingOtherCategory.exit_uuid
-      )
-    : null;
-
-  const otherExitUuid = existingOtherExit?.uuid || generateUUID();
-  const otherCategoryUuid = existingOtherCategory?.uuid || generateUUID();
-
-  categories.push({
-    uuid: otherCategoryUuid,
-    name: 'Other',
-    exit_uuid: otherExitUuid
-  });
-
-  exits.push({
-    uuid: otherExitUuid,
-    destination_uuid: existingOtherExit?.destination_uuid || null
-  });
-
-  return {
-    router: {
-      type: 'switch' as const,
-      cases: cases,
-      categories: categories,
-      default_category_uuid: otherCategoryUuid,
-      operand: '@(urn_parts(contact.urn).scheme)',
-      result_name: resultName
-    },
-    exits: exits
-  };
-};
+const getSchemeName = (scheme: string) =>
+  SCHEMES.find((s) => s.scheme === scheme)?.name || scheme;
 
 export const split_by_scheme: NodeConfig = {
   type: 'split_by_scheme',
@@ -127,9 +38,7 @@ export const split_by_scheme: NodeConfig = {
     result_name: resultNameField
   },
   layout: ['schemes', nodeOptionsAccordionSimple],
-  validate: (formData: FormData) => {
-    const errors: { [key: string]: string } = {};
-
+  validate: validateWith((formData, errors) => {
     if (
       !formData.schemes ||
       !Array.isArray(formData.schemes) ||
@@ -137,14 +46,8 @@ export const split_by_scheme: NodeConfig = {
     ) {
       errors.schemes = 'At least one channel type is required';
     }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
+  }),
   toFormData: (node: Node) => {
-    // Extract schemes from the existing node structure
     const schemes: string[] = [];
 
     if (node.router?.cases) {
@@ -157,43 +60,57 @@ export const split_by_scheme: NodeConfig = {
 
     return {
       uuid: node.uuid,
-      schemes: schemes.map((scheme) => {
-        const schemeObj = SCHEMES.find((s) => s.scheme === scheme);
-        return {
-          value: scheme,
-          name: schemeObj?.name || scheme
-        };
-      }),
+      schemes: schemes.map((scheme) => ({
+        value: scheme,
+        name: getSchemeName(scheme)
+      })),
       result_name: node.router?.result_name || ''
     };
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
-    // Get selected schemes (handle both array of objects and array of strings)
     const selectedSchemes = (formData.schemes || [])
       .filter((scheme: any) => scheme)
       .map((scheme: any) =>
         typeof scheme === 'string' ? scheme : scheme.value
       );
 
-    // Create router and exits using existing data when possible
     const existingCategories = originalNode.router?.categories || [];
     const existingExits = originalNode.exits || [];
     const existingCases = originalNode.router?.cases || [];
 
-    const { router, exits } = createSchemeRouter(
-      selectedSchemes,
+    const { categories, exits, cases } = buildCategoriesExitsCases(
+      selectedSchemes.map((scheme) => ({
+        name: getSchemeName(scheme),
+        case: {
+          type: 'has_only_phrase',
+          arguments: [scheme]
+        }
+      })),
       existingCategories,
       existingExits,
-      existingCases,
-      formData.result_name || ''
+      existingCases
     );
 
-    // Return the complete node
+    const defaultCategoryUuid = appendOtherCategory(
+      categories,
+      exits,
+      existingCategories,
+      existingExits,
+      selectedSchemes.map(getSchemeName)
+    );
+
     return {
       uuid: originalNode.uuid,
       actions: originalNode.actions || [],
-      router: router,
-      exits: exits
+      router: {
+        type: 'switch',
+        cases,
+        categories,
+        default_category_uuid: defaultCategoryUuid,
+        operand: '@(urn_parts(contact.urn).scheme)',
+        result_name: formData.result_name || ''
+      },
+      exits
     };
   },
   router: {
@@ -202,7 +119,5 @@ export const split_by_scheme: NodeConfig = {
   },
 
   // Localization support for categories
-  localizable: 'categories',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  localizable: 'categories'
 };

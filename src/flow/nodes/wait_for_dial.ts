@@ -1,11 +1,7 @@
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
-import {
-  resultNameField,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
-} from './shared';
+import { resultNameField } from './shared';
 
 const DIAL_CATEGORIES = ['Answered', 'No Answer', 'Busy', 'Failed'];
 const DIAL_CASES = [
@@ -171,7 +167,5 @@ export const wait_for_dial: NodeConfig = {
     };
   },
   localizable: 'categories',
-  nonTranslatableCategories: 'all',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  nonTranslatableCategories: 'all'
 };

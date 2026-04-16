@@ -10,9 +10,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
+  nodeOptionsAccordion
 } from './shared';
 import {
   createRulesArrayConfig,
@@ -62,7 +60,9 @@ export const wait_for_digits: NodeConfig = {
   toUIConfig: (formData: FormData) => {
     const config: Record<string, any> = {};
     config.localizeRules = !!formData.localizeRules;
-    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    config.localizeCategories = formData.result_name
+      ? !!formData.localizeCategories
+      : false;
     return config;
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -100,7 +100,5 @@ export const wait_for_digits: NodeConfig = {
       exits
     };
   },
-  localizable: 'categories',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  localizable: 'categories'
 };

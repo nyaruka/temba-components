@@ -7,13 +7,10 @@ import {
 } from '../types';
 import { TransferAirtime, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
+import { validateWith } from '../utils';
 import { html } from 'lit';
 import { CURRENCY_OPTIONS, CURRENCIES } from '../currencies';
-import {
-  resultNameField,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
-} from './shared';
+import { resultNameField } from './shared';
 
 export const split_by_airtime: NodeConfig = {
   type: 'split_by_airtime',
@@ -55,68 +52,51 @@ export const split_by_airtime: NodeConfig = {
     result_name: resultNameField
   },
   layout: ['amounts', 'result_name'],
-  validate: (formData: FormData) => {
-    const errors: { [key: string]: string } = {};
-
-    // Validate that we have at least one amount
-    if (formData.amounts && Array.isArray(formData.amounts)) {
-      const validAmounts = formData.amounts.filter(
-        (item: any) =>
-          item?.currency && item?.amount && item.amount.trim() !== ''
-      );
-
-      if (validAmounts.length === 0) {
-        errors.amounts = 'At least one currency and amount is required';
-        return {
-          valid: false,
-          errors
-        };
-      }
-
-      // Check for duplicate currencies
-      const currencies = new Set();
-      const duplicates: string[] = [];
-
-      validAmounts.forEach((item: any) => {
-        // Extract currency code from selection
-        const currencyCode =
-          Array.isArray(item.currency) && item.currency.length > 0
-            ? item.currency[0].value
-            : typeof item.currency === 'string'
-              ? item.currency
-              : item.currency?.value;
-
-        if (currencies.has(currencyCode)) {
-          duplicates.push(currencyCode);
-        } else {
-          currencies.add(currencyCode);
-        }
-      });
-
-      if (duplicates.length > 0) {
-        errors.amounts = `Duplicate currencies found: ${duplicates.join(', ')}`;
-      }
-
-      // Validate amounts are numeric
-      for (const item of validAmounts) {
-        const amount = item.amount.trim();
-        if (isNaN(Number(amount)) || Number(amount) <= 0) {
-          errors.amounts = 'All amounts must be valid positive numbers';
-          return {
-            valid: false,
-            errors
-          };
-        }
-      }
-    } else {
+  validate: validateWith((formData, errors) => {
+    if (!formData.amounts || !Array.isArray(formData.amounts)) {
       errors.amounts = 'At least one currency and amount is required';
+      return;
     }
 
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
+    const validAmounts = formData.amounts.filter(
+      (item: any) => item?.currency && item?.amount && item.amount.trim() !== ''
+    );
+
+    if (validAmounts.length === 0) {
+      errors.amounts = 'At least one currency and amount is required';
+      return;
+    }
+
+    const currencies = new Set();
+    const duplicates: string[] = [];
+
+    validAmounts.forEach((item: any) => {
+      const currencyCode =
+        Array.isArray(item.currency) && item.currency.length > 0
+          ? item.currency[0].value
+          : typeof item.currency === 'string'
+            ? item.currency
+            : item.currency?.value;
+
+      if (currencies.has(currencyCode)) {
+        duplicates.push(currencyCode);
+      } else {
+        currencies.add(currencyCode);
+      }
+    });
+
+    if (duplicates.length > 0) {
+      errors.amounts = `Duplicate currencies found: ${duplicates.join(', ')}`;
+    }
+
+    for (const item of validAmounts) {
+      const amount = item.amount.trim();
+      if (isNaN(Number(amount)) || Number(amount) <= 0) {
+        errors.amounts = 'All amounts must be valid positive numbers';
+        return;
+      }
+    }
+  }),
   render: (node: Node) => {
     const transferAirtimeAction = node.actions?.find(
       (action) => action.type === 'transfer_airtime'
@@ -254,7 +234,5 @@ export const split_by_airtime: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
-  nonTranslatableCategories: 'all',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  nonTranslatableCategories: 'all'
 };

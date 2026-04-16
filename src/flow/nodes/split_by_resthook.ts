@@ -2,12 +2,8 @@ import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { CallResthook, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
-import {
-  resultNameField,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
-} from './shared';
-import { renderClamped } from '../utils';
+import { resultNameField } from './shared';
+import { renderClamped, validateWith } from '../utils';
 
 export const split_by_resthook: NodeConfig = {
   type: 'split_by_resthook',
@@ -31,19 +27,11 @@ export const split_by_resthook: NodeConfig = {
     result_name: resultNameField
   },
   layout: ['resthook', 'result_name'],
-  validate: (formData: FormData) => {
-    const errors: { [key: string]: string } = {};
-
-    // validate resthook is provided
+  validate: validateWith((formData, errors) => {
     if (!formData.resthook || formData.resthook.length === 0) {
       errors.resthook = 'A resthook is required';
     }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
+  }),
   render: (node: Node) => {
     const callResthookAction = node.actions?.find(
       (action) => action.type === 'call_resthook'
@@ -130,7 +118,5 @@ export const split_by_resthook: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
-  nonTranslatableCategories: 'all',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  nonTranslatableCategories: 'all'
 };

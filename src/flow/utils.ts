@@ -5,6 +5,106 @@ import { CustomEventType } from '../interfaces';
 import { tokenize, TokenType } from '../excellent/tokenizer';
 import { TOKEN_COLORS } from '../excellent/token-styles';
 import { messageParser, sessionParser } from '../excellent/helpers';
+import { FormData, ValidationResult, NodeConfig, ActionConfig } from './types';
+import {
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './nodes/shared';
+
+/**
+ * Wraps a validation check into the standard `validate` signature. The check
+ * populates an `errors` object; the wrapper computes `valid` and returns the
+ * ValidationResult. Eliminates the `const errors = {}; ...; return {valid, errors}`
+ * boilerplate that appears in every node and action config.
+ */
+export function validateWith(
+  check: (formData: FormData, errors: { [key: string]: string }) => void
+): (formData: FormData) => ValidationResult {
+  return (formData: FormData) => {
+    const errors: { [key: string]: string } = {};
+    check(formData, errors);
+    return { valid: Object.keys(errors).length === 0, errors };
+  };
+}
+
+function makeTextToLocalizationFormData(fields: readonly string[]) {
+  return (
+    action: { uuid: string },
+    localization: Record<string, any>
+  ): FormData => {
+    const formData: FormData = { uuid: action.uuid };
+    fields.forEach((field) => {
+      const value = localization[field];
+      formData[field] = Array.isArray(value) ? value[0] || '' : '';
+    });
+    return formData;
+  };
+}
+
+function makeTextFromLocalizationFormData(fields: readonly string[]) {
+  return (
+    formData: FormData,
+    action: Record<string, any>
+  ): Record<string, any> => {
+    const localization: Record<string, any> = {};
+    fields.forEach((field) => {
+      const value = formData[field];
+      if (value && value.trim() !== '' && value !== action[field]) {
+        localization[field] = [value];
+      }
+    });
+    return localization;
+  };
+}
+
+type ToLocalizationFn = (
+  nodeOrAction: any,
+  localization: Record<string, any>
+) => FormData;
+
+type FromLocalizationFn = (
+  formData: FormData,
+  nodeOrAction: any
+) => Record<string, any>;
+
+/**
+ * Returns the `toLocalizationFormData` impl for a node or action config. Uses
+ * the explicit impl if the config provides one; otherwise infers from the
+ * `localizable` shape: `'categories'` → category helper, `string[]` → text
+ * factory. Returns undefined if the config isn't localizable.
+ */
+export function resolveToLocalizationFormData(
+  config: NodeConfig | ActionConfig
+): ToLocalizationFn | undefined {
+  if (config.toLocalizationFormData) {
+    return config.toLocalizationFormData as ToLocalizationFn;
+  }
+  if (config.localizable === 'categories') {
+    return categoriesToLocalizationFormData;
+  }
+  if (Array.isArray(config.localizable)) {
+    return makeTextToLocalizationFormData(config.localizable);
+  }
+  return undefined;
+}
+
+/**
+ * Mirror of resolveToLocalizationFormData for `fromLocalizationFormData`.
+ */
+export function resolveFromLocalizationFormData(
+  config: NodeConfig | ActionConfig
+): FromLocalizationFn | undefined {
+  if (config.fromLocalizationFormData) {
+    return config.fromLocalizationFormData as FromLocalizationFn;
+  }
+  if (config.localizable === 'categories') {
+    return localizationFormDataToCategories;
+  }
+  if (Array.isArray(config.localizable)) {
+    return makeTextFromLocalizationFormData(config.localizable);
+  }
+  return undefined;
+}
 
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
 

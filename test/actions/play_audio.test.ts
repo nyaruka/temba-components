@@ -2,6 +2,10 @@ import { expect } from '@open-wc/testing';
 import { play_audio } from '../../src/flow/actions/play_audio';
 import { PlayAudio } from '../../src/store/flow-definition';
 import { ActionTest } from '../ActionHelper';
+import {
+  resolveToLocalizationFormData,
+  resolveFromLocalizationFormData
+} from '../../src/flow/utils';
 
 /**
  * Test suite for the play_audio action configuration.
@@ -99,7 +103,7 @@ describe('play_audio action config', () => {
         audio_url: ['@results.voicemail_es']
       };
 
-      const formData = play_audio.toLocalizationFormData!(action, localization);
+      const formData = resolveToLocalizationFormData(play_audio)!(action, localization);
       expect(formData.audio_url).to.equal('@results.voicemail_es');
     });
 
@@ -110,7 +114,7 @@ describe('play_audio action config', () => {
         audio_url: '@results.voicemail'
       };
 
-      const formData = play_audio.toLocalizationFormData!(action, {});
+      const formData = resolveToLocalizationFormData(play_audio)!(action, {});
       expect(formData.audio_url).to.equal('');
     });
 
@@ -126,7 +130,7 @@ describe('play_audio action config', () => {
         audio_url: '@results.voicemail_es'
       };
 
-      const localization = play_audio.fromLocalizationFormData!(
+      const localization = resolveFromLocalizationFormData(play_audio)!(
         formData,
         action
       );
@@ -145,7 +149,7 @@ describe('play_audio action config', () => {
         audio_url: '@results.voicemail' // same as original
       };
 
-      const localization = play_audio.fromLocalizationFormData!(
+      const localization = resolveFromLocalizationFormData(play_audio)!(
         formData,
         action
       );

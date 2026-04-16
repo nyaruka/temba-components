@@ -10,16 +10,14 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
+  nodeOptionsAccordion
 } from './shared';
 import {
   createRulesArrayConfig,
   extractUserRules,
   casesToFormRules
 } from './shared-rules';
-import { SCHEMES } from '../utils';
+import { SCHEMES, validateWith } from '../utils';
 import { html } from 'lit';
 
 // System contact properties that can be split on
@@ -89,18 +87,11 @@ export const split_by_contact_field: NodeConfig = {
     localizeCategories: localizeCategoriesField
   },
   layout: ['field', 'rules', nodeOptionsAccordion],
-  validate: (formData: FormData) => {
-    const errors: { [key: string]: string } = {};
-
+  validate: validateWith((formData, errors) => {
     if (!formData.field || formData.field.length === 0) {
       errors.field = 'A field is required';
     }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
+  }),
   toFormData: (node: Node, nodeUI?: any) => {
     // Get the field from the UI config operand (source of truth)
     const operand = nodeUI?.config?.operand || CONTACT_PROPERTIES.name;
@@ -206,7 +197,9 @@ export const split_by_contact_field: NodeConfig = {
       }
     };
     config.localizeRules = !!formData.localizeRules;
-    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    config.localizeCategories = formData.result_name
+      ? !!formData.localizeCategories
+      : false;
     return config;
   },
   renderTitle: (node: Node, nodeUI?: any) => {
@@ -214,7 +207,5 @@ export const split_by_contact_field: NodeConfig = {
   },
 
   // Localization support for categories
-  localizable: 'categories',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  localizable: 'categories'
 };

@@ -10,15 +10,14 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
+  nodeOptionsAccordion
 } from './shared';
 import {
   createRulesArrayConfig,
   extractUserRules,
   casesToFormRules
 } from './shared-rules';
+import { validateWith } from '../utils';
 
 export const split_by_expression: NodeConfig = {
   type: 'split_by_expression',
@@ -44,19 +43,11 @@ export const split_by_expression: NodeConfig = {
     localizeCategories: localizeCategoriesField
   },
   layout: ['operand', 'rules', nodeOptionsAccordion],
-  validate: (formData: FormData) => {
-    const errors: { [key: string]: string } = {};
-
-    // Validate operand is provided
+  validate: validateWith((formData, errors) => {
     if (!formData.operand || formData.operand.trim() === '') {
       errors.operand = 'Expression is required';
     }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
+  }),
   toFormData: (node: Node, nodeUI?: any) => {
     // Extract rules from router cases using shared function
     const rules = casesToFormRules(node);
@@ -73,7 +64,9 @@ export const split_by_expression: NodeConfig = {
   toUIConfig: (formData: FormData) => {
     const config: Record<string, any> = {};
     config.localizeRules = !!formData.localizeRules;
-    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    config.localizeCategories = formData.result_name
+      ? !!formData.localizeCategories
+      : false;
     return config;
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -116,7 +109,5 @@ export const split_by_expression: NodeConfig = {
   },
 
   // Localization support for categories
-  localizable: 'categories',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  localizable: 'categories'
 };

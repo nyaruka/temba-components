@@ -4,10 +4,6 @@ import { generateUUID } from '../../utils';
 import { html } from 'lit';
 import { renderFlowLinks } from '../utils';
 import { shouldExcludeFlow } from '../flow-utils';
-import {
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
-} from './shared';
 
 export const split_by_subflow: NodeConfig = {
   type: 'split_by_subflow',
@@ -293,7 +289,5 @@ export const split_by_subflow: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
-  nonTranslatableCategories: 'all',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  nonTranslatableCategories: 'all'
 };
