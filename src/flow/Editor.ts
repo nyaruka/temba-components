@@ -22,12 +22,15 @@ import {
 } from '../utils';
 import { TEMBA_COMPONENTS_VERSION } from '../version';
 import {
+  getLanguageDisplayName,
   getNodeBounds,
   calculateReflowPositions,
   NodeBounds,
   snapToGrid
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
+import { getTranslatableCategoriesForNode } from './categoryLocalization';
+import { PRIMARY_LANGUAGE_OPTION_VALUE } from './EditorToolbar';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
 import type { RevisionsWindow } from './RevisionsWindow';
 
@@ -77,6 +80,22 @@ export interface SelectionBox {
   endY: number;
 }
 
+type TranslationType = 'property' | 'category';
+
+interface TranslationEntry {
+  uuid: string;
+  type: TranslationType;
+  attribute: string;
+  from: string;
+  to: string | null;
+}
+
+interface TranslationBundle {
+  nodeUuid: string;
+  actionUuid?: string;
+  translations: TranslationEntry[];
+}
+
 export type ToolbarAction =
   | { action: 'view-change'; view: 'flow' | 'table' }
   | { action: 'zoom-in' }
@@ -84,7 +103,8 @@ export type ToolbarAction =
   | { action: 'zoom-to-fit' }
   | { action: 'zoom-to-full' }
   | { action: 'revisions' }
-  | { action: 'search' };
+  | { action: 'search' }
+  | { action: 'language-change'; isPrimary?: boolean; languageCode?: string };
 const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 
 // How long the pending-changes auto-save countdown runs (in ms).
@@ -1736,6 +1756,287 @@ export class Editor extends RapidElement {
     zustand.getState().setLanguageCode(languageCode);
   }
 
+  private getAvailableLanguages(): Array<{ code: string; name: string }> {
+    // Use languages from workspace if available
+    if (this.workspace?.languages && this.workspace.languages.length > 0) {
+      return this.workspace.languages
+        .map((code) => ({ code, name: getLanguageDisplayName(code) }))
+        .filter((lang) => lang.code && lang.name);
+    }
+
+    // Fall back to flow definition languages if available
+    if (
+      this.definition?._ui?.languages &&
+      this.definition._ui.languages.length > 0
+    ) {
+      return this.definition._ui.languages.map((lang: any) => ({
+        code: typeof lang === 'string' ? lang : lang.iso || lang.code,
+        name: typeof lang === 'string' ? lang : lang.name
+      }));
+    }
+
+    // No languages available
+    return [];
+  }
+
+  private getLocalizationLanguages(): Array<{ code: string; name: string }> {
+    if (!this.definition) {
+      return [];
+    }
+
+    const baseLanguage = this.definition.language;
+    return this.getAvailableLanguages().filter(
+      (lang) => lang.code !== baseLanguage
+    );
+  }
+
+  private getLocalizationProgress(languageCode: string): {
+    total: number;
+    localized: number;
+  } {
+    if (
+      !this.definition ||
+      !languageCode ||
+      languageCode === this.definition.language
+    ) {
+      return { total: 0, localized: 0 };
+    }
+
+    const bundles = this.buildTranslationBundles(languageCode);
+    return this.getTranslationCounts(bundles);
+  }
+
+  private getLanguageLocalization(languageCode: string): Record<string, any> {
+    if (!this.definition?.localization) {
+      return {};
+    }
+    return this.definition.localization[languageCode] || {};
+  }
+
+  private buildTranslationBundles(
+    languageCode: string = this.languageCode
+  ): TranslationBundle[] {
+    if (
+      !this.definition ||
+      !languageCode ||
+      languageCode === this.definition.language
+    ) {
+      return [];
+    }
+
+    const languageLocalization = this.getLanguageLocalization(languageCode);
+    const bundles: TranslationBundle[] = [];
+
+    this.definition.nodes.forEach((node) => {
+      node.actions?.forEach((action) => {
+        const config = ACTION_CONFIG[action.type];
+        if (!config?.localizable || config.localizable.length === 0) {
+          return;
+        }
+
+        // For send_msg actions, only count 'text' for progress tracking
+        // (quick_replies and attachments are still localizable but don't count toward progress)
+        const localizableKeys =
+          action.type === 'send_msg'
+            ? config.localizable.filter((key) => key === 'text')
+            : config.localizable;
+
+        const translations = this.findTranslations(
+          'property',
+          action.uuid,
+          localizableKeys,
+          action,
+          languageLocalization
+        );
+
+        if (translations.length > 0) {
+          bundles.push({
+            nodeUuid: node.uuid,
+            actionUuid: action.uuid,
+            translations
+          });
+        }
+      });
+
+      const nodeUI = this.definition._ui?.nodes?.[node.uuid];
+      const nodeType = nodeUI?.type;
+      if (!nodeType) {
+        return;
+      }
+
+      // Include rule (case argument) translations when localizeRules is set
+      if (nodeUI?.config?.localizeRules && node.router?.cases?.length) {
+        const ruleTranslations = node.router.cases
+          .filter((c) => c.arguments?.length > 0 && c.arguments.some((a) => a))
+          .flatMap((c) =>
+            this.findTranslations(
+              'property',
+              c.uuid,
+              ['arguments'],
+              c,
+              languageLocalization
+            )
+          );
+
+        if (ruleTranslations.length > 0) {
+          bundles.push({
+            nodeUuid: node.uuid,
+            translations: ruleTranslations
+          });
+        }
+      }
+
+      const nodeConfig = NODE_CONFIG[nodeType];
+      if (
+        nodeUI?.config?.localizeCategories &&
+        nodeConfig?.localizable === 'categories' &&
+        node.router?.categories?.length
+      ) {
+        const translatableCategories = getTranslatableCategoriesForNode(
+          nodeType,
+          node.router.categories
+        );
+        const categoryTranslations = translatableCategories.flatMap(
+          (category) =>
+            this.findTranslations(
+              'category',
+              category.uuid,
+              ['name'],
+              category,
+              languageLocalization
+            )
+        );
+
+        if (categoryTranslations.length > 0) {
+          bundles.push({
+            nodeUuid: node.uuid,
+            translations: categoryTranslations
+          });
+        }
+      }
+    });
+
+    return bundles;
+  }
+
+  private findTranslations(
+    type: TranslationType,
+    uuid: string,
+    localizeableKeys: string[],
+    source: any,
+    localization: Record<string, any>
+  ): TranslationEntry[] {
+    const translations: TranslationEntry[] = [];
+
+    localizeableKeys.forEach((attribute) => {
+      if (attribute === 'quick_replies') {
+        return;
+      }
+
+      const pathSegments = attribute.split('.');
+      let from: any = source;
+      let to: any = [];
+
+      while (pathSegments.length > 0 && from) {
+        if (from.uuid) {
+          to = localization[from.uuid];
+        }
+
+        const path = pathSegments.shift();
+        if (!path) {
+          break;
+        }
+
+        if (to) {
+          to = to[path];
+        }
+        from = from[path];
+      }
+
+      if (!from) {
+        return;
+      }
+
+      const fromValue = this.formatTranslationValue(from);
+      if (!fromValue) {
+        return;
+      }
+
+      const toValue = to ? this.formatTranslationValue(to) : null;
+
+      translations.push({
+        uuid,
+        type,
+        attribute,
+        from: fromValue,
+        to: toValue
+      });
+    });
+
+    return translations;
+  }
+
+  private formatTranslationValue(value: any): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    if (Array.isArray(value)) {
+      const normalized = value
+        .map((entry) => this.formatTranslationValue(entry))
+        .filter((entry) => !!entry) as string[];
+      return normalized.length > 0 ? normalized.join(', ') : null;
+    }
+
+    if (typeof value === 'object') {
+      if ('name' in value && value.name) {
+        return String(value.name);
+      }
+
+      if ('arguments' in value && Array.isArray(value.arguments)) {
+        return value.arguments.join(' ');
+      }
+
+      return null;
+    }
+
+    if (typeof value === 'number') {
+      return value.toString();
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+
+    return null;
+  }
+
+  private getTranslationCounts(bundles: TranslationBundle[]): {
+    total: number;
+    localized: number;
+  } {
+    return bundles.reduce(
+      (counts, bundle) => {
+        bundle.translations.forEach((translation) => {
+          counts.total += 1;
+          if (translation.to && translation.to.trim().length > 0) {
+            counts.localized += 1;
+          }
+        });
+        return counts;
+      },
+      { total: 0, localized: 0 }
+    );
+  }
+
+  private hasAnyNodeWithLocalizeCategories(): boolean {
+    if (!this.definition?._ui?.nodes) return false;
+    return Object.values(this.definition._ui.nodes).some(
+      (nodeUI: any) => nodeUI?.config?.localizeCategories
+    );
+  }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this.zoomManager.teardownLoupe();
@@ -1892,7 +2193,7 @@ export class Editor extends RapidElement {
     search.definition = this.definition;
     search.languageCode = this.languageCode || '';
     search.scope = this.showMessageTable ? 'table' : 'flow';
-    search.includeCategories = false;
+    search.includeCategories = this.isTranslating && this.hasAnyNodeWithLocalizeCategories();
     search.show();
   }
 
@@ -3609,6 +3910,50 @@ export class Editor extends RapidElement {
   }
 
   private renderToolbarElement(): TemplateResult {
+    const languages = this.getLocalizationLanguages();
+    const availableLanguages = this.getAvailableLanguages();
+    const baseLanguage = this.definition?.language;
+    const baseLanguageName =
+      availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
+      baseLanguage ||
+      'Primary language';
+    const isBaseSelected =
+      !this.languageCode ||
+      this.languageCode === baseLanguage ||
+      !languages.some((lang) => lang.code === this.languageCode);
+    const activeLanguage = !isBaseSelected
+      ? languages.find((lang) => lang.code === this.languageCode)
+      : null;
+    const currentLanguage = activeLanguage || {
+      code: baseLanguage || '',
+      name: baseLanguageName
+    };
+    const progress = this.getLocalizationProgress(
+      isBaseSelected ? '' : this.languageCode
+    );
+    const percent = Math.round(
+      (progress.localized / Math.max(progress.total, 1)) * 100
+    );
+    const languageOptions = [
+      {
+        name: baseLanguageName,
+        value: PRIMARY_LANGUAGE_OPTION_VALUE
+      },
+      ...languages.map((lang) => {
+        const localizationProgress = this.getLocalizationProgress(lang.code);
+        const localizationPercent = Math.round(
+          (localizationProgress.localized /
+            Math.max(localizationProgress.total, 1)) *
+            100
+        );
+        return {
+          name: lang.name,
+          value: lang.code,
+          percent: localizationPercent
+        };
+      })
+    ];
+
     return html`
       <temba-editor-toolbar
         ?message-view=${this.showMessageTable}
@@ -3618,6 +3963,11 @@ export class Editor extends RapidElement {
         ?revisions-active=${!this.revisionsWindowHidden}
         ?is-saving=${this.isSaving}
         ?search-disabled=${this.getRevisionsWindow()?.isViewingRevision ?? false}
+        .languageOptions=${languageOptions}
+        current-language-name=${currentLanguage.name}
+        ?is-base-language=${isBaseSelected}
+        .languagePercent=${percent}
+        ?show-localization-tools=${Boolean(activeLanguage)}
         @temba-button-clicked=${this.handleToolbarAction}
       ></temba-editor-toolbar>
     `;
@@ -3652,6 +4002,13 @@ export class Editor extends RapidElement {
         break;
       case 'search':
         this.openFlowSearch();
+        break;
+      case 'language-change':
+        if (detail.isPrimary) {
+          this.handleLanguageChange(this.definition?.language || '');
+        } else if (detail.languageCode) {
+          this.handleLanguageChange(detail.languageCode);
+        }
         break;
     }
   }
@@ -3997,7 +4354,7 @@ export class Editor extends RapidElement {
         : ''}
       <temba-flow-search
         .scope=${this.showMessageTable ? 'table' : 'flow'}
-        .includeCategories=${false}
+        .includeCategories=${this.isTranslating && this.hasAnyNodeWithLocalizeCategories()}
         @temba-search-result-selected=${this.handleSearchResultSelected}
       ></temba-flow-search>
       ${!this.showMessageTable && this.flowIssues?.length
