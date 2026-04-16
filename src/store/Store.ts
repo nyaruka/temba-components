@@ -30,6 +30,7 @@ import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { getFullName } from '../display/TembaUser';
 import { AppState, zustand } from './AppState';
 import { StoreApi } from 'zustand/vanilla';
+import { getLanguageDisplayName } from '../flow/utils';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -379,7 +380,11 @@ export class Store extends RapidElement {
   }
 
   public getLanguageName(iso: string) {
-    return this.languages[iso];
+    const name = this.languages[iso];
+    if (!name || name === 'und' || iso === 'und') {
+      return getLanguageDisplayName(iso);
+    }
+    return name;
   }
 
   public isDynamicGroup(uuid: string): boolean {
