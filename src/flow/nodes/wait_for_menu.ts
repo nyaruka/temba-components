@@ -5,9 +5,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
+  nodeOptionsAccordion
 } from './shared';
 
 // Menu digits in display order: 1-9 then 0
@@ -105,7 +103,9 @@ export const wait_for_menu: NodeConfig = {
   toUIConfig: (formData: FormData) => {
     const config: Record<string, any> = {};
     config.localizeRules = !!formData.localizeRules;
-    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    config.localizeCategories = formData.result_name
+      ? !!formData.localizeCategories
+      : false;
     return config;
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -221,7 +221,5 @@ export const wait_for_menu: NodeConfig = {
       exits
     };
   },
-  localizable: 'categories',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  localizable: 'categories'
 };

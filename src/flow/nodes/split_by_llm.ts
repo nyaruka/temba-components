@@ -3,10 +3,6 @@ import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
 import {
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
-} from './shared';
-import {
   renderClamped,
   renderHighlightedText,
   renderLineItem,
@@ -141,7 +137,5 @@ export const split_by_llm: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
-  nonTranslatableCategories: 'all',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  nonTranslatableCategories: 'all'
 };

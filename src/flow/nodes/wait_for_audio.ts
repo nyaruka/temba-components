@@ -1,10 +1,6 @@
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
-import {
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
-} from './shared';
 
 export const wait_for_audio: NodeConfig = {
   type: 'wait_for_audio',
@@ -84,7 +80,5 @@ export const wait_for_audio: NodeConfig = {
     };
   },
   localizable: 'categories',
-  nonTranslatableCategories: 'all',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  nonTranslatableCategories: 'all'
 };

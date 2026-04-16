@@ -63,44 +63,5 @@ export const say_msg: ActionConfig = {
       formData.text = formData.text.trim();
     }
   },
-  localizable: ['text', 'audio_url'],
-  toLocalizationFormData: (
-    action: SayMsg,
-    localization: Record<string, any>
-  ) => {
-    const formData: FormData = {
-      uuid: action.uuid
-    };
-
-    if (localization.text && Array.isArray(localization.text)) {
-      formData.text = localization.text[0] || '';
-    } else {
-      formData.text = '';
-    }
-
-    if (localization.audio_url && Array.isArray(localization.audio_url)) {
-      formData.audio_url = localization.audio_url[0] || '';
-    } else {
-      formData.audio_url = '';
-    }
-
-    return formData;
-  },
-  fromLocalizationFormData: (formData: FormData, action: SayMsg) => {
-    const localization: Record<string, any> = {};
-
-    if (formData.text && formData.text.trim() !== '') {
-      if (formData.text !== action.text) {
-        localization.text = [formData.text];
-      }
-    }
-
-    if (formData.audio_url && formData.audio_url.trim() !== '') {
-      if (formData.audio_url !== action.audio_url) {
-        localization.audio_url = [formData.audio_url];
-      }
-    }
-
-    return localization;
-  }
+  localizable: ['text', 'audio_url']
 };

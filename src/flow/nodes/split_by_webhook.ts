@@ -2,11 +2,7 @@ import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { CallWebhook, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
-import {
-  resultNameField,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
-} from './shared';
+import { resultNameField } from './shared';
 import { renderClamped, renderHighlightedText } from '../utils';
 
 // Default headers as {key, value} arrays (format used by key-value editor)
@@ -267,7 +263,5 @@ export const split_by_webhook: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
-  nonTranslatableCategories: 'all',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  nonTranslatableCategories: 'all'
 };

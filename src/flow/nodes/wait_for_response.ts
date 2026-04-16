@@ -10,15 +10,14 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
+  nodeOptionsAccordion
 } from './shared';
 import {
   createRulesArrayConfig,
   extractUserRules,
   casesToFormRules
 } from './shared-rules';
+import { validateWith } from '../utils';
 
 const TIMEOUT_OPTIONS = [
   { value: '60', name: '1 minute' },
@@ -127,17 +126,10 @@ export const wait_for_response: NodeConfig = {
       gap: '0.5rem'
     }
   ],
-  validate: (_formData: FormData) => {
-    const errors: { [key: string]: string } = {};
-
-    // No validation needed - allow multiple rules to use same category name
-    // Rules with the same category name will be merged to use the same exit
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
+  validate: validateWith(() => {
+    // No validation needed - allow multiple rules to use same category name.
+    // Rules with the same category name will be merged to use the same exit.
+  }),
   toFormData: (node: Node, nodeUI?: any) => {
     // Extract rules from router cases using shared function
     const rules = casesToFormRules(node);
@@ -165,7 +157,9 @@ export const wait_for_response: NodeConfig = {
   toUIConfig: (formData: FormData) => {
     const config: Record<string, any> = {};
     config.localizeRules = !!formData.localizeRules;
-    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    config.localizeCategories = formData.result_name
+      ? !!formData.localizeCategories
+      : false;
     return config;
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -413,7 +407,5 @@ export const wait_for_response: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
-  nonTranslatableCategories: ['Timeout'],
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  nonTranslatableCategories: ['Timeout']
 };

@@ -10,9 +10,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion,
-  categoriesToLocalizationFormData,
-  localizationFormDataToCategories
+  nodeOptionsAccordion
 } from './shared';
 import {
   createRulesArrayConfig,
@@ -20,6 +18,7 @@ import {
   casesToFormRules
 } from './shared-rules';
 import { getStore } from '../../store/Store';
+import { validateWith } from '../utils';
 
 // delimit index options (first through 20th)
 const DELIMIT_INDEX_OPTIONS = [
@@ -125,19 +124,11 @@ export const split_by_run_result: NodeConfig = {
     'rules',
     nodeOptionsAccordion
   ],
-  validate: (formData: FormData) => {
-    const errors: { [key: string]: string } = {};
-
-    // Validate result is provided
+  validate: validateWith((formData, errors) => {
     if (!formData.result || formData.result.length === 0) {
       errors.result = 'A flow result is required';
     }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
+  }),
   toFormData: (node: Node, nodeUI?: any) => {
     // Get the result from the UI config operand (source of truth)
     // Normalize: toUIConfig saves { id, name, type } but the Select component
@@ -274,12 +265,12 @@ export const split_by_run_result: NodeConfig = {
       : 'split_by_run_result';
 
     config.localizeRules = !!formData.localizeRules;
-    config.localizeCategories = formData.result_name ? !!formData.localizeCategories : false;
+    config.localizeCategories = formData.result_name
+      ? !!formData.localizeCategories
+      : false;
     return config;
   },
 
   // Localization support for categories
-  localizable: 'categories',
-  toLocalizationFormData: categoriesToLocalizationFormData,
-  fromLocalizationFormData: localizationFormDataToCategories
+  localizable: 'categories'
 };

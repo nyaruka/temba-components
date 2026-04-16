@@ -21,7 +21,11 @@ import {
 } from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
-import { formatIssueMessage } from './utils';
+import {
+  formatIssueMessage,
+  resolveToLocalizationFormData,
+  resolveFromLocalizationFormData
+} from './utils';
 import { getTranslatableCategoriesForNode } from './categoryLocalization';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
@@ -587,21 +591,17 @@ export class NodeEditor extends RapidElement {
       const actionConfig = ACTION_CONFIG[this.action.type];
 
       // Check if we're in localization mode
-      if (
-        this.isTranslating &&
-        actionConfig?.localizable &&
-        actionConfig.toLocalizationFormData
-      ) {
+      const actionToLocalization = actionConfig
+        ? resolveToLocalizationFormData(actionConfig)
+        : undefined;
+      if (this.isTranslating && actionToLocalization) {
         // Get localized values for this action
         const localization =
           this.flowDefinition?.localization?.[this.languageCode]?.[
             this.action.uuid
           ] || {};
 
-        this.formData = actionConfig.toLocalizationFormData(
-          this.action,
-          localization
-        );
+        this.formData = actionToLocalization(this.action, localization);
       } else if (actionConfig?.toFormData) {
         this.formData = actionConfig.toFormData(this.action);
       } else {
@@ -618,19 +618,19 @@ export class NodeEditor extends RapidElement {
       const nodeConfig = this.getNodeConfig();
 
       // Check if we're in localization mode for a node with localizable categories
+      const nodeToLocalization = nodeConfig
+        ? resolveToLocalizationFormData(nodeConfig)
+        : undefined;
       if (
         this.isTranslating &&
         nodeConfig?.localizable === 'categories' &&
-        nodeConfig.toLocalizationFormData
+        nodeToLocalization
       ) {
         // Get localized values for this node's categories
         const localization =
           this.flowDefinition?.localization?.[this.languageCode] || {};
 
-        this.formData = nodeConfig.toLocalizationFormData(
-          this.node,
-          localization
-        );
+        this.formData = nodeToLocalization(this.node, localization);
 
         const translatableCategoryUuids = new Set(
           getTranslatableCategoriesForNode(
@@ -648,8 +648,8 @@ export class NodeEditor extends RapidElement {
           this.formData = {
             ...this.formData,
             categories: Object.fromEntries(
-              Object.entries(this.formData.categories).filter(([categoryUuid]) =>
-                translatableCategoryUuids.has(categoryUuid)
+              Object.entries(this.formData.categories).filter(
+                ([categoryUuid]) => translatableCategoryUuids.has(categoryUuid)
               )
             )
           };
@@ -690,9 +690,7 @@ export class NodeEditor extends RapidElement {
         this.flowInfo?.results &&
         !this.flowDefinition?._ui?.nodes?.[this.node.uuid]
       ) {
-        const existingNames = new Set(
-          this.flowInfo.results.map((r) => r.name)
-        );
+        const existingNames = new Set(this.flowInfo.results.map((r) => r.name));
         let candidate = 'Result';
         let i = 2;
         while (existingNames.has(candidate)) {
@@ -906,12 +904,12 @@ export class NodeEditor extends RapidElement {
       if (this.action) {
         const actionConfig = ACTION_CONFIG[this.action.type];
 
-        if (
-          actionConfig?.localizable &&
-          actionConfig.fromLocalizationFormData
-        ) {
+        const actionFromLocalization = actionConfig
+          ? resolveFromLocalizationFormData(actionConfig)
+          : undefined;
+        if (actionFromLocalization) {
           // Save to localization structure
-          const localizationData = actionConfig.fromLocalizationFormData(
+          const localizationData = actionFromLocalization(
             processedFormData,
             this.action
           );
@@ -933,11 +931,11 @@ export class NodeEditor extends RapidElement {
       if (this.node) {
         const nodeConfig = this.getNodeConfig();
 
-        if (
-          nodeConfig?.localizable === 'categories' &&
-          nodeConfig.fromLocalizationFormData
-        ) {
-          const localizationData = nodeConfig.fromLocalizationFormData(
+        const nodeFromLocalization = nodeConfig
+          ? resolveFromLocalizationFormData(nodeConfig)
+          : undefined;
+        if (nodeConfig?.localizable === 'categories' && nodeFromLocalization) {
+          const localizationData = nodeFromLocalization(
             processedFormData,
             this.node
           );
@@ -1673,14 +1671,17 @@ export class NodeEditor extends RapidElement {
                         ? html`
                             <div class="category-localization-row">
                               <div class="original-name">
-                                <span class="rule-operator">${ruleData.operatorName}</span>
+                                <span class="rule-operator"
+                                  >${ruleData.operatorName}</span
+                                >
                                 <span>${arg}</span>
                               </div>
                               <div class="localized-name">
                                 <temba-textinput
                                   name="rule-${caseUuid}-${i}"
                                   placeholder=""
-                                  value="${ruleData.localizedArguments?.[i] || ''}"
+                                  value="${ruleData.localizedArguments?.[i] ||
+                                  ''}"
                                   @change=${(e: Event) =>
                                     this.handleRuleLocalizationChange(
                                       caseUuid,
@@ -1750,7 +1751,10 @@ export class NodeEditor extends RapidElement {
       this.formData.rules = {};
     }
     if (!this.formData.rules[caseUuid]) {
-      this.formData.rules[caseUuid] = { originalArguments: [], localizedArguments: [] };
+      this.formData.rules[caseUuid] = {
+        originalArguments: [],
+        localizedArguments: []
+      };
     }
     if (!this.formData.rules[caseUuid].localizedArguments) {
       this.formData.rules[caseUuid].localizedArguments = [];
@@ -2200,9 +2204,15 @@ export class NodeEditor extends RapidElement {
             : undefined}
         >
           <div class="form-group-info">
-            <div class="form-group-title">${icon
-                ? html`<temba-icon name=${icon} size="1" style="margin-right:6px;color:#999;"></temba-icon>`
-                : ''}${label}</div>
+            <div class="form-group-title">
+              ${icon
+                ? html`<temba-icon
+                    name=${icon}
+                    size="1"
+                    style="margin-right:6px;color:#999;"
+                  ></temba-icon>`
+                : ''}${label}
+            </div>
             ${helpText
               ? html`<div class="form-group-help">
                   ${renderMarkdownInline(helpText)}
@@ -2248,7 +2258,9 @@ export class NodeEditor extends RapidElement {
           style="${[
             contentPadding ? `--group-content-padding: ${contentPadding}` : '',
             gap ? `gap: ${gap}` : ''
-          ].filter(Boolean).join(';')}"
+          ]
+            .filter(Boolean)
+            .join(';')}"
         >
           ${items.map((item) =>
             this.renderLayoutItem(item, config, renderedFields)
@@ -2288,7 +2300,10 @@ export class NodeEditor extends RapidElement {
     }
 
     return html`
-      <temba-accordion ?multi=${multi} @toggle=${this.handleAccordionSectionToggle}>
+      <temba-accordion
+        ?multi=${multi}
+        @toggle=${this.handleAccordionSectionToggle}
+      >
         ${visibleSections.map((section) => {
           const { label, collapsed = true, getValueCount } = section;
           const stateKey = `accordion:${label}`;

@@ -2,6 +2,10 @@ import { expect } from '@open-wc/testing';
 import { say_msg } from '../../src/flow/actions/say_msg';
 import { SayMsg } from '../../src/store/flow-definition';
 import { ActionTest } from '../ActionHelper';
+import {
+  resolveToLocalizationFormData,
+  resolveFromLocalizationFormData
+} from '../../src/flow/utils';
 
 /**
  * Test suite for the say_msg action configuration.
@@ -136,7 +140,7 @@ describe('say_msg action config', () => {
         audio_url: ['https://example.com/es.mp3']
       };
 
-      const formData = say_msg.toLocalizationFormData!(action, localization);
+      const formData = resolveToLocalizationFormData(say_msg)!(action, localization);
       expect(formData.text).to.equal('Hola');
       expect(formData.audio_url).to.equal('https://example.com/es.mp3');
     });
@@ -148,7 +152,7 @@ describe('say_msg action config', () => {
         text: 'Hello'
       } as SayMsg;
 
-      const formData = say_msg.toLocalizationFormData!(action, {});
+      const formData = resolveToLocalizationFormData(say_msg)!(action, {});
       expect(formData.text).to.equal('');
       expect(formData.audio_url).to.equal('');
     });
@@ -167,7 +171,7 @@ describe('say_msg action config', () => {
         audio_url: 'https://example.com/es.mp3'
       };
 
-      const localization = say_msg.fromLocalizationFormData!(formData, action);
+      const localization = resolveFromLocalizationFormData(say_msg)!(formData, action);
       expect(localization.text).to.deep.equal(['Hola']);
       expect(localization.audio_url).to.deep.equal([
         'https://example.com/es.mp3'
@@ -188,7 +192,7 @@ describe('say_msg action config', () => {
         audio_url: 'https://example.com/en.mp3' // same as original
       };
 
-      const localization = say_msg.fromLocalizationFormData!(formData, action);
+      const localization = resolveFromLocalizationFormData(say_msg)!(formData, action);
       expect(localization.text).to.be.undefined;
       expect(localization.audio_url).to.be.undefined;
     });
