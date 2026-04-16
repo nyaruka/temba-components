@@ -1769,10 +1769,10 @@ export class Editor extends RapidElement {
       this.definition?._ui?.languages &&
       this.definition._ui.languages.length > 0
     ) {
-      return this.definition._ui.languages.map((lang: any) => ({
-        code: typeof lang === 'string' ? lang : lang.iso || lang.code,
-        name: typeof lang === 'string' ? lang : lang.name
-      }));
+      return this.definition._ui.languages.map((lang: any) => {
+        const code = typeof lang === 'string' ? lang : lang.iso || lang.code;
+        return { code, name: getLanguageDisplayName(code) };
+      });
     }
 
     // No languages available
@@ -3915,7 +3915,7 @@ export class Editor extends RapidElement {
     const baseLanguage = this.definition?.language;
     const baseLanguageName =
       availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
-      baseLanguage ||
+      (baseLanguage ? getLanguageDisplayName(baseLanguage) : '') ||
       'Primary language';
     const isBaseSelected =
       !this.languageCode ||

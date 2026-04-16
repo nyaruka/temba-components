@@ -1,6 +1,7 @@
 import { expect } from '@open-wc/testing';
 import { zustand } from '../src/store/AppState';
 import { shouldExcludeFlow } from '../src/flow/flow-utils';
+import { getLanguageDisplayName } from '../src/flow/utils';
 
 function setFlowType(type: string) {
   const state = zustand.getState();
@@ -44,5 +45,21 @@ describe('shouldExcludeFlow', () => {
   it('returns false when flow definition is null', () => {
     zustand.setState({ ...zustand.getState(), flowDefinition: null });
     expect(shouldExcludeFlow({ type: 'message' })).to.be.false;
+  });
+});
+
+describe('getLanguageDisplayName', () => {
+  it('returns "Unknown" for the "und" code', () => {
+    expect(getLanguageDisplayName('und')).to.equal('Unknown');
+  });
+
+  it('returns the display name for known codes', () => {
+    expect(getLanguageDisplayName('eng')).to.equal('English');
+  });
+
+  it('falls back to the raw code for unknown codes', () => {
+    expect(getLanguageDisplayName('xx-invalid-code')).to.equal(
+      'xx-invalid-code'
+    );
   });
 });
