@@ -201,9 +201,7 @@ describe('temba-compose broadcast edit', () => {
         variables: []
       }
     };
-    const languages = JSON.stringify([
-      { iso: 'eng', name: 'English' }
-    ]);
+    const languages = JSON.stringify([{ iso: 'eng', name: 'English' }]);
 
     const compose: Compose = await getCompose({
       counter: true,

@@ -213,8 +213,7 @@ export class RevisionsWindow extends RapidElement {
 
   private cancelRevisionView() {
     const store = getStore().getState();
-    const preservedLanguageCode =
-      this.browseLanguageCode || store.languageCode;
+    const preservedLanguageCode = this.browseLanguageCode || store.languageCode;
 
     if (this.preRevertState) {
       const currentInfo = store.flowInfo;
@@ -246,8 +245,7 @@ export class RevisionsWindow extends RapidElement {
     if (!this.viewingRevision || !this.preRevertState) return;
 
     const store = getStore().getState();
-    const preservedLanguageCode =
-      this.browseLanguageCode || store.languageCode;
+    const preservedLanguageCode = this.browseLanguageCode || store.languageCode;
 
     const definitionToSave = {
       ...store.flowDefinition,

@@ -68,8 +68,6 @@ export class ContactChat extends ContactStoreElement {
         --compose-padding: 3px;
         --compose-curvature: none;
         border-top: 1px inset rgba(0, 0, 0, 0.05);
-
-
       }
 
       .chat-wrapper {
@@ -612,9 +610,7 @@ export class ContactChat extends ContactStoreElement {
         this.refreshId = null;
       }
       window.setTimeout(() => {
-        const input = this.shadowRoot.querySelector(
-          '.search-input'
-        ) as any;
+        const input = this.shadowRoot.querySelector('.search-input') as any;
         if (input) {
           input.focus();
         }
@@ -1125,7 +1121,13 @@ export class ContactChat extends ContactStoreElement {
   private fetchingNewer = false;
 
   private fetchNewerMessages() {
-    if (!this.searchMode || !this.afterUUID || !this.chat || this.fetchingNewer || this.blockFetchingNewer) {
+    if (
+      !this.searchMode ||
+      !this.afterUUID ||
+      !this.chat ||
+      this.fetchingNewer ||
+      this.blockFetchingNewer
+    ) {
       return;
     }
 
@@ -1141,28 +1143,30 @@ export class ContactChat extends ContactStoreElement {
       this.currentTicket?.uuid,
       null,
       this.afterUUID
-    ).then((page: ContactHistoryPage) => {
-      if (!this.chat) {
+    )
+      .then((page: ContactHistoryPage) => {
+        if (!this.chat) {
+          this.fetchingNewer = false;
+          return;
+        }
+
+        const messages = this.createMessages(page);
+        messages.reverse();
+
+        if (messages.length === 0) {
+          this.blockFetchingNewer = true;
+          this.fetchingNewer = false;
+          return;
+        }
+
+        // maintainScroll=true keeps the user's visual position stable
+        // so they must actively scroll down to trigger the next fetch
+        // fetchingNewer is reset in fetchComplete after scroll settles
+        this.chat.addMessages(messages, null, true, true);
+      })
+      .catch(() => {
         this.fetchingNewer = false;
-        return;
-      }
-
-      const messages = this.createMessages(page);
-      messages.reverse();
-
-      if (messages.length === 0) {
-        this.blockFetchingNewer = true;
-        this.fetchingNewer = false;
-        return;
-      }
-
-      // maintainScroll=true keeps the user's visual position stable
-      // so they must actively scroll down to trigger the next fetch
-      // fetchingNewer is reset in fetchComplete after scroll settles
-      this.chat.addMessages(messages, null, true, true);
-    }).catch(() => {
-      this.fetchingNewer = false;
-    });
+      });
   }
 
   private getTembaCompose(): TemplateResult {
@@ -1330,7 +1334,11 @@ export class ContactChat extends ContactStoreElement {
       ${this.currentContact
         ? html`<div class="chat-container">
               ${this.showSearch && this.searchMode
-                ? html`<div class="search-overlay ${this.searchClosing ? 'closing' : ''}">
+                ? html`<div
+                    class="search-overlay ${this.searchClosing
+                      ? 'closing'
+                      : ''}"
+                  >
                     <div class="search-input-wrapper">
                       <temba-textinput
                         class="search-input"
@@ -1350,10 +1358,7 @@ export class ContactChat extends ContactStoreElement {
                         this.searchLoading}
                         title="Search (Enter)"
                       >
-                        <temba-icon
-                          name="search"
-                          size="0.8"
-                        ></temba-icon>
+                        <temba-icon name="search" size="0.8"></temba-icon>
                       </button>
                     </div>
                     ${this.searchLoading
@@ -1362,22 +1367,25 @@ export class ContactChat extends ContactStoreElement {
                         ></span>`
                       : this.searchResults.length > 0
                         ? html`<span class="search-counter"
-                            >${this.searchIndex + 1} /
-                            ${this.searchResults.length}</span
-                          ><button
-                            class="search-btn ${this.searchFocused && this.searchQuery.trim() === this.lastSearchedQuery ? 'enter-target' : ''}"
-                            @click=${this.handleSearchNext}
-                            title="Older match (Enter)"
-                          >
-                            &#x25B2;
-                          </button>
-                          <button
-                            class="search-btn"
-                            @click=${this.handleSearchPrev}
-                            title="Newer match (Shift+Enter)"
-                          >
-                            &#x25BC;
-                          </button>`
+                              >${this.searchIndex + 1} /
+                              ${this.searchResults.length}</span
+                            ><button
+                              class="search-btn ${this.searchFocused &&
+                              this.searchQuery.trim() === this.lastSearchedQuery
+                                ? 'enter-target'
+                                : ''}"
+                              @click=${this.handleSearchNext}
+                              title="Older match (Enter)"
+                            >
+                              &#x25B2;
+                            </button>
+                            <button
+                              class="search-btn"
+                              @click=${this.handleSearchPrev}
+                              title="Newer match (Shift+Enter)"
+                            >
+                              &#x25BC;
+                            </button>`
                         : null}
                     <button
                       class="search-btn"

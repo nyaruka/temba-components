@@ -8,9 +8,7 @@ const createUser = async (markup: string): Promise<TembaUser> => {
 
 describe('temba-user', () => {
   it('renders with initials from name', async () => {
-    const user = await createUser(
-      '<temba-user name="Jane Doe"></temba-user>'
-    );
+    const user = await createUser('<temba-user name="Jane Doe"></temba-user>');
     assert.instanceOf(user, TembaUser);
     assert.equal(user.initials, 'JD');
     assert.notEqual(user.bgcolor, '#e6e6e6');
@@ -18,9 +16,7 @@ describe('temba-user', () => {
   });
 
   it('resets initials and bgcolor when name is cleared', async () => {
-    const user = await createUser(
-      '<temba-user name="Jane Doe"></temba-user>'
-    );
+    const user = await createUser('<temba-user name="Jane Doe"></temba-user>');
     user.name = '';
     await user.updateComplete;
     assert.equal(user.initials, '');
@@ -53,9 +49,7 @@ describe('temba-user', () => {
   });
 
   it('omits name element when showName is false', async () => {
-    const user = await createUser(
-      '<temba-user name="Jane Doe"></temba-user>'
-    );
+    const user = await createUser('<temba-user name="Jane Doe"></temba-user>');
     await user.updateComplete;
     assert.isNull(user.shadowRoot.querySelector('.name'));
   });

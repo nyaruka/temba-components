@@ -41,7 +41,10 @@ export class Compose extends FieldElement {
 
       .container:focus-within {
         border-color: var(--color-focus);
-        box-shadow: var(--widget-box-shadow-focused, 0 0 0 3px rgba(0, 123, 255, 0.25));
+        box-shadow: var(
+          --widget-box-shadow-focused,
+          0 0 0 3px rgba(0, 123, 255, 0.25)
+        );
       }
 
       .editor-wrapper {
@@ -115,14 +118,15 @@ export class Compose extends FieldElement {
         color: #888;
         background: rgba(0, 0, 0, 0.04);
         border-radius: 8px;
-        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        transition:
+          background-color 0.2s ease-in-out,
+          color 0.2s ease-in-out;
       }
 
       .shortcut-icon:hover {
         color: var(--color-text-dark);
         background: rgba(0, 0, 0, 0.08);
       }
-
     `;
   }
 
@@ -347,7 +351,10 @@ export class Compose extends FieldElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.removeEventListener('keydown', this.handleHostKeyDown as EventListener);
+    this.removeEventListener(
+      'keydown',
+      this.handleHostKeyDown as EventListener
+    );
   }
 
   private handleShortcutIconClick() {

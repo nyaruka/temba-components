@@ -309,9 +309,7 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-search-open', getClip(chat));
 
     // type "primus" into the search input
-    const textInput = chat.shadowRoot.querySelector(
-      '.search-input'
-    ) as any;
+    const textInput = chat.shadowRoot.querySelector('.search-input') as any;
     expect(textInput).to.exist;
     textInput.value = 'primus';
     textInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -367,9 +365,7 @@ describe('temba-contact-chat', () => {
     await chat.updateComplete;
 
     // type a query with no matches
-    const textInput = chat.shadowRoot.querySelector(
-      '.search-input'
-    ) as any;
+    const textInput = chat.shadowRoot.querySelector('.search-input') as any;
     textInput.value = 'xyznotfound';
     textInput.dispatchEvent(new Event('input', { bubbles: true }));
     await chat.updateComplete;

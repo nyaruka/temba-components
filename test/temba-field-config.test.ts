@@ -30,7 +30,10 @@ if (!customElements.get('temba-rich-edit')) {
       Object.defineProperty(this.editableDiv, 'selectionEnd', {
         get: () => this.caretEnd
       });
-      (this.editableDiv as any).setSelectionRange = (start: number, end: number) => {
+      (this.editableDiv as any).setSelectionRange = (
+        start: number,
+        end: number
+      ) => {
         this.caretStart = start;
         this.caretEnd = end;
       };

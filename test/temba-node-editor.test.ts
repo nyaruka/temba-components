@@ -539,14 +539,11 @@ describe('temba-node-editor', () => {
 
     // Check that bubble counts are displayed in accordion sections
     // Bubbles are now inside temba-accordion-section shadow DOMs
-    const sections = el.shadowRoot.querySelectorAll(
-      'temba-accordion-section'
-    );
+    const sections = el.shadowRoot.querySelectorAll('temba-accordion-section');
     const bubbles: Element[] = [];
     sections.forEach((section) => {
-      const sectionBubbles = section.shadowRoot.querySelectorAll(
-        '.count-bubble'
-      );
+      const sectionBubbles =
+        section.shadowRoot.querySelectorAll('.count-bubble');
       sectionBubbles.forEach((b) => bubbles.push(b));
     });
 
@@ -554,9 +551,7 @@ describe('temba-node-editor', () => {
     expect(bubbles.length).to.be.greaterThan(0);
 
     // Check specific bubble values (trim to handle whitespace in rendered text)
-    const bubbleTexts = bubbles.map((bubble) =>
-      bubble.textContent?.trim()
-    );
+    const bubbleTexts = bubbles.map((bubble) => bubble.textContent?.trim());
 
     // Runtime attachments section should show bubble when collapsed and has values
     expect(bubbleTexts).to.include('2'); // 2 runtime attachments
@@ -582,9 +577,7 @@ describe('temba-node-editor', () => {
 
     // Check that arrows are displayed instead of bubbles
     // Elements are now inside temba-accordion-section shadow DOMs
-    const sections = el.shadowRoot.querySelectorAll(
-      'temba-accordion-section'
-    );
+    const sections = el.shadowRoot.querySelectorAll('temba-accordion-section');
     const bubbles: Element[] = [];
     const arrows: Element[] = [];
     sections.forEach((section) => {

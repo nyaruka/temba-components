@@ -140,7 +140,10 @@ describe('say_msg action config', () => {
         audio_url: ['https://example.com/es.mp3']
       };
 
-      const formData = resolveToLocalizationFormData(say_msg)!(action, localization);
+      const formData = resolveToLocalizationFormData(say_msg)!(
+        action,
+        localization
+      );
       expect(formData.text).to.equal('Hola');
       expect(formData.audio_url).to.equal('https://example.com/es.mp3');
     });
@@ -171,7 +174,10 @@ describe('say_msg action config', () => {
         audio_url: 'https://example.com/es.mp3'
       };
 
-      const localization = resolveFromLocalizationFormData(say_msg)!(formData, action);
+      const localization = resolveFromLocalizationFormData(say_msg)!(
+        formData,
+        action
+      );
       expect(localization.text).to.deep.equal(['Hola']);
       expect(localization.audio_url).to.deep.equal([
         'https://example.com/es.mp3'
@@ -192,7 +198,10 @@ describe('say_msg action config', () => {
         audio_url: 'https://example.com/en.mp3' // same as original
       };
 
-      const localization = resolveFromLocalizationFormData(say_msg)!(formData, action);
+      const localization = resolveFromLocalizationFormData(say_msg)!(
+        formData,
+        action
+      );
       expect(localization.text).to.be.undefined;
       expect(localization.audio_url).to.be.undefined;
     });

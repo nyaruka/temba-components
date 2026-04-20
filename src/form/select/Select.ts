@@ -866,9 +866,7 @@ export class Select<T extends SelectOption> extends FieldElement {
   }
 
   private updateEnterHintPosition() {
-    const hint = this.shadowRoot.querySelector(
-      '.enter-hint'
-    ) as HTMLElement;
+    const hint = this.shadowRoot.querySelector('.enter-hint') as HTMLElement;
     if (!hint) {
       this.removeHintRepositionListeners();
       return;
@@ -2346,7 +2344,9 @@ export class Select<T extends SelectOption> extends FieldElement {
               : null
           }</slot>
           ${
-            !this.tags && !this.emails && !(this.clearable && this.values.length > 0 && !this.isMultiMode)
+            !this.tags &&
+            !this.emails &&
+            !(this.clearable && this.values.length > 0 && !this.isMultiMode)
               ? html`<div
                   class="right-side arrow"
                   style="display:block;margin-right:5px"
@@ -2412,11 +2412,13 @@ export class Select<T extends SelectOption> extends FieldElement {
           : null
       }
     </temba-options>
-    ${showEnterHint
-      ? html`<div class="enter-hint">
-          <span style="position:relative;top:3px">↵</span> ${msg('to add')}
-        </div>`
-      : null}
+    ${
+      showEnterHint
+        ? html`<div class="enter-hint">
+            <span style="position:relative;top:3px">↵</span> ${msg('to add')}
+          </div>`
+        : null
+    }
     `;
   }
 

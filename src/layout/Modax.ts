@@ -312,9 +312,7 @@ export class Modax extends RapidElement {
         } else {
           // apply or clear header colors from response
           const headerBg = response.headers.get('X-Temba-Header-Bg');
-          const headerText = response.headers.get(
-            'X-Temba-Header-Text'
-          );
+          const headerText = response.headers.get('X-Temba-Header-Text');
           if (headerBg) {
             this.style.setProperty('--header-bg', headerBg);
           } else {

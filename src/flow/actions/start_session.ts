@@ -236,8 +236,7 @@ export const start_session: ActionConfig = {
       const recipients = formData.recipients || [];
       action.contacts = recipients
         .filter(
-          (r: any) =>
-            r.type === 'contact' || (!r.type && !r.expression && r.id)
+          (r: any) => r.type === 'contact' || (!r.type && !r.expression && r.id)
         )
         .map((c: any) => ({ uuid: c.id, name: c.name }));
       action.groups = recipients

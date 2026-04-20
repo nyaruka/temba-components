@@ -194,9 +194,15 @@ export class AccordionSection extends LitElement {
         @mouseenter=${this.handleMouseEnter}
         @mouseleave=${this.handleMouseLeave}
       >
-        <div class="accordion-title">${this.icon
-            ? html`<temba-icon name=${this.icon} size="1" style="margin-right:6px;color:#999;"></temba-icon>`
-            : ''}${this.label}</div>
+        <div class="accordion-title">
+          ${this.icon
+            ? html`<temba-icon
+                name=${this.icon}
+                size="1"
+                style="margin-right:6px;color:#999;"
+              ></temba-icon>`
+            : ''}${this.label}
+        </div>
         ${this.hasError
           ? html`<temba-icon
               name="alert_warning"
