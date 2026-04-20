@@ -34,7 +34,11 @@ import { PRIMARY_LANGUAGE_OPTION_VALUE } from './EditorToolbar';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
 import type { RevisionsWindow } from './RevisionsWindow';
 
-import { ACTION_GROUP_METADATA } from './types';
+import {
+  ACTION_GROUP_METADATA,
+  CONTEXT_MENU_SHORTCUTS,
+  FlowType
+} from './types';
 
 import {
   Plumber,
@@ -1360,7 +1364,7 @@ export class Editor extends RapidElement {
             },
             false, // Don't show sticky note option for connection drops
             false,
-            this.flowType === 'message'
+            CONTEXT_MENU_SHORTCUTS[this.flowType as FlowType] ?? []
           );
         }
       }
@@ -2193,7 +2197,8 @@ export class Editor extends RapidElement {
     search.definition = this.definition;
     search.languageCode = this.languageCode || '';
     search.scope = this.showMessageTable ? 'table' : 'flow';
-    search.includeCategories = this.isTranslating && this.hasAnyNodeWithLocalizeCategories();
+    search.includeCategories =
+      this.isTranslating && this.hasAnyNodeWithLocalizeCategories();
     search.show();
   }
 
@@ -2858,7 +2863,7 @@ export class Editor extends RapidElement {
         },
         true,
         hasNodes,
-        this.flowType === 'message'
+        CONTEXT_MENU_SHORTCUTS[this.flowType as FlowType] ?? []
       );
     }
   }
@@ -2887,7 +2892,7 @@ export class Editor extends RapidElement {
         { x: nodeLeft, y: nodeTop },
         false,
         false,
-        this.flowType === 'message'
+        CONTEXT_MENU_SHORTCUTS[this.flowType as FlowType] ?? []
       );
     }
   }
@@ -2920,19 +2925,6 @@ export class Editor extends RapidElement {
       this.connectionSourceX = null;
       this.connectionSourceY = null;
       this.dragFromNodeId = null;
-    } else if (
-      selection.action === 'send_msg' ||
-      selection.action === 'wait_for_response'
-    ) {
-      // Go directly to the node editor (skip node type selector)
-      this.handleNodeTypeSelection(
-        new CustomEvent(CustomEventType.Selection, {
-          detail: {
-            nodeType: selection.action,
-            position: selection.position
-          } as NodeTypeSelection
-        })
-      );
     } else if (selection.action === 'other') {
       // Show unified node type selector
       const selector = this.querySelector(
@@ -2943,6 +2935,17 @@ export class Editor extends RapidElement {
       }
       // Note: we don't clear pendingCanvasConnection or placeholder here,
       // they will be used in handleNodeTypeSelection
+    } else {
+      // Configured shortcut — go directly to the node editor with the
+      // action/node type carried in selection.action.
+      this.handleNodeTypeSelection(
+        new CustomEvent(CustomEventType.Selection, {
+          detail: {
+            nodeType: selection.action,
+            position: selection.position
+          } as NodeTypeSelection
+        })
+      );
     }
   }
 
@@ -3855,9 +3858,7 @@ export class Editor extends RapidElement {
 
     this.focusNode(issue.node_uuid);
 
-    const node = this.definition.nodes.find(
-      (n) => n.uuid === issue.node_uuid
-    );
+    const node = this.definition.nodes.find((n) => n.uuid === issue.node_uuid);
     if (!node) return;
 
     if (issue.action_uuid) {
@@ -3962,7 +3963,8 @@ export class Editor extends RapidElement {
         ?zoom-fitted=${this.zoomManager.isZoomFitted}
         ?revisions-active=${!this.revisionsWindowHidden}
         ?is-saving=${this.isSaving}
-        ?search-disabled=${this.getRevisionsWindow()?.isViewingRevision ?? false}
+        ?search-disabled=${this.getRevisionsWindow()?.isViewingRevision ??
+        false}
         .languageOptions=${languageOptions}
         current-language-name=${currentLanguage.name}
         ?is-base-language=${isBaseSelected}
@@ -4219,9 +4221,7 @@ export class Editor extends RapidElement {
                     : ''}
                 <div
                   id="grid"
-                  class="${this.viewingRevision
-                    ? 'viewing-revision'
-                    : ''}"
+                  class="${this.viewingRevision ? 'viewing-revision' : ''}"
                   style="min-width:${100 / this.zoom}%;min-height:${100 /
                   this.zoom}%;width:${this.canvasSize.width}px; height:${this
                     .canvasSize.height}px;transform:scale(${this.zoom})"
@@ -4229,11 +4229,9 @@ export class Editor extends RapidElement {
                   <div
                     id="canvas"
                     class="${getClasses({
-                      'viewing-revision':
-                        this.viewingRevision,
+                      'viewing-revision': this.viewingRevision,
                       'read-only-connections':
-                        this.viewingRevision ||
-                        this.isTranslating
+                        this.viewingRevision || this.isTranslating
                     })}"
                   >
                     ${this.definition && !hasCorruptedUI
@@ -4354,7 +4352,8 @@ export class Editor extends RapidElement {
         : ''}
       <temba-flow-search
         .scope=${this.showMessageTable ? 'table' : 'flow'}
-        .includeCategories=${this.isTranslating && this.hasAnyNodeWithLocalizeCategories()}
+        .includeCategories=${this.isTranslating &&
+        this.hasAnyNodeWithLocalizeCategories()}
         @temba-search-result-selected=${this.handleSearchResultSelected}
       ></temba-flow-search>
       ${!this.showMessageTable && this.flowIssues?.length

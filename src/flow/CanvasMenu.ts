@@ -2,12 +2,15 @@ import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
+import { ContextMenuShortcut } from './types';
 
 /**
- * Event detail for canvas menu selection
+ * Event detail for canvas menu selection. `action` is either one of the
+ * built-in menu actions or the `type` of a configured shortcut (e.g.
+ * 'send_msg', 'say_msg', 'set_contact_field').
  */
 export interface CanvasMenuSelection {
-  action: 'sticky' | 'other' | 'send_msg' | 'wait_for_response' | 'reflow';
+  action: 'sticky' | 'other' | 'reflow' | string;
   position: { x: number; y: number };
 }
 
@@ -78,8 +81,8 @@ export class CanvasMenu extends RapidElement {
   @property({ type: Boolean })
   public showStickyNote = true;
 
-  @property({ type: Boolean })
-  public showWaitForResponse = true;
+  @property({ type: Array })
+  public shortcuts: ContextMenuShortcut[] = [];
 
   @property({ type: Boolean })
   public showReflow = false;
@@ -131,14 +134,14 @@ export class CanvasMenu extends RapidElement {
     clickPosition: { x: number; y: number },
     showStickyNote: boolean = true,
     showReflow: boolean = false,
-    showWaitForResponse: boolean = true
+    shortcuts: ContextMenuShortcut[] = []
   ) {
     this.x = x;
     this.y = y;
     this.clickPosition = clickPosition;
     this.showStickyNote = showStickyNote;
     this.showReflow = showReflow;
-    this.showWaitForResponse = showWaitForResponse;
+    this.shortcuts = shortcuts;
     this.open = true;
 
     // Adjust position after menu renders to ensure it fits on screen
@@ -202,25 +205,17 @@ export class CanvasMenu extends RapidElement {
 
     return html`
       <div class="menu" style="left: ${this.x}px; top: ${this.y}px;">
-        <div
-          class="menu-item"
-          @click=${() => this.handleMenuItemClick('send_msg')}
-        >
-          <temba-icon name="send" size="1.25"></temba-icon>
-          <div class="menu-item-title">Send Message</div>
-        </div>
-
-        ${this.showWaitForResponse
-          ? html`
-              <div
-                class="menu-item"
-                @click=${() => this.handleMenuItemClick('wait_for_response')}
-              >
-                <temba-icon name="message" size="1.25"></temba-icon>
-                <div class="menu-item-title">Wait for Response</div>
-              </div>
-            `
-          : ''}
+        ${this.shortcuts.map(
+          (shortcut) => html`
+            <div
+              class="menu-item"
+              @click=${() => this.handleMenuItemClick(shortcut.type)}
+            >
+              <temba-icon name="${shortcut.icon}" size="1.25"></temba-icon>
+              <div class="menu-item-title">${shortcut.name}</div>
+            </div>
+          `
+        )}
 
         <div
           class="menu-item"

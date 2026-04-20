@@ -18,6 +18,33 @@ export const FlowTypes = {
 export type FlowType = (typeof FlowTypes)[keyof typeof FlowTypes];
 
 /**
+ * Shortcut entry shown in the canvas context menu. The `type` is the
+ * action or node type to open the editor with when selected.
+ */
+export interface ContextMenuShortcut {
+  type: string;
+  name: string;
+  icon: string;
+}
+
+/**
+ * Per-flow-type context menu shortcuts.
+ */
+export const CONTEXT_MENU_SHORTCUTS: Record<FlowType, ContextMenuShortcut[]> = {
+  [FlowTypes.MESSAGE]: [
+    { type: 'send_msg', name: 'Send Message', icon: 'send' },
+    { type: 'wait_for_response', name: 'Wait for Response', icon: 'message' }
+  ],
+  [FlowTypes.VOICE]: [
+    { type: 'say_msg', name: 'Say Message', icon: 'send' },
+    { type: 'wait_for_menu', name: 'Wait for Menu', icon: 'dots-grid' }
+  ],
+  [FlowTypes.BACKGROUND]: [
+    { type: 'set_contact_field', name: 'Update Contact', icon: 'contact' }
+  ]
+};
+
+/**
  * Features - defines the features available in the account
  */
 export const Features = {
