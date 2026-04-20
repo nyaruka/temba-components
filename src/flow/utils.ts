@@ -113,10 +113,9 @@ export function getLanguageDisplayName(code: string): string {
 
   // Prefer names from the RapidPro languages endpoint, which supplies
   // ISO 639-3 codes (e.g. prd, pst) that Intl.DisplayNames doesn't cover.
-  const storeNames = zustand.getState().languageNames;
-  const storeName = storeNames?.[code];
+  const storeName = zustand.getState().languageNames?.[code];
   if (storeName) {
-    return typeof storeName === 'string' ? storeName : storeName.name || code;
+    return storeName;
   }
 
   try {
