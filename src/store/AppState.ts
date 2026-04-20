@@ -192,7 +192,7 @@ export interface AppState {
   issuesByAction: Map<string, FlowIssue[]>;
 
   languageCode: string;
-  languageNames: { [code: string]: Language };
+  languageNames: { [code: string]: string };
   workspace: Workspace;
   isTranslating: boolean;
   viewingRevision: boolean;

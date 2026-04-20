@@ -1,6 +1,6 @@
 import { html, TemplateResult } from 'lit-html';
 import { Action, NamedObject, FlowPosition } from '../store/flow-definition';
-import { FlowIssue } from '../store/AppState';
+import { FlowIssue, zustand } from '../store/AppState';
 import { CustomEventType } from '../interfaces';
 import { tokenize, TokenType } from '../excellent/tokenizer';
 import { TOKEN_COLORS } from '../excellent/token-styles';
@@ -106,12 +106,20 @@ export function resolveFromLocalizationFormData(
   return undefined;
 }
 
-const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
+const intlLanguageNames = new Intl.DisplayNames(['en'], { type: 'language' });
 
 export function getLanguageDisplayName(code: string): string {
   if (code === 'und') return 'Unknown';
+
+  // Prefer names from the RapidPro languages endpoint, which supplies
+  // ISO 639-3 codes (e.g. prd, pst) that Intl.DisplayNames doesn't cover.
+  const storeName = zustand.getState().languageNames?.[code];
+  if (storeName) {
+    return storeName;
+  }
+
   try {
-    return languageNames.of(code) || code;
+    return intlLanguageNames.of(code) || code;
   } catch {
     return code;
   }
