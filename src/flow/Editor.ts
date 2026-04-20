@@ -3934,25 +3934,28 @@ export class Editor extends RapidElement {
     const percent = Math.round(
       (progress.localized / Math.max(progress.total, 1)) * 100
     );
-    const languageOptions = [
-      {
-        name: baseLanguageName,
-        value: PRIMARY_LANGUAGE_OPTION_VALUE
-      },
-      ...languages.map((lang) => {
-        const localizationProgress = this.getLocalizationProgress(lang.code);
-        const localizationPercent = Math.round(
-          (localizationProgress.localized /
-            Math.max(localizationProgress.total, 1)) *
-            100
-        );
-        return {
-          name: lang.name,
-          value: lang.code,
-          percent: localizationPercent
-        };
-      })
-    ];
+    const isEmptyFlow = !this.definition || this.definition.nodes.length === 0;
+    const languageOptions = isEmptyFlow
+      ? []
+      : [
+          {
+            name: baseLanguageName,
+            value: PRIMARY_LANGUAGE_OPTION_VALUE
+          },
+          ...languages.map((lang) => {
+            const localizationProgress = this.getLocalizationProgress(lang.code);
+            const localizationPercent = Math.round(
+              (localizationProgress.localized /
+                Math.max(localizationProgress.total, 1)) *
+                100
+            );
+            return {
+              name: lang.name,
+              value: lang.code,
+              percent: localizationPercent
+            };
+          })
+        ];
 
     return html`
       <temba-editor-toolbar
