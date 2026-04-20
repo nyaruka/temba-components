@@ -1,10 +1,6 @@
 import { Category } from '../store/flow-definition';
 import { NODE_CONFIG } from './config';
-
-const SYSTEM_CATEGORIES_ALLOWED_FOR_TRANSLATION = new Set([
-  'Other',
-  'No Response'
-]);
+import { SYSTEM_CATEGORIES_ALLOWED_FOR_TRANSLATION } from './categoryUtils';
 
 export function getTranslatableCategoriesForNode(
   nodeType: string | undefined,

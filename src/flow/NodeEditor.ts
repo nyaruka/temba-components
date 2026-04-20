@@ -27,6 +27,7 @@ import {
   resolveFromLocalizationFormData
 } from './utils';
 import { getTranslatableCategoriesForNode } from './categoryLocalization';
+import { collectReservedCategoryErrors } from './categoryUtils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
 import {
@@ -1236,40 +1237,7 @@ export class NodeEditor extends RapidElement {
   }
 
   private validateCategoryNames(errors: { [key: string]: string }): void {
-    // Universal validation for category names across all node types
-    // Prevents use of reserved category names that have special meaning in the system
-    // Define reserved category names (case-insensitive)
-    const reservedNames = [
-      'other',
-      'failure',
-      'success',
-      'all responses',
-      'no response'
-    ];
-
-    // Check all form fields for category arrays
-    Object.entries(this.formData).forEach(([fieldName, value]) => {
-      if (Array.isArray(value) && fieldName === 'categories') {
-        const categories = value.filter(
-          (item: any) => item?.name && item.name.trim() !== ''
-        );
-
-        // Check for reserved names
-        const reservedUsed = categories
-          .filter((item: any) => {
-            const lowerName = item.name.trim().toLowerCase();
-            return reservedNames.includes(lowerName);
-          })
-          .map((item: any) => item.name.trim()); // Preserve original case
-
-        if (reservedUsed.length > 0) {
-          errors[fieldName] =
-            `Reserved category names cannot be used: ${reservedUsed.join(
-              ', '
-            )}`;
-        }
-      }
-    });
+    Object.assign(errors, collectReservedCategoryErrors(this.formData));
   }
 
   private formDataToNode(formData: FormData = this.formData): Node {

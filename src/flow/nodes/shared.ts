@@ -7,6 +7,7 @@ import {
 import { Node, Category, Exit, Case } from '../../store/flow-definition';
 import { getOperatorConfig } from '../operators';
 import { generateUUID } from '../../utils';
+import { categoryNamesEqual, findCategoryByName } from '../categoryUtils';
 
 /**
  * Shared result_name field configuration for router nodes.
@@ -216,9 +217,7 @@ export function buildCategoriesExitsCases(
   const cases: Case[] = [];
 
   entries.forEach((entry) => {
-    const existingCategory = existingCategories.find(
-      (cat) => cat.name === entry.name
-    );
+    const existingCategory = findCategoryByName(existingCategories, entry.name);
     const existingExit = existingCategory
       ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
       : null;
@@ -268,10 +267,12 @@ export function appendOtherCategory(
   existingExits: Exit[],
   userItemNames: string[]
 ): string {
-  const userHasOther = userItemNames.includes('Other');
+  const userHasOther = userItemNames.some((name) =>
+    categoryNamesEqual(name, 'Other')
+  );
   const existingOther = userHasOther
     ? null
-    : existingCategories.find((cat) => cat.name === 'Other');
+    : findCategoryByName(existingCategories, 'Other');
   const existingOtherExit = existingOther
     ? existingExits.find((exit) => exit.uuid === existingOther.exit_uuid)
     : null;

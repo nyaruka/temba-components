@@ -123,6 +123,53 @@ describe('temba-split-by-groups', () => {
     );
   });
 
+  it('should preserve category UUIDs when group names change only in casing', () => {
+    // Group name is renamed from "Leads" to "LEADS" — the category should
+    // keep its UUID and destination rather than being treated as a new one.
+    const originalNode: Node = {
+      uuid: 'node-1',
+      actions: [],
+      router: {
+        type: 'switch',
+        cases: [
+          {
+            uuid: 'case-1',
+            type: 'has_group',
+            arguments: ['group-1', 'Leads'],
+            category_uuid: 'cat-existing'
+          }
+        ],
+        categories: [
+          { uuid: 'cat-existing', name: 'Leads', exit_uuid: 'exit-existing' },
+          { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+        ],
+        default_category_uuid: 'cat-other',
+        operand: '@contact.groups'
+      },
+      exits: [
+        { uuid: 'exit-existing', destination_uuid: 'downstream' },
+        { uuid: 'exit-other', destination_uuid: null }
+      ]
+    };
+
+    const formData = {
+      uuid: 'node-1',
+      groups: [{ uuid: 'group-1', name: 'LEADS' }]
+    };
+
+    const result = split_by_groups.fromFormData!(formData, originalNode);
+
+    const leads = result.router!.categories!.find(
+      (c) => c.name.toLowerCase() === 'leads'
+    );
+    expect(leads).to.exist;
+    expect(leads!.uuid).to.equal('cat-existing');
+    expect(leads!.exit_uuid).to.equal('exit-existing');
+
+    const preservedExit = result.exits!.find((e) => e.uuid === 'exit-existing');
+    expect(preservedExit!.destination_uuid).to.equal('downstream');
+  });
+
   it('should handle arbitrary groups correctly', () => {
     const originalNode: Node = {
       uuid: 'test-node-uuid',
