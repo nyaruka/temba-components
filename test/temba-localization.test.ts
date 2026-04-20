@@ -185,6 +185,44 @@ describe('Localization Editing', () => {
     expect(languageBtn).to.exist;
   });
 
+  it('should hide language controls when flow has no nodes', async () => {
+    editor?.remove();
+
+    setupWorkspace();
+
+    const emptyFlowDefinition: FlowDefinition = {
+      uuid: 'empty-flow',
+      name: 'Empty Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {},
+      nodes: [],
+      _ui: {
+        nodes: {},
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: emptyFlowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 0, languages: 0 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    await editor.updateComplete;
+
+    const toolbar = await getToolbar(editor);
+    const languageBtn = toolbar.shadowRoot.querySelector('#language-btn');
+    expect(languageBtn).to.be.null;
+  });
+
   it('should show language options with non-base languages', async () => {
     const toolbar = await getToolbar(editor);
     // Open language dropdown
