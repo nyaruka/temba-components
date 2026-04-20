@@ -6,11 +6,11 @@ import { ContextMenuShortcut } from './types';
 
 /**
  * Event detail for canvas menu selection. `action` is either one of the
- * built-in menu actions or the `type` of a configured shortcut (e.g.
- * 'send_msg', 'say_msg', 'set_contact_field').
+ * built-in menu actions ('sticky', 'other', 'reflow') or the `type` of a
+ * configured shortcut (e.g. 'send_msg', 'say_msg', 'set_contact_field').
  */
 export interface CanvasMenuSelection {
-  action: 'sticky' | 'other' | 'reflow' | string;
+  action: string;
   position: { x: number; y: number };
 }
 

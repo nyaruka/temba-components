@@ -37,7 +37,8 @@ import type { RevisionsWindow } from './RevisionsWindow';
 import {
   ACTION_GROUP_METADATA,
   CONTEXT_MENU_SHORTCUTS,
-  FlowType
+  FlowType,
+  FlowTypes
 } from './types';
 
 import {
@@ -205,7 +206,7 @@ export class Editor extends RapidElement {
   public version: string;
 
   @property({ type: String })
-  public flowType: string = 'message';
+  public flowType: FlowType = FlowTypes.MESSAGE;
 
   @property({ type: Array })
   public features: string[] = [];
@@ -1364,7 +1365,7 @@ export class Editor extends RapidElement {
             },
             false, // Don't show sticky note option for connection drops
             false,
-            CONTEXT_MENU_SHORTCUTS[this.flowType as FlowType] ?? []
+            CONTEXT_MENU_SHORTCUTS[this.flowType]
           );
         }
       }
@@ -1541,17 +1542,17 @@ export class Editor extends RapidElement {
    * FlowDefinition uses: 'messaging', 'messaging_background', 'messaging_offline', 'voice'
    * Editor uses: 'message', 'voice', 'background'
    */
-  private getFlowTypeFromDefinition(definitionType: string): string {
+  private getFlowTypeFromDefinition(definitionType: string): FlowType {
     if (definitionType === 'voice') {
-      return 'voice';
+      return FlowTypes.VOICE;
     } else if (
       definitionType === 'messaging_background' ||
       definitionType === 'messaging_offline'
     ) {
-      return 'background';
+      return FlowTypes.BACKGROUND;
     } else {
       // 'messaging' or any other messaging type defaults to 'message'
-      return 'message';
+      return FlowTypes.MESSAGE;
     }
   }
 
@@ -2863,7 +2864,7 @@ export class Editor extends RapidElement {
         },
         true,
         hasNodes,
-        CONTEXT_MENU_SHORTCUTS[this.flowType as FlowType] ?? []
+        CONTEXT_MENU_SHORTCUTS[this.flowType]
       );
     }
   }
@@ -2892,7 +2893,7 @@ export class Editor extends RapidElement {
         { x: nodeLeft, y: nodeTop },
         false,
         false,
-        CONTEXT_MENU_SHORTCUTS[this.flowType as FlowType] ?? []
+        CONTEXT_MENU_SHORTCUTS[this.flowType]
       );
     }
   }
