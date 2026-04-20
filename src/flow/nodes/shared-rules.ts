@@ -4,6 +4,7 @@ import {
   operatorsToSelectOptions
 } from '../operators';
 import { generateDefaultCategoryName } from '../../utils';
+import { isSystemCategory } from '../categoryUtils';
 import { FormData } from '../types';
 import { zustand } from '../../store/AppState';
 
@@ -302,15 +303,6 @@ export const casesToFormRules = (node: any) => {
 };
 
 /**
- * Helper to check if a category is a system category
- */
-function isSystemCategory(categoryName: string): boolean {
-  return ['No Response', 'Other', 'All Responses', 'Timeout'].includes(
-    categoryName
-  );
-}
-
-/**
  * Creates a complete rules array configuration for forms.
  * This is the shared configuration used by both wait_for_response and split_by_expression.
  *
@@ -340,13 +332,11 @@ export const createRulesArrayConfig = (
 
     // Default to the last rule's non-location operator that has at least one operand,
     // falling back to the first non-location operator option
-    const lastWithOperand = [...items]
-      .reverse()
-      .find((item) => {
-        const opValue = getOperatorValue(item.operator);
-        const config = opValue ? getOperatorConfig(opValue) : undefined;
-        return config && config.operands >= 1 && config.filter !== 'locations';
-      });
+    const lastWithOperand = [...items].reverse().find((item) => {
+      const opValue = getOperatorValue(item.operator);
+      const config = opValue ? getOperatorConfig(opValue) : undefined;
+      return config && config.operands >= 1 && config.filter !== 'locations';
+    });
 
     const nonLocationOptions = currentOptions.filter((o: any) => {
       const config = getOperatorConfig(o.value);

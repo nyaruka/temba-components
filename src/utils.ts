@@ -7,6 +7,13 @@ import { Attachment, ContactField, Shortcut, Ticket, User } from './interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from './display/Toast';
 import { v4 as generateUUID, v7 as generateUUIDv7 } from 'uuid';
+import {
+  categoryNamesEqual,
+  findCategoryByName,
+  isSystemCategory
+} from './flow/categoryUtils';
+
+export { isSystemCategory } from './flow/categoryUtils';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
@@ -1096,8 +1103,9 @@ export const createOrPreserveCategory = (
   const { name, existingCategories, existingExits, existingCases, caseConfig } =
     params;
 
-  // Find existing category
-  const existingCategory = existingCategories.find((cat) => cat.name === name);
+  // Find existing category (case-insensitive so renames that only change
+  // casing preserve UUIDs and destinations)
+  const existingCategory = findCategoryByName(existingCategories, name);
   const existingExit = existingCategory
     ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
     : null;
@@ -1245,13 +1253,6 @@ export const createMultiCategoryRouter = (
     },
     exits: exits
   };
-};
-
-// Helper function to check if a category is a system category
-export const isSystemCategory = (categoryName: string): boolean => {
-  return ['No Response', 'Other', 'All Responses', 'Timeout'].includes(
-    categoryName
-  );
 };
 
 // Helper function to check if a UUID belongs to a system category
@@ -1529,16 +1530,18 @@ export const createRulesRouter = (
   // Name is "Other" if there are user rules, "All Responses" if there are no user rules
   const defaultCategoryName = userRules.length > 0 ? 'Other' : 'All Responses';
 
-  // Try to find existing default category by name (prefer exact match)
-  let existingDefaultCategory = existingCategories.find(
-    (cat) => cat.name === defaultCategoryName
+  // Try to find existing default category by name (case-insensitive)
+  let existingDefaultCategory = findCategoryByName(
+    existingCategories,
+    defaultCategoryName
   );
 
-  // If no exact match, try to find the other possible default category name
+  // If no match, try the other possible default category name
   if (!existingDefaultCategory) {
     const alternateName = userRules.length > 0 ? 'All Responses' : 'Other';
-    existingDefaultCategory = existingCategories.find(
-      (cat) => cat.name === alternateName
+    existingDefaultCategory = findCategoryByName(
+      existingCategories,
+      alternateName
     );
   }
 
@@ -1564,7 +1567,9 @@ export const createRulesRouter = (
 
   // Find the default category (either "Other" or "All Responses")
   const defaultCategory = categories.find(
-    (cat) => cat.name === 'Other' || cat.name === 'All Responses'
+    (cat) =>
+      categoryNamesEqual(cat.name, 'Other') ||
+      categoryNamesEqual(cat.name, 'All Responses')
   );
 
   return {
