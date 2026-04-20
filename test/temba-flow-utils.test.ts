@@ -49,6 +49,10 @@ describe('shouldExcludeFlow', () => {
 });
 
 describe('getLanguageDisplayName', () => {
+  afterEach(() => {
+    zustand.setState({ ...zustand.getState(), languageNames: {} });
+  });
+
   it('returns "Unknown" for the "und" code', () => {
     expect(getLanguageDisplayName('und')).to.equal('Unknown');
   });
@@ -61,5 +65,25 @@ describe('getLanguageDisplayName', () => {
     expect(getLanguageDisplayName('xx-invalid-code')).to.equal(
       'xx-invalid-code'
     );
+  });
+
+  it('uses names from the store for ISO 639-3 codes Intl does not cover', () => {
+    zustand.setState({
+      ...zustand.getState(),
+      languageNames: {
+        prd: 'Parsi-Dari' as any,
+        pst: 'Central Pashto' as any
+      }
+    });
+    expect(getLanguageDisplayName('prd')).to.equal('Parsi-Dari');
+    expect(getLanguageDisplayName('pst')).to.equal('Central Pashto');
+  });
+
+  it('prefers store names over Intl lookups', () => {
+    zustand.setState({
+      ...zustand.getState(),
+      languageNames: { eng: 'Anglais' as any }
+    });
+    expect(getLanguageDisplayName('eng')).to.equal('Anglais');
   });
 });
