@@ -18,14 +18,9 @@ describe('temba-expression-highlight', () => {
   });
 
   it('highlights identifier expressions', async () => {
-    const el = await createHighlight(
-      'Hi there @contact.name, welcome!'
-    );
+    const el = await createHighlight('Hi there @contact.name, welcome!');
     assert.instanceOf(el, ExpressionHighlight);
-    await assertScreenshot(
-      'expression-highlight/identifier',
-      getClip(el)
-    );
+    await assertScreenshot('expression-highlight/identifier', getClip(el));
   });
 
   it('highlights parenthesized expressions', async () => {
@@ -33,10 +28,7 @@ describe('temba-expression-highlight', () => {
       'Hi @(contact.first_name)! You have @(results.count) items.'
     );
     assert.instanceOf(el, ExpressionHighlight);
-    await assertScreenshot(
-      'expression-highlight/parenthesized',
-      getClip(el)
-    );
+    await assertScreenshot('expression-highlight/parenthesized', getClip(el));
   });
 
   it('highlights function calls', async () => {
@@ -44,18 +36,12 @@ describe('temba-expression-highlight', () => {
       'Today is @(format_date(now(), "YYYY-MM-DD"))'
     );
     assert.instanceOf(el, ExpressionHighlight);
-    await assertScreenshot(
-      'expression-highlight/function',
-      getClip(el)
-    );
+    await assertScreenshot('expression-highlight/function', getClip(el));
   });
 
   it('renders plain text without expressions', async () => {
     const el = await createHighlight('Just plain text here');
     assert.instanceOf(el, ExpressionHighlight);
-    await assertScreenshot(
-      'expression-highlight/plain',
-      getClip(el)
-    );
+    await assertScreenshot('expression-highlight/plain', getClip(el));
   });
 });

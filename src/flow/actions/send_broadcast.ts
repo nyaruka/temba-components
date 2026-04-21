@@ -220,8 +220,7 @@ export const send_broadcast: ActionConfig = {
 
     if (attachments.length > 0) {
       if (
-        JSON.stringify(attachments) !==
-        JSON.stringify(action.attachments || [])
+        JSON.stringify(attachments) !== JSON.stringify(action.attachments || [])
       ) {
         localization.attachments = attachments;
       }

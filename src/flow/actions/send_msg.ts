@@ -172,7 +172,11 @@ export const send_msg: ActionConfig = {
 
           if (!contentType.includes('/')) {
             runtimeAttachments.push({
-              type: { name: ATTACHMENT_TYPE_NAMES[contentType] || titleCase(contentType), value: contentType },
+              type: {
+                name:
+                  ATTACHMENT_TYPE_NAMES[contentType] || titleCase(contentType),
+                value: contentType
+              },
               expression: value
             });
           } else {
@@ -319,7 +323,11 @@ export const send_msg: ActionConfig = {
 
           if (!contentType.includes('/')) {
             runtimeAttachments.push({
-              type: { name: ATTACHMENT_TYPE_NAMES[contentType] || titleCase(contentType), value: contentType },
+              type: {
+                name:
+                  ATTACHMENT_TYPE_NAMES[contentType] || titleCase(contentType),
+                value: contentType
+              },
               expression: value
             });
           } else {

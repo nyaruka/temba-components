@@ -209,9 +209,7 @@ describe('start_session action config', () => {
         uuid: 'test-uuid',
         flow: [{ uuid: 'flow-1', name: 'Test Flow' }],
         startType: [{ value: 'manual', name: 'Select recipients manually' }],
-        recipients: [
-          { id: 'contact-1', name: 'Alice', type: 'contact' }
-        ]
+        recipients: [{ id: 'contact-1', name: 'Alice', type: 'contact' }]
       };
 
       const action = start_session.fromFormData(formData) as StartSession;

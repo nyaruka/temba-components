@@ -1622,9 +1622,7 @@ export class CanvasNode extends RapidElement {
 
     // IMPORTANT: Add the action to this node FIRST, before removing from source
     // This ensures we don't lose the action if the source node gets deleted
-    const droppedAction = isCopy
-      ? { ...action, uuid: generateUUID() }
-      : action;
+    const droppedAction = isCopy ? { ...action, uuid: generateUUID() } : action;
     const newActions = [...this.node.actions];
     newActions.splice(dropIndex, 0, droppedAction);
 
@@ -1638,11 +1636,13 @@ export class CanvasNode extends RapidElement {
         for (const langCode of Object.keys(localization)) {
           const entry = localization[langCode]?.[action.uuid];
           if (entry) {
-            store.getState().updateLocalization(
-              langCode,
-              droppedAction.uuid,
-              JSON.parse(JSON.stringify(entry))
-            );
+            store
+              .getState()
+              .updateLocalization(
+                langCode,
+                droppedAction.uuid,
+                JSON.parse(JSON.stringify(entry))
+              );
           }
         }
       }
@@ -1915,9 +1915,10 @@ export class CanvasNode extends RapidElement {
     const nodeConfig = NODE_CONFIG[this.ui?.type];
     const supportsLocalization = nodeConfig?.localizable === 'categories';
     const translatableCategoryUuids = new Set(
-      getTranslatableCategoriesForNode(this.ui?.type, node.router.categories).map(
-        (category) => category.uuid
-      )
+      getTranslatableCategoriesForNode(
+        this.ui?.type,
+        node.router.categories
+      ).map((category) => category.uuid)
     );
 
     return html`<div class="categories">
@@ -2010,7 +2011,10 @@ export class CanvasNode extends RapidElement {
     // currently hidden by the categories toggle.
     const hasTranslatableCategories =
       nodeConfig?.localizable === 'categories' &&
-      hasTranslatableCategoriesForNode(this.ui.type, this.node.router?.categories);
+      hasTranslatableCategoriesForNode(
+        this.ui.type,
+        this.node.router?.categories
+      );
     const hasTranslatableActions = (this.node.actions || []).some((action) => {
       const actionConfig = ACTION_CONFIG[action.type];
       return !!actionConfig?.localizable?.length;

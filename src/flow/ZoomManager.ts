@@ -524,8 +524,7 @@ export class ZoomManager {
     const dx = canvasX - this.loupeCursorCanvas.x;
     const dy = canvasY - this.loupeCursorCanvas.y;
     const moved =
-      Math.abs(dx) > visibleRadius * 0.5 ||
-      Math.abs(dy) > visibleRadius * 0.5;
+      Math.abs(dx) > visibleRadius * 0.5 || Math.abs(dy) > visibleRadius * 0.5;
 
     if (
       !this.loupeClone ||

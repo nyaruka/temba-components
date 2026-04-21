@@ -87,7 +87,9 @@ export class MessageTable extends RapidElement {
         padding: 2px 16px 2px 26px;
       }
 
-      .message-table tr.localization-paired-row:not(.localization-paired-last) td {
+      .message-table
+        tr.localization-paired-row:not(.localization-paired-last)
+        td {
         border-bottom: none;
       }
 
@@ -278,11 +280,13 @@ export class MessageTable extends RapidElement {
         transition: background 0.15s;
       }
 
-      .translation-cell.category-translation-cell:hover .category-translation-item {
+      .translation-cell.category-translation-cell:hover
+        .category-translation-item {
         background: #f5f8ff;
       }
 
-      .translation-cell.category-translation-cell:hover .category-translation-item.missing {
+      .translation-cell.category-translation-cell:hover
+        .category-translation-item.missing {
         color: #9bb8df;
       }
 
@@ -399,14 +403,24 @@ export class MessageTable extends RapidElement {
       const nodeType = nodeUI?.type;
 
       // Collect rules that have localized values or are flagged for localization
-      const langLocalization = this.definition?.localization?.[this.languageCode] || {};
-      let rules: Array<{ uuid: string; type: string; arguments: string[] }> = [];
+      const langLocalization =
+        this.definition?.localization?.[this.languageCode] || {};
+      let rules: Array<{ uuid: string; type: string; arguments: string[] }> =
+        [];
       if (node.router?.cases?.length) {
         const hasLocalizeRules = nodeUI?.config?.localizeRules;
         rules = node.router.cases
           .filter((c) => c.arguments?.length > 0 && c.arguments.some((a) => a))
-          .filter((c) => hasLocalizeRules || langLocalization[c.uuid]?.arguments?.some((a: string) => a))
-          .map((c) => ({ uuid: c.uuid, type: c.type, arguments: [...c.arguments] }));
+          .filter(
+            (c) =>
+              hasLocalizeRules ||
+              langLocalization[c.uuid]?.arguments?.some((a: string) => a)
+          )
+          .map((c) => ({
+            uuid: c.uuid,
+            type: c.type,
+            arguments: [...c.arguments]
+          }));
       }
 
       // Collect categories that have localized values or are flagged for localization
@@ -424,8 +438,8 @@ export class MessageTable extends RapidElement {
         if (hasLocalizeCategories) {
           categories = translatableCategories;
         } else {
-          categories = translatableCategories.filter(
-            (cat) => langLocalization[cat.uuid]?.name?.some((n: string) => n)
+          categories = translatableCategories.filter((cat) =>
+            langLocalization[cat.uuid]?.name?.some((n: string) => n)
           );
         }
       }
@@ -492,9 +506,7 @@ export class MessageTable extends RapidElement {
     }
 
     return localization.quick_replies
-      .map((reply: unknown) =>
-        typeof reply === 'string' ? reply.trim() : ''
-      )
+      .map((reply: unknown) => (typeof reply === 'string' ? reply.trim() : ''))
       .filter((reply: string) => reply.length > 0);
   }
 
@@ -568,7 +580,10 @@ export class MessageTable extends RapidElement {
     // Count string-type localizable fields (exclude arrays like attachments, quick_replies)
     const textFields = config.localizable.filter((key) => {
       const fieldConfig = config.form?.[key];
-      return fieldConfig && (fieldConfig.type === 'text' || fieldConfig.type === 'textarea');
+      return (
+        fieldConfig &&
+        (fieldConfig.type === 'text' || fieldConfig.type === 'textarea')
+      );
     });
     return textFields.length > 1;
   }
@@ -587,11 +602,15 @@ export class MessageTable extends RapidElement {
     return config.localizable
       .filter((key) => {
         const fieldConfig = config.form?.[key];
-        return fieldConfig && (fieldConfig.type === 'text' || fieldConfig.type === 'textarea');
+        return (
+          fieldConfig &&
+          (fieldConfig.type === 'text' || fieldConfig.type === 'textarea')
+        );
       })
       .map((key) => {
         const fieldConfig = config.form![key];
-        const label = typeof fieldConfig.label === 'string' ? fieldConfig.label : key;
+        const label =
+          typeof fieldConfig.label === 'string' ? fieldConfig.label : key;
         return {
           key,
           label,
@@ -609,7 +628,8 @@ export class MessageTable extends RapidElement {
         if (colonIdx < 0) return html``;
         const contentType = att.substring(0, colonIdx);
         const baseType = contentType.split('/')[0];
-        const iconName = MessageTable.ATTACHMENT_ICONS[baseType] || Icon.attachment;
+        const iconName =
+          MessageTable.ATTACHMENT_ICONS[baseType] || Icon.attachment;
         return html`<div class="attachment-icon">
           <temba-icon name="${iconName}"></temba-icon>
         </div>`;
@@ -628,10 +648,17 @@ export class MessageTable extends RapidElement {
     if (config?.form) {
       for (const key of localizable) {
         const fc = config.form[key];
-        if (fc && (fc.type === 'text' || fc.type === 'textarea' || fc.type === 'message-editor')) {
+        if (
+          fc &&
+          (fc.type === 'text' ||
+            fc.type === 'textarea' ||
+            fc.type === 'message-editor')
+        ) {
           const text = action[key] || '';
           if (text) {
-            parts.push(renderHighlightedText(this.stripLeadingLineBreaks(text), true));
+            parts.push(
+              renderHighlightedText(this.stripLeadingLineBreaks(text), true)
+            );
           }
         }
       }
@@ -640,9 +667,15 @@ export class MessageTable extends RapidElement {
     // Quick replies (send_msg)
     const quickReplies: string[] = action.quick_replies || [];
     if (quickReplies.length > 0) {
-      parts.push(html`<div class="quick-replies ${parts.length === 0 ? 'standalone' : ''}">${quickReplies.map(
-        (reply) => html`<div class="quick-reply">${reply}</div>`
-      )}</div>`);
+      parts.push(
+        html`<div
+          class="quick-replies ${parts.length === 0 ? 'standalone' : ''}"
+        >
+          ${quickReplies.map(
+            (reply) => html`<div class="quick-reply">${reply}</div>`
+          )}
+        </div>`
+      );
     }
 
     // Attachments
@@ -669,10 +702,20 @@ export class MessageTable extends RapidElement {
     if (config?.form) {
       for (const key of localizable) {
         const fc = config.form[key];
-        if (fc && (fc.type === 'text' || fc.type === 'textarea' || fc.type === 'message-editor')) {
+        if (
+          fc &&
+          (fc.type === 'text' ||
+            fc.type === 'textarea' ||
+            fc.type === 'message-editor')
+        ) {
           const translatedText = this.getTranslatedField(action.uuid, key);
           if (typeof translatedText === 'string') {
-            parts.push(renderHighlightedText(this.stripLeadingLineBreaks(translatedText), true));
+            parts.push(
+              renderHighlightedText(
+                this.stripLeadingLineBreaks(translatedText),
+                true
+              )
+            );
           }
         }
       }
@@ -681,13 +724,22 @@ export class MessageTable extends RapidElement {
     // Translated quick replies
     const translatedQuickReplies = this.getTranslatedQuickReplies(action.uuid);
     if (translatedQuickReplies.length > 0) {
-      parts.push(html`<div class="quick-replies ${parts.length === 0 ? 'standalone' : ''}">${translatedQuickReplies.map(
-        (reply) => html`<div class="quick-reply">${reply}</div>`
-      )}</div>`);
+      parts.push(
+        html`<div
+          class="quick-replies ${parts.length === 0 ? 'standalone' : ''}"
+        >
+          ${translatedQuickReplies.map(
+            (reply) => html`<div class="quick-reply">${reply}</div>`
+          )}
+        </div>`
+      );
     }
 
     // Translated attachments
-    const translatedAttachments = this.getTranslatedArrayField(action.uuid, 'attachments');
+    const translatedAttachments = this.getTranslatedArrayField(
+      action.uuid,
+      'attachments'
+    );
     if (translatedAttachments.length > 0) {
       parts.push(this.renderAttachments(translatedAttachments));
     }
@@ -739,9 +791,7 @@ export class MessageTable extends RapidElement {
     });
   }
 
-  private getGroupTranslations(
-    entry: LocalizationGroupEntry
-  ): Array<{
+  private getGroupTranslations(entry: LocalizationGroupEntry): Array<{
     original: string;
     translated: string | null;
     isRule: boolean;
@@ -795,7 +845,10 @@ export class MessageTable extends RapidElement {
   }
 
   private renderPairedRows(
-    items: Array<{ original: TemplateResult; translated: TemplateResult | null }>,
+    items: Array<{
+      original: TemplateResult;
+      translated: TemplateResult | null;
+    }>,
     entry: TableEntry,
     handleBaseClick: () => void,
     handleTranslationClick: () => void,
@@ -805,11 +858,17 @@ export class MessageTable extends RapidElement {
       ${items.map(
         (item, idx) => html`
           <tr
-            class="category-row localization-paired-row ${idx === 0 ? 'localization-paired-first' : ''} ${idx === items.length - 1 ? 'localization-paired-last' : ''}"
+            class="category-row localization-paired-row ${idx === 0
+              ? 'localization-paired-first'
+              : ''} ${idx === items.length - 1
+              ? 'localization-paired-last'
+              : ''}"
             style=${`--node-rail-color: ${this.getEntryRailColor(entry)};`}
             data-node-uuid=${entry.node.uuid}
             data-entry-kind=${entry.kind}
-            data-action-uuid=${entry.kind === 'message' ? entry.action.uuid : ''}
+            data-action-uuid=${entry.kind === 'message'
+              ? entry.action.uuid
+              : ''}
           >
             <td>
               <div
@@ -830,9 +889,16 @@ export class MessageTable extends RapidElement {
                     title="Click to edit translation"
                   >
                     <div
-                      class="category-item category-translation-item ${item.translated !== null ? '' : 'missing'}"
+                      class="category-item category-translation-item ${item.translated !==
+                      null
+                        ? ''
+                        : 'missing'}"
                     >
-                      <span>${item.translated !== null ? item.translated : 'No translation'}</span>
+                      <span
+                        >${item.translated !== null
+                          ? item.translated
+                          : 'No translation'}</span
+                      >
                     </div>
                   </div>
                 </td>`
@@ -880,32 +946,55 @@ export class MessageTable extends RapidElement {
               const groupTranslations = this.getGroupTranslations(entry);
               const items = groupTranslations.map((item) => ({
                 original: html`${item.isRule && item.operatorName
-                  ? html`<span class="rule-operator">${item.operatorName}</span> `
+                  ? html`<span class="rule-operator"
+                      >${item.operatorName}</span
+                    > `
                   : ''}${renderHighlightedText(item.original, true)}`,
-                translated: item.translated !== null
-                  ? html`${item.isRule && item.operatorName
-                      ? html`<span class="rule-operator">${item.operatorName}</span> `
-                      : ''}${renderHighlightedText(item.translated, true)}`
-                  : null
+                translated:
+                  item.translated !== null
+                    ? html`${item.isRule && item.operatorName
+                        ? html`<span class="rule-operator"
+                            >${item.operatorName}</span
+                          > `
+                        : ''}${renderHighlightedText(item.translated, true)}`
+                    : null
               }));
-              return this.renderPairedRows(items, entry, handleBaseClick, handleTranslationClickFn, showTranslation);
+              return this.renderPairedRows(
+                items,
+                entry,
+                handleBaseClick,
+                handleTranslationClickFn,
+                showTranslation
+              );
             }
 
             // Multi-field actions (e.g. send_email with subject + body) - paired rows
-            if (
-              entry.kind === 'message' &&
-              this.usesPairedRows(entry.action)
-            ) {
+            if (entry.kind === 'message' && this.usesPairedRows(entry.action)) {
               const fields = this.getPairedFields(entry.action);
               const items = fields.map((f) => ({
                 original: html`${f.original
-                  ? renderHighlightedText(this.stripLeadingLineBreaks(f.original), true)
-                  : html`<span style="color: #bbb; font-style: italic;">Empty</span>`}`,
-                translated: f.translated !== null
-                  ? html`${renderHighlightedText(this.stripLeadingLineBreaks(f.translated), true)}`
-                  : null
+                  ? renderHighlightedText(
+                      this.stripLeadingLineBreaks(f.original),
+                      true
+                    )
+                  : html`<span style="color: #bbb; font-style: italic;"
+                      >Empty</span
+                    >`}`,
+                translated:
+                  f.translated !== null
+                    ? html`${renderHighlightedText(
+                        this.stripLeadingLineBreaks(f.translated),
+                        true
+                      )}`
+                    : null
               }));
-              return this.renderPairedRows(items, entry, handleBaseClick, handleTranslationClickFn, showTranslation);
+              return this.renderPairedRows(
+                items,
+                entry,
+                handleBaseClick,
+                handleTranslationClickFn,
+                showTranslation
+              );
             }
 
             // Single-row entries (send_msg, send_broadcast, etc.)
@@ -913,9 +1002,9 @@ export class MessageTable extends RapidElement {
               entry.kind === 'message' &&
               showTranslation &&
               this.hasAnyTranslation(entry);
-            const translationCellClass = `translation-cell ${hasTranslation
-              ? 'has-translation'
-              : 'missing-translation'}`;
+            const translationCellClass = `translation-cell ${
+              hasTranslation ? 'has-translation' : 'missing-translation'
+            }`;
 
             return html`
               <tr
@@ -936,23 +1025,41 @@ export class MessageTable extends RapidElement {
                       ? this.renderOriginalContent(entry)
                       : isGroupEntry
                         ? html`
-                          <div class="category-stack category-stack-original">
-                            ${entry.rules.map(
-                              (c) => html`
-                                <div class="category-item category-original-item">
-                                  <span><span class="rule-operator">${getOperatorConfig(c.type)?.name || c.type}</span> ${renderHighlightedText(c.arguments.join(', '), true)}</span>
-                                </div>
-                              `
-                            )}
-                            ${entry.categories.map(
-                              (category) => html`
-                                <div class="category-item category-original-item">
-                                  <span>${renderHighlightedText(category.name, true)}</span>
-                                </div>
-                              `
-                            )}
-                          </div>
-                        `
+                            <div class="category-stack category-stack-original">
+                              ${entry.rules.map(
+                                (c) => html`
+                                  <div
+                                    class="category-item category-original-item"
+                                  >
+                                    <span
+                                      ><span class="rule-operator"
+                                        >${getOperatorConfig(c.type)?.name ||
+                                        c.type}</span
+                                      >
+                                      ${renderHighlightedText(
+                                        c.arguments.join(', '),
+                                        true
+                                      )}</span
+                                    >
+                                  </div>
+                                `
+                              )}
+                              ${entry.categories.map(
+                                (category) => html`
+                                  <div
+                                    class="category-item category-original-item"
+                                  >
+                                    <span
+                                      >${renderHighlightedText(
+                                        category.name,
+                                        true
+                                      )}</span
+                                    >
+                                  </div>
+                                `
+                              )}
+                            </div>
+                          `
                         : ''}
                   </div>
                 </td>
@@ -964,8 +1071,8 @@ export class MessageTable extends RapidElement {
                         title="Click to edit translation"
                       >
                         ${entry.kind === 'message'
-                            ? this.renderTranslatedContent(entry)
-                            : 'No translation'}
+                          ? this.renderTranslatedContent(entry)
+                          : 'No translation'}
                       </div>
                     </td>`
                   : ''}

@@ -261,7 +261,8 @@ describe('split_by_expression node config', () => {
     });
 
     it('should preserve expression operands with spaces for has_number_between', () => {
-      const minExpression = '@(extract(webhook.json.queryData[0], "minLength"))';
+      const minExpression =
+        '@(extract(webhook.json.queryData[0], "minLength"))';
       const formData = {
         uuid: 'test-node-uuid',
         operand: '@fields.value',

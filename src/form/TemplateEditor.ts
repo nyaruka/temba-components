@@ -491,7 +491,11 @@ export class TemplateEditor extends FieldElement {
         >
         </temba-select>
         ${this.templateWarning && this.selectedTemplate
-          ? html`<temba-alert level="warning" style="margin-bottom: 0.5em; display: block;">${this.templateWarning}</temba-alert>`
+          ? html`<temba-alert
+              level="warning"
+              style="margin-bottom: 0.5em; display: block;"
+              >${this.templateWarning}</temba-alert
+            >`
           : null}
         ${content ? html` <div class="template">${content}</div>` : null}
       </div>

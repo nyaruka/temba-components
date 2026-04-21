@@ -311,10 +311,7 @@ export class EditorToolbar extends RapidElement {
     `;
   }
 
-  private renderShortcutLabel(
-    label: string,
-    shortcut: string
-  ): TemplateResult {
+  private renderShortcutLabel(label: string, shortcut: string): TemplateResult {
     return html`<span style="display:inline-flex; align-items:center; gap:8px;">
       <span>${label}</span>
       <kbd>${shortcut}</kbd>
@@ -348,7 +345,9 @@ export class EditorToolbar extends RapidElement {
 
     return html`
       <div
-        style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; ${optionBg ? `background:${optionBg};` : ''} ${optionRadius}"
+        style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; ${optionBg
+          ? `background:${optionBg};`
+          : ''} ${optionRadius}"
         @mouseenter=${isComplete
           ? (e: MouseEvent) => {
               (e.currentTarget as HTMLElement).style.background = optionHoverBg;
@@ -372,9 +371,7 @@ export class EditorToolbar extends RapidElement {
 
   public render(): TemplateResult {
     const showLanguageControls = this.languageOptions.length > 1;
-    const searchTargetLabel = this.messageView
-      ? 'Search table'
-      : 'Search flow';
+    const searchTargetLabel = this.messageView ? 'Search table' : 'Search flow';
 
     return html`
       <div class="editor-toolbar">
@@ -384,7 +381,8 @@ export class EditorToolbar extends RapidElement {
             html`
               <button
                 class="toolbar-btn ${!this.messageView ? 'active' : ''}"
-                @click=${() => this.fireToolbarAction('view-change', { view: 'flow' })}
+                @click=${() =>
+                  this.fireToolbarAction('view-change', { view: 'flow' })}
                 aria-label="Flow View"
               >
                 <temba-icon name="flow" size="1"></temba-icon>
@@ -396,7 +394,8 @@ export class EditorToolbar extends RapidElement {
             html`
               <button
                 class="toolbar-btn ${this.messageView ? 'active' : ''}"
-                @click=${() => this.fireToolbarAction('view-change', { view: 'table' })}
+                @click=${() =>
+                  this.fireToolbarAction('view-change', { view: 'table' })}
                 aria-label="Table View"
               >
                 <temba-icon name=${Icon.quick_replies} size="1"></temba-icon>
@@ -412,7 +411,11 @@ export class EditorToolbar extends RapidElement {
                       'Change language',
                       html`
                         <button
-                          class="language-pill ${this.isBaseLanguage ? 'primary' : this.languagePercent === 100 ? 'complete' : ''}"
+                          class="language-pill ${this.isBaseLanguage
+                            ? 'primary'
+                            : this.languagePercent === 100
+                              ? 'complete'
+                              : ''}"
                           id="language-btn"
                           @click=${this.handleLanguageIconClick}
                           aria-label="Change language"
@@ -434,7 +437,9 @@ export class EditorToolbar extends RapidElement {
                       `
                     )}
                     <temba-options
-                      .anchorTo=${this.shadowRoot?.querySelector('#language-btn') as HTMLElement}
+                      .anchorTo=${this.shadowRoot?.querySelector(
+                        '#language-btn'
+                      ) as HTMLElement}
                       .options=${this.languageOptions}
                       .renderOption=${this.renderLanguageOption}
                       ?visible=${this.showLanguageOptions}
@@ -462,10 +467,7 @@ export class EditorToolbar extends RapidElement {
                       ?disabled=${!this.zoomInitialized || this.zoomFitted}
                       aria-label="Zoom to fit"
                     >
-                      <temba-icon
-                        name=${Icon.zoom_fit}
-                        size="1"
-                      ></temba-icon>
+                      <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
                     </button>
                   `
                 )}
@@ -511,10 +513,7 @@ export class EditorToolbar extends RapidElement {
                       ?disabled=${!this.zoomInitialized || this.zoom >= 1.0}
                       aria-label="Zoom to 100%"
                     >
-                      <temba-icon
-                        name=${Icon.zoom_in}
-                        size="1"
-                      ></temba-icon>
+                      <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
                     </button>
                   `
                 )}

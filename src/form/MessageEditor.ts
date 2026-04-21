@@ -59,7 +59,7 @@ export class MessageEditor extends FieldElement {
         position: relative;
       }
 
-      ::slotted([slot="icons"]) {
+      ::slotted([slot='icons']) {
         position: absolute;
         bottom: 4px;
         left: 36px;
@@ -69,7 +69,7 @@ export class MessageEditor extends FieldElement {
         z-index: 1;
       }
 
-      .has-attachments ::slotted([slot="icons"]) {
+      .has-attachments ::slotted([slot='icons']) {
         left: 4px;
       }
 
@@ -155,7 +155,9 @@ export class MessageEditor extends FieldElement {
         padding: 6px;
         border-radius: 8px;
         background: rgba(0, 0, 0, 0.04);
-        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        transition:
+          background-color 0.2s ease-in-out,
+          color 0.2s ease-in-out;
       }
 
       .attachment-icon:hover {

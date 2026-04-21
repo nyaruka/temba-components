@@ -265,9 +265,7 @@ function getNodeSearchTexts(
   if (node.router?.categories) {
     for (const cat of node.router.categories) {
       if (cat.name && cat.name !== 'Other' && cat.name !== 'All Responses') {
-        texts.push(
-          localizeCategoryName(cat.uuid, cat.name, langLocalization)
-        );
+        texts.push(localizeCategoryName(cat.uuid, cat.name, langLocalization));
       }
     }
   }
@@ -748,7 +746,8 @@ export class FlowSearch extends LitElement {
           const actionConfig = ACTION_CONFIG[action.type];
           if (
             action.type !== 'send_msg' &&
-            (!actionConfig?.localizable || actionConfig.localizable.length === 0)
+            (!actionConfig?.localizable ||
+              actionConfig.localizable.length === 0)
           ) {
             continue;
           }
@@ -907,7 +906,10 @@ export class FlowSearch extends LitElement {
                       >
                         <div
                           class="result-type-badge"
-                          style="background:${result.color};border-color:${result.borderColor || result.color}${result.textColor ? `;color:${result.textColor}` : ''}"
+                          style="background:${result.color};border-color:${result.borderColor ||
+                          result.color}${result.textColor
+                            ? `;color:${result.textColor}`
+                            : ''}"
                         >
                           ${result.typeName}
                         </div>
@@ -925,8 +927,8 @@ export class FlowSearch extends LitElement {
               `
             : html`<div class="no-results">No matches found</div>`
           : html`<div class="hint">
-              <kbd>↑</kbd> <kbd>↓</kbd> to navigate &nbsp;
-              <kbd>Enter</kbd> to open &nbsp; <kbd>Esc</kbd> to close
+              <kbd>↑</kbd> <kbd>↓</kbd> to navigate &nbsp; <kbd>Enter</kbd> to
+              open &nbsp; <kbd>Esc</kbd> to close
             </div>`}
       </div>
     `;

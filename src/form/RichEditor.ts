@@ -678,7 +678,9 @@ export class RichEditor extends FieldElement {
       <div class="comp-container">
         <div id="anchor" style=${styleMap(anchorStyles)}></div>
         <div
-          class="input-container ${this.flavor !== 'default' ? this.flavor : ''}"
+          class="input-container ${this.flavor !== 'default'
+            ? this.flavor
+            : ''}"
           style=${this.minHeight
             ? `--textarea-min-height: ${this.minHeight}px`
             : ''}

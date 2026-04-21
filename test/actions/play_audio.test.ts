@@ -103,7 +103,10 @@ describe('play_audio action config', () => {
         audio_url: ['@results.voicemail_es']
       };
 
-      const formData = resolveToLocalizationFormData(play_audio)!(action, localization);
+      const formData = resolveToLocalizationFormData(play_audio)!(
+        action,
+        localization
+      );
       expect(formData.audio_url).to.equal('@results.voicemail_es');
     });
 

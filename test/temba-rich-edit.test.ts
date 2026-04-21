@@ -4,10 +4,7 @@ import { fixture, html, expect } from '@open-wc/testing';
 describe('temba-rich-edit', () => {
   it('emits input when selecting a completion option', async () => {
     const editor = (await fixture(html`
-      <temba-rich-edit
-        value="@con"
-        session
-      ></temba-rich-edit>
+      <temba-rich-edit value="@con" session></temba-rich-edit>
     `)) as any;
 
     await editor.updateComplete;
@@ -49,10 +46,7 @@ describe('temba-rich-edit', () => {
 
   it('emits input when selecting completion via keyboard', async () => {
     const editor = (await fixture(html`
-      <temba-rich-edit
-        value="@con"
-        session
-      ></temba-rich-edit>
+      <temba-rich-edit value="@con" session></temba-rich-edit>
     `)) as any;
 
     await editor.updateComplete;
@@ -85,10 +79,7 @@ describe('temba-rich-edit', () => {
 
   it('undoes completion back to pre-completion value', async () => {
     const editor = (await fixture(html`
-      <temba-rich-edit
-        value="@co"
-        session
-      ></temba-rich-edit>
+      <temba-rich-edit value="@co" session></temba-rich-edit>
     `)) as any;
 
     await editor.updateComplete;

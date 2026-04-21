@@ -3945,7 +3945,9 @@ export class Editor extends RapidElement {
             value: PRIMARY_LANGUAGE_OPTION_VALUE
           },
           ...languages.map((lang) => {
-            const localizationProgress = this.getLocalizationProgress(lang.code);
+            const localizationProgress = this.getLocalizationProgress(
+              lang.code
+            );
             const localizationPercent = Math.round(
               (localizationProgress.localized /
                 Math.max(localizationProgress.total, 1)) *

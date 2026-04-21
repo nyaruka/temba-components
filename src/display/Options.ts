@@ -170,12 +170,18 @@ export class Options extends RapidElement {
       }
 
       .option:hover {
-        background: var(--temba-options-option-hover-bg, var(--option-hover-bg));
+        background: var(
+          --temba-options-option-hover-bg,
+          var(--option-hover-bg)
+        );
         color: var(--temba-options-option-hover-text, var(--option-hover-text));
       }
 
       .option.focused {
-        background: var(--temba-options-option-focus-bg, var(--color-selection));
+        background: var(
+          --temba-options-option-focus-bg,
+          var(--color-selection)
+        );
         color: var(--temba-options-option-focus-text, var(--color-text-dark));
       }
 

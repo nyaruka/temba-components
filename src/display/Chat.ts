@@ -862,7 +862,12 @@ export class Chat extends RapidElement {
 
         // show notification if new messages are appended and user is scrolled away from bottom
         // but not during search (searchHighlight is set)
-        if (append && isScrolledAway && newMessages.length > 0 && !this.searchHighlight) {
+        if (
+          append &&
+          isScrolledAway &&
+          newMessages.length > 0 &&
+          !this.searchHighlight
+        ) {
           this.showNewMessageNotification = true;
         }
 
@@ -1123,10 +1128,7 @@ export class Chat extends RapidElement {
     }, 150);
   }
 
-  private highlightText(
-    text: string,
-    search: string
-  ): TemplateResult | string {
+  private highlightText(text: string, search: string): TemplateResult | string {
     if (!search || !text) {
       return text;
     }
@@ -1245,9 +1247,7 @@ export class Chat extends RapidElement {
               const latestClass = index === msgIds.length - 1 ? 'latest' : '';
               const eventClass = msg._rendered ? 'is-event' : '';
               const matchClass =
-                this.highlightMessageUuid === msg.uuid
-                  ? 'search-match'
-                  : '';
+                this.highlightMessageUuid === msg.uuid ? 'search-match' : '';
               return html`<div
                 class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass} ${matchClass}"
                 data-uuid=${msg.uuid || nothing}

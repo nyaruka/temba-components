@@ -261,9 +261,7 @@ describe('temba-message-editor', () => {
       'temba-message-editor'
     )) as MessageEditor;
 
-    const richEdit = editor.shadowRoot.querySelector(
-      'temba-rich-edit'
-    ) as any;
+    const richEdit = editor.shadowRoot.querySelector('temba-rich-edit') as any;
     expect(richEdit).to.not.be.null;
     const editableDiv = richEdit.shadowRoot.querySelector(
       '.highlight-editor'

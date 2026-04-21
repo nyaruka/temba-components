@@ -138,7 +138,11 @@ export class DragManager {
     const position = this.getPosition(uuid, type);
     if (!position) return;
 
-    if (!this.editor.selectedItems.has(uuid) && !event.ctrlKey && !event.metaKey) {
+    if (
+      !this.editor.selectedItems.has(uuid) &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
       this.editor.selectedItems.clear();
     } else if (!this.editor.selectedItems.has(uuid)) {
       this.editor.selectedItems.add(uuid);
@@ -215,7 +219,9 @@ export class DragManager {
   private handleGlobalMouseDown(event: MouseEvent): void {
     if (isRightClick(event)) return;
 
-    const canvasRect = this.editor.querySelector('#grid')?.getBoundingClientRect();
+    const canvasRect = this.editor
+      .querySelector('#grid')
+      ?.getBoundingClientRect();
     if (!canvasRect) return;
 
     const isWithinCanvas =
@@ -258,7 +264,9 @@ export class DragManager {
       this.canvasMouseDown = true;
       this.dragStartPos = { x: event.clientX, y: event.clientY };
 
-      const canvasRect = this.editor.querySelector('#canvas')?.getBoundingClientRect();
+      const canvasRect = this.editor
+        .querySelector('#canvas')
+        ?.getBoundingClientRect();
       if (canvasRect) {
         this.editor.selectedItems.clear();
 
@@ -348,7 +356,9 @@ export class DragManager {
   private updateSelectionBox(event: MouseEvent): void {
     if (!this.editor.selectionBox || !this.canvasMouseDown) return;
 
-    const canvasRect = this.editor.querySelector('#canvas')?.getBoundingClientRect();
+    const canvasRect = this.editor
+      .querySelector('#canvas')
+      ?.getBoundingClientRect();
     if (!canvasRect) return;
 
     const relativeX = (event.clientX - canvasRect.left) / this.editor.zoom;
@@ -368,9 +378,18 @@ export class DragManager {
 
     const newSelection = new Set<string>();
 
-    const boxLeft = Math.min(this.editor.selectionBox.startX, this.editor.selectionBox.endX);
-    const boxTop = Math.min(this.editor.selectionBox.startY, this.editor.selectionBox.endY);
-    const boxRight = Math.max(this.editor.selectionBox.startX, this.editor.selectionBox.endX);
+    const boxLeft = Math.min(
+      this.editor.selectionBox.startX,
+      this.editor.selectionBox.endX
+    );
+    const boxTop = Math.min(
+      this.editor.selectionBox.startY,
+      this.editor.selectionBox.endY
+    );
+    const boxRight = Math.max(
+      this.editor.selectionBox.startX,
+      this.editor.selectionBox.endX
+    );
     const boxBottom = Math.max(
       this.editor.selectionBox.startY,
       this.editor.selectionBox.endY
@@ -384,8 +403,9 @@ export class DragManager {
       if (nodeElement) {
         const position = this.editor.definition._ui?.nodes[node.uuid]?.position;
         if (position) {
-          const canvasRect =
-            this.editor.querySelector('#canvas')?.getBoundingClientRect();
+          const canvasRect = this.editor
+            .querySelector('#canvas')
+            ?.getBoundingClientRect();
 
           if (canvasRect) {
             const nodeLeft = position.left;
@@ -441,10 +461,20 @@ export class DragManager {
   public renderSelectionBox(): TemplateResult | string {
     if (!this.editor.selectionBox || !this.editor.isSelecting) return '';
 
-    const left = Math.min(this.editor.selectionBox.startX, this.editor.selectionBox.endX);
-    const top = Math.min(this.editor.selectionBox.startY, this.editor.selectionBox.endY);
-    const width = Math.abs(this.editor.selectionBox.endX - this.editor.selectionBox.startX);
-    const height = Math.abs(this.editor.selectionBox.endY - this.editor.selectionBox.startY);
+    const left = Math.min(
+      this.editor.selectionBox.startX,
+      this.editor.selectionBox.endX
+    );
+    const top = Math.min(
+      this.editor.selectionBox.startY,
+      this.editor.selectionBox.endY
+    );
+    const width = Math.abs(
+      this.editor.selectionBox.endX - this.editor.selectionBox.startX
+    );
+    const height = Math.abs(
+      this.editor.selectionBox.endY - this.editor.selectionBox.startY
+    );
 
     return html`<div
       class="selection-box"
@@ -484,7 +514,9 @@ export class DragManager {
     this.canvasMouseDown = true;
     this.dragStartPos = { x: touch.clientX, y: touch.clientY };
 
-    const canvasRect = this.editor.querySelector('#canvas')?.getBoundingClientRect();
+    const canvasRect = this.editor
+      .querySelector('#canvas')
+      ?.getBoundingClientRect();
     if (canvasRect) {
       this.editor.selectedItems.clear();
 
@@ -529,7 +561,8 @@ export class DragManager {
 
       if (targetNode) {
         this.editor.targetId = targetNode.getAttribute('uuid');
-        this.editor.isValidTarget = this.editor.targetId !== this.editor.dragFromNodeId;
+        this.editor.isValidTarget =
+          this.editor.targetId !== this.editor.dragFromNodeId;
 
         if (this.editor.isValidTarget) {
           targetNode.classList.add('connection-target-valid');
@@ -545,7 +578,8 @@ export class DragManager {
         const canvas = this.editor.querySelector('#canvas');
         if (canvas) {
           const canvasRect = canvas.getBoundingClientRect();
-          const relativeX = (event.clientX - canvasRect.left) / this.editor.zoom;
+          const relativeX =
+            (event.clientX - canvasRect.left) / this.editor.zoom;
           const relativeY = (event.clientY - canvasRect.top) / this.editor.zoom;
 
           const placeholderWidth = 200;
@@ -630,9 +664,10 @@ export class DragManager {
     this.currentDragIsCopy = true;
 
     for (const uuid of itemsToCopy) {
-      const element = this.editor.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-      const type =
-        element?.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
+      const element = this.editor.querySelector(
+        `[uuid="${uuid}"]`
+      ) as HTMLElement;
+      const type = element?.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
       const position = this.getPosition(uuid, type);
       if (element && position) {
         element.style.left = `${position.left}px`;
@@ -641,7 +676,9 @@ export class DragManager {
     }
     this.editor.plumber.revalidate(itemsToCopy);
     for (const uuid of itemsToCopy) {
-      const element = this.editor.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      const element = this.editor.querySelector(
+        `[uuid="${uuid}"]`
+      ) as HTMLElement;
       if (element) {
         void element.offsetHeight;
         element.classList.remove('dragging');
@@ -724,7 +761,9 @@ export class DragManager {
         : [this.editor.currentDragItem.uuid];
 
     itemsToMove.forEach((uuid) => {
-      const element = this.editor.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      const element = this.editor.querySelector(
+        `[uuid="${uuid}"]`
+      ) as HTMLElement;
       if (element) {
         const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
         const position = this.getPosition(uuid, type);
@@ -814,9 +853,11 @@ export class DragManager {
 
         if (scrollDx > 0 || scrollDy > 0) {
           const neededWidth =
-            (editorEl.scrollLeft + editorEl.clientWidth + scrollDx) / this.editor.zoom;
+            (editorEl.scrollLeft + editorEl.clientWidth + scrollDx) /
+            this.editor.zoom;
           const neededHeight =
-            (editorEl.scrollTop + editorEl.clientHeight + scrollDy) / this.editor.zoom;
+            (editorEl.scrollTop + editorEl.clientHeight + scrollDy) /
+            this.editor.zoom;
           getStore()?.getState()?.expandCanvas(neededWidth, neededHeight);
         }
 
@@ -884,7 +925,9 @@ export class DragManager {
       const newPositions: { [uuid: string]: FlowPosition } = {};
 
       itemsToMove.forEach((uuid) => {
-        const type = this.editor.definition.nodes.find((node) => node.uuid === uuid)
+        const type = this.editor.definition.nodes.find(
+          (node) => node.uuid === uuid
+        )
           ? 'node'
           : 'sticky';
         const position = this.getPosition(uuid, type);
@@ -899,7 +942,9 @@ export class DragManager {
           const newPosition = { left: snappedLeft, top: snappedTop };
           newPositions[uuid] = newPosition;
 
-          const element = this.editor.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+          const element = this.editor.querySelector(
+            `[uuid="${uuid}"]`
+          ) as HTMLElement;
           if (element) {
             element.classList.remove('dragging', 'drag-copy');
             element.style.left = `${snappedLeft}px`;
@@ -983,7 +1028,9 @@ export class DragManager {
       event.preventDefault();
       this.editor.isSelecting = true;
 
-      const canvasRect = this.editor.querySelector('#canvas')?.getBoundingClientRect();
+      const canvasRect = this.editor
+        .querySelector('#canvas')
+        ?.getBoundingClientRect();
       if (canvasRect && this.editor.selectionBox) {
         this.editor.selectionBox = {
           ...this.editor.selectionBox,
@@ -1001,7 +1048,10 @@ export class DragManager {
     if (this.editor.plumber.connectionDragging) {
       event.preventDefault();
 
-      const targetNode = this.editor.findTargetNodeAt(touch.clientX, touch.clientY);
+      const targetNode = this.editor.findTargetNodeAt(
+        touch.clientX,
+        touch.clientY
+      );
 
       document.querySelectorAll('temba-flow-node').forEach((node) => {
         node.classList.remove(
@@ -1012,7 +1062,8 @@ export class DragManager {
 
       if (targetNode) {
         this.editor.targetId = targetNode.getAttribute('uuid');
-        this.editor.isValidTarget = this.editor.targetId !== this.editor.dragFromNodeId;
+        this.editor.isValidTarget =
+          this.editor.targetId !== this.editor.dragFromNodeId;
 
         if (this.editor.isValidTarget) {
           targetNode.classList.add('connection-target-valid');
@@ -1028,7 +1079,8 @@ export class DragManager {
         const canvas = this.editor.querySelector('#canvas');
         if (canvas) {
           const canvasRect = canvas.getBoundingClientRect();
-          const relativeX = (touch.clientX - canvasRect.left) / this.editor.zoom;
+          const relativeX =
+            (touch.clientX - canvasRect.left) / this.editor.zoom;
           const relativeY = (touch.clientY - canvasRect.top) / this.editor.zoom;
 
           const placeholderWidth = 200;
@@ -1123,10 +1175,14 @@ export class DragManager {
     // --- Connection dragging ---
     if (this.editor.plumber.connectionDragging) {
       if (touch) {
-        const targetNode = this.editor.findTargetNodeAt(touch.clientX, touch.clientY);
+        const targetNode = this.editor.findTargetNodeAt(
+          touch.clientX,
+          touch.clientY
+        );
         if (targetNode) {
           this.editor.targetId = targetNode.getAttribute('uuid');
-          this.editor.isValidTarget = this.editor.targetId !== this.editor.dragFromNodeId;
+          this.editor.isValidTarget =
+            this.editor.targetId !== this.editor.dragFromNodeId;
         }
       }
       return;
@@ -1154,7 +1210,9 @@ export class DragManager {
       const newPositions: { [uuid: string]: FlowPosition } = {};
 
       itemsToMove.forEach((uuid) => {
-        const type = this.editor.definition.nodes.find((node) => node.uuid === uuid)
+        const type = this.editor.definition.nodes.find(
+          (node) => node.uuid === uuid
+        )
           ? 'node'
           : 'sticky';
         const position = this.getPosition(uuid, type);
@@ -1167,7 +1225,9 @@ export class DragManager {
 
           newPositions[uuid] = { left: snappedLeft, top: snappedTop };
 
-          const element = this.editor.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+          const element = this.editor.querySelector(
+            `[uuid="${uuid}"]`
+          ) as HTMLElement;
           if (element) {
             element.classList.remove('dragging');
             element.style.left = `${snappedLeft}px`;

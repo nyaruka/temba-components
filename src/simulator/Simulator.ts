@@ -1947,13 +1947,19 @@ export class Simulator extends RapidElement {
       totalElapsedMs === null
         ? 'n/a'
         : this.formatWebhookDuration(totalElapsedMs);
-    const renderWebhookLogContent = (log: WebhookLog, singleAttempt = false) => {
+    const renderWebhookLogContent = (
+      log: WebhookLog,
+      singleAttempt = false
+    ) => {
       const request = this.formatWebhookValue(log.request) || 'No request body';
-      const response = this.formatWebhookValue(log.response) || 'No response body';
+      const response =
+        this.formatWebhookValue(log.response) || 'No response body';
 
       return html`
         <div
-          class="webhook-log-content ${singleAttempt ? 'webhook-single-log' : ''}"
+          class="webhook-log-content ${singleAttempt
+            ? 'webhook-single-log'
+            : ''}"
         >
           <div class="webhook-log-section">
             <h4>Request</h4>

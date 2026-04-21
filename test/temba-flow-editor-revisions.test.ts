@@ -126,12 +126,11 @@ describe('Editor Revisions', () => {
     await revisionsWindow.updateComplete;
 
     // Check revisions window color - now inside the component's shadow DOM
-    const floatingWindow =
-      revisionsWindow.shadowRoot?.querySelector('temba-floating-window');
-    expect(floatingWindow).to.exist;
-    expect(floatingWindow.getAttribute('color')).to.equal(
-      'rgb(142, 94, 167)'
+    const floatingWindow = revisionsWindow.shadowRoot?.querySelector(
+      'temba-floating-window'
     );
+    expect(floatingWindow).to.exist;
+    expect(floatingWindow.getAttribute('color')).to.equal('rgb(142, 94, 167)');
 
     // Check selected item styles - inside the component's shadow DOM
     const selectedItem = revisionsWindow.shadowRoot?.querySelector(
