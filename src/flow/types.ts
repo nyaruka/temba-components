@@ -36,7 +36,7 @@ export const CONTEXT_MENU_SHORTCUTS: Record<FlowType, ContextMenuShortcut[]> = {
     { type: 'wait_for_response', name: 'Wait for Response', icon: 'message' }
   ],
   [FlowTypes.VOICE]: [
-    { type: 'say_msg', name: 'Say Message', icon: 'send' },
+    { type: 'say_msg', name: 'Say Message', icon: 'recording' },
     { type: 'wait_for_menu', name: 'Wait for Menu', icon: 'dots-grid' }
   ],
   [FlowTypes.BACKGROUND]: [
