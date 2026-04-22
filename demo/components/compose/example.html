@@ -67,6 +67,42 @@
     </div>
 
     <div class="example">
+      <h3>Compose with Multiple Languages</h3>
+      <p>
+        A compose component showing translation status for each language
+        (Original, translated, untranslated)
+      </p>
+      <temba-compose
+        id="multilang-compose"
+        placeholder="Write a message..."
+        attachments
+        quickReplies
+      >
+      </temba-compose>
+      <script>
+        const el = document.getElementById('multilang-compose');
+        el.languages = [
+          { iso: 'eng', name: 'English' },
+          { iso: 'spa', name: 'Spanish' },
+          { iso: 'fra', name: 'French' },
+          { iso: 'deu', name: 'German' }
+        ];
+        el.value = JSON.stringify({
+          eng: {
+            text: 'Hello there!',
+            attachments: [],
+            quick_replies: ['Yes', 'No']
+          },
+          spa: {
+            text: '¡Hola!',
+            attachments: [],
+            quick_replies: []
+          }
+        });
+      </script>
+    </div>
+
+    <div class="example">
       <h3>Full Featured Compose</h3>
       <p>A compose component with attachments, quick replies, counter, and completion</p>
       <temba-compose

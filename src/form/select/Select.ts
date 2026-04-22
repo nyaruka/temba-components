@@ -2272,7 +2272,7 @@ export class Select<T extends SelectOption> extends FieldElement {
                             --icon-color: var(--color-text-dark);
                             ${this.isMultiMode
                 ? 'vertical-align: middle; background: #fff; border: 1px solid rgba(100,100,100,0.3); user-select: none; border-radius: 2px; align-items: center; flex-direction: row; flex-wrap: nowrap; margin: 2px 2px;'
-                : ''}
+                : 'flex: 1; min-width: 0;'}
                             ${index === this.selectedIndex
                 ? 'background: rgba(100,100,100,0.3);'
                 : ''}
