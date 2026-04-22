@@ -259,6 +259,21 @@ describe('temba-select', () => {
       // but our cursor should be on the first match
       assert.equal(select.cursorIndex, 0);
     });
+
+    it('single-mode selected-item flexes to fill its container', async () => {
+      // Needed so custom renderOption content can right-align trailing
+      // elements (e.g. status badges) in the closed/selected state.
+      const select = await createSelect(
+        clock,
+        getSelectHTML(colors, { value: '1' })
+      );
+      const selectedItem = select.shadowRoot.querySelector(
+        '.selected-item'
+      ) as HTMLElement;
+      expect(selectedItem).to.not.be.null;
+      const computed = window.getComputedStyle(selectedItem);
+      expect(computed.flexGrow).to.equal('1');
+    });
   });
 
   describe('multiple selection', () => {

@@ -2,12 +2,12 @@ import { TemplateResult, html, css, PropertyValues, nothing } from 'lit';
 import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { Attachment, CustomEventType, Language, Shortcut } from '../interfaces';
+import { Icon } from '../Icons';
 import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
 import { Select } from './select/Select';
 import { MessageEditor } from './MessageEditor';
 import { ShortcutList } from '../list/ShortcutList';
 import { setCaretOffset } from '../excellent/caret-utils';
-import { Icon } from '../Icons';
 
 export interface ComposeValue {
   text: string;
@@ -270,6 +270,65 @@ export class Compose extends FieldElement {
     );
   }
 
+  private hasTranslation(iso: string): boolean {
+    const entry = this.langValues?.[iso];
+    if (!entry) return false;
+    return !!(
+      (entry.text && entry.text.trim().length > 0) ||
+      (entry.attachments && entry.attachments.length > 0) ||
+      (entry.quick_replies && entry.quick_replies.length > 0)
+    );
+  }
+
+  private getSortedLanguages(): Language[] {
+    if (this.languages.length === 0) return [];
+    const [base, ...rest] = this.languages;
+    const sorted = [...rest].sort((a, b) => {
+      const aTranslated = this.hasTranslation(a.iso);
+      const bTranslated = this.hasTranslation(b.iso);
+      if (aTranslated !== bTranslated) {
+        return aTranslated ? -1 : 1;
+      }
+      return 0;
+    });
+    return [base, ...sorted];
+  }
+
+  private renderLanguageOption = (option: Language): TemplateResult => {
+    const isBase =
+      this.languages.length > 0 && option.iso === this.languages[0].iso;
+
+    const badgeBase =
+      'display:inline-flex; align-items:center; border-radius:999px; font-size:10px; font-weight:700; line-height:1;';
+
+    let badge: TemplateResult;
+    if (isBase) {
+      badge = html`<span
+        style="${badgeBase} background:rgba(47, 63, 82, 0.12); color:#2f3f52; padding:3px 7px;"
+        >Original</span
+      >`;
+    } else if (this.hasTranslation(option.iso)) {
+      badge = html`<span
+        style="${badgeBase} background:rgba(26, 127, 55, 0.15); color:#1a7f37; padding:3px 7px;"
+        >Translated</span
+      >`;
+    } else {
+      badge = html`<span
+        style="${badgeBase} background:transparent; color:#8a94a1; border:1px solid #c2c8d0; padding:2px 6px;"
+        >Missing</span
+      >`;
+    }
+
+    return html`
+      <div
+        style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex:1; padding:2px 8px;"
+      >
+        <span>${option.name}</span>
+        ${badge}
+      </div>
+    `;
+  };
+
   public willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
 
@@ -420,7 +479,17 @@ export class Compose extends FieldElement {
       if (editor) {
         const richEdit = editor.getRichEditor();
         if (richEdit) {
-          richEdit.value = this.initialText;
+          const targetText = this.initialText;
+          const targetLanguage = this.currentLanguage;
+          richEdit.value = targetText;
+          const editable = richEdit.inputElement;
+          if (editable) {
+            window.setTimeout(() => {
+              if (this.currentLanguage === targetLanguage) {
+                setCaretOffset(editable, targetText.length);
+              }
+            }, 0);
+          }
         }
       }
     }
@@ -657,7 +726,8 @@ export class Compose extends FieldElement {
               @change=${this.handleLanguageChange}
               class="language"
               name="language"
-              .staticOptions=${this.languages}
+              .staticOptions=${this.getSortedLanguages()}
+              .renderOption=${this.renderLanguageOption}
               valueKey="iso"
             >
             </temba-select>`

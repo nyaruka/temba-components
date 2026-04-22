@@ -266,3 +266,112 @@ describe('temba-compose broadcast edit', () => {
     expect(editor).to.not.be.null;
   });
 });
+
+describe('temba-compose language visualization', () => {
+  const getLangSelect = async (compose: Compose) => {
+    const select = compose.shadowRoot.querySelector(
+      'temba-select.language'
+    ) as any;
+    if (select) {
+      await select.updateComplete;
+    }
+    return select;
+  };
+
+  it('pins base language first and sorts translated before missing', async () => {
+    const langValue = {
+      eng: { text: 'Hello', attachments: [], quick_replies: [] },
+      fra: { text: 'Bonjour', attachments: [], quick_replies: [] }
+    };
+    const compose: Compose = await getCompose({
+      languages: JSON.stringify([
+        { iso: 'eng', name: 'English' },
+        { iso: 'spa', name: 'Spanish' },
+        { iso: 'fra', name: 'French' },
+        { iso: 'deu', name: 'German' }
+      ]),
+      value: JSON.stringify(langValue)
+    });
+
+    const select = await getLangSelect(compose);
+    const options = select.staticOptions;
+    expect(options.map((o: any) => o.iso)).to.deep.equal([
+      'eng',
+      'fra',
+      'spa',
+      'deu'
+    ]);
+  });
+
+  it('keeps base language first even when it has no content', async () => {
+    const langValue = {
+      fra: { text: 'Bonjour', attachments: [], quick_replies: [] }
+    };
+    const compose: Compose = await getCompose({
+      languages: JSON.stringify([
+        { iso: 'eng', name: 'English' },
+        { iso: 'fra', name: 'French' }
+      ]),
+      value: JSON.stringify(langValue)
+    });
+
+    const select = await getLangSelect(compose);
+    expect(select.staticOptions.map((o: any) => o.iso)).to.deep.equal([
+      'eng',
+      'fra'
+    ]);
+  });
+
+  it('renders Original badge for the base language in the selected display', async () => {
+    const compose: Compose = await getCompose({
+      languages: JSON.stringify([
+        { iso: 'eng', name: 'English' },
+        { iso: 'spa', name: 'Spanish' }
+      ]),
+      value: JSON.stringify({
+        eng: { text: 'Hello', attachments: [], quick_replies: [] }
+      })
+    });
+
+    const select = await getLangSelect(compose);
+    expect(select.shadowRoot.querySelector('.selected').textContent).to.include(
+      'Original'
+    );
+  });
+
+  it('reorders options when content is added to a previously missing language', async () => {
+    const compose: Compose = await getCompose({
+      languages: JSON.stringify([
+        { iso: 'eng', name: 'English' },
+        { iso: 'spa', name: 'Spanish' },
+        { iso: 'deu', name: 'German' }
+      ]),
+      value: JSON.stringify({
+        eng: { text: 'Hello', attachments: [], quick_replies: [] }
+      })
+    });
+
+    let select = await getLangSelect(compose);
+    expect(select.staticOptions.map((o: any) => o.iso)).to.deep.equal([
+      'eng',
+      'spa',
+      'deu'
+    ]);
+
+    // Simulate the user adding a translation for German
+    compose.langValues = {
+      ...compose.langValues,
+      deu: { text: 'Hallo', attachments: [], quick_replies: [] }
+    };
+    compose.currentLanguage = 'deu';
+    compose.currentText = 'Hallo';
+    await compose.updateComplete;
+
+    select = await getLangSelect(compose);
+    expect(select.staticOptions.map((o: any) => o.iso)).to.deep.equal([
+      'eng',
+      'deu',
+      'spa'
+    ]);
+  });
+});
