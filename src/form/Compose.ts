@@ -281,7 +281,9 @@ export class Compose extends FieldElement {
   }
 
   private getSortedLanguages(): Language[] {
-    return [...this.languages].sort((a, b) => {
+    if (this.languages.length === 0) return [];
+    const [base, ...rest] = this.languages;
+    const sorted = [...rest].sort((a, b) => {
       const aTranslated = this.hasTranslation(a.iso);
       const bTranslated = this.hasTranslation(b.iso);
       if (aTranslated !== bTranslated) {
@@ -289,6 +291,7 @@ export class Compose extends FieldElement {
       }
       return 0;
     });
+    return [base, ...sorted];
   }
 
   private renderLanguageOption = (option: Language): TemplateResult => {
@@ -476,11 +479,15 @@ export class Compose extends FieldElement {
       if (editor) {
         const richEdit = editor.getRichEditor();
         if (richEdit) {
-          richEdit.value = this.initialText;
+          const targetText = this.initialText;
+          const targetLanguage = this.currentLanguage;
+          richEdit.value = targetText;
           const editable = richEdit.inputElement;
           if (editable) {
             window.setTimeout(() => {
-              setCaretOffset(editable, this.initialText.length);
+              if (this.currentLanguage === targetLanguage) {
+                setCaretOffset(editable, targetText.length);
+              }
             }, 0);
           }
         }
@@ -497,12 +504,6 @@ export class Compose extends FieldElement {
       changes.has('variables')
     ) {
       this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
-      const langSelect = this.shadowRoot.querySelector(
-        'temba-select.language'
-      ) as Select<any>;
-      if (langSelect) {
-        langSelect.requestUpdate();
-      }
     }
   }
 
