@@ -21,6 +21,7 @@ export interface ComposeValue {
 export class Compose extends FieldElement {
   static get styles() {
     return css`
+      ${super.styles}
       :host {
         border-top-right-radius: var(--curvature);
         border-top-left-radius: var(--curvature);
