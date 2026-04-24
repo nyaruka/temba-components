@@ -142,9 +142,24 @@ export class Dialog extends ResizeElement {
         flex-direction: row;
         align-items: center;
         font-size: 20px;
-        padding: 12px 20px;
+        padding: 12px 20px var(--dialog-header-padding-bottom, 12px);
         color: var(--header-text);
         background: var(--header-bg);
+      }
+
+      /* "flat" variant: header/footer share the body's white background
+         and lose their inner padding so the dialog reads as one
+         continuous surface. Use for content-focused dialogs that don't
+         need the tinted chrome. */
+      :host([variant='flat']) .header-text {
+        background: #fff;
+        color: var(--color-text);
+        padding-bottom: 0;
+      }
+
+      :host([variant='flat']) .dialog-footer {
+        background: #fff;
+        padding-top: 0;
       }
 
       .header-text .title {
@@ -157,8 +172,11 @@ export class Dialog extends ResizeElement {
       }
 
       .dialog-footer {
-        background: var(--color-primary-light);
-        padding: 10px;
+        background: var(
+          --dialog-footer-background,
+          var(--color-primary-light)
+        );
+        padding: var(--dialog-footer-padding-top, 10px) 10px 10px;
         display: flex;
         flex-flow: row;
         align-items: center;
@@ -226,6 +244,9 @@ export class Dialog extends ResizeElement {
 
   @property({ type: Boolean })
   hideOnClick: boolean;
+
+  @property({ type: String, reflect: true })
+  variant: string;
 
   @property({ type: Boolean })
   noFocus: boolean;

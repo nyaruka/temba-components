@@ -249,6 +249,15 @@ export class EditorToolbar extends RapidElement {
   @property({ type: Boolean, attribute: 'show-localization-tools' })
   showLocalizationTools = false;
 
+  @property({ type: Boolean, attribute: 'has-pending-translations' })
+  hasPendingTranslations = false;
+
+  @property({ type: Boolean, attribute: 'auto-translate-disabled' })
+  autoTranslateDisabled = false;
+
+  @property({ type: Boolean, attribute: 'auto-translating' })
+  autoTranslating = false;
+
   @state()
   private showLanguageOptions = false;
 
@@ -559,7 +568,34 @@ export class EditorToolbar extends RapidElement {
   }
 
   private renderTranslationTools(): TemplateResult {
-    // auto translate button hidden pending backend changes
-    return html``;
+    if (!this.hasPendingTranslations && !this.autoTranslating) {
+      return html``;
+    }
+    const label = this.autoTranslating
+      ? 'Stop auto translate'
+      : 'Auto translate';
+    return html`
+      <div class="toolbar-translation">
+        ${this.renderTip(
+          label,
+          html`
+            <button
+              class="toolbar-btn language-tool ${this.autoTranslating
+                ? 'active'
+                : ''}"
+              @click=${() => this.fireToolbarAction('auto-translate')}
+              ?disabled=${this.autoTranslateDisabled}
+              aria-label=${label}
+            >
+              <temba-icon
+                name=${this.autoTranslating ? 'progress_spinner' : Icon.ai}
+                size="1"
+                ?spin=${this.autoTranslating}
+              ></temba-icon>
+            </button>
+          `
+        )}
+      </div>
+    `;
   }
 }

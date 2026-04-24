@@ -175,7 +175,11 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
     await editor.updateComplete;
   });
 
@@ -215,7 +219,11 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
     await editor.updateComplete;
 
     const toolbar = await getToolbar(editor);
@@ -259,7 +267,11 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
     await editor.updateComplete;
 
     // Switch to a non-base language
@@ -296,7 +308,11 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
     await editor.updateComplete;
 
     // Switch to a non-base language
@@ -307,8 +323,13 @@ describe('Localization Editing', () => {
     expect(progress.total).to.equal(0);
   });
 
-  it.skip('should open auto translate dialog when clicking auto translate', async () => {
+  it('should open auto translate dialog when clicking auto translate', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
+
+    (storeElement as any).getResults = async () => [
+      { uuid: 'llm-1', name: 'GPT-4' },
+      { uuid: 'llm-2', name: 'Claude' }
+    ];
 
     const autoTranslateBtn = editor
       .querySelector('temba-editor-toolbar')
@@ -320,11 +341,13 @@ describe('Localization Editing', () => {
 
     autoTranslateBtn.click();
     await editor.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+    const at = editor.querySelector('temba-auto-translate') as any;
+    await at.updateComplete;
 
-    expect((editor as any).autoTranslateDialogOpen).to.be.true;
-    const dialog = editor.querySelector(
-      'temba-dialog[header="Auto translate"]'
-    );
+    expect(at.dialogOpen).to.be.true;
+    const dialog = at.shadowRoot.querySelector('.auto-translate-body');
+    expect(dialog).to.exist;
     const modelSelect = dialog?.querySelector(
       '.auto-translate-model-select'
     ) as HTMLElement;
@@ -332,6 +355,325 @@ describe('Localization Editing', () => {
     expect(modelSelect.getAttribute('endpoint')).to.equal(
       '/api/internal/llms.json'
     );
+  });
+
+  it('should hide auto translate when the auto-translate flag is off', async () => {
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const toolbar = editor.querySelector('temba-editor-toolbar') as any;
+    // sanity check: the button is there when the flag is on
+    expect(
+      toolbar?.shadowRoot?.querySelector(
+        '.toolbar-btn[aria-label="Auto translate"]'
+      )
+    ).to.exist;
+
+    // remove the feature — button should disappear
+    (editor as any).features = [];
+    await editor.updateComplete;
+    await toolbar.updateComplete;
+
+    expect(
+      toolbar?.shadowRoot?.querySelector(
+        '.toolbar-btn[aria-label="Auto translate"]'
+      )
+    ).to.not.exist;
+  });
+
+  it('should hide auto translate when everything is translated', async () => {
+    await selectLanguageInToolbar(editor, 'Spanish', 'spa');
+    await editor.updateComplete;
+
+    const toolbar = editor.querySelector('temba-editor-toolbar') as any;
+    const autoTranslateBtn = toolbar?.shadowRoot?.querySelector(
+      '.toolbar-btn[aria-label="Auto translate"]'
+    );
+    // spa has text translated; no pending, no button
+    expect(autoTranslateBtn).to.not.exist;
+  });
+
+  it('should auto-skip picker when only one LLM is available', async () => {
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+
+    (storeElement as any).getResults = async () => [
+      { uuid: 'llm-only', name: 'SoloGPT' }
+    ];
+
+    const autoTranslateBtn = editor
+      .querySelector('temba-editor-toolbar')
+      ?.shadowRoot?.querySelector(
+        '.toolbar-btn[aria-label="Auto translate"]'
+      ) as HTMLButtonElement;
+    autoTranslateBtn.click();
+    await editor.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+    const at = editor.querySelector('temba-auto-translate') as any;
+    await at.updateComplete;
+
+    expect(at.selectedModel?.uuid).to.equal('llm-only');
+    const dialog = at.shadowRoot.querySelector('.auto-translate-body');
+    expect(dialog?.querySelector('.auto-translate-model-select')).to.not.exist;
+    expect(dialog?.querySelector('.auto-translate-single-model')).to.exist;
+  });
+
+  it('should show empty state when no LLMs are configured', async () => {
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+
+    (storeElement as any).getResults = async () => [];
+
+    const autoTranslateBtn = editor
+      .querySelector('temba-editor-toolbar')
+      ?.shadowRoot?.querySelector(
+        '.toolbar-btn[aria-label="Auto translate"]'
+      ) as HTMLButtonElement;
+    autoTranslateBtn.click();
+    await editor.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+    const at = editor.querySelector('temba-auto-translate') as any;
+    await at.updateComplete;
+
+    const dialog = at.shadowRoot.querySelector('.auto-translate-body');
+    expect(dialog?.querySelector('.auto-translate-empty')).to.exist;
+    const link = dialog?.querySelector(
+      '.auto-translate-empty a'
+    ) as HTMLAnchorElement;
+    expect(link).to.exist;
+    expect(link.getAttribute('href')).to.equal('/ai/');
+  });
+
+  it('should batch translation requests by serialized payload size', async () => {
+    editor?.remove();
+
+    setupWorkspace();
+
+    // build a flow with enough send_msg actions that the total serialized
+    // payload exceeds the 10,000-char batch threshold
+    const longText = 'x'.repeat(3000);
+    const nodes = [];
+    for (let i = 0; i < 5; i++) {
+      nodes.push({
+        uuid: `node-${i}`,
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: `action-${i}`,
+            text: longText
+          } as SendMsg
+        ],
+        exits: [{ uuid: `exit-${i}` }]
+      });
+    }
+
+    const flowDefinition: FlowDefinition = {
+      uuid: 'batch-flow',
+      name: 'Batch Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {},
+      nodes,
+      _ui: {
+        nodes: Object.fromEntries(
+          nodes.map((n) => [n.uuid, { position: { left: 0, top: 0 } }])
+        ),
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 5, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      calls.push({ url, body });
+      return { status: 200, json: { items: body.items } };
+    };
+
+    await at.runAutoTranslation();
+
+    expect(calls.length).to.be.greaterThan(1);
+    for (const c of calls) {
+      const itemKeys = Object.keys(c.body.items as Record<string, string[]>);
+      // each batch's full serialized payload stays within the limit
+      // (individual oversize items are still shipped on their own; the
+      // fixture values are each ~3000 chars which fits)
+      const serialized = JSON.stringify(c.body).length;
+      if (itemKeys.length > 1) {
+        expect(serialized).to.be.at.most(10000);
+      }
+    }
+  });
+
+  it('should interrupt translation between batches', async () => {
+    editor?.remove();
+
+    setupWorkspace();
+
+    const longText = 'y'.repeat(600);
+    const nodes = [];
+    for (let i = 0; i < 6; i++) {
+      nodes.push({
+        uuid: `node-${i}`,
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: `action-${i}`,
+            text: longText
+          } as SendMsg
+        ],
+        exits: [{ uuid: `exit-${i}` }]
+      });
+    }
+
+    const flowDefinition: FlowDefinition = {
+      uuid: 'interrupt-flow',
+      name: 'Interrupt Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {},
+      nodes,
+      _ui: {
+        nodes: Object.fromEntries(
+          nodes.map((n) => [n.uuid, { position: { left: 0, top: 0 } }])
+        ),
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 6, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    let callCount = 0;
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      callCount += 1;
+      if (callCount === 1) {
+        // request interrupt after first batch completes
+        at.interrupt = true;
+      }
+      return { status: 200, json: { items: body.items } };
+    };
+
+    await at.runAutoTranslation();
+
+    expect(callCount).to.equal(1);
+    expect(at.running).to.be.false;
+  });
+
+  it('should preserve all attributes when one uuid spans multiple batches', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // send_email has two localizable attributes (subject + body) on the
+    // same action uuid. Inflate them so they fall into separate batches.
+    const longSubject = 's'.repeat(2500);
+    const longBody = 'b'.repeat(8000);
+
+    const flowDefinition: FlowDefinition = {
+      uuid: 'multi-attr-flow',
+      name: 'Multi Attr Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {},
+      nodes: [
+        {
+          uuid: 'node-email',
+          actions: [
+            {
+              type: 'send_email',
+              uuid: 'email-1',
+              subject: longSubject,
+              body: longBody,
+              addresses: ['x@y.com']
+            } as any
+          ],
+          exits: [{ uuid: 'exit-1' }]
+        }
+      ],
+      _ui: {
+        nodes: { 'node-email': { position: { left: 0, top: 0 } } },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 1, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      calls.push(body);
+      return { status: 200, json: { items: body.items } };
+    };
+
+    await at.runAutoTranslation();
+
+    // sanity check: subject and body landed in different batches
+    expect(calls.length).to.be.greaterThan(1);
+    const allKeys = new Set(calls.flatMap((c) => Object.keys(c.items)));
+    expect(allKeys.has('email-1:subject')).to.be.true;
+    expect(allKeys.has('email-1:body')).to.be.true;
+
+    // both attributes should be present in the final localization, not
+    // overwritten by the later batch
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra']?.['email-1'];
+    expect(localized?.subject).to.deep.equal([longSubject]);
+    expect(localized?.body).to.deep.equal([longBody]);
   });
 
   it('should preserve selected language across renders', async () => {

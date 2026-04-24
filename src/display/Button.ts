@@ -53,16 +53,20 @@ export class Button extends LitElement {
         background: rgba(0, 0, 0, 0.05);
       }
 
-      .button-container:focus {
-        outline: none;
-        margin: 0;
+      .button-mask:active {
+        background: rgba(0, 0, 0, 0.12);
       }
 
       .button-container:focus {
+        outline: none;
+      }
+
+      /* Only show the focus ring for keyboard navigation, never on click. */
+      .button-container:focus-visible {
         box-shadow: var(--widget-box-shadow-focused);
       }
 
-      .button-container.secondary-button:focus .button-mask {
+      .button-container.secondary-button:focus-visible .button-mask {
         background: transparent;
       }
 
@@ -103,7 +107,8 @@ export class Button extends LitElement {
         border: 1px solid transparent;
       }
 
-      .button-container.secondary-button.active-button:focus .button-mask {
+      .button-container.secondary-button.active-button:focus-visible
+        .button-mask {
         background: transparent;
         box-shadow: none;
       }
