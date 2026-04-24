@@ -29,14 +29,18 @@ import {
   snapToGrid
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
-import { getTranslatableCategoriesForNode } from './categoryLocalization';
 import { PRIMARY_LANGUAGE_OPTION_VALUE } from './EditorToolbar';
+import {
+  buildTranslationBundles,
+  getTranslationCounts
+} from './flow-translations';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
 import type { RevisionsWindow } from './RevisionsWindow';
 
 import {
   ACTION_GROUP_METADATA,
   CONTEXT_MENU_SHORTCUTS,
+  Features,
   FlowType,
   FlowTypes
 } from './types';
@@ -85,22 +89,6 @@ export interface SelectionBox {
   endY: number;
 }
 
-type TranslationType = 'property' | 'category';
-
-interface TranslationEntry {
-  uuid: string;
-  type: TranslationType;
-  attribute: string;
-  from: string;
-  to: string | null;
-}
-
-interface TranslationBundle {
-  nodeUuid: string;
-  actionUuid?: string;
-  translations: TranslationEntry[];
-}
-
 export type ToolbarAction =
   | { action: 'view-change'; view: 'flow' | 'table' }
   | { action: 'zoom-in' }
@@ -109,7 +97,8 @@ export type ToolbarAction =
   | { action: 'zoom-to-full' }
   | { action: 'revisions' }
   | { action: 'search' }
-  | { action: 'language-change'; isPrimary?: boolean; languageCode?: string };
+  | { action: 'language-change'; isPrimary?: boolean; languageCode?: string }
+  | { action: 'auto-translate' };
 const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 
 // How long the pending-changes auto-save countdown runs (in ms).
@@ -211,6 +200,10 @@ export class Editor extends RapidElement {
   @property({ type: Array })
   public features: string[] = [];
 
+  private get autoTranslateEnabled(): boolean {
+    return this.features?.includes(Features.AUTO_TRANSLATE) ?? false;
+  }
+
   private activityTimer: number | null = null;
   private activityInterval = 100; // Start with 100ms interval for fast initial load
 
@@ -302,6 +295,9 @@ export class Editor extends RapidElement {
 
   @state()
   public zoom = 1.0;
+
+  @state()
+  private autoTranslating = false;
 
   // Non-reactive flag set in willUpdate to suppress the debouncedSave
   // call in updated() when the dirtyDate change comes from a reflow/copy
@@ -895,54 +891,6 @@ export class Editor extends RapidElement {
         font-weight: 600;
         cursor: pointer;
         transition: opacity 0.2s ease;
-      }
-
-      .auto-translate-button {
-        background: var(--color-primary-dark);
-        border: none;
-        color: #fff;
-        padding: 10px 12px;
-        border-radius: var(--curvature);
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity 0.2s ease;
-      }
-
-      .auto-translate-button[disabled] {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .auto-translate-error {
-        font-size: 12px;
-        color: #b91c1c;
-      }
-
-      .auto-translate-dialog-content {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        font-size: 14px;
-        color: #374151;
-      }
-
-      .auto-translate-dialog-content p {
-        margin: 0;
-      }
-
-      .auto-translate-loading {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
-        color: #6b7280;
-      }
-
-      .auto-translate-empty {
-        font-size: 13px;
-        color: #6b7280;
       }
 
       .localization-empty {
@@ -1799,239 +1747,8 @@ export class Editor extends RapidElement {
     total: number;
     localized: number;
   } {
-    if (
-      !this.definition ||
-      !languageCode ||
-      languageCode === this.definition.language
-    ) {
-      return { total: 0, localized: 0 };
-    }
-
-    const bundles = this.buildTranslationBundles(languageCode);
-    return this.getTranslationCounts(bundles);
-  }
-
-  private getLanguageLocalization(languageCode: string): Record<string, any> {
-    if (!this.definition?.localization) {
-      return {};
-    }
-    return this.definition.localization[languageCode] || {};
-  }
-
-  private buildTranslationBundles(
-    languageCode: string = this.languageCode
-  ): TranslationBundle[] {
-    if (
-      !this.definition ||
-      !languageCode ||
-      languageCode === this.definition.language
-    ) {
-      return [];
-    }
-
-    const languageLocalization = this.getLanguageLocalization(languageCode);
-    const bundles: TranslationBundle[] = [];
-
-    this.definition.nodes.forEach((node) => {
-      node.actions?.forEach((action) => {
-        const config = ACTION_CONFIG[action.type];
-        if (!config?.localizable || config.localizable.length === 0) {
-          return;
-        }
-
-        // For send_msg actions, only count 'text' for progress tracking
-        // (quick_replies and attachments are still localizable but don't count toward progress)
-        const localizableKeys =
-          action.type === 'send_msg'
-            ? config.localizable.filter((key) => key === 'text')
-            : config.localizable;
-
-        const translations = this.findTranslations(
-          'property',
-          action.uuid,
-          localizableKeys,
-          action,
-          languageLocalization
-        );
-
-        if (translations.length > 0) {
-          bundles.push({
-            nodeUuid: node.uuid,
-            actionUuid: action.uuid,
-            translations
-          });
-        }
-      });
-
-      const nodeUI = this.definition._ui?.nodes?.[node.uuid];
-      const nodeType = nodeUI?.type;
-      if (!nodeType) {
-        return;
-      }
-
-      // Include rule (case argument) translations when localizeRules is set
-      if (nodeUI?.config?.localizeRules && node.router?.cases?.length) {
-        const ruleTranslations = node.router.cases
-          .filter((c) => c.arguments?.length > 0 && c.arguments.some((a) => a))
-          .flatMap((c) =>
-            this.findTranslations(
-              'property',
-              c.uuid,
-              ['arguments'],
-              c,
-              languageLocalization
-            )
-          );
-
-        if (ruleTranslations.length > 0) {
-          bundles.push({
-            nodeUuid: node.uuid,
-            translations: ruleTranslations
-          });
-        }
-      }
-
-      const nodeConfig = NODE_CONFIG[nodeType];
-      if (
-        nodeUI?.config?.localizeCategories &&
-        nodeConfig?.localizable === 'categories' &&
-        node.router?.categories?.length
-      ) {
-        const translatableCategories = getTranslatableCategoriesForNode(
-          nodeType,
-          node.router.categories
-        );
-        const categoryTranslations = translatableCategories.flatMap(
-          (category) =>
-            this.findTranslations(
-              'category',
-              category.uuid,
-              ['name'],
-              category,
-              languageLocalization
-            )
-        );
-
-        if (categoryTranslations.length > 0) {
-          bundles.push({
-            nodeUuid: node.uuid,
-            translations: categoryTranslations
-          });
-        }
-      }
-    });
-
-    return bundles;
-  }
-
-  private findTranslations(
-    type: TranslationType,
-    uuid: string,
-    localizeableKeys: string[],
-    source: any,
-    localization: Record<string, any>
-  ): TranslationEntry[] {
-    const translations: TranslationEntry[] = [];
-
-    localizeableKeys.forEach((attribute) => {
-      if (attribute === 'quick_replies') {
-        return;
-      }
-
-      const pathSegments = attribute.split('.');
-      let from: any = source;
-      let to: any = [];
-
-      while (pathSegments.length > 0 && from) {
-        if (from.uuid) {
-          to = localization[from.uuid];
-        }
-
-        const path = pathSegments.shift();
-        if (!path) {
-          break;
-        }
-
-        if (to) {
-          to = to[path];
-        }
-        from = from[path];
-      }
-
-      if (!from) {
-        return;
-      }
-
-      const fromValue = this.formatTranslationValue(from);
-      if (!fromValue) {
-        return;
-      }
-
-      const toValue = to ? this.formatTranslationValue(to) : null;
-
-      translations.push({
-        uuid,
-        type,
-        attribute,
-        from: fromValue,
-        to: toValue
-      });
-    });
-
-    return translations;
-  }
-
-  private formatTranslationValue(value: any): string | null {
-    if (value === null || value === undefined) {
-      return null;
-    }
-
-    if (Array.isArray(value)) {
-      const normalized = value
-        .map((entry) => this.formatTranslationValue(entry))
-        .filter((entry) => !!entry) as string[];
-      return normalized.length > 0 ? normalized.join(', ') : null;
-    }
-
-    if (typeof value === 'object') {
-      if ('name' in value && value.name) {
-        return String(value.name);
-      }
-
-      if ('arguments' in value && Array.isArray(value.arguments)) {
-        return value.arguments.join(' ');
-      }
-
-      return null;
-    }
-
-    if (typeof value === 'number') {
-      return value.toString();
-    }
-
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    }
-
-    return null;
-  }
-
-  private getTranslationCounts(bundles: TranslationBundle[]): {
-    total: number;
-    localized: number;
-  } {
-    return bundles.reduce(
-      (counts, bundle) => {
-        bundle.translations.forEach((translation) => {
-          counts.total += 1;
-          if (translation.to && translation.to.trim().length > 0) {
-            counts.localized += 1;
-          }
-        });
-        return counts;
-      },
-      { total: 0, localized: 0 }
+    return getTranslationCounts(
+      buildTranslationBundles(this.definition, languageCode)
     );
   }
 
@@ -2040,6 +1757,18 @@ export class Editor extends RapidElement {
     return Object.values(this.definition._ui.nodes).some(
       (nodeUI: any) => nodeUI?.config?.localizeCategories
     );
+  }
+
+  private handleAutoTranslateClick(): void {
+    if (!this.autoTranslateEnabled || this.viewingRevision) {
+      return;
+    }
+    const at = this.querySelector('temba-auto-translate') as any;
+    at?.start();
+  }
+
+  private handleAutoTranslateChanged(e: CustomEvent): void {
+    this.autoTranslating = !!e.detail?.running;
   }
 
   disconnectedCallback(): void {
@@ -3961,6 +3690,12 @@ export class Editor extends RapidElement {
           })
         ];
 
+    const hasPendingTranslations =
+      this.autoTranslateEnabled &&
+      Boolean(activeLanguage) &&
+      progress.total > 0 &&
+      progress.localized < progress.total;
+
     return html`
       <temba-editor-toolbar
         ?message-view=${this.showMessageTable}
@@ -3976,6 +3711,10 @@ export class Editor extends RapidElement {
         ?is-base-language=${isBaseSelected}
         .languagePercent=${percent}
         ?show-localization-tools=${Boolean(activeLanguage)}
+        ?has-pending-translations=${hasPendingTranslations ||
+        this.autoTranslating}
+        ?auto-translate-disabled=${this.viewingRevision}
+        ?auto-translating=${this.autoTranslating}
         @temba-button-clicked=${this.handleToolbarAction}
       ></temba-editor-toolbar>
     `;
@@ -4010,6 +3749,9 @@ export class Editor extends RapidElement {
         break;
       case 'search':
         this.openFlowSearch();
+        break;
+      case 'auto-translate':
+        this.handleAutoTranslateClick();
         break;
       case 'language-change':
         if (detail.isPrimary) {
@@ -4186,6 +3928,14 @@ export class Editor extends RapidElement {
         @temba-revision-reverted=${this.handleRevisionReverted}
         @temba-revisions-closed=${this.handleRevisionsClosed}
       ></temba-revisions-window>
+      ${this.autoTranslateEnabled
+        ? html`<temba-auto-translate
+            .definition=${this.definition}
+            language-code=${this.languageCode}
+            ?disabled=${this.viewingRevision}
+            @temba-auto-translate-changed=${this.handleAutoTranslateChanged}
+          ></temba-auto-translate>`
+        : ''}
       <div id="editor-container">
         ${this.renderToolbarElement()}
         <div id="editor">

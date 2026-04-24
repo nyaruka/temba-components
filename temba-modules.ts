@@ -85,6 +85,7 @@ import { Simulator } from './src/simulator/Simulator';
 import { FlowSearch } from './src/flow/FlowSearch';
 import { IssuesWindow } from './src/flow/IssuesWindow';
 import { RevisionsWindow } from './src/flow/RevisionsWindow';
+import { AutoTranslate } from './src/flow/AutoTranslate';
 import { MessageTable } from './src/flow/MessageTable';
 
 export function addCustomElement(name: string, comp: any) {
@@ -182,3 +183,4 @@ addCustomElement('temba-simulator', Simulator);
 addCustomElement('temba-flow-search', FlowSearch);
 addCustomElement('temba-issues-window', IssuesWindow);
 addCustomElement('temba-revisions-window', RevisionsWindow);
+addCustomElement('temba-auto-translate', AutoTranslate);
