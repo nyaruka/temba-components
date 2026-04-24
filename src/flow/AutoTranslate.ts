@@ -6,6 +6,7 @@ import { getStore } from '../store/Store';
 import { zustand } from '../store/AppState';
 import { FlowDefinition } from '../store/flow-definition';
 import { TranslationEntry, buildTranslationBundles } from './flow-translations';
+import { getLanguageDisplayName } from './utils';
 
 interface TranslationModel {
   uuid: string;
@@ -528,10 +529,11 @@ export class AutoTranslate extends RapidElement {
     }
 
     const selected = this.selectedModel ? [this.selectedModel] : [];
+    const languageName = getLanguageDisplayName(this.languageCode);
     return html`
       <p>
-        Untranslated text will be sent to the selected AI model and the
-        responses saved automatically.
+        All remaining text for <strong>${languageName}</strong> will be
+        translated automatically. Remember, AI models can make mistakes so it is important to review all of your translations to verify they are correct.
       </p>
       ${this.models.length > 1
         ? html`<temba-select
