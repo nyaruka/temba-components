@@ -169,6 +169,11 @@ export class AutoTranslate extends RapidElement {
   @state()
   interrupt = false;
 
+  // Tracks whether the dialog has ever opened so we can keep it mounted
+  // afterwards (so it sees its own close transition) without paying
+  // for an empty hidden dialog before that.
+  private everOpened = false;
+
   /**
    * Public entry point. If a translation is in flight, sets the interrupt
    * flag; otherwise opens the model picker.
@@ -400,8 +405,13 @@ export class AutoTranslate extends RapidElement {
         continue;
       }
 
+      // read from the live store rather than this.definition, which can
+      // lag behind across batches and cause earlier attributes to be
+      // overwritten when multiple attrs on the same uuid land in
+      // different batches
+      const liveDefinition = zustand.getState().flowDefinition;
       const existing =
-        this.definition.localization?.[this.languageCode]?.[uuid] || {};
+        liveDefinition?.localization?.[this.languageCode]?.[uuid] || {};
       const merged = updatesByUuid.get(uuid) || { ...existing };
       merged[attribute] = values;
       updatesByUuid.set(uuid, merged);
@@ -459,12 +469,17 @@ export class AutoTranslate extends RapidElement {
     const showProgress = this.running || !!this.error;
     const open = showPicker || showProgress;
 
-    if (!open) {
+    // Skip rendering until the dialog has been opened at least once so we
+    // don't pay for an empty hidden dialog on every editor instance.
+    if (!open && !this.everOpened) {
       return '';
     }
+    if (open) {
+      this.everOpened = true;
+    }
 
-    let header: string;
-    let body: TemplateResult;
+    let header = 'Auto Translation';
+    let body: TemplateResult = html``;
     let gutter: TemplateResult | string = '';
     let primary = '';
     let cancel = '';
@@ -475,15 +490,13 @@ export class AutoTranslate extends RapidElement {
       body = this.renderErrorBody();
       cancel = 'Dismiss';
     } else if (this.running) {
-      header = 'Auto Translation';
       body = this.renderRunningBody();
       gutter = this.renderRunningGutter();
       // Stop is the primary so the dialog does NOT auto-close on click;
       // we close it ourselves once the in-flight batch returns
       primary = 'Stop';
       disabled = this.interrupt;
-    } else {
-      header = 'Auto Translation';
+    } else if (showPicker) {
       const noModels = !this.modelsLoading && this.models.length === 0;
       body = this.renderPickerBody();
       cancel = noModels ? 'Close' : 'Cancel';
@@ -491,6 +504,10 @@ export class AutoTranslate extends RapidElement {
       disabled = this.modelsLoading || noModels || !this.selectedModel;
     }
 
+    // We always render the dialog (after first open) so it sees the
+    // open: true -> false transition and runs its body scroll/unlock
+    // cleanup; otherwise body styles can stay stuck after auto-translate
+    // completes.
     return html`
       <temba-dialog
         header=${header}

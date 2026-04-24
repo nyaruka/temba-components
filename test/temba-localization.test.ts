@@ -596,6 +596,86 @@ describe('Localization Editing', () => {
     expect(at.running).to.be.false;
   });
 
+  it('should preserve all attributes when one uuid spans multiple batches', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // send_email has two localizable attributes (subject + body) on the
+    // same action uuid. Inflate them so they fall into separate batches.
+    const longSubject = 's'.repeat(2500);
+    const longBody = 'b'.repeat(8000);
+
+    const flowDefinition: FlowDefinition = {
+      uuid: 'multi-attr-flow',
+      name: 'Multi Attr Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {},
+      nodes: [
+        {
+          uuid: 'node-email',
+          actions: [
+            {
+              type: 'send_email',
+              uuid: 'email-1',
+              subject: longSubject,
+              body: longBody,
+              addresses: ['x@y.com']
+            } as any
+          ],
+          exits: [{ uuid: 'exit-1' }]
+        }
+      ],
+      _ui: {
+        nodes: { 'node-email': { position: { left: 0, top: 0 } } },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 1, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      calls.push(body);
+      return { status: 200, json: { items: body.items } };
+    };
+
+    await at.runAutoTranslation();
+
+    // sanity check: subject and body landed in different batches
+    expect(calls.length).to.be.greaterThan(1);
+    const allKeys = new Set(calls.flatMap((c) => Object.keys(c.items)));
+    expect(allKeys.has('email-1:subject')).to.be.true;
+    expect(allKeys.has('email-1:body')).to.be.true;
+
+    // both attributes should be present in the final localization, not
+    // overwritten by the later batch
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra']?.['email-1'];
+    expect(localized?.subject).to.deep.equal([longSubject]);
+    expect(localized?.body).to.deep.equal([longBody]);
+  });
+
   it('should preserve selected language across renders', async () => {
     await selectLanguageInToolbar(editor, 'Spanish', 'spa');
 
