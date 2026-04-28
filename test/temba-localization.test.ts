@@ -326,9 +326,12 @@ describe('Localization Editing', () => {
   it('should open auto translate dialog when clicking auto translate', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
+    // Includes an engine-only model that should be filtered out of the
+    // auto-translate picker, plus two valid editing models.
     (storeElement as any).getResults = async () => [
       { uuid: 'llm-1', name: 'GPT-4', roles: ['editing'] },
-      { uuid: 'llm-2', name: 'Claude', roles: ['editing', 'engine'] }
+      { uuid: 'llm-2', name: 'Claude', roles: ['editing', 'engine'] },
+      { uuid: 'llm-engine', name: 'EngineOnly', roles: ['engine'] }
     ];
 
     const autoTranslateBtn = editor
@@ -346,6 +349,9 @@ describe('Localization Editing', () => {
     await at.updateComplete;
 
     expect(at.dialogOpen).to.be.true;
+    // loadModels should have dropped the engine-only model
+    expect(at.models.map((m: any) => m.uuid)).to.deep.equal(['llm-1', 'llm-2']);
+
     const dialog = at.shadowRoot.querySelector('.auto-translate-body');
     expect(dialog).to.exist;
     const modelSelect = dialog?.querySelector(
@@ -355,6 +361,12 @@ describe('Localization Editing', () => {
     expect(modelSelect.getAttribute('endpoint')).to.equal(
       '/api/internal/llms.json'
     );
+    // and the temba-select shouldExclude predicate also rejects engine-only
+    const shouldExclude = (modelSelect as any).shouldExclude;
+    expect(shouldExclude({ roles: ['engine'] })).to.be.true;
+    expect(shouldExclude({ roles: ['editing'] })).to.be.false;
+    // missing roles is treated as inclusive (rollout safety)
+    expect(shouldExclude({})).to.be.false;
   });
 
   it('should hide auto translate when the auto-translate flag is off', async () => {
@@ -394,8 +406,11 @@ describe('Localization Editing', () => {
   it('should auto-skip picker when only one LLM is available', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
+    // Engine-only model is present but should be filtered out, leaving a
+    // single editing-capable model — the picker should still auto-skip.
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] }
+      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] },
+      { uuid: 'llm-engine', name: 'EngineOnly', roles: ['engine'] }
     ];
 
     const autoTranslateBtn = editor
@@ -413,6 +428,31 @@ describe('Localization Editing', () => {
     const dialog = at.shadowRoot.querySelector('.auto-translate-body');
     expect(dialog?.querySelector('.auto-translate-model-select')).to.not.exist;
     expect(dialog?.querySelector('.auto-translate-single-model')).to.exist;
+  });
+
+  // Rollout safety: backends that haven't deployed the `roles` field yet
+  // return models without it. Those models should still appear so the UI
+  // doesn't go silently empty during a rollout.
+  it('should include LLMs that are missing the roles field', async () => {
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+
+    (storeElement as any).getResults = async () => [
+      { uuid: 'llm-legacy', name: 'LegacyModel' }
+    ];
+
+    const autoTranslateBtn = editor
+      .querySelector('temba-editor-toolbar')
+      ?.shadowRoot?.querySelector(
+        '.toolbar-btn[aria-label="Auto translate"]'
+      ) as HTMLButtonElement;
+    autoTranslateBtn.click();
+    await editor.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+    const at = editor.querySelector('temba-auto-translate') as any;
+    await at.updateComplete;
+
+    expect(at.models.map((m: any) => m.uuid)).to.deep.equal(['llm-legacy']);
+    expect(at.selectedModel?.uuid).to.equal('llm-legacy');
   });
 
   it('should show empty state when no LLMs are configured', async () => {

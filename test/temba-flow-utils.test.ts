@@ -1,6 +1,6 @@
 import { expect } from '@open-wc/testing';
 import { zustand } from '../src/store/AppState';
-import { shouldExcludeFlow } from '../src/flow/flow-utils';
+import { shouldExcludeFlow, hasLLMRole } from '../src/flow/flow-utils';
 import { getLanguageDisplayName } from '../src/flow/utils';
 
 function setFlowType(type: string) {
@@ -45,6 +45,32 @@ describe('shouldExcludeFlow', () => {
   it('returns false when flow definition is null', () => {
     zustand.setState({ ...zustand.getState(), flowDefinition: null });
     expect(shouldExcludeFlow({ type: 'message' })).to.be.false;
+  });
+});
+
+describe('hasLLMRole', () => {
+  it('returns true when the model has the role', () => {
+    expect(hasLLMRole({ roles: ['engine'] }, 'engine')).to.be.true;
+    expect(hasLLMRole({ roles: ['editing', 'engine'] }, 'editing')).to.be.true;
+  });
+
+  it('returns false when the model has roles but not the requested one', () => {
+    expect(hasLLMRole({ roles: ['editing'] }, 'engine')).to.be.false;
+    expect(hasLLMRole({ roles: ['engine'] }, 'editing')).to.be.false;
+    expect(hasLLMRole({ roles: [] }, 'engine')).to.be.false;
+  });
+
+  // Backwards-compat: treat models with a missing roles field as inclusive
+  // so a UI rollout ahead of the API doesn't silently hide every model.
+  it('returns true when the model has no roles field', () => {
+    expect(hasLLMRole({}, 'engine')).to.be.true;
+    expect(hasLLMRole({}, 'editing')).to.be.true;
+    expect(hasLLMRole({ roles: undefined }, 'engine')).to.be.true;
+  });
+
+  it('returns false when the model is null or undefined', () => {
+    expect(hasLLMRole(null, 'engine')).to.be.false;
+    expect(hasLLMRole(undefined, 'editing')).to.be.false;
   });
 });
 

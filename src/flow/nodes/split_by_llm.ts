@@ -8,6 +8,7 @@ import {
   renderLineItem,
   getLlmIcon
 } from '../utils';
+import { LLMModel, hasLLMRole } from '../flow-utils';
 
 export const split_by_llm: NodeConfig = {
   type: 'split_by_llm',
@@ -48,7 +49,7 @@ export const split_by_llm: NodeConfig = {
       valueKey: 'uuid',
       nameKey: 'name',
       placeholder: 'Select an LLM...',
-      shouldExclude: (option: any) => !option.roles?.includes('engine')
+      shouldExclude: (option: LLMModel) => !hasLLMRole(option, 'engine')
     },
     input: {
       type: 'text',

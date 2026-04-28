@@ -7,6 +7,7 @@ import { zustand } from '../store/AppState';
 import { FlowDefinition } from '../store/flow-definition';
 import { TranslationEntry, buildTranslationBundles } from './flow-translations';
 import { getLanguageDisplayName } from './utils';
+import { LLMModel, hasLLMRole } from './flow-utils';
 
 interface TranslationModel {
   uuid: string;
@@ -203,12 +204,12 @@ export class AutoTranslate extends RapidElement {
     this.modelsLoading = true;
     try {
       const store = getStore();
-      const results = store
-        ? await store.getResults(MODELS_ENDPOINT, { force: true })
+      const results: LLMModel[] = store
+        ? ((await store.getResults(MODELS_ENDPOINT, { force: true })) ?? [])
         : [];
-      this.models = (results || [])
-        .filter((r: any) => r.roles?.includes('editing'))
-        .map((r: any) => ({
+      this.models = results
+        .filter((r) => hasLLMRole(r, 'editing'))
+        .map((r) => ({
           uuid: r.uuid,
           name: r.name
         }));
@@ -561,8 +562,8 @@ export class AutoTranslate extends RapidElement {
             endpoint="${MODELS_ENDPOINT}"
             valueKey="uuid"
             .values=${selected}
-            .shouldExclude=${(option: any) =>
-              !option.roles?.includes('editing')}
+            .shouldExclude=${(option: LLMModel) =>
+              !hasLLMRole(option, 'editing')}
             ?searchable=${true}
             placeholder="Select an AI model"
             @change=${this.handleModelChange}
