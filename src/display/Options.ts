@@ -565,9 +565,12 @@ export class Options extends RapidElement {
     // Only intercept keys when the event originated within our owning component.
     // Without this, any temba-options with populated options would swallow arrow
     // keys document-wide, breaking cursor movement in unrelated text editors.
+    // All current usages render temba-options inside another custom element's
+    // shadow root, so scoping by host correctly distinguishes between editors.
     if (!this.block) {
-      const myHost = (this.getRootNode() as ShadowRoot).host;
-      if (myHost && !evt.composedPath().includes(myHost)) {
+      const root = this.getRootNode();
+      const host = root instanceof ShadowRoot ? root.host : null;
+      if (host && !evt.composedPath().includes(host)) {
         return;
       }
     }
