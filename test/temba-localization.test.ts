@@ -389,7 +389,7 @@ describe('Localization Editing', () => {
     ).to.not.exist;
   });
 
-  it('should hide auto translate when everything is translated', async () => {
+  it('should keep auto translate visible when everything is translated', async () => {
     await selectLanguageInToolbar(editor, 'Spanish', 'spa');
     await editor.updateComplete;
 
@@ -397,8 +397,9 @@ describe('Localization Editing', () => {
     const autoTranslateBtn = toolbar?.shadowRoot?.querySelector(
       '.toolbar-btn[aria-label="Auto translate"]'
     );
-    // spa has text translated; no pending, no button
-    expect(autoTranslateBtn).to.not.exist;
+    // spa is fully translated, but the button stays so users can update
+    // existing translations via the dialog
+    expect(autoTranslateBtn).to.exist;
   });
 
   it('should auto-skip picker when only one LLM is available', async () => {
@@ -932,6 +933,819 @@ describe('Localization Editing', () => {
     expect(localized['action-b']?.text).to.deep.equal(['Hello!fr']);
     expect(localized['action-c']?.text).to.deep.equal(['Hello!fr']);
     expect(localized['action-d']?.text).to.deep.equal(['Goodbye!fr']);
+  });
+
+  it('should not translate already-translated entries by default', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // action-a is already translated, action-b is not. The default flow
+    // should send only action-b to the LLM.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'update-default-flow',
+      name: 'Update Default Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'action-a': { text: ['Bonjour'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-a',
+          actions: [
+            { type: 'send_msg', uuid: 'action-a', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-a' }]
+        },
+        {
+          uuid: 'node-b',
+          actions: [
+            { type: 'send_msg', uuid: 'action-b', text: 'Goodbye' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-b' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-a': { position: { left: 0, top: 0 } },
+          'node-b': { position: { left: 0, top: 100 } }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 2, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      calls.push(body);
+      const translated: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(
+        body.items as Record<string, string[]>
+      )) {
+        translated[k] = v.map((s) => `${s}!fr`);
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    expect(calls).to.have.lengthOf(1);
+    const sentKeys = Object.keys(calls[0].items as Record<string, string[]>);
+    // only action-b should have been sent
+    expect(sentKeys).to.deep.equal(['action-b:text']);
+
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    // existing translation for action-a is unchanged
+    expect(localized['action-a']?.text).to.deep.equal(['Bonjour']);
+    // action-b is now translated
+    expect(localized['action-b']?.text).to.deep.equal(['Goodbye!fr']);
+  });
+
+  it('should re-translate already-translated entries when updateExisting is true', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    const flowDefinition: FlowDefinition = {
+      uuid: 'update-existing-flow',
+      name: 'Update Existing Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'action-a': { text: ['Bonjour'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-a',
+          actions: [
+            { type: 'send_msg', uuid: 'action-a', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-a' }]
+        },
+        {
+          uuid: 'node-b',
+          actions: [
+            { type: 'send_msg', uuid: 'action-b', text: 'Goodbye' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-b' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-a': { position: { left: 0, top: 0 } },
+          'node-b': { position: { left: 0, top: 100 } }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 2, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+    at.updateExisting = true;
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      calls.push(body);
+      const translated: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(
+        body.items as Record<string, string[]>
+      )) {
+        translated[k] = v.map((s) => `${s}!fr`);
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    // both already-translated and pending entries should have been sent
+    expect(calls).to.have.lengthOf(1);
+    const sentKeys = Object.keys(calls[0].items as Record<string, string[]>);
+    expect(sentKeys).to.include('action-a:text');
+    expect(sentKeys).to.include('action-b:text');
+
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    // existing translation has been replaced with the new response
+    expect(localized['action-a']?.text).to.deep.equal(['Hello!fr']);
+    expect(localized['action-b']?.text).to.deep.equal(['Goodbye!fr']);
+  });
+
+  it('should re-translate multi-argument rules and propagate to duplicates in update mode', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // Two wait-for-response style nodes that each have a single rule
+    // with 3 arguments [red, green, blue]. Node A is "translated" to
+    // matching English values; node B has no localization. Update mode
+    // should hand a 3-item source array to the LLM, get back a 3-item
+    // translated array, and write that array to both nodes' localization.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'multi-arg-flow',
+      name: 'Multi Arg Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'case-A': { arguments: ['red', 'green', 'blue'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-A',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@input.text',
+            cases: [
+              {
+                uuid: 'case-A',
+                type: 'has_any_word',
+                arguments: ['red', 'green', 'blue'],
+                category_uuid: 'cat-A1'
+              }
+            ],
+            categories: [
+              { uuid: 'cat-A1', name: 'Match', exit_uuid: 'exit-A1' },
+              { uuid: 'cat-A-other', name: 'Other', exit_uuid: 'exit-A-other' }
+            ],
+            default_category_uuid: 'cat-A-other'
+          },
+          exits: [
+            { uuid: 'exit-A1', destination_uuid: null },
+            { uuid: 'exit-A-other', destination_uuid: null }
+          ]
+        },
+        {
+          uuid: 'node-B',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@input.text',
+            cases: [
+              {
+                uuid: 'case-B',
+                type: 'has_any_word',
+                arguments: ['red', 'green', 'blue'],
+                category_uuid: 'cat-B1'
+              }
+            ],
+            categories: [
+              { uuid: 'cat-B1', name: 'Match', exit_uuid: 'exit-B1' },
+              { uuid: 'cat-B-other', name: 'Other', exit_uuid: 'exit-B-other' }
+            ],
+            default_category_uuid: 'cat-B-other'
+          },
+          exits: [
+            { uuid: 'exit-B1', destination_uuid: null },
+            { uuid: 'exit-B-other', destination_uuid: null }
+          ]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-A': {
+            position: { left: 0, top: 0 },
+            type: 'wait_for_response',
+            config: { localizeRules: true }
+          },
+          'node-B': {
+            position: { left: 0, top: 200 },
+            type: 'wait_for_response',
+            config: { localizeRules: true }
+          }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 2, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+    at.updateExisting = true;
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      calls.push(body);
+      const items = body.items as Record<string, string[]>;
+      const dictionary: Record<string, string> = {
+        red: 'rouge',
+        green: 'vert',
+        blue: 'bleu'
+      };
+      const translated: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(items)) {
+        translated[k] = v.map((s) => dictionary[s] ?? s);
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    // single canonical request for the duplicated argument set
+    expect(calls).to.have.lengthOf(1);
+    const sentItems = calls[0].items as Record<string, string[]>;
+    expect(Object.keys(sentItems)).to.have.lengthOf(1);
+    const [sentValues] = Object.values(sentItems);
+    expect(sentValues).to.deep.equal(['red', 'green', 'blue']);
+
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    // both nodes' rules end up with the per-item translated array
+    expect(localized['case-A']?.arguments).to.deep.equal([
+      'rouge',
+      'vert',
+      'bleu'
+    ]);
+    expect(localized['case-B']?.arguments).to.deep.equal([
+      'rouge',
+      'vert',
+      'bleu'
+    ]);
+  });
+
+  it('should re-translate rules even when an existing translation matches the source', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // Two wait-for-response style nodes share the same set of rule
+    // arguments. Node A has been "translated" to the same English values
+    // as the source; node B has no localization. Update mode should
+    // discard the English-matching translation, ask the LLM for fresh
+    // translations, and apply them to every matching rule.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'rules-flow',
+      name: 'Rules Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'case-A1': { arguments: ['red'] },
+          'case-A2': { arguments: ['green'] },
+          'case-A3': { arguments: ['blue'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-A',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@input.text',
+            cases: [
+              {
+                uuid: 'case-A1',
+                type: 'has_only_phrase',
+                arguments: ['red'],
+                category_uuid: 'cat-A1'
+              },
+              {
+                uuid: 'case-A2',
+                type: 'has_only_phrase',
+                arguments: ['green'],
+                category_uuid: 'cat-A2'
+              },
+              {
+                uuid: 'case-A3',
+                type: 'has_only_phrase',
+                arguments: ['blue'],
+                category_uuid: 'cat-A3'
+              }
+            ],
+            categories: [
+              { uuid: 'cat-A1', name: 'Red', exit_uuid: 'exit-A1' },
+              { uuid: 'cat-A2', name: 'Green', exit_uuid: 'exit-A2' },
+              { uuid: 'cat-A3', name: 'Blue', exit_uuid: 'exit-A3' },
+              { uuid: 'cat-A-other', name: 'Other', exit_uuid: 'exit-A-other' }
+            ],
+            default_category_uuid: 'cat-A-other'
+          },
+          exits: [
+            { uuid: 'exit-A1', destination_uuid: null },
+            { uuid: 'exit-A2', destination_uuid: null },
+            { uuid: 'exit-A3', destination_uuid: null },
+            { uuid: 'exit-A-other', destination_uuid: null }
+          ]
+        },
+        {
+          uuid: 'node-B',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@input.text',
+            cases: [
+              {
+                uuid: 'case-B1',
+                type: 'has_only_phrase',
+                arguments: ['red'],
+                category_uuid: 'cat-B1'
+              },
+              {
+                uuid: 'case-B2',
+                type: 'has_only_phrase',
+                arguments: ['green'],
+                category_uuid: 'cat-B2'
+              },
+              {
+                uuid: 'case-B3',
+                type: 'has_only_phrase',
+                arguments: ['blue'],
+                category_uuid: 'cat-B3'
+              }
+            ],
+            categories: [
+              { uuid: 'cat-B1', name: 'Red', exit_uuid: 'exit-B1' },
+              { uuid: 'cat-B2', name: 'Green', exit_uuid: 'exit-B2' },
+              { uuid: 'cat-B3', name: 'Blue', exit_uuid: 'exit-B3' },
+              { uuid: 'cat-B-other', name: 'Other', exit_uuid: 'exit-B-other' }
+            ],
+            default_category_uuid: 'cat-B-other'
+          },
+          exits: [
+            { uuid: 'exit-B1', destination_uuid: null },
+            { uuid: 'exit-B2', destination_uuid: null },
+            { uuid: 'exit-B3', destination_uuid: null },
+            { uuid: 'exit-B-other', destination_uuid: null }
+          ]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-A': {
+            position: { left: 0, top: 0 },
+            type: 'wait_for_response',
+            config: { localizeRules: true }
+          },
+          'node-B': {
+            position: { left: 0, top: 200 },
+            type: 'wait_for_response',
+            config: { localizeRules: true }
+          }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 2, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+    at.updateExisting = true;
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      calls.push(body);
+      const items = body.items as Record<string, string[]>;
+      const dictionary: Record<string, string> = {
+        red: 'rouge',
+        green: 'vert',
+        blue: 'bleu'
+      };
+      const translated: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(items)) {
+        translated[k] = v.map((s) => dictionary[s] ?? s);
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    // node A's existing English-like translations are replaced with French
+    expect(localized['case-A1']?.arguments).to.deep.equal(['rouge']);
+    expect(localized['case-A2']?.arguments).to.deep.equal(['vert']);
+    expect(localized['case-A3']?.arguments).to.deep.equal(['bleu']);
+    // node B picks up the same fresh translations
+    expect(localized['case-B1']?.arguments).to.deep.equal(['rouge']);
+    expect(localized['case-B2']?.arguments).to.deep.equal(['vert']);
+    expect(localized['case-B3']?.arguments).to.deep.equal(['bleu']);
+  });
+
+  it('should replace all matching translations with a fresh value when updateExisting is true', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // three actions share the same source. All are already translated,
+    // including some with different translations. Update mode should
+    // fetch one fresh translation and apply it to every instance.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'replace-all-flow',
+      name: 'Replace All Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'action-a': { text: ['Salut'] },
+          'action-b': { text: ['Bonjour'] },
+          'action-c': { text: ['Allo'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-a',
+          actions: [
+            { type: 'send_msg', uuid: 'action-a', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-a' }]
+        },
+        {
+          uuid: 'node-b',
+          actions: [
+            { type: 'send_msg', uuid: 'action-b', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-b' }]
+        },
+        {
+          uuid: 'node-c',
+          actions: [
+            { type: 'send_msg', uuid: 'action-c', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-c' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-a': { position: { left: 0, top: 0 } },
+          'node-b': { position: { left: 0, top: 100 } },
+          'node-c': { position: { left: 0, top: 200 } }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 3, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+    at.updateExisting = true;
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      calls.push(body);
+      const translated: Record<string, string[]> = {};
+      for (const k of Object.keys(body.items as Record<string, string[]>)) {
+        translated[k] = ['Coucou'];
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    // only one canonical entry should be sent for the duplicated source
+    expect(calls).to.have.lengthOf(1);
+    const sentKeys = Object.keys(calls[0].items as Record<string, string[]>);
+    expect(sentKeys).to.have.lengthOf(1);
+
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    // every existing translation, regardless of its prior value, gets the
+    // new translation
+    expect(localized['action-a']?.text).to.deep.equal(['Coucou']);
+    expect(localized['action-b']?.text).to.deep.equal(['Coucou']);
+    expect(localized['action-c']?.text).to.deep.equal(['Coucou']);
+  });
+
+  it('should propagate updates to entries sharing the same source when updateExisting is true', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // action-a is already translated; action-b shares the same source.
+    // With updateExisting true, the new response should update both.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'update-dedupe-flow',
+      name: 'Update Dedupe Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'action-a': { text: ['Salut'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-a',
+          actions: [
+            { type: 'send_msg', uuid: 'action-a', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-a' }]
+        },
+        {
+          uuid: 'node-b',
+          actions: [
+            { type: 'send_msg', uuid: 'action-b', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-b' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-a': { position: { left: 0, top: 0 } },
+          'node-b': { position: { left: 0, top: 100 } }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 2, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+    at.updateExisting = true;
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      calls.push(body);
+      const translated: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(
+        body.items as Record<string, string[]>
+      )) {
+        translated[k] = v.map(() => 'Bonjour');
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    // only one canonical entry should be sent for the duplicate source
+    expect(calls).to.have.lengthOf(1);
+    const sentKeys = Object.keys(calls[0].items as Record<string, string[]>);
+    expect(sentKeys).to.have.lengthOf(1);
+
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    // both entries get the same updated translation
+    expect(localized['action-a']?.text).to.deep.equal(['Bonjour']);
+    expect(localized['action-b']?.text).to.deep.equal(['Bonjour']);
+  });
+
+  it('should never replace an existing translation with an empty value', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // action-a and action-b are both already translated. The LLM returns
+    // an empty string for action-a's text — the existing translation
+    // should be preserved.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'preserve-empty-flow',
+      name: 'Preserve Empty Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'action-a': { text: ['Bonjour'] },
+          'action-b': { text: ['Au revoir'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-a',
+          actions: [
+            { type: 'send_msg', uuid: 'action-a', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-a' }]
+        },
+        {
+          uuid: 'node-b',
+          actions: [
+            { type: 'send_msg', uuid: 'action-b', text: 'Goodbye' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-b' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-a': { position: { left: 0, top: 0 } },
+          'node-b': { position: { left: 0, top: 100 } }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 2, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+    at.updateExisting = true;
+
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      const items = body.items as Record<string, string[]>;
+      const translated: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(items)) {
+        if (k === 'action-a:text') {
+          // simulate the LLM returning an empty value for this entry
+          translated[k] = [''];
+        } else {
+          translated[k] = v.map((s) => `${s}!fr`);
+        }
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    // empty response keeps the prior translation
+    expect(localized['action-a']?.text).to.deep.equal(['Bonjour']);
+    // a non-empty response replaces the prior translation as expected
+    expect(localized['action-b']?.text).to.deep.equal(['Goodbye!fr']);
+  });
+
+  it('should render an unchecked update-existing checkbox in the picker', async () => {
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+
+    (storeElement as any).getResults = async () => [
+      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] }
+    ];
+
+    const autoTranslateBtn = editor
+      .querySelector('temba-editor-toolbar')
+      ?.shadowRoot?.querySelector(
+        '.toolbar-btn[aria-label="Auto translate"]'
+      ) as HTMLButtonElement;
+    autoTranslateBtn.click();
+    await editor.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+    const at = editor.querySelector('temba-auto-translate') as any;
+    await at.updateComplete;
+
+    const dialog = at.shadowRoot.querySelector('.auto-translate-body');
+    const checkbox = dialog?.querySelector(
+      '.auto-translate-update-existing'
+    ) as any;
+    expect(checkbox).to.exist;
+    expect(checkbox.checked).to.not.be.true;
+    expect(at.updateExisting).to.be.false;
   });
 
   it('should preserve selected language across renders', async () => {

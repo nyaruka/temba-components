@@ -3690,11 +3690,13 @@ export class Editor extends RapidElement {
           })
         ];
 
+    // shown whenever the active language has any localizable content, even
+    // at 100% — the dialog's "update existing" option lets users re-run
+    // translation on already-translated entries.
     const hasPendingTranslations =
       this.autoTranslateEnabled &&
       Boolean(activeLanguage) &&
-      progress.total > 0 &&
-      progress.localized < progress.total;
+      progress.total > 0;
 
     return html`
       <temba-editor-toolbar
