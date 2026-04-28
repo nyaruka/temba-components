@@ -446,8 +446,8 @@ describe('Localization Editing', () => {
     setupWorkspace();
 
     // build a flow with enough send_msg actions that the total serialized
-    // payload exceeds the 10,000-char batch threshold
-    const longText = 'x'.repeat(3000);
+    // payload exceeds the 10,000-char batch threshold. Each text needs to
+    // be unique or dedup will collapse them into a single payload entry.
     const nodes = [];
     for (let i = 0; i < 5; i++) {
       nodes.push({
@@ -456,7 +456,7 @@ describe('Localization Editing', () => {
           {
             type: 'send_msg',
             uuid: `action-${i}`,
-            text: longText
+            text: `${i} ${'x'.repeat(3000)}`
           } as SendMsg
         ],
         exits: [{ uuid: `exit-${i}` }]
@@ -527,7 +527,8 @@ describe('Localization Editing', () => {
 
     setupWorkspace();
 
-    const longText = 'y'.repeat(600);
+    // Each text is unique so dedup doesn't collapse them — we want enough
+    // distinct entries to span multiple batches and verify interrupt.
     const nodes = [];
     for (let i = 0; i < 6; i++) {
       nodes.push({
@@ -536,7 +537,7 @@ describe('Localization Editing', () => {
           {
             type: 'send_msg',
             uuid: `action-${i}`,
-            text: longText
+            text: `${i} ${'y'.repeat(600)}`
           } as SendMsg
         ],
         exits: [{ uuid: `exit-${i}` }]
@@ -674,6 +675,199 @@ describe('Localization Editing', () => {
       zustand.getState().flowDefinition?.localization?.['fra']?.['email-1'];
     expect(localized?.subject).to.deep.equal([longSubject]);
     expect(localized?.body).to.deep.equal([longBody]);
+  });
+
+  it('should reuse existing translations for matching source content', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // action-a is already translated to French; action-b shares the same
+    // source text but is not yet translated. Auto-translate should reuse
+    // action-a's translation for action-b without sending it to the LLM.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'reuse-flow',
+      name: 'Reuse Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'action-a': { text: ['Bonjour le monde'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-a',
+          actions: [
+            {
+              type: 'send_msg',
+              uuid: 'action-a',
+              text: 'Hello world'
+            } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-a' }]
+        },
+        {
+          uuid: 'node-b',
+          actions: [
+            {
+              type: 'send_msg',
+              uuid: 'action-b',
+              text: 'Hello world'
+            } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-b' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-a': { position: { left: 0, top: 0 } },
+          'node-b': { position: { left: 0, top: 100 } }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 2, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    let callCount = 0;
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      callCount += 1;
+      return { status: 200, json: { items: body.items } };
+    };
+
+    await at.runAutoTranslation();
+
+    // no LLM call needed: the only pending entry's source matches an
+    // existing translation already in the flow
+    expect(callCount).to.equal(0);
+    const localized = zustand.getState().flowDefinition?.localization?.['fra'];
+    expect(localized?.['action-b']?.text).to.deep.equal(['Bonjour le monde']);
+  });
+
+  it('should dedupe identical source arrays in the translation payload', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // Three pending actions share the same source text and one has a
+    // distinct text. The payload should contain two unique arrays, and
+    // the duplicate source's translation should propagate to all keys
+    // sharing that source.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'dedupe-flow',
+      name: 'Dedupe Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {},
+      nodes: [
+        {
+          uuid: 'node-a',
+          actions: [
+            { type: 'send_msg', uuid: 'action-a', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-a' }]
+        },
+        {
+          uuid: 'node-b',
+          actions: [
+            { type: 'send_msg', uuid: 'action-b', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-b' }]
+        },
+        {
+          uuid: 'node-c',
+          actions: [
+            { type: 'send_msg', uuid: 'action-c', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-c' }]
+        },
+        {
+          uuid: 'node-d',
+          actions: [
+            { type: 'send_msg', uuid: 'action-d', text: 'Goodbye' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-d' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-a': { position: { left: 0, top: 0 } },
+          'node-b': { position: { left: 0, top: 100 } },
+          'node-c': { position: { left: 0, top: 200 } },
+          'node-d': { position: { left: 0, top: 300 } }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 4, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      calls.push(body);
+      const translated: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(
+        body.items as Record<string, string[]>
+      )) {
+        translated[k] = v.map((s) => `${s}!fr`);
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    // payload should contain only two keys (one canonical per unique
+    // source array) — duplicates are not sent
+    expect(calls).to.have.lengthOf(1);
+    const sentKeys = Object.keys(calls[0].items as Record<string, string[]>);
+    expect(sentKeys).to.have.lengthOf(2);
+
+    // every action including duplicates should be translated
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    expect(localized['action-a']?.text).to.deep.equal(['Hello!fr']);
+    expect(localized['action-b']?.text).to.deep.equal(['Hello!fr']);
+    expect(localized['action-c']?.text).to.deep.equal(['Hello!fr']);
+    expect(localized['action-d']?.text).to.deep.equal(['Goodbye!fr']);
   });
 
   it('should preserve selected language across renders', async () => {
