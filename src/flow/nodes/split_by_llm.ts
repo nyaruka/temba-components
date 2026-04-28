@@ -47,7 +47,8 @@ export const split_by_llm: NodeConfig = {
       searchable: true,
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Select an LLM...'
+      placeholder: 'Select an LLM...',
+      shouldExclude: (option: any) => !option.roles?.includes('engine')
     },
     input: {
       type: 'text',

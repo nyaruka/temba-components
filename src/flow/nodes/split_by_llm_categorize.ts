@@ -19,7 +19,8 @@ export const split_by_llm_categorize: NodeConfig = {
       endpoint: '/api/internal/llms.json',
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Select an LLM...'
+      placeholder: 'Select an LLM...',
+      shouldExclude: (option: any) => !option.roles?.includes('engine')
     },
     input: {
       type: 'text',

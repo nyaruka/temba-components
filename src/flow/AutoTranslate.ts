@@ -206,10 +206,12 @@ export class AutoTranslate extends RapidElement {
       const results = store
         ? await store.getResults(MODELS_ENDPOINT, { force: true })
         : [];
-      this.models = (results || []).map((r: any) => ({
-        uuid: r.uuid,
-        name: r.name
-      }));
+      this.models = (results || [])
+        .filter((r: any) => r.roles?.includes('editing'))
+        .map((r: any) => ({
+          uuid: r.uuid,
+          name: r.name
+        }));
     } catch (err) {
       console.error('Failed to load AI models', err);
       this.models = [];
@@ -550,7 +552,8 @@ export class AutoTranslate extends RapidElement {
     return html`
       <p>
         All remaining text for <strong>${languageName}</strong> will be
-        translated automatically. Remember, AI models can make mistakes so it is important to review all of your translations to verify they are correct.
+        translated automatically. Remember, AI models can make mistakes so it is
+        important to review all of your translations to verify they are correct.
       </p>
       ${this.models.length > 1
         ? html`<temba-select
@@ -558,6 +561,8 @@ export class AutoTranslate extends RapidElement {
             endpoint="${MODELS_ENDPOINT}"
             valueKey="uuid"
             .values=${selected}
+            .shouldExclude=${(option: any) =>
+              !option.roles?.includes('editing')}
             ?searchable=${true}
             placeholder="Select an AI model"
             @change=${this.handleModelChange}
@@ -610,13 +615,11 @@ export class AutoTranslate extends RapidElement {
     return html`
       <div class="auto-translate-error-block">
         <p class="auto-translate-error-help">
-          Any translations already applied have been kept. You can try again,
-          or check the AI model's settings if the problem persists.
+          Any translations already applied have been kept. You can try again, or
+          check the AI model's settings if the problem persists.
         </p>
         ${this.errorExpanded
-          ? html`<pre class="auto-translate-error-details">
-${this.error}</pre
-            >`
+          ? html`<pre class="auto-translate-error-details">${this.error}</pre>`
           : html`<button
               class="auto-translate-error-toggle"
               type="button"

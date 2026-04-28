@@ -327,8 +327,8 @@ describe('Localization Editing', () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-1', name: 'GPT-4' },
-      { uuid: 'llm-2', name: 'Claude' }
+      { uuid: 'llm-1', name: 'GPT-4', roles: ['editing'] },
+      { uuid: 'llm-2', name: 'Claude', roles: ['editing', 'engine'] }
     ];
 
     const autoTranslateBtn = editor
@@ -395,7 +395,7 @@ describe('Localization Editing', () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-only', name: 'SoloGPT' }
+      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] }
     ];
 
     const autoTranslateBtn = editor
