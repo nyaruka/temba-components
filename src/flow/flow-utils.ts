@@ -26,14 +26,9 @@ export interface LLMModel {
   roles?: LLMRole[];
 }
 
-// Backward-compatible: a model with no `roles` field (older backend) is
-// treated as having every role, so the UI doesn't silently hide all models
-// when the API hasn't rolled out the field yet.
 export function hasLLMRole(
   model: { roles?: string[] } | null | undefined,
   role: LLMRole
 ): boolean {
-  if (!model) return false;
-  if (!model.roles) return true;
-  return model.roles.includes(role);
+  return model?.roles?.includes(role) ?? false;
 }

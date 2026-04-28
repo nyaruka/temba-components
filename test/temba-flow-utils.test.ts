@@ -54,23 +54,10 @@ describe('hasLLMRole', () => {
     expect(hasLLMRole({ roles: ['editing', 'engine'] }, 'editing')).to.be.true;
   });
 
-  it('returns false when the model has roles but not the requested one', () => {
+  it('returns false when the model lacks the role', () => {
     expect(hasLLMRole({ roles: ['editing'] }, 'engine')).to.be.false;
     expect(hasLLMRole({ roles: ['engine'] }, 'editing')).to.be.false;
     expect(hasLLMRole({ roles: [] }, 'engine')).to.be.false;
-  });
-
-  // Backwards-compat: treat models with a missing roles field as inclusive
-  // so a UI rollout ahead of the API doesn't silently hide every model.
-  it('returns true when the model has no roles field', () => {
-    expect(hasLLMRole({}, 'engine')).to.be.true;
-    expect(hasLLMRole({}, 'editing')).to.be.true;
-    expect(hasLLMRole({ roles: undefined }, 'engine')).to.be.true;
-  });
-
-  it('returns false when the model is null or undefined', () => {
-    expect(hasLLMRole(null, 'engine')).to.be.false;
-    expect(hasLLMRole(undefined, 'editing')).to.be.false;
   });
 });
 

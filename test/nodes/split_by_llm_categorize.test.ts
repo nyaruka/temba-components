@@ -121,12 +121,6 @@ describe('split_by_llm_categorize node config', () => {
       expect(shouldExclude({ roles: ['editing'] })).to.be.true;
       expect(shouldExclude({ roles: [] })).to.be.true;
     });
-
-    // Rollout safety: models without a roles field (older backend) stay
-    // visible so the picker isn't silently empty during the transition.
-    it('includes options when the roles field is missing', () => {
-      expect(shouldExclude({})).to.be.false;
-    });
   });
 
   describe('node scenarios', () => {
