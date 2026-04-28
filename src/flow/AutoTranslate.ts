@@ -642,8 +642,7 @@ export class AutoTranslate extends RapidElement {
     const selected = this.selectedModel ? [this.selectedModel] : [];
     const languageName = getLanguageDisplayName(this.languageCode);
     const aiClause = this.brand
-      ? html`${this.brand} uses AI for automatic translation, which can make
-        mistakes,`
+      ? html`${this.brand} uses AI for automatic translation, which can make mistakes,`
       : html`Automatic translation uses AI, which can make mistakes,`;
     return html`
       <p>
