@@ -562,6 +562,16 @@ export class Options extends RapidElement {
       return;
     }
 
+    // Only intercept keys when the event originated within our owning component.
+    // Without this, any temba-options with populated options would swallow arrow
+    // keys document-wide, breaking cursor movement in unrelated text editors.
+    if (!this.block) {
+      const myHost = (this.getRootNode() as ShadowRoot).host;
+      if (myHost && !evt.composedPath().includes(myHost)) {
+        return;
+      }
+    }
+
     if (this.options && this.options.length > 0) {
       if ((evt.ctrlKey && evt.key === 'n') || evt.key === 'ArrowDown') {
         this.moveCursor(1);

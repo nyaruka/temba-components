@@ -434,7 +434,10 @@ export class RichEditor extends FieldElement {
   }
 
   private handleKeydown(e: KeyboardEvent): void {
-    const mod = e.metaKey || e.ctrlKey;
+    // On macOS, Cmd is the undo/redo modifier; leave Ctrl alone so Cocoa
+    // text bindings like Ctrl+K (kill) and Ctrl+Y (yank) keep working.
+    const isMac = /Mac|iPhone|iPad/.test(navigator.userAgent);
+    const mod = isMac ? e.metaKey : e.ctrlKey;
 
     // Undo/redo via keyboard: preventDefault here suppresses the subsequent
     // beforeinput event, avoiding double-handling

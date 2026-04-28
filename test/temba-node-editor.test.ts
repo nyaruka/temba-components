@@ -323,10 +323,11 @@ describe('temba-node-editor', () => {
     editableDiv.focus();
     editableDiv.setSelectionRange(4, 4);
 
-    document.dispatchEvent(
+    editableDiv.dispatchEvent(
       new KeyboardEvent('keydown', {
         key: 'Tab',
-        bubbles: true
+        bubbles: true,
+        composed: true
       })
     );
 
@@ -410,10 +411,11 @@ describe('temba-node-editor', () => {
     editableDiv.focus();
     editableDiv.setSelectionRange(4, 4);
 
-    document.dispatchEvent(
+    editableDiv.dispatchEvent(
       new KeyboardEvent('keydown', {
         key: 'Enter',
-        bubbles: true
+        bubbles: true,
+        composed: true
       })
     );
 
