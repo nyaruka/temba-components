@@ -250,21 +250,60 @@ export class AutoTranslate extends RapidElement {
   /**
    * Builds batches of translation requests from all untranslated entries,
    * grouping so each request's serialized payload stays under
-   * TRANSLATION_BATCH_CHAR_LIMIT.
+   * TRANSLATION_BATCH_CHAR_LIMIT. Skips entries whose source matches a
+   * translation already present in the flow (those are returned in
+   * preTranslated for direct application), and dedupes pending entries
+   * sharing identical source arrays so each unique array is sent at most
+   * once (duplicates are returned in duplicateKeyToCanonical for
+   * propagation when the canonical key's translation lands).
    */
   private buildTranslationBatches(): {
     keyToEntries: Map<string, TranslationEntry[]>;
     batches: { items: Record<string, string[]> }[];
+    preTranslated: Map<string, string[]>;
+    duplicateKeyToCanonical: Map<string, string>;
   } {
     const keyToEntries = new Map<string, TranslationEntry[]>();
     const batches: { items: Record<string, string[]> }[] = [];
+    const preTranslated = new Map<string, string[]>();
+    const duplicateKeyToCanonical = new Map<string, string>();
 
     if (!this.definition) {
-      return { keyToEntries, batches };
+      return { keyToEntries, batches, preTranslated, duplicateKeyToCanonical };
     }
 
     const bundles = buildTranslationBundles(this.definition, this.languageCode);
-    const pending: { key: string; entry: TranslationEntry }[] = [];
+
+    // Map source-content -> already-stored translation array, built from
+    // entries that have a translation in the live localization map. Reading
+    // the stored array (not entry.to) preserves the original shape.
+    const existingByContent = new Map<string, string[]>();
+    const localization =
+      this.definition.localization?.[this.languageCode] || {};
+
+    for (const bundle of bundles) {
+      for (const entry of bundle.translations) {
+        if (!entry.to || entry.to.trim().length === 0) {
+          continue;
+        }
+        if (!entry.from || entry.from.trim().length === 0) {
+          continue;
+        }
+        const stored = localization[entry.uuid]?.[entry.attribute];
+        if (!Array.isArray(stored) || stored.length === 0) {
+          continue;
+        }
+        const contentKey = JSON.stringify([entry.from]);
+        if (!existingByContent.has(contentKey)) {
+          existingByContent.set(contentKey, stored);
+        }
+      }
+    }
+
+    // Collect pending entries (no translation yet) preserving order, and
+    // group source values per key in case the same key yields multiple
+    // entries.
+    const valuesByKey = new Map<string, string[]>();
 
     for (const bundle of bundles) {
       for (const entry of bundle.translations) {
@@ -275,11 +314,38 @@ export class AutoTranslate extends RapidElement {
           continue;
         }
         const key = `${entry.uuid}:${entry.attribute}`;
-        pending.push({ key, entry });
         const list = keyToEntries.get(key) || [];
         list.push(entry);
         keyToEntries.set(key, list);
+        const values = valuesByKey.get(key) || [];
+        values.push(entry.from);
+        valuesByKey.set(key, values);
       }
+    }
+
+    // Split pending keys into pre-translated (matching an existing
+    // translation), duplicates (sharing content with an earlier pending
+    // key), and unique canonical keys that need to be sent to the LLM.
+    const canonicalByContent = new Map<string, string>();
+    const canonicalKeysWithValues: { key: string; values: string[] }[] = [];
+
+    for (const [key, values] of valuesByKey) {
+      const contentKey = JSON.stringify(values);
+
+      const existing = existingByContent.get(contentKey);
+      if (existing && existing.length === values.length) {
+        preTranslated.set(key, existing);
+        continue;
+      }
+
+      const canonical = canonicalByContent.get(contentKey);
+      if (canonical) {
+        duplicateKeyToCanonical.set(key, canonical);
+        continue;
+      }
+
+      canonicalByContent.set(contentKey, key);
+      canonicalKeysWithValues.push({ key, values });
     }
 
     const source = this.definition.language;
@@ -289,18 +355,15 @@ export class AutoTranslate extends RapidElement {
 
     let current: Record<string, string[]> = {};
 
-    for (const { key, entry } of pending) {
-      const prevList = current[key];
-      const nextList = prevList ? [...prevList, entry.from] : [entry.from];
-      const tentative = { ...current, [key]: nextList };
-
+    for (const { key, values } of canonicalKeysWithValues) {
+      const tentative = { ...current, [key]: values };
       const tentativeSize = measurePayload(tentative);
       const batchHasItems = Object.keys(current).length > 0;
 
       if (tentativeSize > TRANSLATION_BATCH_CHAR_LIMIT && batchHasItems) {
         // a single oversized entry still ships on its own
         batches.push({ items: current });
-        current = { [key]: [entry.from] };
+        current = { [key]: values };
       } else {
         current = tentative;
       }
@@ -310,7 +373,7 @@ export class AutoTranslate extends RapidElement {
       batches.push({ items: current });
     }
 
-    return { keyToEntries, batches };
+    return { keyToEntries, batches, preTranslated, duplicateKeyToCanonical };
   }
 
   /**
@@ -326,9 +389,29 @@ export class AutoTranslate extends RapidElement {
       return;
     }
 
-    const { keyToEntries, batches } = this.buildTranslationBatches();
+    const { keyToEntries, batches, preTranslated, duplicateKeyToCanonical } =
+      this.buildTranslationBatches();
+
+    // Apply entries that match an existing translation immediately so we
+    // don't need an LLM round-trip for them.
+    if (preTranslated.size > 0) {
+      this.applyBatchTranslations(
+        Object.fromEntries(preTranslated),
+        keyToEntries
+      );
+    }
+
     if (batches.length === 0) {
       return;
+    }
+
+    // Inverse of duplicateKeyToCanonical so we can quickly find which keys
+    // need to be back-filled when a canonical key's translation lands.
+    const duplicatesByCanonical = new Map<string, string[]>();
+    for (const [dup, canonical] of duplicateKeyToCanonical) {
+      const list = duplicatesByCanonical.get(canonical) || [];
+      list.push(dup);
+      duplicatesByCanonical.set(canonical, list);
     }
 
     this.running = true;
@@ -358,7 +441,16 @@ export class AutoTranslate extends RapidElement {
 
         if (response.status >= 200 && response.status < 300) {
           const returned: Record<string, string[]> = response.json?.items || {};
-          this.applyBatchTranslations(returned, keyToEntries);
+          const expanded: Record<string, string[]> = { ...returned };
+          for (const canonical of Object.keys(returned)) {
+            const dups = duplicatesByCanonical.get(canonical);
+            if (dups) {
+              for (const dup of dups) {
+                expanded[dup] = returned[canonical];
+              }
+            }
+          }
+          this.applyBatchTranslations(expanded, keyToEntries);
         } else {
           this.error =
             response.json?.error ||
@@ -550,7 +642,8 @@ export class AutoTranslate extends RapidElement {
     return html`
       <p>
         All remaining text for <strong>${languageName}</strong> will be
-        translated automatically. Remember, AI models can make mistakes so it is important to review all of your translations to verify they are correct.
+        translated automatically. Remember, AI models can make mistakes so it is
+        important to review all of your translations to verify they are correct.
       </p>
       ${this.models.length > 1
         ? html`<temba-select
@@ -610,13 +703,11 @@ export class AutoTranslate extends RapidElement {
     return html`
       <div class="auto-translate-error-block">
         <p class="auto-translate-error-help">
-          Any translations already applied have been kept. You can try again,
-          or check the AI model's settings if the problem persists.
+          Any translations already applied have been kept. You can try again, or
+          check the AI model's settings if the problem persists.
         </p>
         ${this.errorExpanded
-          ? html`<pre class="auto-translate-error-details">
-${this.error}</pre
-            >`
+          ? html`<pre class="auto-translate-error-details">${this.error}</pre>`
           : html`<button
               class="auto-translate-error-toggle"
               type="button"
