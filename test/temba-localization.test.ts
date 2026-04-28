@@ -326,9 +326,12 @@ describe('Localization Editing', () => {
   it('should open auto translate dialog when clicking auto translate', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
+    // Includes an engine-only model that should be filtered out of the
+    // auto-translate picker, plus two valid editing models.
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-1', name: 'GPT-4' },
-      { uuid: 'llm-2', name: 'Claude' }
+      { uuid: 'llm-1', name: 'GPT-4', roles: ['editing'] },
+      { uuid: 'llm-2', name: 'Claude', roles: ['editing', 'engine'] },
+      { uuid: 'llm-engine', name: 'EngineOnly', roles: ['engine'] }
     ];
 
     const autoTranslateBtn = editor
@@ -346,6 +349,9 @@ describe('Localization Editing', () => {
     await at.updateComplete;
 
     expect(at.dialogOpen).to.be.true;
+    // loadModels should have dropped the engine-only model
+    expect(at.models.map((m: any) => m.uuid)).to.deep.equal(['llm-1', 'llm-2']);
+
     const dialog = at.shadowRoot.querySelector('.auto-translate-body');
     expect(dialog).to.exist;
     const modelSelect = dialog?.querySelector(
@@ -355,6 +361,10 @@ describe('Localization Editing', () => {
     expect(modelSelect.getAttribute('endpoint')).to.equal(
       '/api/internal/llms.json'
     );
+    // and the temba-select shouldExclude predicate also rejects engine-only
+    const shouldExclude = (modelSelect as any).shouldExclude;
+    expect(shouldExclude({ roles: ['engine'] })).to.be.true;
+    expect(shouldExclude({ roles: ['editing'] })).to.be.false;
   });
 
   it('should hide auto translate when the auto-translate flag is off', async () => {
@@ -394,8 +404,11 @@ describe('Localization Editing', () => {
   it('should auto-skip picker when only one LLM is available', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
+    // Engine-only model is present but should be filtered out, leaving a
+    // single editing-capable model — the picker should still auto-skip.
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-only', name: 'SoloGPT' }
+      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] },
+      { uuid: 'llm-engine', name: 'EngineOnly', roles: ['engine'] }
     ];
 
     const autoTranslateBtn = editor

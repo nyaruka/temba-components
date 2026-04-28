@@ -1,6 +1,6 @@
 import { expect } from '@open-wc/testing';
 import { zustand } from '../src/store/AppState';
-import { shouldExcludeFlow } from '../src/flow/flow-utils';
+import { shouldExcludeFlow, hasLLMRole } from '../src/flow/flow-utils';
 import { getLanguageDisplayName } from '../src/flow/utils';
 
 function setFlowType(type: string) {
@@ -45,6 +45,19 @@ describe('shouldExcludeFlow', () => {
   it('returns false when flow definition is null', () => {
     zustand.setState({ ...zustand.getState(), flowDefinition: null });
     expect(shouldExcludeFlow({ type: 'message' })).to.be.false;
+  });
+});
+
+describe('hasLLMRole', () => {
+  it('returns true when the model has the role', () => {
+    expect(hasLLMRole({ roles: ['engine'] }, 'engine')).to.be.true;
+    expect(hasLLMRole({ roles: ['editing', 'engine'] }, 'editing')).to.be.true;
+  });
+
+  it('returns false when the model lacks the role', () => {
+    expect(hasLLMRole({ roles: ['editing'] }, 'engine')).to.be.false;
+    expect(hasLLMRole({ roles: ['engine'] }, 'editing')).to.be.false;
+    expect(hasLLMRole({ roles: [] }, 'engine')).to.be.false;
   });
 });
 

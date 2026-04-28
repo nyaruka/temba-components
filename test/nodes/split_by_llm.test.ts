@@ -1,6 +1,7 @@
 import { expect } from '@open-wc/testing';
 import { split_by_llm } from '../../src/flow/nodes/split_by_llm';
 import { Node, CallLLM } from '../../src/store/flow-definition';
+import { SelectFieldConfig } from '../../src/flow/types';
 import { NodeTest } from '../NodeHelper';
 
 /**
@@ -30,6 +31,21 @@ describe('split_by_llm node config', () => {
         'input',
         'instructions'
       ]);
+    });
+  });
+
+  describe('llm shouldExclude', () => {
+    const shouldExclude = (split_by_llm.form.llm as SelectFieldConfig)
+      .shouldExclude!;
+
+    it('includes options that have the engine role', () => {
+      expect(shouldExclude({ roles: ['engine'] })).to.be.false;
+      expect(shouldExclude({ roles: ['engine', 'editing'] })).to.be.false;
+    });
+
+    it('excludes options without the engine role', () => {
+      expect(shouldExclude({ roles: ['editing'] })).to.be.true;
+      expect(shouldExclude({ roles: [] })).to.be.true;
     });
   });
 

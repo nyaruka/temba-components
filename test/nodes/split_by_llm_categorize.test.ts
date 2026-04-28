@@ -1,6 +1,7 @@
 import { expect } from '@open-wc/testing';
 import { split_by_llm_categorize } from '../../src/flow/nodes/split_by_llm_categorize';
 import { Node } from '../../src/store/flow-definition';
+import { SelectFieldConfig } from '../../src/flow/types';
 import { NodeTest } from '../NodeHelper';
 
 // Helper function to create routers with proper cases and exits
@@ -103,6 +104,22 @@ describe('split_by_llm_categorize node config', () => {
 
     it('has correct type', () => {
       expect(split_by_llm_categorize.type).to.equal('split_by_llm_categorize');
+    });
+  });
+
+  describe('llm shouldExclude', () => {
+    const shouldExclude = (
+      split_by_llm_categorize.form.llm as SelectFieldConfig
+    ).shouldExclude!;
+
+    it('includes options that have the engine role', () => {
+      expect(shouldExclude({ roles: ['engine'] })).to.be.false;
+      expect(shouldExclude({ roles: ['engine', 'editing'] })).to.be.false;
+    });
+
+    it('excludes options without the engine role', () => {
+      expect(shouldExclude({ roles: ['editing'] })).to.be.true;
+      expect(shouldExclude({ roles: [] })).to.be.true;
     });
   });
 

@@ -3,6 +3,7 @@ import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createMultiCategoryRouter } from '../../utils';
 import { html } from 'lit';
 import { validateWith } from '../utils';
+import { LLMModel, hasLLMRole } from '../flow-utils';
 
 export const split_by_llm_categorize: NodeConfig = {
   type: 'split_by_llm_categorize',
@@ -19,7 +20,8 @@ export const split_by_llm_categorize: NodeConfig = {
       endpoint: '/api/internal/llms.json',
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Select an LLM...'
+      placeholder: 'Select an LLM...',
+      shouldExclude: (option: LLMModel) => !hasLLMRole(option, 'engine')
     },
     input: {
       type: 'text',

@@ -15,3 +15,20 @@ export function shouldExcludeFlow(flow: any): boolean {
 
   return false;
 }
+
+export type LLMRole = 'engine' | 'editing';
+
+export interface LLMModel {
+  uuid: string;
+  name: string;
+  type?: string;
+  description?: string;
+  roles?: LLMRole[];
+}
+
+export function hasLLMRole(
+  model: { roles?: string[] } | null | undefined,
+  role: LLMRole
+): boolean {
+  return model?.roles?.includes(role) ?? false;
+}
