@@ -93,6 +93,9 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'shortcuts' })
   shortcutsEndpoint: string;
 
+  @property({ type: String })
+  brand = '';
+
   @property({ type: Object, attribute: false })
   private schema: CompletionSchema;
 
@@ -154,6 +157,7 @@ export class Store extends RapidElement {
     this.ready = false;
     this.clearCache();
     this.settings = JSON.parse(getCookie('settings') || '{}');
+    zustand.setState({ brand: this.brand });
 
     /* 
     // This will create a shorthand unit

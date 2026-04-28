@@ -425,7 +425,58 @@ describe('Localization Editing', () => {
     expect(at.selectedModel?.uuid).to.equal('llm-only');
     const dialog = at.shadowRoot.querySelector('.auto-translate-body');
     expect(dialog?.querySelector('.auto-translate-model-select')).to.not.exist;
-    expect(dialog?.querySelector('.auto-translate-single-model')).to.exist;
+    expect(dialog?.textContent).to.not.contain('SoloGPT');
+  });
+
+  it('should include the brand name in the dialog copy when set', async () => {
+    zustand.setState({ brand: 'TextIt' });
+    try {
+      await selectLanguageInToolbar(editor, 'French', 'fra');
+
+      (storeElement as any).getResults = async () => [
+        { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] }
+      ];
+
+      const autoTranslateBtn = editor
+        .querySelector('temba-editor-toolbar')
+        ?.shadowRoot?.querySelector(
+          '.toolbar-btn[aria-label="Auto translate"]'
+        ) as HTMLButtonElement;
+      autoTranslateBtn.click();
+      await editor.updateComplete;
+      await new Promise((r) => setTimeout(r, 0));
+      const at = editor.querySelector('temba-auto-translate') as any;
+      await at.updateComplete;
+
+      const dialog = at.shadowRoot.querySelector('.auto-translate-body');
+      expect(dialog?.textContent).to.contain(
+        'TextIt uses AI for automatic translation'
+      );
+    } finally {
+      zustand.setState({ brand: '' });
+    }
+  });
+
+  it('should fall back to a generic AI clause when no brand is set', async () => {
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+
+    (storeElement as any).getResults = async () => [
+      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] }
+    ];
+
+    const autoTranslateBtn = editor
+      .querySelector('temba-editor-toolbar')
+      ?.shadowRoot?.querySelector(
+        '.toolbar-btn[aria-label="Auto translate"]'
+      ) as HTMLButtonElement;
+    autoTranslateBtn.click();
+    await editor.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+    const at = editor.querySelector('temba-auto-translate') as any;
+    await at.updateComplete;
+
+    const dialog = at.shadowRoot.querySelector('.auto-translate-body');
+    expect(dialog?.textContent).to.contain('Automatic translation uses AI');
   });
 
   it('should show empty state when no LLMs are configured', async () => {
