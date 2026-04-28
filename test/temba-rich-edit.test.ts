@@ -66,10 +66,11 @@ describe('temba-rich-edit', () => {
       inputEvents += 1;
     });
 
-    document.dispatchEvent(
+    editableDiv.dispatchEvent(
       new KeyboardEvent('keydown', {
         key: 'Tab',
-        bubbles: true
+        bubbles: true,
+        composed: true
       })
     );
 
@@ -115,5 +116,151 @@ describe('temba-rich-edit', () => {
     // not to the earlier "@co" typing state.
     editor.performUndo();
     expect(editor.value).to.equal('@con');
+  });
+
+  // Synthesized keydowns can't drive native arrow/cursor navigation in
+  // Chromium (the browser only does that for real input from the OS), so the
+  // arrow-key tests below assert defaultPrevented instead of caret position.
+  it('does not consume arrow keys in another editor when a sibling has options open', async () => {
+    const wrapper = (await fixture(html`
+      <div>
+        <temba-rich-edit
+          id="popup"
+          value="@con"
+          textarea
+          session
+        ></temba-rich-edit>
+        <temba-rich-edit
+          id="active"
+          value="line one${'\n'}line two${'\n'}line three"
+          textarea
+        ></temba-rich-edit>
+      </div>
+    `)) as HTMLElement;
+
+    const popup = wrapper.querySelector('#popup') as any;
+    const active = wrapper.querySelector('#active') as any;
+    await popup.updateComplete;
+    await active.updateComplete;
+
+    popup.options = [{ name: 'contact.name' }, { name: 'contact.uuid' }];
+    await popup.updateComplete;
+
+    const activeDiv = active.shadowRoot.querySelector(
+      '.highlight-editor'
+    ) as HTMLDivElement;
+    activeDiv.focus();
+    (activeDiv as any).setSelectionRange(0, 0);
+
+    const evt = new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      bubbles: true,
+      composed: true,
+      cancelable: true
+    });
+    activeDiv.dispatchEvent(evt);
+    await active.updateComplete;
+
+    expect(evt.defaultPrevented).to.equal(false);
+  });
+
+  it('still consumes arrow keys when the same editor has options open', async () => {
+    const editor = (await fixture(html`
+      <temba-rich-edit value="@con" textarea session></temba-rich-edit>
+    `)) as any;
+    editor.options = [{ name: 'contact.name' }, { name: 'contact.uuid' }];
+    await editor.updateComplete;
+
+    const editableDiv = editor.shadowRoot.querySelector(
+      '.highlight-editor'
+    ) as HTMLDivElement;
+    editableDiv.focus();
+
+    const evt = new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      bubbles: true,
+      composed: true,
+      cancelable: true
+    });
+    editableDiv.dispatchEvent(evt);
+    await editor.updateComplete;
+
+    expect(evt.defaultPrevented).to.equal(true);
+  });
+
+  it('lets Ctrl+Y pass through on macOS so Cocoa yank works', async () => {
+    const originalUA = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', {
+      value:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+      configurable: true
+    });
+
+    try {
+      const editor = (await fixture(html`
+        <temba-rich-edit value="hello world" textarea></temba-rich-edit>
+      `)) as any;
+      await editor.updateComplete;
+
+      const editableDiv = editor.shadowRoot.querySelector(
+        '.highlight-editor'
+      ) as HTMLDivElement;
+      editableDiv.focus();
+
+      const evt = new KeyboardEvent('keydown', {
+        key: 'y',
+        ctrlKey: true,
+        bubbles: true,
+        composed: true,
+        cancelable: true
+      });
+      editableDiv.dispatchEvent(evt);
+      await editor.updateComplete;
+
+      expect(evt.defaultPrevented).to.equal(false);
+    } finally {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalUA,
+        configurable: true
+      });
+    }
+  });
+
+  it('still treats Ctrl+Y as redo on non-Mac platforms', async () => {
+    const originalUA = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', {
+      value:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      configurable: true
+    });
+
+    try {
+      const editor = (await fixture(html`
+        <temba-rich-edit value="hello" textarea></temba-rich-edit>
+      `)) as any;
+      await editor.updateComplete;
+
+      const editableDiv = editor.shadowRoot.querySelector(
+        '.highlight-editor'
+      ) as HTMLDivElement;
+      editableDiv.focus();
+
+      const evt = new KeyboardEvent('keydown', {
+        key: 'y',
+        ctrlKey: true,
+        bubbles: true,
+        composed: true,
+        cancelable: true
+      });
+      editableDiv.dispatchEvent(evt);
+      await editor.updateComplete;
+
+      expect(evt.defaultPrevented).to.equal(true);
+    } finally {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalUA,
+        configurable: true
+      });
+    }
   });
 });
