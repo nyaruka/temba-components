@@ -185,6 +185,7 @@ export interface Activity {
 
 export interface AppState {
   features: string[];
+  brand: string;
 
   flowDefinition: FlowDefinition;
   flowInfo: FlowInfo;
@@ -265,6 +266,7 @@ export const zustand = createStore<AppState>()(
   subscribeWithSelector(
     immer((set, get) => ({
       features: [] as string[],
+      brand: '',
       languageNames: {},
       canvasSize: { width: 0, height: 0 },
       languageCode: '',

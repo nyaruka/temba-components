@@ -229,8 +229,7 @@ describe('temba-rich-edit', () => {
   it('still treats Ctrl+Y as redo on non-Mac platforms', async () => {
     const originalUA = navigator.userAgent;
     Object.defineProperty(navigator, 'userAgent', {
-      value:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       configurable: true
     });
 

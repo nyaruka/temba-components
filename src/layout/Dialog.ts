@@ -172,10 +172,7 @@ export class Dialog extends ResizeElement {
       }
 
       .dialog-footer {
-        background: var(
-          --dialog-footer-background,
-          var(--color-primary-light)
-        );
+        background: var(--dialog-footer-background, var(--color-primary-light));
         padding: var(--dialog-footer-padding-top, 10px) 10px 10px;
         display: flex;
         flex-flow: row;

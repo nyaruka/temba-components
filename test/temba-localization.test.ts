@@ -425,7 +425,7 @@ describe('Localization Editing', () => {
     expect(at.selectedModel?.uuid).to.equal('llm-only');
     const dialog = at.shadowRoot.querySelector('.auto-translate-body');
     expect(dialog?.querySelector('.auto-translate-model-select')).to.not.exist;
-    expect(dialog?.querySelector('.auto-translate-single-model')).to.exist;
+    expect(dialog?.textContent).to.not.contain('SoloGPT');
   });
 
   it('should show empty state when no LLMs are configured', async () => {

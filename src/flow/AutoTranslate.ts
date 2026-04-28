@@ -3,7 +3,7 @@ import { css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getStore } from '../store/Store';
-import { zustand } from '../store/AppState';
+import { AppState, fromStore, zustand } from '../store/AppState';
 import { FlowDefinition } from '../store/flow-definition';
 import { TranslationEntry, buildTranslationBundles } from './flow-translations';
 import { getLanguageDisplayName } from './utils';
@@ -64,10 +64,6 @@ export class AutoTranslate extends RapidElement {
 
       .auto-translate-empty a:hover {
         text-decoration: underline;
-      }
-
-      .auto-translate-single-model {
-        font-size: 13px;
       }
 
       .auto-translate-status {
@@ -140,6 +136,9 @@ export class AutoTranslate extends RapidElement {
 
   @property({ type: Boolean })
   disabled = false;
+
+  @fromStore(zustand, (state: AppState) => state.brand)
+  private brand!: string;
 
   // Reactive flag the host can read to show "translating" state in UI
   // adjacent to this component (e.g. the toolbar button).
@@ -642,11 +641,15 @@ export class AutoTranslate extends RapidElement {
 
     const selected = this.selectedModel ? [this.selectedModel] : [];
     const languageName = getLanguageDisplayName(this.languageCode);
+    const aiClause = this.brand
+      ? html`${this.brand} uses AI for automatic translation, which can make
+        mistakes,`
+      : html`Automatic translation uses AI, which can make mistakes,`;
     return html`
       <p>
         All remaining text for <strong>${languageName}</strong> will be
-        translated automatically. Remember, AI models can make mistakes so it is
-        important to review all of your translations to verify they are correct.
+        translated automatically. ${aiClause} so it is important to review all
+        of your translations to verify they are correct.
       </p>
       ${this.models.length > 1
         ? html`<temba-select
@@ -660,9 +663,7 @@ export class AutoTranslate extends RapidElement {
             placeholder="Select an AI model"
             @change=${this.handleModelChange}
           ></temba-select>`
-        : html`<div class="auto-translate-single-model">
-            Using <strong>${this.models[0]?.name}</strong>
-          </div>`}
+        : ''}
     `;
   }
 
