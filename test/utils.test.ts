@@ -133,7 +133,9 @@ before(async () => {
   await setViewport({ width: 1920, height: 1080, deviceScaleFactor: 2 });
 
   // preload Roboto so layouts that depend on text width (e.g. slider's range
-  // labels) don't shift when the font finishes loading mid-test
+  // labels) don't shift when the font finishes loading mid-test. Only the
+  // weights declared in test-assets/style.css are loadable; other weights
+  // fall back to system fonts.
   if (document.fonts && (document.fonts as any).load) {
     await Promise.all([
       (document.fonts as any).load('300 1em Roboto'),
