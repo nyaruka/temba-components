@@ -140,13 +140,13 @@ const checkScreenshot = async (filename, excluded, threshold) => {
   });
 };
 
-const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
-  // clear out any past tests
-  const diffs = path.resolve(SCREENSHOTS, DIFF);
-  const tests = path.resolve(SCREENSHOTS, TEST);
+// clear out any past tests once per process — clearing per-page would race
+// with other concurrent pages that have already written test screenshots and
+// are about to read them back, causing intermittent ENOENT failures.
+rimraf.sync(path.resolve(SCREENSHOTS, DIFF));
+rimraf.sync(path.resolve(SCREENSHOTS, TEST));
 
-  rimraf.sync(diffs);
-  rimraf.sync(tests);
+const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
 
   await page.exposeFunction(
     'matchPageSnapshot',

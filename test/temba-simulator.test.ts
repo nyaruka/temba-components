@@ -41,9 +41,20 @@ const createSimulator = async (attrs: any = {}) => {
   return simulator;
 };
 
-// create simulator without overriding cookie-restored properties
-const createSimulatorRaw = async (attrs: any = {}) => {
+// create simulator without overriding cookie-restored properties.
+// `cookieValue` (when provided) is written to the simulator cookie immediately
+// before the fixture is created, so it can't be clobbered by anything that
+// happens during the async loadStore() above (e.g. a stray updated() from a
+// previous test's element).
+const createSimulatorRaw = async (
+  attrs: any = {},
+  cookieValue?: string
+) => {
   await loadStore();
+
+  if (cookieValue !== undefined) {
+    setCookie('simulator', cookieValue);
+  }
 
   const defaults = {
     flow: FLOW_UUID,
@@ -1241,47 +1252,41 @@ describe('temba-simulator', () => {
     });
 
     it('restores settings from simulator cookie', async () => {
-      setCookie(
-        'simulator',
+      const simulator = await createSimulatorRaw(
+        {},
         JSON.stringify({
           size: 'large',
           following: false,
           contextExplorerOpen: true
         })
       );
-
-      const simulator = await createSimulatorRaw();
       expect(simulator.size).to.equal('large');
       expect((simulator as any).following).to.equal(false);
       expect((simulator as any).contextExplorerOpen).to.equal(true);
     });
 
     it('ignores invalid size values from cookie', async () => {
-      setCookie(
-        'simulator',
+      const simulator = await createSimulatorRaw(
+        {},
         JSON.stringify({
           size: 'gigantic',
           following: true,
           contextExplorerOpen: false
         })
       );
-
-      const simulator = await createSimulatorRaw();
       // should keep default since 'gigantic' is not a valid size
       expect(simulator.size).to.equal('small');
     });
 
     it('ignores non-boolean following/contextExplorerOpen values from cookie', async () => {
-      setCookie(
-        'simulator',
+      const simulator = await createSimulatorRaw(
+        {},
         JSON.stringify({
           size: 'medium',
           following: 'yes',
           contextExplorerOpen: 42
         })
       );
-
-      const simulator = await createSimulatorRaw();
       expect(simulator.size).to.equal('medium');
       // should keep defaults since values aren't booleans
       expect((simulator as any).following).to.equal(true);
@@ -1289,9 +1294,7 @@ describe('temba-simulator', () => {
     });
 
     it('saves settings to cookie when properties change', async () => {
-      setCookie('simulator', '{}');
-
-      const simulator = await createSimulatorRaw();
+      const simulator = await createSimulatorRaw({}, '{}');
       simulator.size = 'large';
       await simulator.updateComplete;
 
@@ -1300,8 +1303,7 @@ describe('temba-simulator', () => {
     });
 
     it('handles malformed cookie gracefully', async () => {
-      setCookie('simulator', 'not-valid-json{');
-      const simulator = await createSimulatorRaw();
+      const simulator = await createSimulatorRaw({}, 'not-valid-json{');
       // should use defaults without throwing
       expect(simulator.size).to.equal('small');
       expect((simulator as any).following).to.equal(true);

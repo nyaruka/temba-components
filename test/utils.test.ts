@@ -131,6 +131,18 @@ before(async () => {
   normalFetch = window.fetch;
   stub(window, 'fetch').callsFake(getResponse);
   await setViewport({ width: 1920, height: 1080, deviceScaleFactor: 2 });
+
+  // preload Roboto so layouts that depend on text width (e.g. slider's range
+  // labels) don't shift when the font finishes loading mid-test. Only the
+  // weights declared in test-assets/style.css are loadable; other weights
+  // fall back to system fonts.
+  if (document.fonts && (document.fonts as any).load) {
+    await Promise.all([
+      (document.fonts as any).load('300 1em Roboto'),
+      (document.fonts as any).load('400 1em Roboto'),
+      (document.fonts as any).load('500 1em Roboto')
+    ]);
+  }
 });
 
 after(() => {
@@ -251,6 +263,12 @@ export const assertScreenshot = async (
   const isCopilotEnvironment = (window as any).isCopilotEnvironment;
   const threshold = isCopilotEnvironment ? 1.0 : 0.2;
   const exclude: Clip[] = [];
+
+  // wait for web fonts to load so text-dependent layouts don't shift between
+  // standalone and full-suite runs (e.g. Roboto fallback vs loaded)
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
 
   try {
     await (window as any).matchPageSnapshot(
