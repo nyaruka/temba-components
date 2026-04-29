@@ -282,10 +282,10 @@ describe('Editor Revisions', () => {
   });
 
   it('refreshes the list when a new revision is saved while the window is open', async () => {
-    const mockResponse = new Response(JSON.stringify({ results: [] }), {
-      status: 200
-    });
-    fetchStub.resolves(mockResponse);
+    fetchStub.callsFake(
+      async () =>
+        new Response(JSON.stringify({ results: [] }), { status: 200 })
+    );
 
     zustand.setState({
       viewingRevision: false,
@@ -304,10 +304,10 @@ describe('Editor Revisions', () => {
   });
 
   it('does not refresh when the revision number decreases (e.g., loading an older one)', async () => {
-    const mockResponse = new Response(JSON.stringify({ results: [] }), {
-      status: 200
-    });
-    fetchStub.resolves(mockResponse);
+    fetchStub.callsFake(
+      async () =>
+        new Response(JSON.stringify({ results: [] }), { status: 200 })
+    );
 
     zustand.setState({
       viewingRevision: false,
@@ -327,10 +327,10 @@ describe('Editor Revisions', () => {
   });
 
   it('does not refresh when previewing an older revision', async () => {
-    const mockResponse = new Response(JSON.stringify({ results: [] }), {
-      status: 200
-    });
-    fetchStub.resolves(mockResponse);
+    fetchStub.callsFake(
+      async () =>
+        new Response(JSON.stringify({ results: [] }), { status: 200 })
+    );
 
     zustand.setState({
       viewingRevision: false,
