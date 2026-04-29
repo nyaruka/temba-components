@@ -40,6 +40,11 @@ describe('Editor Revisions', () => {
 
   afterEach(() => {
     restore();
+    // Reset shared zustand state so tests in other files start fresh.
+    zustand.setState({
+      viewingRevision: false,
+      flowDefinition: null as any
+    });
   });
 
   it('should include the current revision at the top of the list', async () => {
