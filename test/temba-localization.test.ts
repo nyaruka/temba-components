@@ -935,6 +935,196 @@ describe('Localization Editing', () => {
     expect(localized['action-d']?.text).to.deep.equal(['Goodbye!fr']);
   });
 
+  it('should not seed reuse from a stored translation that contains only empty strings', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // action-a's stored translation is just empty strings — a leftover
+    // from a save that didn't actually translate anything. action-b
+    // shares the same source and is genuinely untranslated. Default
+    // (non-update) mode should still send action-b to the LLM, not
+    // pre-translate it with the empty stored value.
+    const flowDefinition: FlowDefinition = {
+      uuid: 'empty-stored-flow',
+      name: 'Empty Stored Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'action-a': { text: [''] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-a',
+          actions: [
+            { type: 'send_msg', uuid: 'action-a', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-a' }]
+        },
+        {
+          uuid: 'node-b',
+          actions: [
+            { type: 'send_msg', uuid: 'action-b', text: 'Hello' } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-b' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-a': { position: { left: 0, top: 0 } },
+          'node-b': { position: { left: 0, top: 100 } }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 2, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    const calls: any[] = [];
+    (storeElement as any).postJSON = async (_url: string, body: any) => {
+      calls.push(body);
+      const translated: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(
+        body.items as Record<string, string[]>
+      )) {
+        translated[k] = v.map((s) => `${s}!fr`);
+      }
+      return { status: 200, json: { items: translated } };
+    };
+
+    await at.runAutoTranslation();
+
+    // a real LLM round-trip happens (action-a's empty stored translation
+    // must NOT be reused for action-b)
+    expect(calls).to.have.lengthOf(1);
+    const sentItems = calls[0].items as Record<string, string[]>;
+    expect(Object.values(sentItems)[0]).to.deep.equal(['Hello']);
+
+    // action-b ends up with a real translation rather than the empty
+    // pre-translation that the old reuse logic would have produced
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    expect(localized['action-b']?.text).to.deep.equal(['Hello!fr']);
+  });
+
+  it('should not splice stale per-item values when source array length grew', async () => {
+    editor?.remove();
+    setupWorkspace();
+
+    // The stored arguments translation is shorter than the current
+    // source array — a sign that the rule grew after it was last
+    // translated. If the LLM returns blanks for the new positions, the
+    // merge must NOT splice the old single value into position 0 of the
+    // new array (which would mix English into a translated row).
+    const flowDefinition: FlowDefinition = {
+      uuid: 'grew-args-flow',
+      name: 'Grew Args Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        fra: {
+          'case-A': { arguments: ['Red'] }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-A',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@input.text',
+            cases: [
+              {
+                uuid: 'case-A',
+                type: 'has_any_word',
+                arguments: ['red', 'green', 'blue'],
+                category_uuid: 'cat-A1'
+              }
+            ],
+            categories: [
+              { uuid: 'cat-A1', name: 'Match', exit_uuid: 'exit-A1' },
+              { uuid: 'cat-A-other', name: 'Other', exit_uuid: 'exit-A-other' }
+            ],
+            default_category_uuid: 'cat-A-other'
+          },
+          exits: [
+            { uuid: 'exit-A1', destination_uuid: null },
+            { uuid: 'exit-A-other', destination_uuid: null }
+          ]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-A': {
+            position: { left: 0, top: 0 },
+            type: 'wait_for_response',
+            config: { localizeRules: true }
+          }
+        },
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 1, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(
+      html`<temba-flow-editor
+        features='["auto_translate"]'
+      ></temba-flow-editor>`
+    );
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+    at.updateExisting = true;
+
+    (storeElement as any).postJSON = async (_url: string, _body: any) => {
+      return {
+        status: 200,
+        json: { items: { 'case-A:arguments': ['', 'vert', 'bleu'] } }
+      };
+    };
+
+    await at.runAutoTranslation();
+
+    const localized =
+      zustand.getState().flowDefinition?.localization?.['fra'] || {};
+    // because the lengths don't align, the LLM result is taken as-is —
+    // the stored 'Red' must NOT leak into position 0
+    expect(localized['case-A']?.arguments).to.deep.equal(['', 'vert', 'bleu']);
+  });
+
   it('should not translate already-translated entries by default', async () => {
     editor?.remove();
     setupWorkspace();

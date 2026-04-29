@@ -300,7 +300,13 @@ export class AutoTranslate extends RapidElement {
     if (!updateExisting) {
       for (const bundle of bundles) {
         for (const entry of bundle.translations) {
-          if (!entry.toValues || entry.toValues.length === 0) {
+          // Skip entries with no real translation: an empty array OR an
+          // array of only empty/whitespace strings shouldn't seed reuse,
+          // or we'd silently propagate a blank to other matching sources.
+          if (
+            !entry.toValues ||
+            !entry.toValues.some((v) => v && v.trim().length > 0)
+          ) {
             continue;
           }
           if (!entry.fromValues || entry.fromValues.length === 0) {
@@ -322,6 +328,9 @@ export class AutoTranslate extends RapidElement {
     // attribute) maps to its source array (entry.fromValues), preserving
     // multi-item structure for attributes like router-case `arguments`.
     // In update mode we include entries that already have a translation.
+    // Invariant: findTranslations produces at most one entry per
+    // (uuid, attribute) pair, so the first fromValues is authoritative
+    // and any later entry with the same key is treated as a duplicate.
     const valuesByKey = new Map<string, string[]>();
 
     for (const bundle of bundles) {
@@ -534,14 +543,19 @@ export class AutoTranslate extends RapidElement {
       // Never replace an existing non-empty translation with an empty
       // value: when re-translating already-localized content the LLM may
       // return blanks for some entries; keep the prior translation in
-      // those slots.
+      // those slots. Only safe when the arrays align by index — if the
+      // source array length has changed since the last translation, the
+      // old values aren't tied to the same items anymore, so skip the
+      // per-item preserve and let the LLM result through unchanged.
+      const canPreservePerItem =
+        !!existingValues && existingValues.length === values.length;
       const mergedValues = values.map((v, i) => {
         const isEmpty =
           v === null ||
           v === undefined ||
           (typeof v === 'string' && v.trim().length === 0);
-        if (isEmpty && existingValues && existingValues[i]) {
-          return existingValues[i];
+        if (isEmpty && canPreservePerItem && existingValues![i]) {
+          return existingValues![i];
         }
         return v;
       });
