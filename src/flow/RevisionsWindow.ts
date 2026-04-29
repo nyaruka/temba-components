@@ -6,7 +6,7 @@ import { CustomEventType } from '../interfaces';
 import { getStore } from '../store/Store';
 import { FlowDefinition } from '../store/flow-definition';
 import { fetchResults } from '../utils';
-import { AppState, FLOW_SPEC_VERSION, zustand } from '../store/AppState';
+import { FLOW_SPEC_VERSION } from '../store/AppState';
 import {
   RevisionChange,
   isSignificantChange,
@@ -62,51 +62,25 @@ export class RevisionsWindow extends RapidElement {
   } | null = null;
   private browseLanguageCode: string | null = null;
   private fetchRequestId = 0;
-  private revisionSubscription: (() => void) | null = null;
 
   public get isViewingRevision(): boolean {
     return this.viewingRevision !== null;
   }
 
-  public disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.unwatchRevisions();
+  public refresh(): void {
+    if (!this.hidden) {
+      this.fetchRevisions();
+    }
   }
 
   protected updated(changes: PropertyValues): void {
     super.updated(changes);
-
     if (
       changes.has('hidden') &&
       !this.hidden &&
       changes.get('hidden') === true
     ) {
       this.fetchRevisions();
-      this.watchRevisions();
-    } else if (changes.has('hidden') && this.hidden) {
-      this.unwatchRevisions();
-    }
-  }
-
-  private watchRevisions(): void {
-    if (this.revisionSubscription) return;
-    this.revisionSubscription = zustand.subscribe(
-      (state: AppState) => state.flowDefinition?.revision ?? 0,
-      (current: number, previous: number) => {
-        if (
-          current > previous &&
-          !zustand.getState().viewingRevision
-        ) {
-          this.fetchRevisions();
-        }
-      }
-    );
-  }
-
-  private unwatchRevisions(): void {
-    if (this.revisionSubscription) {
-      this.revisionSubscription();
-      this.revisionSubscription = null;
     }
   }
 

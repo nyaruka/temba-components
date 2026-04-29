@@ -1596,6 +1596,9 @@ export class Editor extends RapidElement {
         }
 
         getStore().getState().setDirtyDate(null);
+
+        // Refresh the revisions list if it's currently open.
+        this.getRevisionsWindow()?.refresh();
       })
       .catch((error) => {
         console.error('Failed to save flow:', error);

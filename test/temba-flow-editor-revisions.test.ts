@@ -2,7 +2,6 @@ import { html, fixture, expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { IssuesWindow } from '../src/flow/IssuesWindow';
 import { RevisionsWindow } from '../src/flow/RevisionsWindow';
-import { zustand } from '../src/store/AppState';
 import { stub, restore, SinonStub } from 'sinon';
 
 customElements.define('temba-flow-editor-revisions', Editor);
@@ -40,11 +39,6 @@ describe('Editor Revisions', () => {
 
   afterEach(() => {
     restore();
-    // Reset shared zustand state so tests in other files start fresh.
-    zustand.setState({
-      viewingRevision: false,
-      flowDefinition: null as any
-    });
   });
 
   it('should include the current revision at the top of the list', async () => {
@@ -293,69 +287,30 @@ describe('Editor Revisions', () => {
     expect(revisions[2].changes.length).to.equal(1);
   });
 
-  it('refreshes the list when a new revision is saved while the window is open', async () => {
+  it('refresh() fetches the list when the window is open', async () => {
     fetchStub.callsFake(
       async () =>
         new Response(JSON.stringify({ results: [] }), { status: 200 })
     );
 
-    zustand.setState({
-      viewingRevision: false,
-      flowDefinition: { revision: 1, nodes: [] } as any
-    });
     (revisionsWindow as any).hidden = false;
     await revisionsWindow.updateComplete;
     fetchStub.resetHistory();
 
-    zustand.setState({
-      flowDefinition: { revision: 2, nodes: [] } as any
-    });
+    revisionsWindow.refresh();
     await revisionsWindow.updateComplete;
 
     expect(fetchStub.callCount).to.be.greaterThan(0);
   });
 
-  it('does not refresh when the revision number decreases (e.g., loading an older one)', async () => {
+  it('refresh() is a no-op when the window is hidden', async () => {
     fetchStub.callsFake(
       async () =>
         new Response(JSON.stringify({ results: [] }), { status: 200 })
     );
 
-    zustand.setState({
-      viewingRevision: false,
-      flowDefinition: { revision: 7, nodes: [] } as any
-    });
-    (revisionsWindow as any).hidden = false;
-    await revisionsWindow.updateComplete;
     fetchStub.resetHistory();
-
-    // revision number drops without viewingRevision flipping (e.g., a fetch race)
-    zustand.setState({
-      flowDefinition: { revision: 4, nodes: [] } as any
-    });
-    await revisionsWindow.updateComplete;
-
-    expect(fetchStub.callCount).to.equal(0);
-  });
-
-  it('does not refresh when previewing an older revision', async () => {
-    fetchStub.callsFake(
-      async () =>
-        new Response(JSON.stringify({ results: [] }), { status: 200 })
-    );
-
-    zustand.setState({
-      viewingRevision: false,
-      flowDefinition: { revision: 5, nodes: [] } as any
-    });
-    (revisionsWindow as any).hidden = false;
-    await revisionsWindow.updateComplete;
-    fetchStub.resetHistory();
-
-    zustand.setState({
-      viewingRevision: true,
-      flowDefinition: { revision: 3, nodes: [] } as any
-    });
+    revisionsWindow.refresh();
     await revisionsWindow.updateComplete;
 
     expect(fetchStub.callCount).to.equal(0);
