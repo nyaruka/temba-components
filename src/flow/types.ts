@@ -50,8 +50,7 @@ export const CONTEXT_MENU_SHORTCUTS: Record<FlowType, ContextMenuShortcut[]> = {
 export const Features = {
   AI: 'ai',
   AIRTIME: 'airtime',
-  LOCATIONS: 'locations',
-  AUTO_TRANSLATE: 'auto_translate'
+  LOCATIONS: 'locations'
 } as const;
 
 export type Feature = (typeof Features)[keyof typeof Features];
