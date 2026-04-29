@@ -21,6 +21,13 @@ describe('Editor Revisions', () => {
   beforeEach(async () => {
     restore();
     fetchStub = stub(window, 'fetch');
+    // Default any unstubbed fetches to an empty result so auto-refresh
+    // triggered by store changes doesn't throw (each test that needs a
+    // specific payload overrides via callsFake/resolves).
+    fetchStub.callsFake(
+      async () =>
+        new Response(JSON.stringify({ results: [] }), { status: 200 })
+    );
     // Initialize without 'flow' attribute to prevent firstUpdated from calling getStore().getState()
     element = await fixture(
       html`<temba-flow-editor-revisions></temba-flow-editor-revisions>`
