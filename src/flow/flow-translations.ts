@@ -10,6 +10,12 @@ export interface TranslationEntry {
   attribute: string;
   from: string;
   to: string | null;
+  // Original array form of the source/target. For attributes whose value
+  // is an array (e.g. router case `arguments`), these preserve the per-item
+  // structure that `from`/`to` would otherwise lose to comma-joining. For
+  // scalar attributes the arrays contain a single item.
+  fromValues: string[];
+  toValues: string[] | null;
 }
 
 export interface TranslationBundle {
@@ -97,12 +103,29 @@ export function findTranslations(
 
     const toValue = to ? formatTranslationValue(to) : null;
 
+    const toArray = (value: any): string[] => {
+      if (Array.isArray(value)) {
+        return value.map((v) =>
+          v === null || v === undefined ? '' : String(v)
+        );
+      }
+      if (value === null || value === undefined) {
+        return [];
+      }
+      return [String(value)];
+    };
+
+    const fromValues = toArray(from);
+    const toValues = to !== null && to !== undefined ? toArray(to) : null;
+
     translations.push({
       uuid,
       type,
       attribute,
       from: fromValue,
-      to: toValue
+      to: toValue,
+      fromValues,
+      toValues
     });
   });
 

@@ -169,6 +169,9 @@ export class AutoTranslate extends RapidElement {
   @state()
   interrupt = false;
 
+  @state()
+  updateExisting = false;
+
   // Tracks whether the dialog has ever opened so we can keep it mounted
   // afterwards (so it sees its own close transition) without paying
   // for an empty hidden dialog before that.
@@ -191,6 +194,7 @@ export class AutoTranslate extends RapidElement {
     this.error = null;
     this.errorExpanded = false;
     this.selectedModel = null;
+    this.updateExisting = false;
     this.dialogOpen = true;
     await this.loadModels();
 
@@ -227,6 +231,11 @@ export class AutoTranslate extends RapidElement {
     this.selectedModel = next ? { uuid: next.uuid, name: next.name } : null;
   }
 
+  private handleUpdateExistingChange(event: Event): void {
+    const checkbox = event.target as any;
+    this.updateExisting = !!checkbox?.checked;
+  }
+
   private confirmTranslate(): void {
     if (!this.selectedModel) {
       return;
@@ -257,7 +266,10 @@ export class AutoTranslate extends RapidElement {
    * preTranslated for direct application), and dedupes pending entries
    * sharing identical source arrays so each unique array is sent at most
    * once (duplicates are returned in duplicateKeyToCanonical for
-   * propagation when the canonical key's translation lands).
+   * propagation when the canonical key's translation lands). When
+   * updateExisting is true, already-translated entries are also included
+   * and the pre-translation reuse path is skipped so all localizable
+   * entries are sent to the LLM.
    */
   private buildTranslationBatches(): {
     keyToEntries: Map<string, TranslationEntry[]>;
@@ -275,53 +287,71 @@ export class AutoTranslate extends RapidElement {
     }
 
     const bundles = buildTranslationBundles(this.definition, this.languageCode);
+    const updateExisting = this.updateExisting;
 
     // Map source-content -> already-stored translation array, built from
     // entries that have a translation in the live localization map. Reading
-    // the stored array (not entry.to) preserves the original shape.
+    // the stored array (not entry.to) preserves the original shape. Skipped
+    // in update mode so we always re-translate via the LLM.
     const existingByContent = new Map<string, string[]>();
     const localization =
       this.definition.localization?.[this.languageCode] || {};
 
-    for (const bundle of bundles) {
-      for (const entry of bundle.translations) {
-        if (!entry.to || entry.to.trim().length === 0) {
-          continue;
-        }
-        if (!entry.from || entry.from.trim().length === 0) {
-          continue;
-        }
-        const stored = localization[entry.uuid]?.[entry.attribute];
-        if (!Array.isArray(stored) || stored.length === 0) {
-          continue;
-        }
-        const contentKey = JSON.stringify([entry.from]);
-        if (!existingByContent.has(contentKey)) {
-          existingByContent.set(contentKey, stored);
+    if (!updateExisting) {
+      for (const bundle of bundles) {
+        for (const entry of bundle.translations) {
+          // Skip entries with no real translation: an empty array OR an
+          // array of only empty/whitespace strings shouldn't seed reuse,
+          // or we'd silently propagate a blank to other matching sources.
+          if (
+            !entry.toValues ||
+            !entry.toValues.some((v) => v && v.trim().length > 0)
+          ) {
+            continue;
+          }
+          if (!entry.fromValues || entry.fromValues.length === 0) {
+            continue;
+          }
+          const stored = localization[entry.uuid]?.[entry.attribute];
+          if (!Array.isArray(stored) || stored.length === 0) {
+            continue;
+          }
+          const contentKey = JSON.stringify(entry.fromValues);
+          if (!existingByContent.has(contentKey)) {
+            existingByContent.set(contentKey, stored);
+          }
         }
       }
     }
 
-    // Collect pending entries (no translation yet) preserving order, and
-    // group source values per key in case the same key yields multiple
-    // entries.
+    // Collect pending entries preserving order. Each unique key (uuid +
+    // attribute) maps to its source array (entry.fromValues), preserving
+    // multi-item structure for attributes like router-case `arguments`.
+    // In update mode we include entries that already have a translation.
+    // Invariant: findTranslations produces at most one entry per
+    // (uuid, attribute) pair, so the first fromValues is authoritative
+    // and any later entry with the same key is treated as a duplicate.
     const valuesByKey = new Map<string, string[]>();
 
     for (const bundle of bundles) {
       for (const entry of bundle.translations) {
-        if (entry.to && entry.to.trim().length > 0) {
+        if (
+          !updateExisting &&
+          entry.toValues &&
+          entry.toValues.some((v) => v && v.trim().length > 0)
+        ) {
           continue;
         }
-        if (!entry.from || entry.from.trim().length === 0) {
+        if (!entry.fromValues || entry.fromValues.length === 0) {
           continue;
         }
         const key = `${entry.uuid}:${entry.attribute}`;
         const list = keyToEntries.get(key) || [];
         list.push(entry);
         keyToEntries.set(key, list);
-        const values = valuesByKey.get(key) || [];
-        values.push(entry.from);
-        valuesByKey.set(key, values);
+        if (!valuesByKey.has(key)) {
+          valuesByKey.set(key, entry.fromValues);
+        }
       }
     }
 
@@ -506,8 +536,39 @@ export class AutoTranslate extends RapidElement {
       const liveDefinition = zustand.getState().flowDefinition;
       const existing =
         liveDefinition?.localization?.[this.languageCode]?.[uuid] || {};
+      const existingValues = Array.isArray(existing[attribute])
+        ? (existing[attribute] as string[])
+        : null;
+
+      // Never replace an existing non-empty translation with an empty
+      // value: when re-translating already-localized content the LLM may
+      // return blanks for some entries; keep the prior translation in
+      // those slots. Only safe when the arrays align by index — if the
+      // source array length has changed since the last translation, the
+      // old values aren't tied to the same items anymore, so skip the
+      // per-item preserve and let the LLM result through unchanged.
+      const canPreservePerItem =
+        !!existingValues && existingValues.length === values.length;
+      const mergedValues = values.map((v, i) => {
+        const isEmpty =
+          v === null ||
+          v === undefined ||
+          (typeof v === 'string' && v.trim().length === 0);
+        if (isEmpty && canPreservePerItem && existingValues![i]) {
+          return existingValues![i];
+        }
+        return v;
+      });
+
+      const hasContent = mergedValues.some(
+        (v) => v && (typeof v !== 'string' || v.trim().length > 0)
+      );
+      if (!hasContent) {
+        continue;
+      }
+
       const merged = updatesByUuid.get(uuid) || { ...existing };
-      merged[attribute] = values;
+      merged[attribute] = mergedValues;
       updatesByUuid.set(uuid, merged);
     }
 
@@ -642,7 +703,8 @@ export class AutoTranslate extends RapidElement {
     const selected = this.selectedModel ? [this.selectedModel] : [];
     const languageName = getLanguageDisplayName(this.languageCode);
     const aiClause = this.brand
-      ? html`${this.brand} uses AI for automatic translation, which can make mistakes,`
+      ? html`${this.brand} uses AI for automatic translation, which can make
+        mistakes,`
       : html`Automatic translation uses AI, which can make mistakes,`;
     return html`
       <p>
@@ -663,6 +725,12 @@ export class AutoTranslate extends RapidElement {
             @change=${this.handleModelChange}
           ></temba-select>`
         : ''}
+      <temba-checkbox
+        class="auto-translate-update-existing"
+        label="Update existing translations"
+        ?checked=${this.updateExisting}
+        @change=${this.handleUpdateExistingChange}
+      ></temba-checkbox>
     `;
   }
 
