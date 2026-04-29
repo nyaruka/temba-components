@@ -175,9 +175,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
   });
 
@@ -217,9 +215,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
 
     const toolbar = await getToolbar(editor);
@@ -263,9 +259,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
 
     // Switch to a non-base language
@@ -302,9 +296,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
 
     // Switch to a non-base language
@@ -525,9 +517,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
 
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -604,9 +594,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -676,9 +664,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -768,9 +754,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -858,9 +842,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -951,9 +933,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -1056,9 +1036,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -1134,9 +1112,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -1220,9 +1196,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -1356,9 +1330,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -1539,9 +1511,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -1642,9 +1612,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -1730,9 +1698,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;
@@ -1820,9 +1786,7 @@ describe('Localization Editing', () => {
       }
     });
 
-    editor = await fixture(
-      html`<temba-flow-editor></temba-flow-editor>`
-    );
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
     const at = editor.querySelector('temba-auto-translate') as any;

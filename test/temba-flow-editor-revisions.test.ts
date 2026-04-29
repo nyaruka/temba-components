@@ -2,6 +2,7 @@ import { html, fixture, expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { IssuesWindow } from '../src/flow/IssuesWindow';
 import { RevisionsWindow } from '../src/flow/RevisionsWindow';
+import { zustand } from '../src/store/AppState';
 import { stub, restore, SinonStub } from 'sinon';
 
 customElements.define('temba-flow-editor-revisions', Editor);
@@ -34,7 +35,7 @@ describe('Editor Revisions', () => {
     restore();
   });
 
-  it('should exclude the most recent revision from the list', async () => {
+  it('should include the current revision at the top of the list', async () => {
     const mockRevisions = [
       {
         id: 3,
@@ -67,9 +68,10 @@ describe('Editor Revisions', () => {
     await (revisionsWindow as any).fetchRevisions();
 
     const revisions = (revisionsWindow as any).revisions;
-    expect(revisions.length).to.equal(2);
-    expect(revisions[0].id).to.equal(2);
-    expect(revisions[1].id).to.equal(1);
+    expect(revisions.length).to.equal(3);
+    expect(revisions[0].id).to.equal(3);
+    expect(revisions[1].id).to.equal(2);
+    expect(revisions[2].id).to.equal(1);
   });
 
   it('should handle empty revisions list', async () => {
@@ -99,7 +101,208 @@ describe('Editor Revisions', () => {
 
     await (revisionsWindow as any).fetchRevisions();
     const revisions = (revisionsWindow as any).revisions;
-    expect(revisions.length).to.equal(0);
+    expect(revisions.length).to.equal(1);
+    expect(revisions[0].id).to.equal(1);
+  });
+
+  it('collapses revisions inside a 15 minute window into the most recent', async () => {
+    const mockRevisions = [
+      {
+        id: 4,
+        created_on: '2024-06-01T12:30:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [
+          {
+            type: 'action_updated',
+            node: 'n1',
+            uuid: 'a1',
+            subtype: 'send_msg'
+          }
+        ]
+      },
+      {
+        id: 3,
+        created_on: '2024-06-01T12:25:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [
+          {
+            type: 'action_updated',
+            node: 'n1',
+            uuid: 'a2',
+            subtype: 'send_msg'
+          }
+        ]
+      },
+      {
+        id: 2,
+        created_on: '2024-06-01T12:20:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [{ type: 'sticky_added', uuid: 's1' }]
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T11:00:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [{ type: 'node_moved', uuid: 'n1' }]
+      }
+    ];
+
+    const mockResponse = new Response(
+      JSON.stringify({ results: mockRevisions }),
+      { status: 200 }
+    );
+    fetchStub.resolves(mockResponse);
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    // ids 4/3/2 are within 15 min → collapsed onto id 4; id 1 stands alone
+    expect(revisions.length).to.equal(2);
+    expect(revisions[0].id).to.equal(4);
+    expect(revisions[0].changes.length).to.equal(3);
+    expect(revisions[1].id).to.equal(1);
+  });
+
+  it('keeps significant revisions standalone, splitting groups around them', async () => {
+    const mockRevisions = [
+      {
+        id: 3,
+        created_on: '2024-06-01T12:10:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [
+          {
+            type: 'action_updated',
+            node: 'n1',
+            uuid: 'a1',
+            subtype: 'send_msg'
+          }
+        ]
+      },
+      {
+        id: 2,
+        created_on: '2024-06-01T12:05:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        // three distinct phrase groups → significant
+        changes: [
+          { type: 'metadata_changed', field: 'name' },
+          { type: 'action_added', node: 'n1', uuid: 'a2', subtype: 'send_msg' },
+          { type: 'sticky_added', uuid: 's1' }
+        ]
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:00:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [{ type: 'sticky_moved', uuid: 's2' }]
+      }
+    ];
+
+    const mockResponse = new Response(
+      JSON.stringify({ results: mockRevisions }),
+      { status: 200 }
+    );
+    fetchStub.resolves(mockResponse);
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(3);
+    expect(revisions[0].id).to.equal(3);
+    expect(revisions[1].id).to.equal(2);
+    expect(revisions[2].id).to.equal(1);
+    // changes should not have been merged across the significant revision
+    expect(revisions[0].changes.length).to.equal(1);
+    expect(revisions[1].changes.length).to.equal(3);
+    expect(revisions[2].changes.length).to.equal(1);
+  });
+
+  it('refreshes the list when a new revision is saved while the window is open', async () => {
+    const mockResponse = new Response(JSON.stringify({ results: [] }), {
+      status: 200
+    });
+    fetchStub.resolves(mockResponse);
+
+    zustand.setState({
+      viewingRevision: false,
+      flowDefinition: { revision: 1, nodes: [] } as any
+    });
+    (revisionsWindow as any).hidden = false;
+    await revisionsWindow.updateComplete;
+    fetchStub.resetHistory();
+
+    zustand.setState({
+      flowDefinition: { revision: 2, nodes: [] } as any
+    });
+    await revisionsWindow.updateComplete;
+
+    expect(fetchStub.callCount).to.be.greaterThan(0);
+  });
+
+  it('does not refresh when previewing an older revision', async () => {
+    const mockResponse = new Response(JSON.stringify({ results: [] }), {
+      status: 200
+    });
+    fetchStub.resolves(mockResponse);
+
+    zustand.setState({
+      viewingRevision: false,
+      flowDefinition: { revision: 5, nodes: [] } as any
+    });
+    (revisionsWindow as any).hidden = false;
+    await revisionsWindow.updateComplete;
+    fetchStub.resetHistory();
+
+    zustand.setState({
+      viewingRevision: true,
+      flowDefinition: { revision: 3, nodes: [] } as any
+    });
+    await revisionsWindow.updateComplete;
+
+    expect(fetchStub.callCount).to.equal(0);
+  });
+
+  it('should label the current revision and not show a revert button for it', async () => {
+    (element as any).revisionsWindowHidden = false;
+    await element.requestUpdate();
+
+    const mockRevisions = [
+      {
+        id: 3,
+        created_on: '2023-01-03',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' }
+      },
+      {
+        id: 2,
+        created_on: '2023-01-02',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' }
+      }
+    ];
+    (revisionsWindow as any).revisions = mockRevisions;
+    await revisionsWindow.updateComplete;
+
+    const items = revisionsWindow.shadowRoot?.querySelectorAll(
+      '.revision-item'
+    ) as NodeListOf<HTMLElement>;
+    expect(items.length).to.equal(2);
+
+    // First item is the current revision
+    expect(items[0].classList.contains('current')).to.be.true;
+    expect(items[0].querySelector('.current-label')).to.exist;
+    expect(items[0].querySelector('.revert-button')).to.not.exist;
+
+    // Selecting the current revision should not show a revert button
+    (revisionsWindow as any).viewingRevision = mockRevisions[0];
+    await revisionsWindow.updateComplete;
+    const refreshed = revisionsWindow.shadowRoot?.querySelectorAll(
+      '.revision-item'
+    ) as NodeListOf<HTMLElement>;
+    expect(refreshed[0].classList.contains('selected')).to.be.true;
+    expect(refreshed[0].querySelector('.revert-button')).to.not.exist;
+    expect(refreshed[0].querySelector('.current-label')).to.exist;
+
+    // Second item is not current and has no current label
+    expect(items[1].classList.contains('current')).to.be.false;
+    expect(items[1].querySelector('.current-label')).to.not.exist;
   });
 
   it('should have purple color for revisions window and blue for selected item', async () => {
@@ -121,7 +324,7 @@ describe('Editor Revisions', () => {
       }
     ];
     (revisionsWindow as any).revisions = mockRevisions;
-    (revisionsWindow as any).viewingRevision = mockRevisions[0]; // Select the first one
+    (revisionsWindow as any).viewingRevision = mockRevisions[1]; // Select a non-current revision
 
     await revisionsWindow.updateComplete;
 

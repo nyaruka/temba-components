@@ -6,7 +6,14 @@ import { CustomEventType } from '../interfaces';
 import { getStore } from '../store/Store';
 import { FlowDefinition } from '../store/flow-definition';
 import { fetchResults } from '../utils';
-import { FLOW_SPEC_VERSION } from '../store/AppState';
+import { AppState, FLOW_SPEC_VERSION, fromStore, zustand } from '../store/AppState';
+import {
+  RevisionChange,
+  isSignificantChange,
+  summarizeChanges
+} from './revision-summary';
+
+const GROUP_WINDOW_MS = 15 * 60 * 1000;
 
 export interface Revision {
   id: number;
@@ -19,6 +26,7 @@ export interface Revision {
   };
   created_on: string;
   comment?: string;
+  changes?: RevisionChange[] | null;
 }
 
 export class RevisionsWindow extends RapidElement {
@@ -48,6 +56,12 @@ export class RevisionsWindow extends RapidElement {
   @state()
   private isLoading = false;
 
+  @fromStore(zustand, (state: AppState) => state.flowDefinition?.revision ?? 0)
+  private liveRevision!: number;
+
+  @fromStore(zustand, (state: AppState) => state.viewingRevision)
+  private storeViewingRevision!: boolean;
+
   private preRevertState: {
     definition: FlowDefinition;
     dirtyDate: Date | null;
@@ -60,11 +74,18 @@ export class RevisionsWindow extends RapidElement {
 
   protected updated(changes: PropertyValues): void {
     super.updated(changes);
-    if (
+
+    const opening =
       changes.has('hidden') &&
       !this.hidden &&
-      changes.get('hidden') === true
-    ) {
+      changes.get('hidden') === true;
+    const newRevisionWhileOpen =
+      !this.hidden &&
+      changes.has('liveRevision') &&
+      changes.get('liveRevision') !== undefined &&
+      !this.storeViewingRevision;
+
+    if (opening || newRevisionWhileOpen) {
       this.fetchRevisions();
     }
   }
@@ -84,8 +105,8 @@ export class RevisionsWindow extends RapidElement {
         name="revisions"
         header="Revisions"
         icon="revisions"
-        .width=${240}
-        .maxHeight=${400}
+        .width=${340}
+        .maxHeight=${500}
         .top=${120}
         color="rgb(142, 94, 167)"
         .saving=${this.saving}
@@ -99,11 +120,15 @@ export class RevisionsWindow extends RapidElement {
           >
             ${this.isLoading && !this.revisions.length
               ? html`<temba-loading></temba-loading>`
-              : this.revisions.map((rev) => {
+              : this.revisions.map((rev, index) => {
+                  const isCurrent = index === 0;
                   const isSelected = this.viewingRevision?.id === rev.id;
+                  const summary = summarizeChanges(rev.changes);
                   return html`
                     <div
-                      class="revision-item ${isSelected ? 'selected' : ''}"
+                      class="revision-item ${isSelected
+                        ? 'selected'
+                        : ''} ${isCurrent ? 'current' : ''}"
                       style="padding:8px; border-radius:4px; cursor:pointer; background:${isSelected
                         ? '#f0f6ff'
                         : '#f9fafb'}; border:1px solid ${isSelected
@@ -111,36 +136,46 @@ export class RevisionsWindow extends RapidElement {
                         : '#e5e7eb'}; transition: all 0.2s ease;"
                       @click=${() => this.handleRevisionClick(rev)}
                     >
-                      <div
-                        style="display:flex; justify-content:space-between; align-items:center;"
-                      >
-                        <div
-                          class="revision-header"
-                          style="margin-bottom: 2px;"
-                        >
-                          <div
-                            style="font-weight:600; font-size:13px; color:#111827;"
+                      ${summary
+                        ? html`<div
+                            class="revision-summary"
+                            style="font-size:13px; color:#111827; line-height:1.3;"
                           >
-                            <temba-date
-                              value=${rev.created_on}
-                              display="duration"
-                            ></temba-date>
-                          </div>
-                          <div style="font-size:11px; color:#6b7280;">
-                            ${rev.user.name || rev.user.username}
-                          </div>
+                            ${summary}
+                          </div>`
+                        : ''}
+                      <div
+                        class="revision-meta"
+                        style="display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:20px; font-size:11px; color:#6b7280; margin-top:${summary
+                          ? '2px'
+                          : '0'};"
+                      >
+                        <div style="flex:1; min-width:0;">
+                          <temba-date
+                            value=${rev.created_on}
+                            display="duration"
+                          ></temba-date>
+                          · ${rev.user.name || rev.user.username}
                         </div>
-                        ${isSelected
-                          ? html`<button
-                              class="revert-button"
-                              @click=${(e: Event) => {
-                                e.stopPropagation();
-                                this.handleRevertClick();
-                              }}
+                        ${isCurrent
+                          ? html`<div
+                              class="current-label"
+                              style="font-size:10px; font-weight:600; text-transform:uppercase; color:#6b7280; background:#e5e7eb; padding:2px 6px; border-radius:10px; letter-spacing:0.5px; flex-shrink:0;"
                             >
-                              Revert
-                            </button>`
-                          : html``}
+                              Current
+                            </div>`
+                          : isSelected
+                            ? html`<button
+                                class="revert-button"
+                                style="font-size:10px; font-weight:600; text-transform:uppercase; color:#1e3a8a; background:#a4cafe; padding:2px 6px; border-radius:10px; letter-spacing:0.5px; border:none; cursor:pointer; flex-shrink:0;"
+                                @click=${(e: Event) => {
+                                  e.stopPropagation();
+                                  this.handleRevertClick();
+                                }}
+                              >
+                                Revert
+                              </button>`
+                            : html``}
                       </div>
 
                       ${rev.comment
@@ -167,12 +202,50 @@ export class RevisionsWindow extends RapidElement {
       const results = await fetchResults(
         `/flow/revisions/${this.flow}/?version=${FLOW_SPEC_VERSION}`
       );
-      this.revisions = results.slice(1);
+      this.revisions = this.collapseRevisions(results);
     } catch (e) {
       console.error('Error fetching revisions', e);
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private collapseRevisions(revisions: Revision[]): Revision[] {
+    const result: Revision[] = [];
+    let group: Revision[] = [];
+
+    const flush = () => {
+      if (group.length === 0) return;
+      const head = group[0];
+      const allChanges: RevisionChange[] = [];
+      for (const r of group) {
+        if (r.changes) allChanges.push(...r.changes);
+      }
+      result.push({ ...head, changes: allChanges });
+      group = [];
+    };
+
+    for (const rev of revisions) {
+      if (isSignificantChange(rev.changes)) {
+        flush();
+        result.push(rev);
+        continue;
+      }
+      if (group.length === 0) {
+        group.push(rev);
+        continue;
+      }
+      const headTime = new Date(group[0].created_on).getTime();
+      const revTime = new Date(rev.created_on).getTime();
+      if (headTime - revTime < GROUP_WINDOW_MS) {
+        group.push(rev);
+      } else {
+        flush();
+        group.push(rev);
+      }
+    }
+    flush();
+    return result;
   }
 
   private async handleRevisionClick(revision: Revision) {
