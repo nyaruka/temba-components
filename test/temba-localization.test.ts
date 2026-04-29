@@ -176,9 +176,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
   });
@@ -220,9 +218,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
 
@@ -268,9 +264,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
 
@@ -309,9 +303,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
 
@@ -365,28 +357,6 @@ describe('Localization Editing', () => {
     const shouldExclude = (modelSelect as any).shouldExclude;
     expect(shouldExclude({ roles: ['engine'] })).to.be.true;
     expect(shouldExclude({ roles: ['editing'] })).to.be.false;
-  });
-
-  it('should hide auto translate when the auto-translate flag is off', async () => {
-    await selectLanguageInToolbar(editor, 'French', 'fra');
-    const toolbar = editor.querySelector('temba-editor-toolbar') as any;
-    // sanity check: the button is there when the flag is on
-    expect(
-      toolbar?.shadowRoot?.querySelector(
-        '.toolbar-btn[aria-label="Auto translate"]'
-      )
-    ).to.exist;
-
-    // remove the feature — button should disappear
-    (editor as any).features = [];
-    await editor.updateComplete;
-    await toolbar.updateComplete;
-
-    expect(
-      toolbar?.shadowRoot?.querySelector(
-        '.toolbar-btn[aria-label="Auto translate"]'
-      )
-    ).to.not.exist;
   });
 
   it('should keep auto translate visible when everything is translated', async () => {
@@ -556,9 +526,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
 
@@ -637,9 +605,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -711,9 +677,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -805,9 +769,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -897,9 +859,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -992,9 +952,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -1099,9 +1057,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -1179,9 +1135,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -1267,9 +1221,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -1405,9 +1357,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -1590,9 +1540,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -1695,9 +1643,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -1785,9 +1731,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');
@@ -1877,9 +1821,7 @@ describe('Localization Editing', () => {
     });
 
     editor = await fixture(
-      html`<temba-flow-editor
-        features='["auto_translate"]'
-      ></temba-flow-editor>`
+      html`<temba-flow-editor></temba-flow-editor>`
     );
     await editor.updateComplete;
     await selectLanguageInToolbar(editor, 'French', 'fra');

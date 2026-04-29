@@ -40,7 +40,6 @@ import type { RevisionsWindow } from './RevisionsWindow';
 import {
   ACTION_GROUP_METADATA,
   CONTEXT_MENU_SHORTCUTS,
-  Features,
   FlowType,
   FlowTypes
 } from './types';
@@ -199,10 +198,6 @@ export class Editor extends RapidElement {
 
   @property({ type: Array })
   public features: string[] = [];
-
-  private get autoTranslateEnabled(): boolean {
-    return this.features?.includes(Features.AUTO_TRANSLATE) ?? false;
-  }
 
   private activityTimer: number | null = null;
   private activityInterval = 100; // Start with 100ms interval for fast initial load
@@ -1760,7 +1755,7 @@ export class Editor extends RapidElement {
   }
 
   private handleAutoTranslateClick(): void {
-    if (!this.autoTranslateEnabled || this.viewingRevision) {
+    if (this.viewingRevision) {
       return;
     }
     const at = this.querySelector('temba-auto-translate') as any;
@@ -3694,9 +3689,7 @@ export class Editor extends RapidElement {
     // at 100% — the dialog's "update existing" option lets users re-run
     // translation on already-translated entries.
     const hasPendingTranslations =
-      this.autoTranslateEnabled &&
-      Boolean(activeLanguage) &&
-      progress.total > 0;
+      Boolean(activeLanguage) && progress.total > 0;
 
     return html`
       <temba-editor-toolbar
@@ -3930,14 +3923,12 @@ export class Editor extends RapidElement {
         @temba-revision-reverted=${this.handleRevisionReverted}
         @temba-revisions-closed=${this.handleRevisionsClosed}
       ></temba-revisions-window>
-      ${this.autoTranslateEnabled
-        ? html`<temba-auto-translate
-            .definition=${this.definition}
-            language-code=${this.languageCode}
-            ?disabled=${this.viewingRevision}
-            @temba-auto-translate-changed=${this.handleAutoTranslateChanged}
-          ></temba-auto-translate>`
-        : ''}
+      <temba-auto-translate
+        .definition=${this.definition}
+        language-code=${this.languageCode}
+        ?disabled=${this.viewingRevision}
+        @temba-auto-translate-changed=${this.handleAutoTranslateChanged}
+      ></temba-auto-translate>
       <div id="editor-container">
         ${this.renderToolbarElement()}
         <div id="editor">
