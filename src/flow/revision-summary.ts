@@ -90,10 +90,10 @@ const ACTION_LABELS: Record<string, { noun: string; plural: string }> = {
   send_optin_msg: { noun: 'opt-in message', plural: 'opt-in messages' }
 };
 
-const METADATA_LABELS: Record<string, { noun: string; plural: string }> = {
-  name: { noun: 'name', plural: 'name' },
-  type: { noun: 'flow type', plural: 'flow type' },
-  expire_after_minutes: { noun: 'expiration', plural: 'expiration' }
+const METADATA_LABELS: Record<string, { noun: string }> = {
+  name: { noun: 'name' },
+  type: { noun: 'flow type' },
+  expire_after_minutes: { noun: 'expiration' }
 };
 
 function actionLabel(subtype?: string): { noun: string; plural: string } {
@@ -107,17 +107,23 @@ function changeToPhrase(change: RevisionChange): Phrase | null {
   switch (change.type) {
     case 'metadata_changed': {
       const label = METADATA_LABELS[change.field || ''] || {
-        noun: change.field || 'metadata',
-        plural: change.field || 'metadata'
+        noun: change.field || 'metadata'
       };
-      return { ...label, verb: 'changed', order: 0 };
+      return {
+        noun: label.noun,
+        plural: label.noun,
+        verb: 'changed',
+        order: 0,
+        noCount: true
+      };
     }
     case 'base_language_changed':
       return {
         noun: 'base language',
         plural: 'base language',
         verb: 'changed',
-        order: 1
+        order: 1,
+        noCount: true
       };
     case 'node_added':
       return { noun: 'node', plural: 'nodes', verb: 'added', order: 2 };

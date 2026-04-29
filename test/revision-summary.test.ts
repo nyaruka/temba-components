@@ -124,6 +124,15 @@ describe('summarizeChanges', () => {
     ).to.equal('Significantly changed metadata and structure');
   });
 
+  it('does not pluralize repeated metadata changes for the same field', () => {
+    expect(
+      summarizeChanges([
+        { type: 'metadata_changed', field: 'name' },
+        { type: 'metadata_changed', field: 'name' }
+      ])
+    ).to.equal('Changed name');
+  });
+
   it('skips unknown change types', () => {
     expect(
       summarizeChanges([

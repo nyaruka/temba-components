@@ -67,6 +67,7 @@ export class RevisionsWindow extends RapidElement {
     dirtyDate: Date | null;
   } | null = null;
   private browseLanguageCode: string | null = null;
+  private fetchRequestId = 0;
 
   public get isViewingRevision(): boolean {
     return this.viewingRevision !== null;
@@ -79,11 +80,13 @@ export class RevisionsWindow extends RapidElement {
       changes.has('hidden') &&
       !this.hidden &&
       changes.get('hidden') === true;
+    const previousRevision = changes.get('liveRevision') as number | undefined;
     const newRevisionWhileOpen =
       !this.hidden &&
       changes.has('liveRevision') &&
-      changes.get('liveRevision') !== undefined &&
-      !this.storeViewingRevision;
+      !this.storeViewingRevision &&
+      previousRevision !== undefined &&
+      this.liveRevision > previousRevision;
 
     if (opening || newRevisionWhileOpen) {
       this.fetchRevisions();
@@ -197,16 +200,21 @@ export class RevisionsWindow extends RapidElement {
   // --- Private ---
 
   private async fetchRevisions() {
+    const requestId = ++this.fetchRequestId;
     this.isLoading = true;
     try {
       const results = await fetchResults(
         `/flow/revisions/${this.flow}/?version=${FLOW_SPEC_VERSION}`
       );
+      if (requestId !== this.fetchRequestId) return;
       this.revisions = this.collapseRevisions(results);
     } catch (e) {
+      if (requestId !== this.fetchRequestId) return;
       console.error('Error fetching revisions', e);
     } finally {
-      this.isLoading = false;
+      if (requestId === this.fetchRequestId) {
+        this.isLoading = false;
+      }
     }
   }
 
@@ -226,7 +234,10 @@ export class RevisionsWindow extends RapidElement {
     };
 
     for (const rev of revisions) {
-      if (isSignificantChange(rev.changes)) {
+      // Significant revisions and revisions with no recorded changes (legacy/opaque
+      // entries) always stand alone so the user can click in to inspect them.
+      const opaque = !rev.changes || rev.changes.length === 0;
+      if (opaque || isSignificantChange(rev.changes)) {
         flush();
         result.push(rev);
         continue;

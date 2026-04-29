@@ -163,6 +163,71 @@ describe('Editor Revisions', () => {
     expect(revisions[1].id).to.equal(1);
   });
 
+  it('does not collapse revisions exactly 15 minutes apart (strict less-than)', async () => {
+    const mockRevisions = [
+      {
+        id: 2,
+        created_on: '2024-06-01T12:15:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [{ type: 'sticky_added', uuid: 's1' }]
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:00:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [{ type: 'sticky_added', uuid: 's2' }]
+      }
+    ];
+
+    const mockResponse = new Response(
+      JSON.stringify({ results: mockRevisions }),
+      { status: 200 }
+    );
+    fetchStub.resolves(mockResponse);
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(2);
+    expect(revisions[0].id).to.equal(2);
+    expect(revisions[1].id).to.equal(1);
+  });
+
+  it('keeps revisions with no recorded changes standalone', async () => {
+    const mockRevisions = [
+      {
+        id: 3,
+        created_on: '2024-06-01T12:10:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [{ type: 'sticky_added', uuid: 's1' }]
+      },
+      {
+        id: 2,
+        created_on: '2024-06-01T12:05:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: null
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:00:00Z',
+        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        changes: [{ type: 'sticky_added', uuid: 's2' }]
+      }
+    ];
+
+    const mockResponse = new Response(
+      JSON.stringify({ results: mockRevisions }),
+      { status: 200 }
+    );
+    fetchStub.resolves(mockResponse);
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(3);
+    expect(revisions.map((r: any) => r.id)).to.deep.equal([3, 2, 1]);
+  });
+
   it('keeps significant revisions standalone, splitting groups around them', async () => {
     const mockRevisions = [
       {
@@ -236,6 +301,29 @@ describe('Editor Revisions', () => {
     await revisionsWindow.updateComplete;
 
     expect(fetchStub.callCount).to.be.greaterThan(0);
+  });
+
+  it('does not refresh when the revision number decreases (e.g., loading an older one)', async () => {
+    const mockResponse = new Response(JSON.stringify({ results: [] }), {
+      status: 200
+    });
+    fetchStub.resolves(mockResponse);
+
+    zustand.setState({
+      viewingRevision: false,
+      flowDefinition: { revision: 7, nodes: [] } as any
+    });
+    (revisionsWindow as any).hidden = false;
+    await revisionsWindow.updateComplete;
+    fetchStub.resetHistory();
+
+    // revision number drops without viewingRevision flipping (e.g., a fetch race)
+    zustand.setState({
+      flowDefinition: { revision: 4, nodes: [] } as any
+    });
+    await revisionsWindow.updateComplete;
+
+    expect(fetchStub.callCount).to.equal(0);
   });
 
   it('does not refresh when previewing an older revision', async () => {
