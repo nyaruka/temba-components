@@ -8,7 +8,7 @@ const TAG_LABELS: Record<string, { label: string; order: number }> = {
   routing: { label: 'routing', order: 2 },
   actions: { label: 'actions', order: 3 },
   stickies: { label: 'stickies', order: 5 },
-  positions: { label: 'layout', order: 6 }
+  layout: { label: 'layout', order: 6 }
 };
 
 function tagToLabel(tag: string): { label: string; order: number } | null {

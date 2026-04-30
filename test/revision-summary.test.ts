@@ -16,13 +16,13 @@ describe('summarizeChanges', () => {
   });
 
   it('joins two tags with "and"', () => {
-    expect(summarizeChanges({ tags: ['actions', 'positions'] })).to.equal(
+    expect(summarizeChanges({ tags: ['actions', 'layout'] })).to.equal(
       'Changed actions and layout'
     );
   });
 
   it('orders tags by category priority regardless of input order', () => {
-    expect(summarizeChanges({ tags: ['positions', 'metadata'] })).to.equal(
+    expect(summarizeChanges({ tags: ['layout', 'metadata'] })).to.equal(
       'Changed metadata and layout'
     );
     expect(
@@ -32,11 +32,11 @@ describe('summarizeChanges', () => {
 
   it('lists all tags with an Oxford comma when there are 3+', () => {
     expect(
-      summarizeChanges({ tags: ['metadata', 'actions', 'positions'] })
+      summarizeChanges({ tags: ['metadata', 'actions', 'layout'] })
     ).to.equal('Changed metadata, actions, and layout');
     expect(
       summarizeChanges({
-        tags: ['positions', 'stickies', 'metadata', 'actions', 'nodes']
+        tags: ['layout', 'stickies', 'metadata', 'actions', 'nodes']
       })
     ).to.equal('Changed metadata, nodes, actions, stickies, and layout');
   });

@@ -124,7 +124,7 @@ describe('Editor Revisions', () => {
         id: 3,
         created_on: '2024-06-01T12:25:00Z',
         user,
-        changes: { tags: ['positions'] }
+        changes: { tags: ['layout'] }
       },
       {
         id: 2,
@@ -152,7 +152,7 @@ describe('Editor Revisions', () => {
     expect(revisions[0].id).to.equal(4);
     expect(revisions[0].changes.tags.sort()).to.deep.equal([
       'actions',
-      'positions',
+      'layout',
       'stickies'
     ]);
     expect(revisions[1].id).to.equal(1);
@@ -202,7 +202,7 @@ describe('Editor Revisions', () => {
         id: 2,
         created_on: '2024-06-01T12:05:00Z',
         user: bob,
-        changes: { tags: ['positions'] }
+        changes: { tags: ['layout'] }
       },
       {
         id: 1,
@@ -227,7 +227,7 @@ describe('Editor Revisions', () => {
     expect(revisions[1].user.username).to.equal('bob');
     expect(revisions[1].changes.tags.sort()).to.deep.equal([
       'actions',
-      'positions'
+      'layout'
     ]);
   });
 
@@ -252,7 +252,7 @@ describe('Editor Revisions', () => {
         id: 2,
         created_on: '2024-06-01T12:06:00Z',
         user,
-        changes: { tags: ['positions'] }
+        changes: { tags: ['layout'] }
       },
       {
         id: 1,
@@ -273,8 +273,8 @@ describe('Editor Revisions', () => {
     expect(revisions[0].id).to.equal(4);
     expect(revisions[0].changes.tags.sort()).to.deep.equal([
       'actions',
-      'metadata',
-      'positions'
+      'layout',
+      'metadata'
     ]);
     expect(revisions[1].id).to.equal(1);
     expect(revisions[1].changes.tags).to.deep.equal(['stickies']);
