@@ -41,9 +41,5 @@ export function summarizeChanges(
     .sort((a, b) => a[1] - b[1])
     .map(([label]) => label);
 
-  if (labels.length <= MAX_LABELS) {
-    return `Changed ${labels.join(' and ')}`;
-  }
-
-  return `Significantly changed ${labels.slice(0, MAX_LABELS).join(' and ')}`;
+  return `Changed ${labels.slice(0, MAX_LABELS).join(' and ')}`;
 }

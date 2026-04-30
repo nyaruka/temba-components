@@ -27,13 +27,13 @@ describe('summarizeChanges', () => {
     );
     expect(
       summarizeChanges({ tags: ['stickies', 'nodes', 'metadata'] })
-    ).to.equal('Significantly changed metadata and nodes');
+    ).to.equal('Changed metadata and nodes');
   });
 
-  it('flags as significant and caps at two when there are 3+ distinct labels', () => {
+  it('caps at the first two labels when there are 3+', () => {
     expect(
       summarizeChanges({ tags: ['metadata', 'actions', 'positions'] })
-    ).to.equal('Significantly changed metadata and actions');
+    ).to.equal('Changed metadata and actions');
   });
 
   it('collapses multiple localization:<lang> tags into a single "translations" label', () => {
