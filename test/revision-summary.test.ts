@@ -2,13 +2,10 @@ import { expect } from '@open-wc/testing';
 import { summarizeChanges } from '../src/flow/revision-summary';
 
 describe('summarizeChanges', () => {
-  it('returns empty string for null/undefined', () => {
+  it('returns empty string for null/undefined/empty tags', () => {
     expect(summarizeChanges(null)).to.equal('');
     expect(summarizeChanges(undefined)).to.equal('');
-  });
-
-  it('returns "Unchanged" for an empty tags array', () => {
-    expect(summarizeChanges({ tags: [] })).to.equal('Unchanged');
+    expect(summarizeChanges({ tags: [] })).to.equal('');
   });
 
   it('renders a single tag verb-first', () => {

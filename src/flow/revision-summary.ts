@@ -26,7 +26,7 @@ export function summarizeChanges(
 ): string {
   if (!changes) return '';
   const tags = changes.tags || [];
-  if (tags.length === 0) return 'Unchanged';
+  if (tags.length === 0) return '';
 
   const orders = new Map<string, number>();
   for (const tag of tags) {

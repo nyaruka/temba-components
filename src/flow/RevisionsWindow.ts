@@ -9,6 +9,8 @@ import { fetchResults } from '../utils';
 import { FLOW_SPEC_VERSION } from '../store/AppState';
 import { RevisionChanges, summarizeChanges } from './revision-summary';
 
+const GROUP_WINDOW_MS = 15 * 60 * 1000;
+
 export interface Revision {
   id: number;
   user: {
@@ -192,7 +194,7 @@ export class RevisionsWindow extends RapidElement {
         `/flow/revisions/${this.flow}/?version=${FLOW_SPEC_VERSION}`
       );
       if (requestId !== this.fetchRequestId) return;
-      this.revisions = results;
+      this.revisions = this.collapseRevisions(results);
     } catch (e) {
       if (requestId !== this.fetchRequestId) return;
       console.error('Error fetching revisions', e);
@@ -201,6 +203,49 @@ export class RevisionsWindow extends RapidElement {
         this.isLoading = false;
       }
     }
+  }
+
+  // Lump revisions made in a continuous editing session (within 15 minutes
+  // of each other) onto their most recent member, merging the tag sets so
+  // the summary covers everything that happened in the window.
+  private collapseRevisions(revisions: Revision[]): Revision[] {
+    const result: Revision[] = [];
+    let group: Revision[] = [];
+
+    const flush = () => {
+      if (group.length === 0) return;
+      const head = group[0];
+      const tagSet = new Set<string>();
+      let anyKnown = false;
+      for (const r of group) {
+        if (r.changes) {
+          anyKnown = true;
+          for (const tag of r.changes.tags || []) tagSet.add(tag);
+        }
+      }
+      result.push({
+        ...head,
+        changes: anyKnown ? { tags: Array.from(tagSet) } : null
+      });
+      group = [];
+    };
+
+    for (const rev of revisions) {
+      if (group.length === 0) {
+        group.push(rev);
+        continue;
+      }
+      const headTime = new Date(group[0].created_on).getTime();
+      const revTime = new Date(rev.created_on).getTime();
+      if (headTime - revTime < GROUP_WINDOW_MS) {
+        group.push(rev);
+      } else {
+        flush();
+        group.push(rev);
+      }
+    }
+    flush();
+    return result;
   }
 
   private async handleRevisionClick(revision: Revision) {

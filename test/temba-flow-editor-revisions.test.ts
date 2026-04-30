@@ -111,41 +111,110 @@ describe('Editor Revisions', () => {
     expect(revisions[0].id).to.equal(1);
   });
 
-  it('renders revisions verbatim from the API (no client-side collapsing)', async () => {
+  it('collapses revisions inside a 15 minute window onto the most recent and unions tags', async () => {
+    const user = { id: 1, first_name: 'A', last_name: 'B', username: 'ab' };
     const mockRevisions = [
       {
-        id: 3,
-        created_on: '2024-06-01T12:10:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
+        id: 4,
+        created_on: '2024-06-01T12:30:00Z',
+        user,
         changes: { tags: ['actions'] }
       },
       {
+        id: 3,
+        created_on: '2024-06-01T12:25:00Z',
+        user,
+        changes: { tags: ['positions'] }
+      },
+      {
         id: 2,
-        created_on: '2024-06-01T12:05:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: { tags: ['metadata', 'actions', 'stickies'] }
+        created_on: '2024-06-01T12:20:00Z',
+        user,
+        changes: { tags: ['actions', 'stickies'] }
       },
       {
         id: 1,
-        created_on: '2024-06-01T12:00:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: null
+        created_on: '2024-06-01T11:00:00Z',
+        user,
+        changes: { tags: ['metadata'] }
       }
     ];
 
-    const mockResponse = new Response(
-      JSON.stringify({ results: mockRevisions }),
-      { status: 200 }
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
     );
-    fetchStub.resolves(mockResponse);
 
     await (revisionsWindow as any).fetchRevisions();
 
     const revisions = (revisionsWindow as any).revisions;
-    expect(revisions.length).to.equal(3);
-    expect(revisions.map((r: any) => r.id)).to.deep.equal([3, 2, 1]);
-    expect(revisions[0].changes).to.deep.equal({ tags: ['actions'] });
-    expect(revisions[2].changes).to.equal(null);
+    // 4/3/2 are within 15 min of 4 → collapsed onto 4; 1 stands alone
+    expect(revisions.length).to.equal(2);
+    expect(revisions[0].id).to.equal(4);
+    expect(revisions[0].changes.tags.sort()).to.deep.equal([
+      'actions',
+      'positions',
+      'stickies'
+    ]);
+    expect(revisions[1].id).to.equal(1);
+    expect(revisions[1].changes.tags).to.deep.equal(['metadata']);
+  });
+
+  it('does not collapse revisions exactly 15 minutes apart', async () => {
+    const user = { id: 1, first_name: 'A', last_name: 'B', username: 'ab' };
+    const mockRevisions = [
+      {
+        id: 2,
+        created_on: '2024-06-01T12:15:00Z',
+        user,
+        changes: { tags: ['actions'] }
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:00:00Z',
+        user,
+        changes: { tags: ['actions'] }
+      }
+    ];
+
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
+    );
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(2);
+    expect(revisions[0].id).to.equal(2);
+    expect(revisions[1].id).to.equal(1);
+  });
+
+  it('keeps the merged changes null when every revision in a window is null', async () => {
+    const user = { id: 1, first_name: 'A', last_name: 'B', username: 'ab' };
+    const mockRevisions = [
+      {
+        id: 2,
+        created_on: '2024-06-01T12:05:00Z',
+        user,
+        changes: null
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:00:00Z',
+        user,
+        changes: null
+      }
+    ];
+
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
+    );
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(1);
+    expect(revisions[0].id).to.equal(2);
+    expect(revisions[0].changes).to.equal(null);
   });
 
   it('refresh() fetches the list when the window is open', async () => {
