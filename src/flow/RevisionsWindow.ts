@@ -7,9 +7,14 @@ import { getStore } from '../store/Store';
 import { FlowDefinition } from '../store/flow-definition';
 import { fetchResults } from '../utils';
 import { FLOW_SPEC_VERSION } from '../store/AppState';
-import { RevisionChanges, summarizeChanges } from './revision-summary';
+import {
+  labelsFor,
+  RevisionChanges,
+  summarizeChanges
+} from './revision-summary';
 
 const GROUP_WINDOW_MS = 15 * 60 * 1000;
+const MAX_GROUP_LABELS = 3;
 
 export interface Revision {
   id: number;
@@ -206,11 +211,14 @@ export class RevisionsWindow extends RapidElement {
   }
 
   // Lump revisions made in a continuous editing session (within 15 minutes
-  // of each other) onto their most recent member, merging the tag sets so
-  // the summary covers everything that happened in the window.
+  // of each other, by the same author) onto their most recent member,
+  // merging the tag sets so the summary covers everything that happened in
+  // the window. The merged revision is capped at three distinct displayed
+  // labels — once a fourth would be introduced we break out into a new row.
   private collapseRevisions(revisions: Revision[]): Revision[] {
     const result: Revision[] = [];
     let group: Revision[] = [];
+    let groupLabels = new Set<string>();
 
     const flush = () => {
       if (group.length === 0) return;
@@ -228,20 +236,33 @@ export class RevisionsWindow extends RapidElement {
         changes: anyKnown ? { tags: Array.from(tagSet) } : null
       });
       group = [];
+      groupLabels = new Set();
     };
 
     for (const rev of revisions) {
       if (group.length === 0) {
         group.push(rev);
+        groupLabels = labelsFor(rev.changes);
         continue;
       }
-      const headTime = new Date(group[0].created_on).getTime();
+      const head = group[0];
+      const headTime = new Date(head.created_on).getTime();
       const revTime = new Date(rev.created_on).getTime();
-      if (headTime - revTime < GROUP_WINDOW_MS) {
+      const withinWindow = headTime - revTime < GROUP_WINDOW_MS;
+      const sameAuthor = head.user?.username === rev.user?.username;
+      const prospective = new Set([
+        ...groupLabels,
+        ...labelsFor(rev.changes)
+      ]);
+      const fitsLabelCap = prospective.size <= MAX_GROUP_LABELS;
+
+      if (withinWindow && sameAuthor && fitsLabelCap) {
         group.push(rev);
+        groupLabels = prospective;
       } else {
         flush();
         group.push(rev);
+        groupLabels = labelsFor(rev.changes);
       }
     }
     flush();

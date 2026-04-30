@@ -19,6 +19,17 @@ function tagToLabel(tag: string): { label: string; order: number } | null {
   return null;
 }
 
+export function labelsFor(
+  changes: RevisionChanges | null | undefined
+): Set<string> {
+  const result = new Set<string>();
+  for (const tag of changes?.tags || []) {
+    const entry = tagToLabel(tag);
+    if (entry) result.add(entry.label);
+  }
+  return result;
+}
+
 export function summarizeChanges(
   changes: RevisionChanges | null | undefined
 ): string {

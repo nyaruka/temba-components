@@ -188,6 +188,146 @@ describe('Editor Revisions', () => {
     expect(revisions[1].id).to.equal(1);
   });
 
+  it('breaks out into a new row when the next revision changes the author', async () => {
+    const ann = { id: 1, first_name: 'A', last_name: 'A', username: 'ann' };
+    const bob = { id: 2, first_name: 'B', last_name: 'B', username: 'bob' };
+    const mockRevisions = [
+      {
+        id: 3,
+        created_on: '2024-06-01T12:10:00Z',
+        user: ann,
+        changes: { tags: ['actions'] }
+      },
+      {
+        id: 2,
+        created_on: '2024-06-01T12:05:00Z',
+        user: bob,
+        changes: { tags: ['positions'] }
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:00:00Z',
+        user: bob,
+        changes: { tags: ['actions'] }
+      }
+    ];
+
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
+    );
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    // Ann's row stands alone; Bob's two revisions merge.
+    expect(revisions.length).to.equal(2);
+    expect(revisions[0].id).to.equal(3);
+    expect(revisions[0].user.username).to.equal('ann');
+    expect(revisions[1].id).to.equal(2);
+    expect(revisions[1].user.username).to.equal('bob');
+    expect(revisions[1].changes.tags.sort()).to.deep.equal([
+      'actions',
+      'positions'
+    ]);
+  });
+
+  it('caps the merged label set at three and breaks out for a fourth', async () => {
+    const user = { id: 1, first_name: 'A', last_name: 'B', username: 'ab' };
+    const mockRevisions = [
+      // Same window, all by the same author. Three distinct labels merge,
+      // a fourth introduced by id 1 forces a break.
+      {
+        id: 4,
+        created_on: '2024-06-01T12:10:00Z',
+        user,
+        changes: { tags: ['metadata'] }
+      },
+      {
+        id: 3,
+        created_on: '2024-06-01T12:08:00Z',
+        user,
+        changes: { tags: ['actions'] }
+      },
+      {
+        id: 2,
+        created_on: '2024-06-01T12:06:00Z',
+        user,
+        changes: { tags: ['positions'] }
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:04:00Z',
+        user,
+        changes: { tags: ['stickies'] }
+      }
+    ];
+
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
+    );
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(2);
+    expect(revisions[0].id).to.equal(4);
+    expect(revisions[0].changes.tags.sort()).to.deep.equal([
+      'actions',
+      'metadata',
+      'positions'
+    ]);
+    expect(revisions[1].id).to.equal(1);
+    expect(revisions[1].changes.tags).to.deep.equal(['stickies']);
+  });
+
+  it('still merges revisions whose tags collapse to fewer than three labels', async () => {
+    const user = { id: 1, first_name: 'A', last_name: 'B', username: 'ab' };
+    // Five raw localization tags, but they all collapse to one "translations"
+    // label, so the cap doesn't trip.
+    const mockRevisions = [
+      {
+        id: 5,
+        created_on: '2024-06-01T12:10:00Z',
+        user,
+        changes: { tags: ['localization:spa'] }
+      },
+      {
+        id: 4,
+        created_on: '2024-06-01T12:09:00Z',
+        user,
+        changes: { tags: ['localization:fra'] }
+      },
+      {
+        id: 3,
+        created_on: '2024-06-01T12:08:00Z',
+        user,
+        changes: { tags: ['localization:deu'] }
+      },
+      {
+        id: 2,
+        created_on: '2024-06-01T12:07:00Z',
+        user,
+        changes: { tags: ['localization:por'] }
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:06:00Z',
+        user,
+        changes: { tags: ['localization:ita'] }
+      }
+    ];
+
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
+    );
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(1);
+    expect(revisions[0].id).to.equal(5);
+  });
+
   it('keeps the merged changes null when every revision in a window is null', async () => {
     const user = { id: 1, first_name: 'A', last_name: 'B', username: 'ab' };
     const mockRevisions = [
