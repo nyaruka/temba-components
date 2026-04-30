@@ -19,8 +19,6 @@ function tagToLabel(tag: string): { label: string; order: number } | null {
   return null;
 }
 
-const MAX_LABELS = 2;
-
 export function summarizeChanges(
   changes: RevisionChanges | null | undefined
 ): string {
@@ -41,5 +39,11 @@ export function summarizeChanges(
     .sort((a, b) => a[1] - b[1])
     .map(([label]) => label);
 
-  return `Changed ${labels.slice(0, MAX_LABELS).join(' and ')}`;
+  return `Changed ${joinNaturally(labels)}`;
+}
+
+function joinNaturally(parts: string[]): string {
+  if (parts.length <= 1) return parts.join('');
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+  return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
 }

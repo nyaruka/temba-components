@@ -27,13 +27,18 @@ describe('summarizeChanges', () => {
     );
     expect(
       summarizeChanges({ tags: ['stickies', 'nodes', 'metadata'] })
-    ).to.equal('Changed metadata and nodes');
+    ).to.equal('Changed metadata, nodes, and stickies');
   });
 
-  it('caps at the first two labels when there are 3+', () => {
+  it('lists all tags with an Oxford comma when there are 3+', () => {
     expect(
       summarizeChanges({ tags: ['metadata', 'actions', 'positions'] })
-    ).to.equal('Changed metadata and actions');
+    ).to.equal('Changed metadata, actions, and positions');
+    expect(
+      summarizeChanges({
+        tags: ['positions', 'stickies', 'metadata', 'actions', 'nodes']
+      })
+    ).to.equal('Changed metadata, nodes, actions, stickies, and positions');
   });
 
   it('collapses multiple localization:<lang> tags into a single "translations" label', () => {
