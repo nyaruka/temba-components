@@ -216,6 +216,12 @@ export class RevisionsWindow extends RapidElement {
   // the window. The merged revision is capped at three distinct displayed
   // labels — once a fourth would be introduced we break out into a new row.
   private collapseRevisions(revisions: Revision[]): Revision[] {
+    // The API returns newest-first today; sort defensively so the head/window
+    // logic stays correct if that ever changes.
+    const sorted = [...revisions].sort(
+      (a, b) =>
+        new Date(b.created_on).getTime() - new Date(a.created_on).getTime()
+    );
     const result: Revision[] = [];
     let group: Revision[] = [];
     let groupLabels = new Set<string>();
@@ -239,7 +245,7 @@ export class RevisionsWindow extends RapidElement {
       groupLabels = new Set();
     };
 
-    for (const rev of revisions) {
+    for (const rev of sorted) {
       if (group.length === 0) {
         group.push(rev);
         groupLabels = labelsFor(rev.changes);
@@ -249,7 +255,10 @@ export class RevisionsWindow extends RapidElement {
       const headTime = new Date(head.created_on).getTime();
       const revTime = new Date(rev.created_on).getTime();
       const withinWindow = headTime - revTime < GROUP_WINDOW_MS;
-      const sameAuthor = head.user?.username === rev.user?.username;
+      // Treat missing usernames as "different" rather than the same author —
+      // we never want to silently merge attribution across an unknown gap.
+      const sameAuthor =
+        !!head.user?.username && head.user.username === rev.user?.username;
       const prospective = new Set([
         ...groupLabels,
         ...labelsFor(rev.changes)

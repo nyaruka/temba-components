@@ -12,7 +12,9 @@ const TAG_LABELS: Record<string, { label: string; order: number }> = {
 };
 
 function tagToLabel(tag: string): { label: string; order: number } | null {
-  if (TAG_LABELS[tag]) return TAG_LABELS[tag];
+  if (Object.prototype.hasOwnProperty.call(TAG_LABELS, tag)) {
+    return TAG_LABELS[tag];
+  }
   if (tag.startsWith('localization:')) {
     return { label: 'translations', order: 4 };
   }
