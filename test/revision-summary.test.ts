@@ -1,171 +1,63 @@
 import { expect } from '@open-wc/testing';
-import {
-  isSignificantChange,
-  summarizeChanges
-} from '../src/flow/revision-summary';
+import { summarizeChanges } from '../src/flow/revision-summary';
 
 describe('summarizeChanges', () => {
-  it('returns empty string for null/empty changes', () => {
+  it('returns empty string for null/undefined', () => {
     expect(summarizeChanges(null)).to.equal('');
     expect(summarizeChanges(undefined)).to.equal('');
-    expect(summarizeChanges([])).to.equal('');
   });
 
-  it('uses singular noun without count when there is exactly one change', () => {
-    expect(
-      summarizeChanges([
-        { type: 'action_updated', node: 'n1', uuid: 'a1', subtype: 'send_msg' }
-      ])
-    ).to.equal('Updated message');
+  it('returns "Unchanged" for an empty tags array', () => {
+    expect(summarizeChanges({ tags: [] })).to.equal('Unchanged');
   });
 
-  it('collapses same-subtype actions into a count + plural', () => {
-    expect(
-      summarizeChanges([
-        { type: 'action_updated', node: 'n1', uuid: 'a1', subtype: 'send_msg' },
-        { type: 'action_updated', node: 'n2', uuid: 'a2', subtype: 'send_msg' }
-      ])
-    ).to.equal('Updated 2 messages');
+  it('renders a single tag verb-first', () => {
+    expect(summarizeChanges({ tags: ['actions'] })).to.equal('Changed actions');
+    expect(summarizeChanges({ tags: ['metadata'] })).to.equal(
+      'Changed metadata'
+    );
   });
 
-  it('does not collapse different verbs for the same subtype', () => {
-    expect(
-      summarizeChanges([
-        { type: 'action_added', node: 'n1', uuid: 'a1', subtype: 'send_msg' },
-        { type: 'action_updated', node: 'n2', uuid: 'a2', subtype: 'send_msg' }
-      ])
-    ).to.equal('Added message and updated message');
+  it('joins two tags with "and"', () => {
+    expect(summarizeChanges({ tags: ['actions', 'positions'] })).to.equal(
+      'Changed actions and positions'
+    );
   });
 
-  it('does not collapse different subtypes', () => {
+  it('orders tags by category priority regardless of input order', () => {
+    expect(summarizeChanges({ tags: ['positions', 'metadata'] })).to.equal(
+      'Changed metadata and positions'
+    );
     expect(
-      summarizeChanges([
-        { type: 'action_added', node: 'n1', uuid: 'a1', subtype: 'send_msg' },
-        {
-          type: 'action_added',
-          node: 'n2',
-          uuid: 'a2',
-          subtype: 'add_contact_groups'
-        }
-      ])
-    ).to.equal('Added message and added group');
+      summarizeChanges({ tags: ['stickies', 'nodes', 'metadata'] })
+    ).to.equal('Significantly changed metadata and nodes');
   });
 
-  it('falls back to "action" for unknown subtypes', () => {
+  it('flags as significant and caps at two when there are 3+ distinct labels', () => {
     expect(
-      summarizeChanges([
-        { type: 'action_updated', node: 'n1', uuid: 'a1', subtype: 'unknown' }
-      ])
-    ).to.equal('Updated action');
+      summarizeChanges({ tags: ['metadata', 'actions', 'positions'] })
+    ).to.equal('Significantly changed metadata and actions');
   });
 
-  it('summarizes action reordering without a count', () => {
+  it('collapses multiple localization:<lang> tags into a single "translations" label', () => {
     expect(
-      summarizeChanges([{ type: 'action_reordered', node: 'n1' }])
-    ).to.equal('Reordered actions');
-    expect(
-      summarizeChanges([
-        { type: 'action_reordered', node: 'n1' },
-        { type: 'action_reordered', node: 'n2' }
-      ])
-    ).to.equal('Reordered actions');
+      summarizeChanges({ tags: ['localization:spa', 'localization:fra'] })
+    ).to.equal('Changed translations');
   });
 
-  it('shows up to two specific phrases joined by "and"', () => {
+  it('treats a localization tag as one label alongside other tags', () => {
     expect(
-      summarizeChanges([
-        { type: 'metadata_changed', field: 'name' },
-        { type: 'action_added', node: 'n1', uuid: 'a1', subtype: 'send_msg' }
-      ])
-    ).to.equal('Changed name and added message');
+      summarizeChanges({
+        tags: ['actions', 'localization:spa', 'localization:fra']
+      })
+    ).to.equal('Changed actions and translations');
   });
 
-  it('flags a single category as significant when overflow collapses to one', () => {
-    expect(
-      summarizeChanges([
-        { type: 'node_added', uuid: 'n1' },
-        { type: 'node_added', uuid: 'n2' },
-        { type: 'router_updated', node: 'n3' },
-        { type: 'connection_changed', node: 'n4', uuid: 'e1' }
-      ])
-    ).to.equal('Significantly changed structure');
-  });
-
-  it('flags two categories as significant when overflow spans two', () => {
-    expect(
-      summarizeChanges([
-        { type: 'metadata_changed', field: 'name' },
-        { type: 'base_language_changed' },
-        { type: 'translation_updated', lang: 'spa', uuid: 't1' },
-        { type: 'translation_updated', lang: 'fra', uuid: 't2' }
-      ])
-    ).to.equal('Significantly changed metadata and translations');
-  });
-
-  it('caps generalized output at two categories without an overflow tail', () => {
-    expect(
-      summarizeChanges([
-        { type: 'metadata_changed', field: 'name' },
-        { type: 'sticky_added', uuid: 's1' },
-        { type: 'sticky_moved', uuid: 's2' },
-        { type: 'translation_updated', lang: 'spa', uuid: 't1' },
-        { type: 'translation_updated', lang: 'fra', uuid: 't2' }
-      ])
-    ).to.equal('Significantly changed metadata and translations');
-  });
-
-  it('orders categories metadata, structure, content, translations, notes, layout', () => {
-    expect(
-      summarizeChanges([
-        { type: 'sticky_moved', uuid: 's1' },
-        { type: 'action_added', node: 'n1', uuid: 'a1', subtype: 'send_msg' },
-        { type: 'metadata_changed', field: 'name' }
-      ])
-    ).to.equal('Significantly changed metadata and structure');
-  });
-
-  it('does not pluralize repeated metadata changes for the same field', () => {
-    expect(
-      summarizeChanges([
-        { type: 'metadata_changed', field: 'name' },
-        { type: 'metadata_changed', field: 'name' }
-      ])
-    ).to.equal('Changed name');
-  });
-
-  it('skips unknown change types', () => {
-    expect(
-      summarizeChanges([
-        { type: 'action_updated', node: 'n1', uuid: 'a1', subtype: 'send_msg' },
-        { type: 'something_new' as any }
-      ])
-    ).to.equal('Updated message');
-  });
-});
-
-describe('isSignificantChange', () => {
-  it('returns false for null/empty changes', () => {
-    expect(isSignificantChange(null)).to.be.false;
-    expect(isSignificantChange(undefined)).to.be.false;
-    expect(isSignificantChange([])).to.be.false;
-  });
-
-  it('returns false when there are at most two distinct phrase groups', () => {
-    expect(
-      isSignificantChange([
-        { type: 'action_updated', node: 'n1', uuid: 'a1', subtype: 'send_msg' },
-        { type: 'action_added', node: 'n2', uuid: 'a2', subtype: 'send_msg' }
-      ])
-    ).to.be.false;
-  });
-
-  it('returns true when there are more than two distinct phrase groups', () => {
-    expect(
-      isSignificantChange([
-        { type: 'metadata_changed', field: 'name' },
-        { type: 'action_added', node: 'n1', uuid: 'a1', subtype: 'send_msg' },
-        { type: 'sticky_added', uuid: 's1' }
-      ])
-    ).to.be.true;
+  it('ignores unknown tags', () => {
+    expect(summarizeChanges({ tags: ['actions', 'something_new'] })).to.equal(
+      'Changed actions'
+    );
+    // an entirely unknown set yields nothing
+    expect(summarizeChanges({ tags: ['something_new'] })).to.equal('');
   });
 });

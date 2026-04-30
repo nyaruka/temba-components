@@ -111,113 +111,25 @@ describe('Editor Revisions', () => {
     expect(revisions[0].id).to.equal(1);
   });
 
-  it('collapses revisions inside a 15 minute window into the most recent', async () => {
-    const mockRevisions = [
-      {
-        id: 4,
-        created_on: '2024-06-01T12:30:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [
-          {
-            type: 'action_updated',
-            node: 'n1',
-            uuid: 'a1',
-            subtype: 'send_msg'
-          }
-        ]
-      },
-      {
-        id: 3,
-        created_on: '2024-06-01T12:25:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [
-          {
-            type: 'action_updated',
-            node: 'n1',
-            uuid: 'a2',
-            subtype: 'send_msg'
-          }
-        ]
-      },
-      {
-        id: 2,
-        created_on: '2024-06-01T12:20:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [{ type: 'sticky_added', uuid: 's1' }]
-      },
-      {
-        id: 1,
-        created_on: '2024-06-01T11:00:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [{ type: 'node_moved', uuid: 'n1' }]
-      }
-    ];
-
-    const mockResponse = new Response(
-      JSON.stringify({ results: mockRevisions }),
-      { status: 200 }
-    );
-    fetchStub.resolves(mockResponse);
-
-    await (revisionsWindow as any).fetchRevisions();
-
-    const revisions = (revisionsWindow as any).revisions;
-    // ids 4/3/2 are within 15 min → collapsed onto id 4; id 1 stands alone
-    expect(revisions.length).to.equal(2);
-    expect(revisions[0].id).to.equal(4);
-    expect(revisions[0].changes.length).to.equal(3);
-    expect(revisions[1].id).to.equal(1);
-  });
-
-  it('does not collapse revisions exactly 15 minutes apart (strict less-than)', async () => {
-    const mockRevisions = [
-      {
-        id: 2,
-        created_on: '2024-06-01T12:15:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [{ type: 'sticky_added', uuid: 's1' }]
-      },
-      {
-        id: 1,
-        created_on: '2024-06-01T12:00:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [{ type: 'sticky_added', uuid: 's2' }]
-      }
-    ];
-
-    const mockResponse = new Response(
-      JSON.stringify({ results: mockRevisions }),
-      { status: 200 }
-    );
-    fetchStub.resolves(mockResponse);
-
-    await (revisionsWindow as any).fetchRevisions();
-
-    const revisions = (revisionsWindow as any).revisions;
-    expect(revisions.length).to.equal(2);
-    expect(revisions[0].id).to.equal(2);
-    expect(revisions[1].id).to.equal(1);
-  });
-
-  it('keeps revisions with no recorded changes standalone', async () => {
+  it('renders revisions verbatim from the API (no client-side collapsing)', async () => {
     const mockRevisions = [
       {
         id: 3,
         created_on: '2024-06-01T12:10:00Z',
         user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [{ type: 'sticky_added', uuid: 's1' }]
+        changes: { tags: ['actions'] }
       },
       {
         id: 2,
         created_on: '2024-06-01T12:05:00Z',
         user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: null
+        changes: { tags: ['metadata', 'actions', 'stickies'] }
       },
       {
         id: 1,
         created_on: '2024-06-01T12:00:00Z',
         user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [{ type: 'sticky_added', uuid: 's2' }]
+        changes: null
       }
     ];
 
@@ -232,59 +144,8 @@ describe('Editor Revisions', () => {
     const revisions = (revisionsWindow as any).revisions;
     expect(revisions.length).to.equal(3);
     expect(revisions.map((r: any) => r.id)).to.deep.equal([3, 2, 1]);
-  });
-
-  it('keeps significant revisions standalone, splitting groups around them', async () => {
-    const mockRevisions = [
-      {
-        id: 3,
-        created_on: '2024-06-01T12:10:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [
-          {
-            type: 'action_updated',
-            node: 'n1',
-            uuid: 'a1',
-            subtype: 'send_msg'
-          }
-        ]
-      },
-      {
-        id: 2,
-        created_on: '2024-06-01T12:05:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        // three distinct phrase groups → significant
-        changes: [
-          { type: 'metadata_changed', field: 'name' },
-          { type: 'action_added', node: 'n1', uuid: 'a2', subtype: 'send_msg' },
-          { type: 'sticky_added', uuid: 's1' }
-        ]
-      },
-      {
-        id: 1,
-        created_on: '2024-06-01T12:00:00Z',
-        user: { id: 1, first_name: 'A', last_name: 'B', username: 'ab' },
-        changes: [{ type: 'sticky_moved', uuid: 's2' }]
-      }
-    ];
-
-    const mockResponse = new Response(
-      JSON.stringify({ results: mockRevisions }),
-      { status: 200 }
-    );
-    fetchStub.resolves(mockResponse);
-
-    await (revisionsWindow as any).fetchRevisions();
-
-    const revisions = (revisionsWindow as any).revisions;
-    expect(revisions.length).to.equal(3);
-    expect(revisions[0].id).to.equal(3);
-    expect(revisions[1].id).to.equal(2);
-    expect(revisions[2].id).to.equal(1);
-    // changes should not have been merged across the significant revision
-    expect(revisions[0].changes.length).to.equal(1);
-    expect(revisions[1].changes.length).to.equal(3);
-    expect(revisions[2].changes.length).to.equal(1);
+    expect(revisions[0].changes).to.deep.equal({ tags: ['actions'] });
+    expect(revisions[2].changes).to.equal(null);
   });
 
   it('refresh() fetches the list when the window is open', async () => {

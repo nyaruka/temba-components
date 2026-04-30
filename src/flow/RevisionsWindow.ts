@@ -7,13 +7,7 @@ import { getStore } from '../store/Store';
 import { FlowDefinition } from '../store/flow-definition';
 import { fetchResults } from '../utils';
 import { FLOW_SPEC_VERSION } from '../store/AppState';
-import {
-  RevisionChange,
-  isSignificantChange,
-  summarizeChanges
-} from './revision-summary';
-
-const GROUP_WINDOW_MS = 15 * 60 * 1000;
+import { RevisionChanges, summarizeChanges } from './revision-summary';
 
 export interface Revision {
   id: number;
@@ -26,7 +20,7 @@ export interface Revision {
   };
   created_on: string;
   comment?: string;
-  changes?: RevisionChange[] | null;
+  changes?: RevisionChanges | null;
 }
 
 export class RevisionsWindow extends RapidElement {
@@ -198,7 +192,7 @@ export class RevisionsWindow extends RapidElement {
         `/flow/revisions/${this.flow}/?version=${FLOW_SPEC_VERSION}`
       );
       if (requestId !== this.fetchRequestId) return;
-      this.revisions = this.collapseRevisions(results);
+      this.revisions = results;
     } catch (e) {
       if (requestId !== this.fetchRequestId) return;
       console.error('Error fetching revisions', e);
@@ -207,47 +201,6 @@ export class RevisionsWindow extends RapidElement {
         this.isLoading = false;
       }
     }
-  }
-
-  private collapseRevisions(revisions: Revision[]): Revision[] {
-    const result: Revision[] = [];
-    let group: Revision[] = [];
-
-    const flush = () => {
-      if (group.length === 0) return;
-      const head = group[0];
-      const allChanges: RevisionChange[] = [];
-      for (const r of group) {
-        if (r.changes) allChanges.push(...r.changes);
-      }
-      result.push({ ...head, changes: allChanges });
-      group = [];
-    };
-
-    for (const rev of revisions) {
-      // Significant revisions and revisions with no recorded changes (legacy/opaque
-      // entries) always stand alone so the user can click in to inspect them.
-      const opaque = !rev.changes || rev.changes.length === 0;
-      if (opaque || isSignificantChange(rev.changes)) {
-        flush();
-        result.push(rev);
-        continue;
-      }
-      if (group.length === 0) {
-        group.push(rev);
-        continue;
-      }
-      const headTime = new Date(group[0].created_on).getTime();
-      const revTime = new Date(rev.created_on).getTime();
-      if (headTime - revTime < GROUP_WINDOW_MS) {
-        group.push(rev);
-      } else {
-        flush();
-        group.push(rev);
-      }
-    }
-    flush();
-    return result;
   }
 
   private async handleRevisionClick(revision: Revision) {
