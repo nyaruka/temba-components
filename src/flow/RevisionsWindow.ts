@@ -19,10 +19,11 @@ const MAX_GROUP_LABELS = 3;
 export interface Revision {
   id: number;
   user: {
-    id: number;
-    username: string;
-    first_name: string;
-    last_name: string;
+    id?: number;
+    email?: string;
+    username?: string;
+    first_name?: string;
+    last_name?: string;
     name?: string;
   };
   created_on: string;
@@ -255,10 +256,12 @@ export class RevisionsWindow extends RapidElement {
       const headTime = new Date(head.created_on).getTime();
       const revTime = new Date(rev.created_on).getTime();
       const withinWindow = headTime - revTime < GROUP_WINDOW_MS;
-      // Treat missing usernames as "different" rather than the same author —
-      // we never want to silently merge attribution across an unknown gap.
-      const sameAuthor =
-        !!head.user?.username && head.user.username === rev.user?.username;
+      // Compare on whichever identifier the server provides — real data
+      // arrives with `email`, while test fixtures use `username`. Falling
+      // back through the chain keeps both shapes working.
+      const headId = head.user?.email ?? head.user?.username;
+      const revId = rev.user?.email ?? rev.user?.username;
+      const sameAuthor = headId === revId;
       const prospective = new Set([
         ...groupLabels,
         ...labelsFor(rev.changes)

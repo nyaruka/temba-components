@@ -188,6 +188,44 @@ describe('Editor Revisions', () => {
     expect(revisions[1].id).to.equal(1);
   });
 
+  it('groups revisions by author when only the email/name shape is sent', async () => {
+    // The production API returns user: { email, name } (no username), so the
+    // sameAuthor check has to recognize this shape — otherwise a single
+    // editing session by one user lights up as a row per revision.
+    const adam = { email: 'adam@example.com', name: 'Adam McAdmin' };
+    const mockRevisions = [
+      {
+        id: 3,
+        created_on: '2024-06-01T12:10:00Z',
+        user: adam,
+        changes: { tags: ['layout'] }
+      },
+      {
+        id: 2,
+        created_on: '2024-06-01T12:09:00Z',
+        user: adam,
+        changes: { tags: ['layout'] }
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:08:00Z',
+        user: adam,
+        changes: { tags: ['layout'] }
+      }
+    ];
+
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
+    );
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(1);
+    expect(revisions[0].id).to.equal(3);
+    expect(revisions[0].user.name).to.equal('Adam McAdmin');
+  });
+
   it('breaks out into a new row when the next revision changes the author', async () => {
     const ann = { id: 1, first_name: 'A', last_name: 'A', username: 'ann' };
     const bob = { id: 2, first_name: 'B', last_name: 'B', username: 'bob' };
