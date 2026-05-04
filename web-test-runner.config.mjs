@@ -335,7 +335,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
 
 export default {
   rootDir: './',
-  files: '**/test/**/*.test.ts',
+  files: ['**/test/**/*.test.ts', '!**/test/utils.test.ts'],
   nodeResolve: true,
   concurrency: 4,
   filterBrowserLogs(log) {
