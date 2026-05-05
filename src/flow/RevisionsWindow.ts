@@ -151,7 +151,7 @@ export class RevisionsWindow extends RapidElement {
                             value=${rev.created_on}
                             display="duration"
                           ></temba-date>
-                          · ${rev.user.name || rev.user.username}
+                          · ${this.renderUser(rev.user)}
                         </div>
                         ${isCurrent
                           ? html`<div
@@ -191,6 +191,13 @@ export class RevisionsWindow extends RapidElement {
   }
 
   // --- Private ---
+
+  private renderUser(user: Revision['user']): TemplateResult | string {
+    if (user?.email === 'system') {
+      return html`<em>System update</em>`;
+    }
+    return user?.name || user?.username || '';
+  }
 
   private async fetchRevisions() {
     const requestId = ++this.fetchRequestId;
@@ -262,10 +269,7 @@ export class RevisionsWindow extends RapidElement {
       const headId = head.user?.email ?? head.user?.username;
       const revId = rev.user?.email ?? rev.user?.username;
       const sameAuthor = headId === revId;
-      const prospective = new Set([
-        ...groupLabels,
-        ...labelsFor(rev.changes)
-      ]);
+      const prospective = new Set([...groupLabels, ...labelsFor(rev.changes)]);
       const fitsLabelCap = prospective.size <= MAX_GROUP_LABELS;
 
       if (withinWindow && sameAuthor && fitsLabelCap) {
