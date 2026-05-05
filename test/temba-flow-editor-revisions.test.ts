@@ -24,8 +24,7 @@ describe('Editor Revisions', () => {
     // triggered by store changes doesn't throw (each test that needs a
     // specific payload overrides via callsFake/resolves).
     fetchStub.callsFake(
-      async () =>
-        new Response(JSON.stringify({ results: [] }), { status: 200 })
+      async () => new Response(JSON.stringify({ results: [] }), { status: 200 })
     );
     // Initialize without 'flow' attribute to prevent firstUpdated from calling getStore().getState()
     element = await fixture(
@@ -397,8 +396,7 @@ describe('Editor Revisions', () => {
 
   it('refresh() fetches the list when the window is open', async () => {
     fetchStub.callsFake(
-      async () =>
-        new Response(JSON.stringify({ results: [] }), { status: 200 })
+      async () => new Response(JSON.stringify({ results: [] }), { status: 200 })
     );
 
     (revisionsWindow as any).hidden = false;
@@ -413,8 +411,7 @@ describe('Editor Revisions', () => {
 
   it('refresh() is a no-op when the window is hidden', async () => {
     fetchStub.callsFake(
-      async () =>
-        new Response(JSON.stringify({ results: [] }), { status: 200 })
+      async () => new Response(JSON.stringify({ results: [] }), { status: 200 })
     );
 
     fetchStub.resetHistory();
@@ -466,6 +463,37 @@ describe('Editor Revisions', () => {
     // Second item is not current and has no current label
     expect(items[1].classList.contains('current')).to.be.false;
     expect(items[1].querySelector('.current-label')).to.not.exist;
+  });
+
+  it('renders system-generated revisions with a "System update" label', async () => {
+    (element as any).revisionsWindowHidden = false;
+    await element.requestUpdate();
+
+    const mockRevisions = [
+      {
+        id: 2,
+        created_on: '2023-01-02',
+        user: { email: 'adam@example.com', name: 'Adam' }
+      },
+      {
+        id: 1,
+        created_on: '2023-01-01',
+        user: { email: 'system', name: '' }
+      }
+    ];
+    (revisionsWindow as any).revisions = mockRevisions;
+    await revisionsWindow.updateComplete;
+
+    const items = revisionsWindow.shadowRoot?.querySelectorAll(
+      '.revision-item'
+    ) as NodeListOf<HTMLElement>;
+    expect(items.length).to.equal(2);
+
+    expect(items[0].textContent).to.contain('Adam');
+    const systemMeta = items[1].querySelector('.revision-meta');
+    expect(systemMeta?.querySelector('em')?.textContent).to.equal(
+      'System update'
+    );
   });
 
   it('should have purple color for revisions window and blue for selected item', async () => {
