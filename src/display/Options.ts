@@ -562,6 +562,14 @@ export class Options extends RapidElement {
       return;
     }
 
+    // Don't intercept keys when the popup isn't visible to the user. The
+    // element can still be in the layout tree (so offsetParent is non-null)
+    // while being hidden via opacity/pointer-events, in which case handling
+    // keys would steal them from the underlying input.
+    if (!this.block && !this.visible) {
+      return;
+    }
+
     // Only intercept keys when the event originated within our owning component.
     // Without this, any temba-options with populated options would swallow arrow
     // keys document-wide, breaking cursor movement in unrelated text editors.
