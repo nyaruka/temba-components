@@ -125,7 +125,7 @@ export class RichEditor extends FieldElement {
            strictly here while Chrome happens to overlay the caret). */
         position: absolute;
         inset: 0;
-        padding: var(--temba-textinput-padding);
+        padding: inherit;
       }
 
       /* Token styles (shared) */

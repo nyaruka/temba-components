@@ -67,11 +67,6 @@ function textOfChildren(parent: Node): string {
   return text;
 }
 
-/** Returns the plain-text length of a DOM node. */
-function nodeTextLength(node: Node): number {
-  return textOfNode(node).length;
-}
-
 /** Converts a DOM selection position (container + offset) to a plain-text offset. */
 function domPositionToTextOffset(
   root: Node,
@@ -133,10 +128,10 @@ function domPositionToTextOffset(
       ) {
         text += '\n';
       }
+      const before = text.length;
       walk(child);
       if (stopped) break;
-      const piece = textOfNode(child);
-      if (piece.length > 0) hasContent = true;
+      if (text.length > before) hasContent = true;
     }
   };
 
@@ -210,10 +205,10 @@ function textOffsetToDomPosition(
         }
         remaining -= 1;
       }
+      const before = remaining;
       walk(child, node);
       if (result !== null) return;
-      const piece = textOfNode(child);
-      if (piece.length > 0) hasContent = true;
+      if (remaining < before) hasContent = true;
     }
   };
 
@@ -221,11 +216,16 @@ function textOffsetToDomPosition(
   if (result) return result;
 
   if (remaining === 0) {
-    // Past all content. Prefer a position before the trailing <br> sentinel
-    // so the caret can render on the empty final line in Firefox.
+    // Past all content. If the editor ends in a <br>, position relative to it
+    // so the caret renders on the empty trailing line in Firefox.
     const lastChild = root.lastChild;
-    if (lastChild && lastChild.nodeName === 'BR' && isSentinelBr(lastChild)) {
-      return { node: root, offset: root.childNodes.length - 1 };
+    if (lastChild && lastChild.nodeName === 'BR') {
+      // Sentinel: render before it. Non-sentinel (transient post-yank state):
+      // render after it so the caret sits on the empty line the BR produces.
+      const offset = isSentinelBr(lastChild)
+        ? root.childNodes.length - 1
+        : root.childNodes.length;
+      return { node: root, offset };
     }
     if (lastTextNode) {
       return { node: lastTextNode, offset: lastTextOffset };
@@ -295,5 +295,3 @@ export function setCaretRange(
   selection.addRange(range);
 }
 
-// Test-only export for unit tests.
-export const _internal = { nodeTextLength };
