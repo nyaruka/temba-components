@@ -1,8 +1,14 @@
 // ---------------------------------------------------------------------------
-// Cursor management utilities for contenteditable
-// Newlines are represented as \n characters inside <span class="tok-newline">
-// elements, so they're handled as regular text by cursor utilities.
-// Browser-added <br> artifacts are ignored (treated as zero-length).
+// Cursor management utilities for contenteditable.
+//
+// The DOM produced by our renderer is a flat list of <span> tokens (newlines
+// are "\n" characters inside <span class="tok-newline">) plus an optional
+// trailing <br data-sentinel> that exists only so Firefox renders an empty
+// final line. Browser-inserted structures (e.g. from yank/paste) are also
+// possible: a bare <br> represents a real newline, and a <div> or <p> at the
+// editable's root level represents a line block. Both are translated to "\n"
+// when computing plain-text offsets so the rebuild after handleInput sees the
+// correct value.
 // ---------------------------------------------------------------------------
 
 /** Gets the Selection object, handling shadow DOM. */
@@ -14,20 +20,56 @@ export function getSelectionFromRoot(element: HTMLElement): Selection | null {
   return window.getSelection();
 }
 
-/** Returns the plain-text length of a DOM node. Ignores browser <br> artifacts. */
-function nodeTextLength(node: Node): number {
+function isSentinelBr(node: Node): boolean {
+  return (
+    node.nodeName === 'BR' &&
+    typeof (node as Element).hasAttribute === 'function' &&
+    (node as Element).hasAttribute('data-sentinel')
+  );
+}
+
+function isBlockElement(node: Node): boolean {
+  return node.nodeName === 'DIV' || node.nodeName === 'P';
+}
+
+/** Plain-text contribution of a node and its descendants. */
+function textOfNode(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) {
-    return node.textContent.length;
+    return node.textContent || '';
   }
-  // Ignore browser-added <br> artifacts
   if (node.nodeName === 'BR') {
-    return 0;
+    return isSentinelBr(node) ? '' : '\n';
   }
-  let len = 0;
-  for (const child of Array.from(node.childNodes)) {
-    len += nodeTextLength(child);
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return '';
   }
-  return len;
+  return textOfChildren(node);
+}
+
+/** Plain-text contribution of an element's children, with block-prefix \n. */
+function textOfChildren(parent: Node): string {
+  let text = '';
+  let hasContent = false;
+  for (const child of Array.from(parent.childNodes)) {
+    if (
+      child.nodeType === Node.ELEMENT_NODE &&
+      isBlockElement(child) &&
+      hasContent
+    ) {
+      text += '\n';
+    }
+    const piece = textOfNode(child);
+    text += piece;
+    if (piece.length > 0) {
+      hasContent = true;
+    }
+  }
+  return text;
+}
+
+/** Returns the plain-text length of a DOM node. */
+function nodeTextLength(node: Node): number {
+  return textOfNode(node).length;
 }
 
 /** Converts a DOM selection position (container + offset) to a plain-text offset. */
@@ -36,38 +78,70 @@ function domPositionToTextOffset(
   targetContainer: Node,
   targetOffset: number
 ): number {
-  let total = 0;
+  // Build the text from `root` up to (target, targetOffset) and return its
+  // length. This mirrors textOfChildren so block-prefix newlines and BR
+  // newlines are accounted for the same way when reading and writing.
+  let text = '';
+  let stopped = false;
 
-  const walk = (node: Node): boolean => {
+  const walk = (node: Node): void => {
+    if (stopped) return;
+
     if (node === targetContainer) {
       if (node.nodeType === Node.TEXT_NODE) {
-        total += targetOffset;
-      } else {
-        // offset is a child index
-        for (let i = 0; i < targetOffset && i < node.childNodes.length; i++) {
-          total += nodeTextLength(node.childNodes[i]);
+        text += (node.textContent || '').substring(0, targetOffset);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const children = Array.from(node.childNodes);
+        let hasContent = false;
+        for (let i = 0; i < Math.min(targetOffset, children.length); i++) {
+          const child = children[i];
+          if (
+            child.nodeType === Node.ELEMENT_NODE &&
+            isBlockElement(child) &&
+            hasContent
+          ) {
+            text += '\n';
+          }
+          const piece = textOfNode(child);
+          text += piece;
+          if (piece.length > 0) hasContent = true;
         }
       }
-      return true; // found
+      stopped = true;
+      return;
     }
 
     if (node.nodeType === Node.TEXT_NODE) {
-      total += node.textContent.length;
-      return false;
+      text += node.textContent || '';
+      return;
     }
-    // Ignore browser-added <br> artifacts
     if (node.nodeName === 'BR') {
-      return false;
+      if (!isSentinelBr(node)) text += '\n';
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return;
     }
 
+    let hasContent = false;
     for (const child of Array.from(node.childNodes)) {
-      if (walk(child)) return true;
+      if (stopped) break;
+      if (
+        child.nodeType === Node.ELEMENT_NODE &&
+        isBlockElement(child) &&
+        hasContent
+      ) {
+        text += '\n';
+      }
+      walk(child);
+      if (stopped) break;
+      const piece = textOfNode(child);
+      if (piece.length > 0) hasContent = true;
     }
-    return false;
   };
 
   walk(root);
-  return total;
+  return text.length;
 }
 
 /** Converts a plain-text offset to a DOM position (node + offset). */
@@ -76,49 +150,98 @@ function textOffsetToDomPosition(
   targetOffset: number
 ): { node: Node; offset: number } | null {
   let remaining = targetOffset;
+  // Track the last text node passed through so we can fall back to its end
+  // when the offset sits past all text content.
+  let lastTextNode: Node | null = null;
+  let lastTextOffset = 0;
+  let result: { node: Node; offset: number } | null = null;
 
-  const walk = (node: Node): { node: Node; offset: number } | null => {
+  const walk = (node: Node, parent: Node | null): void => {
+    if (result !== null) return;
+
     if (node.nodeType === Node.TEXT_NODE) {
-      if (remaining <= node.textContent.length) {
-        return { node, offset: remaining };
+      const len = node.textContent.length;
+      // Use strict "<" so positions at the boundary between two text nodes
+      // resolve to the START of the next node rather than the END of the
+      // previous one. Firefox doesn't paint the caret reliably when it lands
+      // at the end of an inline span whose text is just "\n", but happily
+      // renders it at the start of the following node.
+      if (remaining < len) {
+        result = { node, offset: remaining };
+        return;
       }
-      remaining -= node.textContent.length;
-      return null;
-    }
-    // Ignore browser-added <br> artifacts
-    if (node.nodeName === 'BR') {
-      return null;
+      lastTextNode = node;
+      lastTextOffset = len;
+      remaining -= len;
+      return;
     }
 
-    for (const child of Array.from(node.childNodes)) {
-      const result = walk(child);
-      if (result) return result;
+    if (node.nodeName === 'BR') {
+      if (isSentinelBr(node)) return;
+      if (remaining === 0 && parent) {
+        const idx = Array.from(parent.childNodes).indexOf(node as ChildNode);
+        if (idx >= 0) {
+          result = { node: parent, offset: idx };
+          return;
+        }
+      }
+      remaining -= 1;
+      return;
     }
-    return null;
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return;
+    }
+
+    let hasContent = false;
+    for (const child of Array.from(node.childNodes)) {
+      if (result !== null) return;
+      if (
+        child.nodeType === Node.ELEMENT_NODE &&
+        isBlockElement(child) &&
+        hasContent
+      ) {
+        if (remaining === 0) {
+          const idx = Array.from(node.childNodes).indexOf(child as ChildNode);
+          if (idx >= 0) {
+            result = { node, offset: idx };
+            return;
+          }
+        }
+        remaining -= 1;
+      }
+      walk(child, node);
+      if (result !== null) return;
+      const piece = textOfNode(child);
+      if (piece.length > 0) hasContent = true;
+    }
   };
 
-  return walk(root);
+  walk(root, null);
+  if (result) return result;
+
+  if (remaining === 0) {
+    // Past all content. Prefer a position before the trailing <br> sentinel
+    // so the caret can render on the empty final line in Firefox.
+    const lastChild = root.lastChild;
+    if (lastChild && lastChild.nodeName === 'BR' && isSentinelBr(lastChild)) {
+      return { node: root, offset: root.childNodes.length - 1 };
+    }
+    if (lastTextNode) {
+      return { node: lastTextNode, offset: lastTextOffset };
+    }
+  }
+  return null;
 }
 
 /**
- * Extracts plain text from the contenteditable DOM by walking our span structure.
- * Ignores browser-added <br> artifacts. Our newlines are \n chars inside spans.
+ * Extracts plain text from the contenteditable DOM. Translates non-sentinel
+ * <br> elements to "\n" and inserts a "\n" before block-level (DIV/P) children
+ * that follow other content, so yank/paste-inserted DOM structures round-trip
+ * through handleInput correctly.
  */
 export function getTextFromEditableDiv(element: HTMLElement): string {
-  let text = '';
-  for (const child of Array.from(element.childNodes)) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      text += child.textContent;
-    } else if (child.nodeType === Node.ELEMENT_NODE) {
-      // Skip browser-added <br> artifacts
-      if (child.nodeName === 'BR') {
-        continue;
-      }
-      // Recurse into spans and other elements
-      text += getTextFromEditableDiv(child as HTMLElement);
-    }
-  }
-  return text;
+  return textOfChildren(element);
 }
 
 /** Gets the caret (selection start) as a plain-text offset. */
@@ -171,3 +294,6 @@ export function setCaretRange(
   selection.removeAllRanges();
   selection.addRange(range);
 }
+
+// Test-only export for unit tests.
+export const _internal = { nodeTextLength };

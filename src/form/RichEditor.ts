@@ -97,6 +97,7 @@ export class RichEditor extends FieldElement {
         overflow-y: auto;
         min-height: var(--textarea-min-height, 100px);
         resize: none;
+        position: relative;
       }
 
       :host(:not([textarea])) {
@@ -119,6 +120,12 @@ export class RichEditor extends FieldElement {
         content: attr(data-placeholder);
         color: var(--color-placeholder, #999);
         pointer-events: none;
+        /* Take the placeholder out of flow so the caret sits at offset 0
+           visually, not after the placeholder text (Firefox honors flow
+           strictly here while Chrome happens to overlay the caret). */
+        position: absolute;
+        inset: 0;
+        padding: var(--temba-textinput-padding);
       }
 
       /* Token styles (shared) */
@@ -302,6 +309,11 @@ export class RichEditor extends FieldElement {
 
     if (this.disableCompletion) {
       div.textContent = text || '';
+      if (text && text.endsWith('\n')) {
+        const br = document.createElement('br');
+        br.setAttribute('data-sentinel', '');
+        div.appendChild(br);
+      }
       return;
     }
 
@@ -359,6 +371,15 @@ export class RichEditor extends FieldElement {
     // Ensure there's at least an empty text node for cursor placement
     if (!text || text === '') {
       div.appendChild(document.createTextNode(''));
+    } else if (text.endsWith('\n')) {
+      // A trailing "\n" text node is collapsed by Firefox in contenteditable,
+      // making the empty final line invisible. A sentinel <br> forces the
+      // line break to render. The data-sentinel attribute distinguishes it
+      // from browser-inserted <br>s (which represent real newlines and must
+      // be preserved by the caret/text utilities).
+      const br = document.createElement('br');
+      br.setAttribute('data-sentinel', '');
+      div.appendChild(br);
     }
   }
 
