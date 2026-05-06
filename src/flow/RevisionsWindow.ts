@@ -301,12 +301,16 @@ export class RevisionsWindow extends RapidElement {
         bypassBarriers || headTime - revTime < GROUP_WINDOW_MS;
       const sameAuthor = bypassBarriers || headId === revId;
       const prospective = new Set([...groupLabels, ...labelsFor(rev.changes)]);
-      // When a no-op-only chain is reaching forward to absorb its first real
-      // edit, we have to ignore the label cap too — otherwise a sweeping
-      // edit (4+ label areas) would still flush the no-op group alone with
-      // an empty summary, the exact case bypassBarriers is meant to prevent.
+      // The label cap is meaningful only when adding a real change to a
+      // group that already has one. A no-op contributes zero labels by
+      // construction, so it never trips the cap; and a no-op-only chain
+      // reaching forward to absorb its first real edit must ignore the cap
+      // too, or a sweeping edit (4+ label areas) would still strand the
+      // no-op group as an empty-summary row.
       const fitsLabelCap =
-        !groupHasRealChange || prospective.size <= MAX_GROUP_LABELS;
+        isNoOp ||
+        !groupHasRealChange ||
+        prospective.size <= MAX_GROUP_LABELS;
 
       if (withinWindow && sameAuthor && fitsLabelCap) {
         group.push(rev);

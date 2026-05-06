@@ -525,6 +525,46 @@ describe('Editor Revisions', () => {
     ]);
   });
 
+  it('still folds in a trailing no-op even when the head already exceeds the label cap', async () => {
+    // The very first rev of a group bypasses the cap, so a sweeping edit
+    // can land as the head with `groupLabels.size > MAX_GROUP_LABELS`. A
+    // no-op landing right behind it contributes zero labels and shouldn't
+    // be stranded by a cap check that no longer makes sense.
+    const eric = { email: 'eric@textit.com', name: 'Eric' };
+    const system = { email: 'system', name: '' };
+    const mockRevisions = [
+      {
+        id: 2,
+        created_on: '2024-06-01T12:10:00Z',
+        user: eric,
+        changes: { tags: ['metadata', 'nodes', 'routing', 'actions'] }
+      },
+      {
+        id: 1,
+        created_on: '2024-06-01T12:08:00Z',
+        user: system,
+        changes: { tags: ['spec'] }
+      }
+    ];
+
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
+    );
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(1);
+    expect(revisions[0].id).to.equal(2);
+    expect(revisions[0].user.email).to.equal('eric@textit.com');
+    expect(revisions[0].changes.tags.sort()).to.deep.equal([
+      'actions',
+      'metadata',
+      'nodes',
+      'routing'
+    ]);
+  });
+
   it('stops absorbing after the first real change is pulled in', async () => {
     // Once a no-op chain has reached forward to grab a real edit, normal
     // barriers resume — a second far-away real edit should NOT be swept up.
