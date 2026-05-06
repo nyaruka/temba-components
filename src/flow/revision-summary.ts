@@ -2,6 +2,23 @@ export interface RevisionChanges {
   tags: string[];
 }
 
+// "spec" is the housekeeping tag the system attaches when it bumps a flow's
+// spec version. It carries no editorial intent, so we strip it at the
+// boundary — every downstream consumer (summaries, label caps, no-op
+// detection) then operates on a clean tag set without needing special cases.
+const NOOP_TAGS = new Set(['spec']);
+
+// Drop tags that don't represent real edits and collapse to null when nothing
+// meaningful remains. Returning null lets `isNoOpChanges` and the collapse
+// logic treat empty-after-filtering and originally-null the same way.
+export function normalizeChanges(
+  changes: RevisionChanges | null | undefined
+): RevisionChanges | null {
+  if (!changes) return null;
+  const tags = (changes.tags || []).filter((t) => !NOOP_TAGS.has(t));
+  return tags.length === 0 ? null : { tags };
+}
+
 const TAG_LABELS: Record<string, { label: string; order: number }> = {
   metadata: { label: 'metadata', order: 0 },
   nodes: { label: 'nodes', order: 1 },
@@ -30,6 +47,14 @@ export function labelsFor(
     if (entry) result.add(entry.label);
   }
   return result;
+}
+
+// A revision is a no-op when, after stripping housekeeping tags, nothing
+// meaningful is left. These shouldn't break up adjacent edits in the browser.
+export function isNoOpChanges(
+  changes: RevisionChanges | null | undefined
+): boolean {
+  return normalizeChanges(changes) === null;
 }
 
 export function summarizeChanges(
