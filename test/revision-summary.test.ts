@@ -1,5 +1,9 @@
 import { expect } from '@open-wc/testing';
-import { summarizeChanges } from '../src/flow/revision-summary';
+import {
+  isNoOpChanges,
+  normalizeChanges,
+  summarizeChanges
+} from '../src/flow/revision-summary';
 
 describe('summarizeChanges', () => {
   it('returns empty string for null/undefined/empty tags', () => {
@@ -61,5 +65,52 @@ describe('summarizeChanges', () => {
     );
     // an entirely unknown set yields nothing
     expect(summarizeChanges({ tags: ['something_new'] })).to.equal('');
+  });
+
+  it('never surfaces the "spec" tag in a summary', () => {
+    expect(summarizeChanges({ tags: ['spec'] })).to.equal('');
+    expect(summarizeChanges({ tags: ['spec', 'actions'] })).to.equal(
+      'Changed actions'
+    );
+  });
+});
+
+describe('normalizeChanges', () => {
+  it('returns null for null/undefined/empty inputs', () => {
+    expect(normalizeChanges(null)).to.equal(null);
+    expect(normalizeChanges(undefined)).to.equal(null);
+    expect(normalizeChanges({ tags: [] })).to.equal(null);
+  });
+
+  it('strips the "spec" housekeeping tag', () => {
+    expect(normalizeChanges({ tags: ['spec'] })).to.equal(null);
+    expect(normalizeChanges({ tags: ['spec', 'actions'] })).to.deep.equal({
+      tags: ['actions']
+    });
+  });
+
+  it('leaves real tags untouched', () => {
+    expect(normalizeChanges({ tags: ['actions', 'layout'] })).to.deep.equal({
+      tags: ['actions', 'layout']
+    });
+  });
+});
+
+describe('isNoOpChanges', () => {
+  it('treats null/undefined and empty tag lists as no-ops', () => {
+    expect(isNoOpChanges(null)).to.equal(true);
+    expect(isNoOpChanges(undefined)).to.equal(true);
+    expect(isNoOpChanges({ tags: [] })).to.equal(true);
+  });
+
+  it('treats spec-only tag lists as no-ops', () => {
+    expect(isNoOpChanges({ tags: ['spec'] })).to.equal(true);
+    expect(isNoOpChanges({ tags: ['spec', 'spec'] })).to.equal(true);
+  });
+
+  it('treats anything beyond "spec" as a real change', () => {
+    expect(isNoOpChanges({ tags: ['spec', 'actions'] })).to.equal(false);
+    expect(isNoOpChanges({ tags: ['actions'] })).to.equal(false);
+    expect(isNoOpChanges({ tags: ['localization:spa'] })).to.equal(false);
   });
 });
