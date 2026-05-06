@@ -478,6 +478,53 @@ describe('Editor Revisions', () => {
     expect(revisions[0].changes.tags).to.deep.equal(['layout']);
   });
 
+  it('absorbs the first real change even when it would exceed the label cap on its own', async () => {
+    // A sweeping edit can touch 4+ distinct label areas in a single
+    // revision. If we enforced the label cap while a no-op-only chain
+    // was reaching forward to grab its first real change, the merge
+    // would fail and the no-op group would flush alone with no summary
+    // — the empty-row case the absorb-forward rule exists to avoid.
+    const system = { email: 'system', name: '' };
+    const eric = { email: 'eric@textit.com', name: 'Eric' };
+    const mockRevisions = [
+      {
+        id: 3,
+        created_on: '2026-03-19T00:00:00Z',
+        user: system,
+        changes: { tags: [] }
+      },
+      {
+        id: 2,
+        created_on: '2025-01-01T00:00:00Z',
+        user: system,
+        changes: { tags: ['spec'] }
+      },
+      {
+        id: 1,
+        created_on: '2024-01-01T00:00:00Z',
+        user: eric,
+        changes: { tags: ['metadata', 'nodes', 'routing', 'actions'] }
+      }
+    ];
+
+    fetchStub.resolves(
+      new Response(JSON.stringify({ results: mockRevisions }), { status: 200 })
+    );
+
+    await (revisionsWindow as any).fetchRevisions();
+
+    const revisions = (revisionsWindow as any).revisions;
+    expect(revisions.length).to.equal(1);
+    expect(revisions[0].id).to.equal(3);
+    expect(revisions[0].user.email).to.equal('eric@textit.com');
+    expect(revisions[0].changes.tags.sort()).to.deep.equal([
+      'actions',
+      'metadata',
+      'nodes',
+      'routing'
+    ]);
+  });
+
   it('stops absorbing after the first real change is pulled in', async () => {
     // Once a no-op chain has reached forward to grab a real edit, normal
     // barriers resume — a second far-away real edit should NOT be swept up.
