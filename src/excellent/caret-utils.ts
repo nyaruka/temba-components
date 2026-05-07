@@ -294,4 +294,3 @@ export function setCaretRange(
   selection.removeAllRanges();
   selection.addRange(range);
 }
-

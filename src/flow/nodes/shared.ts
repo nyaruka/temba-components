@@ -69,6 +69,14 @@ const advancedSection = {
     !!(formData.localizeRules || formData.localizeCategories)
 };
 
+const categoriesLocalizationSection = {
+  label: 'Localization',
+  localizable: false,
+  items: ['localizeCategories'],
+  collapsed: true,
+  getValueCount: (formData: FormData) => !!formData.localizeCategories
+};
+
 export const nodeOptionsAccordion: AccordionLayoutConfig = {
   type: 'accordion',
   multi: true,
@@ -79,6 +87,12 @@ export const nodeOptionsAccordionSimple: AccordionLayoutConfig = {
   type: 'accordion',
   multi: true,
   sections: [resultNameSection]
+};
+
+export const nodeOptionsAccordionCategoriesOnly: AccordionLayoutConfig = {
+  type: 'accordion',
+  multi: true,
+  sections: [resultNameSection, categoriesLocalizationSection]
 };
 
 /**

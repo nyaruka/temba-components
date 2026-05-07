@@ -1,16 +1,25 @@
-import { FormData, NodeConfig, ACTION_GROUPS, Features } from '../types';
+import {
+  FormData,
+  NodeConfig,
+  ACTION_GROUPS,
+  FlowTypes
+} from '../types';
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createMultiCategoryRouter } from '../../utils';
 import { html } from 'lit';
 import { validateWith } from '../utils';
 import { LLMModel, hasLLMRole } from '../flow-utils';
+import {
+  resultNameField,
+  localizeCategoriesField,
+  nodeOptionsAccordionCategoriesOnly
+} from './shared';
 
 export const split_by_llm_categorize: NodeConfig = {
   type: 'split_by_llm_categorize',
   name: 'Split by AI',
   group: ACTION_GROUPS.services,
-  flowTypes: [],
-  features: [Features.AI],
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   form: {
     llm: {
       type: 'select',
@@ -49,9 +58,11 @@ export const split_by_llm_categorize: NodeConfig = {
           required: true
         }
       }
-    }
+    },
+    result_name: resultNameField,
+    localizeCategories: localizeCategoriesField
   },
-  layout: ['llm', 'input', 'categories'],
+  layout: ['llm', 'input', 'categories', nodeOptionsAccordionCategoriesOnly],
   validate: validateWith((formData, errors) => {
     if (!formData.categories || !Array.isArray(formData.categories)) return;
 
@@ -91,7 +102,7 @@ export const split_by_llm_categorize: NodeConfig = {
       <div class="body">Categorize with ${callLlmAction.llm.name}</div>
     `;
   },
-  toFormData: (node: Node) => {
+  toFormData: (node: Node, nodeUI?: any) => {
     // Extract data from the existing node structure
     const callLlmAction = node.actions?.find(
       (action) => action.type === 'call_llm'
@@ -105,8 +116,17 @@ export const split_by_llm_categorize: NodeConfig = {
       uuid: node.uuid,
       llm: callLlmAction?.llm ? [callLlmAction.llm] : [],
       input: callLlmAction?.input || '@input',
-      categories: categories
+      categories: categories,
+      result_name: node.router?.result_name || '',
+      localizeCategories: nodeUI?.config?.localizeCategories || false
     };
+  },
+  toUIConfig: (formData: FormData) => {
+    const config: Record<string, any> = {};
+    config.localizeCategories = formData.result_name
+      ? !!formData.localizeCategories
+      : false;
+    return config;
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get LLM selection
@@ -158,11 +178,16 @@ export const split_by_llm_categorize: NodeConfig = {
       existingCases
     );
 
+    const finalRouter: any = { ...router };
+    if (formData.result_name && formData.result_name.trim() !== '') {
+      finalRouter.result_name = formData.result_name.trim();
+    }
+
     // Return the complete node
     return {
       uuid: originalNode.uuid,
       actions: [callLlmAction],
-      router: router,
+      router: finalRouter,
       exits: exits
     };
   },
