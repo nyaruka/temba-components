@@ -308,9 +308,7 @@ export class RevisionsWindow extends RapidElement {
       // too, or a sweeping edit (4+ label areas) would still strand the
       // no-op group as an empty-summary row.
       const fitsLabelCap =
-        isNoOp ||
-        !groupHasRealChange ||
-        prospective.size <= MAX_GROUP_LABELS;
+        isNoOp || !groupHasRealChange || prospective.size <= MAX_GROUP_LABELS;
 
       if (withinWindow && sameAuthor && fitsLabelCap) {
         group.push(rev);

@@ -46,10 +46,7 @@ const createSimulator = async (attrs: any = {}) => {
 // before the fixture is created, so it can't be clobbered by anything that
 // happens during the async loadStore() above (e.g. a stray updated() from a
 // previous test's element).
-const createSimulatorRaw = async (
-  attrs: any = {},
-  cookieValue?: string
-) => {
+const createSimulatorRaw = async (attrs: any = {}, cookieValue?: string) => {
   await loadStore();
 
   if (cookieValue !== undefined) {

@@ -639,24 +639,17 @@ describe('temba-node-type-selector', () => {
       expect(foundDelimitedType).to.be.false;
     });
 
-    it('should not show split_by_llm_categorize in the selector', async () => {
+    it('should show split_by_llm_categorize in the selector', async () => {
       const selector = await createSelector();
 
       selector.show('all', { x: 100, y: 100 });
       await selector.updateComplete;
 
-      // Get all the node items and check their data-type attributes
-      const nodeItems = selector.shadowRoot!.querySelectorAll('.node-item');
+      const titles = Array.from(
+        selector.shadowRoot!.querySelectorAll('.node-item-title')
+      ).map((el) => el.textContent?.trim());
 
-      let foundLLMCategorize = false;
-      nodeItems.forEach((item) => {
-        const typeAttr = item.getAttribute('data-type');
-        if (typeAttr === 'split_by_llm_categorize') {
-          foundLLMCategorize = true;
-        }
-      });
-
-      expect(foundLLMCategorize).to.be.false;
+      expect(titles).to.include('Split by AI');
     });
   });
 

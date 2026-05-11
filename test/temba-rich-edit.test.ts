@@ -289,7 +289,11 @@ describe('temba-rich-edit', () => {
 
   it('renders a sentinel <br> for trailing newlines so they are visible', async () => {
     const editor = (await fixture(html`
-      <temba-rich-edit value="hello\n" textarea></temba-rich-edit>
+      <temba-rich-edit
+        value="hello
+"
+        textarea
+      ></temba-rich-edit>
     `)) as any;
     await editor.updateComplete;
 
@@ -369,7 +373,11 @@ describe('temba-rich-edit', () => {
 
   it('still ignores the trailing data-sentinel <br> when reading the value', async () => {
     const editor = (await fixture(html`
-      <temba-rich-edit value="hello\n" textarea></temba-rich-edit>
+      <temba-rich-edit
+        value="hello
+"
+        textarea
+      ></temba-rich-edit>
     `)) as any;
     await editor.updateComplete;
 
