@@ -11,7 +11,10 @@ export const getFullName = (user: {
   first_name?: string;
   last_name?: string;
 }) => {
-  return user.name || [user.first_name, user.last_name].join(' ');
+  if (user.first_name || user.last_name) {
+    return [user.first_name, user.last_name].filter(Boolean).join(' ');
+  }
+  return user.name || '';
 };
 
 export class TembaUser extends RapidElement {
@@ -60,6 +63,12 @@ export class TembaUser extends RapidElement {
   name: string;
 
   @property({ type: String })
+  first_name: string;
+
+  @property({ type: String })
+  last_name: string;
+
+  @property({ type: String })
   email: string;
 
   @property({ type: String })
@@ -75,10 +84,19 @@ export class TembaUser extends RapidElement {
       this.bgimage = `url('${DEFAULT_AVATAR}') center / contain no-repeat`;
     }
 
-    if (changed.has('name')) {
-      if (this.name) {
-        this.bgcolor = colorHash.hex(this.name);
-        this.initials = extractInitials(this.name);
+    if (
+      changed.has('name') ||
+      changed.has('first_name') ||
+      changed.has('last_name')
+    ) {
+      const fullName = getFullName({
+        name: this.name,
+        first_name: this.first_name,
+        last_name: this.last_name
+      });
+      if (fullName) {
+        this.bgcolor = colorHash.hex(fullName);
+        this.initials = extractInitials(fullName);
       } else {
         this.bgcolor = '#e6e6e6';
         this.initials = '';
