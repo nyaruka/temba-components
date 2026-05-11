@@ -3,6 +3,67 @@
 process.env.PUPPETEER_DISABLE_HEADLESS_WARNING = '1';
 import { puppeteerLauncher } from '@web/test-runner-puppeteer';
 import { defaultReporter, summaryReporter } from '@web/test-runner';
+
+// Workaround for a wtr OOM under coverage on this branch. With our
+// volume of instrumented code, the merged istanbul-coverage payload
+// across all 121 test sessions overflows V8's max string length
+// (~512MB) when `getTestCoverage` deep-clones it via
+// `JSON.parse(JSON.stringify(coverages))`. That clone exists only to
+// insulate watch mode from istanbul's in-place mutation of the
+// originals — in non-watch CI mode the clone is dead weight.
+// The throw is caught inside `onSessionFinished`'s try/catch, which
+// calls `runner.stop(error)` and silently exits 1 (the
+// `console.error` it logs is swallowed by wtr's BufferedLogger before
+// the final reportEnd flush ever runs).
+//
+// We can't import `getTestCoverage` directly (it's a transitive dep
+// not re-exported by `@web/test-runner`), so we shim JSON.parse: when
+// it's handed the sentinel produced by our JSON.stringify shim below,
+// it returns the original `coverages` array instead of the stringified
+// copy. The shim only triggers for arrays of istanbul-coverage objects
+// (identified by their `statementMap` / `fnMap` / `b` properties), so
+// it can't affect any other JSON usage in the test runner.
+const __origStringify = JSON.stringify;
+const __origParse = JSON.parse;
+const __CLONE_SENTINEL = '__WTR_COVERAGE_CLONE__';
+let __pendingCoverages = null;
+// Detect the getTestCoverage clone call: an array whose first element
+// is an object keyed by absolute file paths, each value being an
+// istanbul coverage entry. The shape is consistent enough that we can
+// recognize it without conflating with other JSON usage.
+const __looksLikeCoverageArray = (value) => {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  const first = value[0];
+  if (!first || typeof first !== 'object' || Array.isArray(first)) return false;
+  const keys = Object.keys(first);
+  if (keys.length === 0) return false;
+  // file-path keys
+  if (!keys.every((k) => k.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(k))) {
+    return false;
+  }
+  // istanbul-shaped values
+  const entry = first[keys[0]];
+  return (
+    entry &&
+    typeof entry === 'object' &&
+    (entry.statementMap || entry.fnMap || entry.b || entry.s)
+  );
+};
+JSON.stringify = function (value, ...rest) {
+  if (__looksLikeCoverageArray(value)) {
+    __pendingCoverages = value;
+    return __CLONE_SENTINEL;
+  }
+  return __origStringify(value, ...rest);
+};
+JSON.parse = function (text, ...rest) {
+  if (text === __CLONE_SENTINEL && __pendingCoverages) {
+    const out = __pendingCoverages;
+    __pendingCoverages = null;
+    return out;
+  }
+  return __origParse(text, ...rest);
+};
 import { esbuildPlugin } from '@web/dev-server-esbuild';
 import fs from 'fs';
 import * as path from 'path';
@@ -473,11 +534,6 @@ export default {
         const replaceScreenshots = params.includes('--replace-screenshots');
 
         const page = await context.newPage();
-
-        page.on('error', (err) => console.error('[page error]', err));
-        page.on('pageerror', (err) => console.error('[pageerror]', err));
-        page.on('close', () => console.error('[page closed]'));
-
         await page.setUserAgent(
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36'
         );
