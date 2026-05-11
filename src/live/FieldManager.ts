@@ -247,14 +247,15 @@ export class FieldManager extends EndpointMonitorElement {
         <div
           style="display: flex; min-width: 200px; width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 2em"
         >
-          <span
+          <temba-label
+            icon="fields"
+            type="field"
+            clickable
             @click=${this.handleFieldAction}
             data-key=${field.key}
             data-action="update"
-            style="color: var(--color-link-primary); cursor:pointer;"
+            >${field.label}</temba-label
           >
-            ${field.label}
-          </span>
           ${this.hasUsages(field)
             ? html`
                 <temba-icon

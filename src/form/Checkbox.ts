@@ -25,7 +25,7 @@ export class Checkbox extends FieldElement {
         width: 12px;
         height: 12px;
         background: var(--checkbox-background, rgba(255, 255, 255, 0.8));
-        border-radius: 2px;
+        border-radius: var(--r-xs);
       }
 
       .wrapper.label {
@@ -34,7 +34,7 @@ export class Checkbox extends FieldElement {
       }
 
       .wrapper.label:hover {
-        background: var(--checkbox-hover-bg, #f9f9f9);
+        background: var(--checkbox-hover-bg, var(--sunken));
       }
 
       .checkbox-container {

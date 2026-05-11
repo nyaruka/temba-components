@@ -75,6 +75,7 @@ export class ContactDetails extends ContactStoreElement {
                   onclick="goto(event)"
                   href="/contact/group/${group.uuid}/"
                   icon=${group.is_dynamic ? Icon.group_smart : Icon.group}
+                  type="group"
                   clickable
                 >
                   ${group.name}

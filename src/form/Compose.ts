@@ -104,7 +104,7 @@ export class Compose extends FieldElement {
         --curvature-widget: 0px;
         --color-options-bg: #fff;
         border: 1px solid var(--color-widget-border);
-        border-radius: 6px;
+        border-radius: var(--curvature-widget);
         background: var(--color-widget-bg, #fff);
         box-shadow: var(--options-shadow);
         z-index: 1000003;

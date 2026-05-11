@@ -23,7 +23,7 @@ export class MessageEditor extends FieldElement {
       .message-editor-container {
         border: 1px solid var(--color-widget-border);
         border-radius: var(--curvature-widget);
-        background: #fff;
+        background: var(--surface);
         position: relative;
         transition:
           border-color 0.2s ease-in-out,
@@ -75,10 +75,9 @@ export class MessageEditor extends FieldElement {
 
       .media-wrapper {
         padding: 4px 8px;
-        background: rgba(0, 0, 0, 0.03);
+        background: var(--sunken);
         border-top: 1px solid var(--color-widget-border);
         border-radius: 0 0 var(--curvature-widget) var(--curvature-widget);
-        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
         margin-top: 3px;
         display: none;
       }

@@ -604,12 +604,11 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
             class="remove-btn"
             style="
               padding: 4px;
-              border: 1px solid #ccc;
-              border-radius: 4px;
-              background: white;
+              border: 1px solid var(--color-widget-border);
+              border-radius: var(--curvature-widget);
+              background: var(--surface);
               cursor: pointer;
-              background: #fefefe;
-              color: #999;
+              color: var(--text-3);
               font-size: 14px;
             "
             ?disabled=${!canRemove}
@@ -651,21 +650,20 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       .add-btn,
       .remove-btn {
         padding: 4px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background: white;
+        border: 1px solid var(--color-widget-border);
+        border-radius: var(--curvature-widget);
+        background: var(--surface);
         cursor: pointer;
         font-size: 14px;
       }
 
       .add-btn:hover,
       .remove-btn:hover {
-        background: #f8f8f8;
+        background: var(--sunken);
       }
 
       .remove-btn {
-        background: #fefefe;
-        color: #999;
+        color: var(--text-3);
       }
 
       .removable .remove-btn {

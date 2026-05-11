@@ -26,8 +26,20 @@ export class TextInput extends FieldElement {
         display: flex;
         flex-direction: row;
         align-items: stretch;
+        min-height: var(--temba-textinput-min-height, var(--input-h));
         box-shadow: var(--widget-box-shadow);
         caret-color: var(--input-caret);
+        /* Establish a stable containing block for slotted absolutely-
+           positioned children (e.g. ContactFieldEditor's embedded
+           prefix label). Setting position: relative only on
+           :focus-within would re-anchor the prefix when focused,
+           visually shifting the label. */
+        position: relative;
+      }
+
+      .input-container.textarea,
+      .input-container:has(textarea) {
+        min-height: 0;
       }
 
       .xsmall {
@@ -66,7 +78,6 @@ export class TextInput extends FieldElement {
         border-color: var(--color-focus);
         background: var(--color-widget-bg-focused);
         box-shadow: var(--widget-box-shadow-focused);
-        position: relative;
       }
 
       .input-container:hover {

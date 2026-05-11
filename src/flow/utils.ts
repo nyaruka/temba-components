@@ -257,6 +257,28 @@ export const renderClamped = (
 };
 
 /**
+ * Maps a flow-action icon to its design-system pill variant. Callers
+ * may pass either the Icon enum alias ('group', 'flow') or the
+ * resolved SVG id (Icon.group → 'users-01'); both are recognised here.
+ * Keep in sync with PILL_TYPES / PILL_TYPE_ICONS in
+ * form/select/Select.ts — those are inverse mappings of the same set.
+ */
+const iconToPillType = (icon?: string): string | undefined => {
+  if (!icon) return undefined;
+  // aliases
+  if (icon === 'flow') return 'flow';
+  if (icon.startsWith('group')) return 'group';
+  if (icon === 'contact' || icon === 'contacts') return 'contact';
+  if (icon === 'fields' || icon === 'field') return 'field';
+  if (icon === 'label') return 'label';
+  // resolved SVG ids (Icon enum values)
+  if (icon === 'users-01' || icon === 'atom-01') return 'group';
+  if (icon === 'user-01') return 'contact';
+  if (icon === 'tag-01') return 'label';
+  return undefined;
+};
+
+/**
  * Renders a single line item with optional icon.
  * Content can be plain text or a TemplateResult (e.g. highlighted text).
  */
@@ -265,17 +287,14 @@ export const renderLineItem = (
   icon?: string,
   content?: TemplateResult
 ) => {
-  return html`<div style="display:flex;align-items:center;">
-    ${icon
-      ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
-      : null}
-    <div
-      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"
-      title="${name}"
-    >
-      ${content || name}
-    </div>
-  </div>`;
+  const pillType = iconToPillType(icon);
+  return html`<temba-label
+    icon=${icon || ''}
+    type=${pillType || 'neutral'}
+    class="mr-1 mb-1"
+    title="${name}"
+    >${content || name}</temba-label
+  >`;
 };
 
 /**
@@ -319,12 +338,9 @@ export const renderStringList = (
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
-        ${icon
-          ? html`<div style="margin-right:0.4em; width: 1em;"></div>` // spacing placeholder
-          : null}
-        <div style="font-size:0.8em">+${remainingCount} more</div>
-      </div>`
+      html`<temba-label type="neutral" class="mr-1 mb-1"
+        >+${remainingCount} more</temba-label
+      >`
     );
   }
   return itemElements;
@@ -368,17 +384,16 @@ export const renderMixedList = (items: MixedListItem[]) => {
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
-        <div style="margin-right:0.4em; width: 1em;"></div>
-        <div style="font-size:0.8em">+${remainingCount} more</div>
-      </div>`
+      html`<temba-label type="neutral" class="mr-1 mb-1"
+        >+${remainingCount} more</temba-label
+      >`
     );
   }
   return itemElements;
 };
 
 /**
- * Renders a named object as a clickable link that fires a custom event
+ * Renders a named object as a clickable DS pill that fires a custom event
  */
 const renderLinkedObject = (
   obj: NamedObject,
@@ -400,18 +415,16 @@ const renderLinkedObject = (
     }
   };
 
-  return html`<div style="display:flex;align-items:center;max-width:100%;">
-    ${icon
-      ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
-      : null}
-    <div
-      class="linked-name"
-      @click=${handleClick}
-      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; text-decoration: underline; cursor: pointer;"
-    >
-      ${obj.name}
-    </div>
-  </div>`;
+  const pillType = iconToPillType(icon);
+  return html`<temba-label
+    icon=${icon || ''}
+    type=${pillType || 'neutral'}
+    clickable
+    class="mr-1 mb-1"
+    title="${obj.name}"
+    @click=${handleClick}
+    >${obj.name}</temba-label
+  >`;
 };
 
 /**
@@ -436,12 +449,9 @@ const renderLinkedObjects = (
   if (objects.length > maxDisplay && objects.length !== 4) {
     const remainingCount = objects.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
-        ${icon
-          ? html`<div style="margin-right:0.4em; width: 1em;"></div>`
-          : null}
-        <div style="font-size:0.8em">+${remainingCount} more</div>
-      </div>`
+      html`<temba-label type="neutral" class="mr-1 mb-1"
+        >+${remainingCount} more</temba-label
+      >`
     );
   }
   return itemElements;

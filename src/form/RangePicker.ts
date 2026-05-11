@@ -16,21 +16,21 @@ export class RangePicker extends RapidElement {
       cursor: pointer;
       padding: 0.2em 0.5em;
       margin: 0.6em 0;
-      border-radius: 4px;
+      border-radius: var(--curvature-widget);
       border: 1px solid transparent;
       transition: border 0.2s;
     }
 
     .date-display:hover {
-      border: 1px solid var(--color-widget-border, #bbb);
-      background: var(--color-widget-hover, #f5f5f5);
+      border: 1px solid var(--color-widget-border);
+      background: var(--sunken);
     }
 
     input[type='date'] {
       font-size: 1em;
       padding: 0.2em 0.5em;
-      border-radius: 4px;
-      border: 1px solid #bbb;
+      border-radius: var(--curvature-widget);
+      border: 1px solid var(--color-widget-border);
     }
 
     .navigation-container {
@@ -40,10 +40,10 @@ export class RangePicker extends RapidElement {
     }
 
     .nav-arrow {
-      background: #f5f5f5;
-      border: 1px solid #bbb;
+      background: var(--sunken);
+      border: 1px solid var(--color-widget-border);
 
-      border-radius: var(--curvature);
+      border-radius: var(--curvature-widget);
       padding: 0em 0em;
       cursor: pointer;
       font-size: 0.6em;
@@ -59,14 +59,14 @@ export class RangePicker extends RapidElement {
     }
 
     .nav-arrow:hover:not(:disabled) {
-      background: #e0eaff;
-      border-color: #3399ff;
+      background: var(--accent-50);
+      border-color: var(--accent);
     }
 
     .nav-arrow:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      background: #f9f9f9;
+      background: var(--sunken);
     }
 
     .nav-arrow.hidden {
@@ -78,8 +78,8 @@ export class RangePicker extends RapidElement {
       margin-left: 0em;
     }
     .range-btn {
-      background: #f5f5f5;
-      border: 1px solid #bbb;
+      background: var(--sunken);
+      border: 1px solid var(--color-widget-border);
       border-radius: 0px;
       margin-left: -1px;
       padding: 0.2em 0.8em;
@@ -91,17 +91,17 @@ export class RangePicker extends RapidElement {
     }
 
     .button-group .range-btn:first-child {
-      border-radius: 4px 0 0 4px;
+      border-radius: var(--curvature-widget) 0 0 var(--curvature-widget);
     }
 
     .button-group .range-btn:last-child {
-      border-radius: 0 4px 4px 0;
+      border-radius: 0 var(--curvature-widget) var(--curvature-widget) 0;
     }
 
     .range-btn.selected,
     .range-btn:active {
-      background: #e0eaff;
-      border-color: #3399ff;
+      background: var(--accent-50);
+      border-color: var(--accent);
     }
   `;
 

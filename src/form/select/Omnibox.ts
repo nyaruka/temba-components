@@ -105,28 +105,14 @@ export class Omnibox extends Select<OmniOption> {
     return null;
   }
 
-  /** Selection in the multi-select select box */
+  /**
+   * Chip rendering uses the base renderer (icon from option.type via
+   * PILL_TYPE_ICONS, name, count if present). The Omnibox-specific
+   * renderOptionDefault above is dropdown-only — it shows the URN as
+   * a post-name to disambiguate contacts, which isn't useful on a chip.
+   */
   public renderSelectedItemDefault(option: OmniOption): TemplateResult {
-    return html`
-      <div
-        style="flex:1 1 auto; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display: flex; align-items: stretch; color: var(--color-text-dark); font-size: 12px;"
-      >
-        <div style="align-self: center; padding: 0px 7px; color: #bbb">
-          ${this.getIcon(option)}
-        </div>
-        <div
-          class="name"
-          style="align-self: center; padding: 0px; font-size: 12px;"
-        >
-          ${option.name}
-        </div>
-        <div
-          style="background: rgba(100, 100, 100, 0.05); border-left: 1px solid rgba(100, 100, 100, 0.1); margin-left: 12px; display: flex; align-items: center"
-        >
-          ${this.getPostName(option)}
-        </div>
-      </div>
-    `;
+    return super.renderOptionDefault(option);
   }
 
   private getIcon(option: OmniOption): TemplateResult {

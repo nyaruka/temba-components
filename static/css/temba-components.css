@@ -6,7 +6,80 @@
 
   html {
 
-    --font-family: 'Roboto', Helvetica, Arial, sans-serif;
+    /* ─── TextIt Design System tokens ─────────────────────────────────────
+       Single source of truth. Cascades through Shadow DOM into every
+       component. Legacy tokens below are aliased to these — keep both in
+       sync if the design system evolves. */
+
+    /* accent ramp — derived from a single anchor via OKLab mixing */
+    --accent:      #2A6FB5;
+    --accent-50:   color-mix(in oklab, var(--accent) 6%,  white);
+    --accent-100:  color-mix(in oklab, var(--accent) 12%, white);
+    --accent-200:  color-mix(in oklab, var(--accent) 25%, white);
+    --accent-300:  color-mix(in oklab, var(--accent) 45%, white);
+    --accent-400:  color-mix(in oklab, var(--accent) 75%, white);
+    --accent-500:  var(--accent);
+    --accent-600:  color-mix(in oklab, var(--accent) 88%, black);
+    --accent-700:  color-mix(in oklab, var(--accent) 75%, black);
+    --accent-800:  color-mix(in oklab, var(--accent) 60%, black);
+    --accent-900:  color-mix(in oklab, var(--accent) 45%, black);
+
+    /* neutrals */
+    --bg:            #F6F7F9;
+    --surface:       #FFFFFF;
+    --sunken:        #F1F3F5;
+    --border:        #E6E8EC;
+    --border-strong: #D2D6DC;
+    --text-1:        #1A1F26;
+    --text-2:        #4D5664;
+    --text-3:        #7B8593;
+    --text-4:        #A2ABB8;
+
+    /* status — full set */
+    --success:        #16A34A;
+    --success-bg:     #E8F6EE;
+    --success-border: #BFE5CD;
+    --info:           #2563EB;
+    --info-bg:        #E8F0FE;
+    --info-border:    #C7D7F8;
+    --warning:        #B45309;
+    --warning-bg:     #FDF3E2;
+    --warning-border: #F2D9A9;
+    --danger:         #D03F3F;
+    --danger-bg:      #FCEBEB;
+    --danger-border:  #F4C8C8;
+    --neutral:        #6B7280;
+    --neutral-bg:     #EEF0F3;
+    --neutral-border: #D8DCE2;
+
+    /* type */
+    --font:        "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono:   "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --w-regular:   400;
+    --w-medium:    500;
+    --w-semibold:  600;
+    --w-bold:      700;
+
+    /* shape */
+    --r:      8px;
+    --r-xs:   2px;
+    --r-sm:   4px;
+    --r-lg:   12px;
+
+    /* density */
+    --row-h:   36px;
+    --input-h: 34px;
+    --pad:     10px;
+    --gap:     14px;
+
+    /* shadows */
+    --shadow-1: 0 1px 1px rgba(15, 22, 36, 0.04), 0 1px 2px rgba(15, 22, 36, 0.04);
+    --shadow-2: 0 1px 1px rgba(15, 22, 36, 0.04), 0 4px 12px rgba(15, 22, 36, 0.06);
+    --shadow-3: 0 6px 20px rgba(15, 22, 36, 0.10), 0 2px 6px rgba(15, 22, 36, 0.06);
+
+    /* ─── legacy aliases — point at the DS tokens above ────────────────── */
+
+    --font-family: var(--font);
     --primary-rgb: 35, 135, 202;
     --secondary-rgb: 140, 51, 140;
     --tertiary-rgb: 135, 202, 35;
@@ -21,37 +94,41 @@
     --select-input-height: inherit;
 
     --disabled-opacity: 0.6;
-    --curvature: 6px;
-    --curvature-widget: 6px;
-    --color-focus: #a4cafe;
-    --color-widget-bg: #fff;
-    --color-widget-bg-focused: #fff;
-    --color-widget-border: rgb(225, 225, 225);
+    --curvature: var(--r-sm);
+    --curvature-widget: var(--r-sm);
+    --focus: #5b9ce5;
+    --focus-muted: color-mix(in oklab, var(--focus) 60%, white);
+    --focus-halo: 0 0 0 3px
+      color-mix(in oklab, var(--focus) 30%, transparent);
+    --color-focus: var(--focus-muted);
+    --color-widget-bg: var(--surface);
+    --color-widget-bg-focused: var(--surface);
+    --color-widget-border: var(--border-strong);
 
-    --color-options-bg: var(--color-widget-bg);
+    --color-options-bg: var(--surface);
 
     /* primary colors, should be dark */
-    --color-selection: #f0f6ff;
-    --color-success: #3ca96a;
+    --color-selection: var(--accent-50);
+    --color-success: var(--success);
 
-    --widget-box-shadow: rgba(-1, -1, 0, .15) 0px 1px 7px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-    --widget-box-shadow-focused: 0 0 0 3px rgba(164, 202, 254, .45);
+    --widget-box-shadow: none;
+    --widget-box-shadow-focused: var(--focus-halo);
     --widget-box-shadow-focused-error: 0 0 0 3px rgba(var(--error-rgb), 0.3);
 
-    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    --shadow-widget: 0 3px 20px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+    --shadow: var(--shadow-1);
+    --shadow-widget: var(--shadow-1);
 
     /* page text, borders, widgets */
-    --color-text: #333;;
-    --color-widget-text: #333;
-    --color-borders: rgba(0, 0, 0, 0.07);
-    --color-placeholder: rgb(167, 167, 167);
+    --color-text: var(--text-1);
+    --color-widget-text: var(--text-1);
+    --color-borders: var(--border);
+    --color-placeholder: var(--text-3);
 
     /* light colors, panel backgrounds, selection, etc */
-    --color-primary-light: #eee;
+    --color-primary-light: var(--sunken);
     --color-secondary-light: #ccc;
 
-    --color-label: #333;
+    --color-label: var(--text-1);
 
     /* dark colors, nav bar, buttons, etc */
     --color-primary-dark: rgb(var(--primary-rgb));
@@ -61,12 +138,11 @@
     --color-text-light: rgba(255, 255, 255, 1);
     --color-text-dark: rgba(0, 0, 0, 0.8);
     --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
-    --color-text-help: rgb(120, 120, 120);
+    --color-text-help: var(--text-3);
     --color-tertiary: rgb(var(--tertiary-rgb));
 
     --help-text-size: 0.85em;
     --help-text-margin-left: 0.3em;
-    --color-text-help: rgb(120, 120, 120);
 
     /* solid overlays with text */
     --color-overlay-dark: rgba(0, 0, 0, 0.2);
@@ -116,9 +192,10 @@
 
     --transition-speed: 250ms;
     --event-padding: 0.5em 1em;
-    --temba-select-selected-padding: 9px;
-    --temba-select-selected-line-height: 16px;
-    --temba-select-selected-font-size: 13px;
+    --temba-select-selected-padding: 0 var(--pad);
+    --temba-select-selected-line-height: 1.4;
+    --temba-select-selected-font-size: 13.5px;
+    --temba-select-min-height: var(--input-h);
 
     --font-size: 14px;
     --button-font-size: 1.125rem;
@@ -126,8 +203,9 @@
     --header-bg: var(--color-primary-dark);
     --header-text: var(--color-text-light);
 
-    --temba-textinput-padding: 9px 14px;
-    --temba-textinput-font-size: 14px;
+    --temba-textinput-padding: 7px var(--pad);
+    --temba-textinput-font-size: 13.5px;
+    --temba-textinput-min-height: var(--input-h);
 
     --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
     --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
