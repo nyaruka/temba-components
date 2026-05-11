@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 process.env.PUPPETEER_DISABLE_HEADLESS_WARNING = '1';
 import { puppeteerLauncher } from '@web/test-runner-puppeteer';
+import { defaultReporter, summaryReporter } from '@web/test-runner';
 import { esbuildPlugin } from '@web/dev-server-esbuild';
 import fs from 'fs';
 import * as path from 'path';
@@ -346,6 +347,10 @@ export default {
   coverageConfig: {
     include: ['src/**']
   },
+  reporters: [
+    defaultReporter({ reportTestResults: true, reportTestProgress: true }),
+    summaryReporter({ flatten: true })
+  ],
   testFramework: {
     config: {
       timeout: '10000'
@@ -468,6 +473,11 @@ export default {
         const replaceScreenshots = params.includes('--replace-screenshots');
 
         const page = await context.newPage();
+
+        page.on('error', (err) => console.error('[page error]', err));
+        page.on('pageerror', (err) => console.error('[pageerror]', err));
+        page.on('close', () => console.error('[page closed]'));
+
         await page.setUserAgent(
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36'
         );
