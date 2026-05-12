@@ -106,13 +106,30 @@ export class Omnibox extends Select<OmniOption> {
   }
 
   /**
-   * Chip rendering uses the base renderer (icon from option.type via
-   * PILL_TYPE_ICONS, name, count if present). The Omnibox-specific
-   * renderOptionDefault above is dropdown-only — it shows the URN as
-   * a post-name to disambiguate contacts, which isn't useful on a chip.
+   * Chip rendering — icon + name, plus the group count when the option
+   * is a Group. Counts are intentionally suppressed in the base Select
+   * chip (noise for action editors like Add to Group), but Omnibox is
+   * the start-flow recipients picker where group size is a key part
+   * of the chip's identity. Contacts skip the post-name URN that the
+   * dropdown shows — chips already have a tight footprint.
    */
   public renderSelectedItemDefault(option: OmniOption): TemplateResult {
-    return super.renderOptionDefault(option);
+    const base = super.renderOptionDefault(option);
+    if (
+      option.type === OmniType.Group &&
+      option.count !== undefined &&
+      option.count !== null
+    ) {
+      return html`<div
+        style="display:flex; align-items:center; gap:6px;"
+      >
+        ${base}<span
+          style="opacity:0.7; font-size:11px; font-variant-numeric: tabular-nums; font-weight: var(--w-medium);"
+          >${option.count.toLocaleString()}</span
+        >
+      </div>`;
+    }
+    return base;
   }
 
   private getIcon(option: OmniOption): TemplateResult {
