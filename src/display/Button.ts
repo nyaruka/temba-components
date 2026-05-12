@@ -257,6 +257,8 @@ export class Button extends LitElement {
               !this.secondary &&
               !this.attention &&
               !this.destructive &&
+              !this.lined &&
+              !this.light &&
               this.v == 1),
           'secondary-button': this.secondary,
           'disabled-button': this.disabled,

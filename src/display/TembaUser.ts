@@ -129,7 +129,10 @@ export class TembaUser extends RapidElement {
               font-weight: 400;
               overflow: hidden;
               font-size: 0.8em;
-              margin-right: calc(0.75em - (1 - var(--temba-scale, 1)) * 26px);
+              margin-right: max(
+                0px,
+                calc(0.75em - (1 - var(--temba-scale, 1)) * 26px)
+              );
               box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
               background:${this.bgimage || this.bgcolor};"
       >
