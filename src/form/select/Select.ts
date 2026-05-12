@@ -254,7 +254,7 @@ export class Select<T extends SelectOption> extends FieldElement {
            (larger right padding). */
         gap: 5px;
         height: 20px;
-        padding: 0 9px 0 4px;
+        padding: 0 9px 0 2px;
         margin: 0;
         border-radius: 999px;
         overflow: hidden;
