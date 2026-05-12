@@ -67,6 +67,8 @@ export interface ObjectReference {
 interface User extends ObjectReference {
   avatar?: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface Msg {
@@ -1272,6 +1274,8 @@ export class Chat extends RapidElement {
               <temba-user
                 uuid=${currentMsg._user?.uuid}
                 name=${name}
+                first_name=${currentMsg._user?.first_name}
+                last_name=${currentMsg._user?.last_name}
                 avatar=${currentMsg._user?.avatar}
                 ?system=${isSystem}
               >

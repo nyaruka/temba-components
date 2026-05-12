@@ -56,9 +56,9 @@ describe('temba-user', () => {
 });
 
 describe('getFullName', () => {
-  it('prefers name over first/last', () => {
+  it('prefers first/last over name', () => {
     assert.equal(
-      getFullName({ name: 'Jane Doe', first_name: 'x', last_name: 'y' }),
+      getFullName({ name: 'Jane', first_name: 'Jane', last_name: 'Doe' }),
       'Jane Doe'
     );
   });
@@ -68,5 +68,13 @@ describe('getFullName', () => {
       getFullName({ first_name: 'Jane', last_name: 'Doe' }),
       'Jane Doe'
     );
+  });
+
+  it('falls back to name when first/last are missing', () => {
+    assert.equal(getFullName({ name: 'System' }), 'System');
+  });
+
+  it('handles missing last_name', () => {
+    assert.equal(getFullName({ first_name: 'Jane' }), 'Jane');
   });
 });
