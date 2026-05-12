@@ -39,8 +39,6 @@ export class ContentMenu extends RapidElement {
         z-index: 5000;
       }
       .container {
-        --button-y: 0.4em;
-        --button-x: 1em;
         display: flex;
         align-items: center;
       }

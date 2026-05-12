@@ -230,7 +230,7 @@
     --header-text: var(--color-text-light);
 
     --temba-textinput-padding: 0.6em 0.8em;
-    --temba-textinput-font-size: 1;
+    --temba-textinput-font-size: 1em;
     --temba-textinput-min-height: var(--input-h);
 
     --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
@@ -247,9 +247,6 @@
 
     font-size: var(--font-size);
     font-family: var(--font-family);
-
-    --button-y: 0.2em;
-    --button-x: 1.5em;
 
     --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 

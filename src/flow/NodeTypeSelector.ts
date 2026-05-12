@@ -213,11 +213,6 @@ export class NodeTypeSelector extends RapidElement {
         background: rgba(0, 0, 0, 0.03);
         border-radius: 0 0 var(--curvature) var(--curvature);
       }
-
-      temba-button {
-        --button-y: 0.5em;
-        --button-x: 1.25em;
-      }
     `;
   }
 

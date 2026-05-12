@@ -146,12 +146,12 @@ export const designTokens = css`
     --color-label: var(--text-1);
     --color-text-help: var(--text-3);
 
-    --temba-textinput-padding: 7px var(--pad);
-    --temba-textinput-font-size: 13.5px;
+    --temba-textinput-padding: 0.6em 0.8em;
+    --temba-textinput-font-size: 1em;
     --temba-textinput-min-height: var(--input-h);
     --temba-select-selected-padding: 0 var(--pad);
-    --temba-select-selected-line-height: 1.4;
-    --temba-select-selected-font-size: 13.5px;
+    --temba-select-selected-line-height: 1.2em;
+    --temba-select-selected-font-size: 1em;
     --temba-select-min-height: var(--input-h);
   }
 `;

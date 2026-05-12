@@ -118,7 +118,7 @@ export class Button extends LitElement {
 
       /* icon-only button — square footprint, ghost chrome */
       .icon-button {
-        width: 32px;
+        width: 28px;
         padding: 0;
         background: transparent;
         border-color: transparent;
@@ -129,7 +129,7 @@ export class Button extends LitElement {
         color: var(--text-1);
       }
       .icon-button.small {
-        width: 28px;
+        width: 24px;
       }
 
       /* active = pressed-down look — slightly inset */
