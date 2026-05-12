@@ -279,6 +279,14 @@ export class Select<T extends SelectOption> extends FieldElement {
         gap: 6px;
       }
 
+      /* Keep the type icon perfectly round even when the chip's name
+         is long enough to push the chip against its max-width. Same
+         reason as the flex-shrink:0 on .multi .remove-item — the span
+         next to the icon is what should clip with ellipsis. */
+      .option-name > temba-icon {
+        flex-shrink: 0;
+      }
+
       .option-name > span {
         text-align: left;
       }
@@ -335,6 +343,12 @@ export class Select<T extends SelectOption> extends FieldElement {
         justify-content: center;
         width: 16px;
         height: 16px;
+        /* Pin the X to a perfect 16×16 circle even when the chip's
+           content is wide enough to bump the chip against its
+           max-width (240px) — without flex-shrink:0 the row's flex
+           layout squeezes the X horizontally before clipping the
+           name. */
+        flex-shrink: 0;
         padding: 0;
         margin: 0;
         border: 0;
@@ -472,14 +486,17 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
 
       .small {
-        --temba-select-selected-padding: 6px;
+        /* Match TextInput's small flavor (6px 8px) so a select sitting
+           next to a text field in the same form has its value text
+           horizontally aligned with the field's text. */
+        --temba-select-selected-padding: 6px 8px;
         --temba-select-selected-line-height: 12px;
         --temba-select-selected-font-size: 14px;
         --temba-select-min-height: 2.28em;
       }
 
       .xsmall {
-        --temba-select-selected-padding: 4px 6px;
+        --temba-select-selected-padding: 4px 8px;
         --temba-select-selected-line-height: 13px;
         --temba-select-selected-font-size: 13px;
         --temba-select-min-height: 0em;
