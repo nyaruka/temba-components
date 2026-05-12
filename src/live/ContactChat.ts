@@ -7,6 +7,7 @@ import {
   TemplateResult
 } from 'lit';
 import { property } from 'lit/decorators.js';
+import { msg } from '@lit/localize';
 import {
   Contact,
   CustomEventType,
@@ -311,9 +312,6 @@ export class ContactChat extends ContactStoreElement {
         background: #fff;
         color: #333;
         border-color: #ccc;
-      }
-
-      .action-bar {
       }
 
       /* "Currently in [flow]" treatment.
@@ -1439,6 +1437,7 @@ export class ContactChat extends ContactStoreElement {
                                 type="flow"
                                 clickable
                                 ?removable=${this.showInterrupt}
+                                removeLabel=${msg('Interrupt flow')}
                                 @temba-remove=${this.handleInterrupt}
                                 >${this.currentContact.flow.name}</temba-label
                               ></a

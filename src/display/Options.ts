@@ -144,10 +144,13 @@ export class Options extends RapidElement {
         text-align: left;
       }
 
-      /* Direct child stretches to fill the row so custom renderOption
-         templates (e.g. ones using justify-content: space-between to
-         right-align trailing badges) get the full width to lay out in. */
-      .option > * {
+      /* A single wrapping renderOption child stretches to fill the row
+         so custom templates (e.g. ones using justify-content:
+         space-between to right-align trailing badges) get the full
+         width to lay out in. Scoped to :only-child so a renderOption
+         that emits multiple top-level siblings keeps its natural
+         layout instead of getting an equal-width flex partition. */
+      .option > :only-child {
         flex: 1;
         min-width: 0;
       }

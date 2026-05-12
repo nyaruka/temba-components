@@ -1,9 +1,10 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
+import { msg } from '@lit/localize';
 import { getClasses } from '../utils';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { designTokens } from '../styles/designTokens';
-import { pillVariants } from '../styles/pillVariants';
+import { pillVariants, PILL_TYPES } from '../styles/pillVariants';
 
 export default class Label extends LitElement {
   static get styles() {
@@ -198,6 +199,16 @@ export default class Label extends LitElement {
   @property({ type: Boolean })
   removable: boolean;
 
+  /**
+   * Accessible label for the remove button. Defaults to a localized
+   * "Remove", but consumers whose action verb differs (e.g.
+   * "Interrupt flow") should pass their own — the X button is the
+   * affordance for whatever action `temba-remove` triggers, so the
+   * accessible name should match.
+   */
+  @property({ type: String })
+  removeLabel: string;
+
   @property()
   backgroundColor: string;
 
@@ -224,7 +235,15 @@ export default class Label extends LitElement {
       labelStyle['--icon-color'] = this.textColor;
     }
 
-    const variantClass = this.type ? `pill-${this.type}` : '';
+    // Only emit `pill-${this.type}` if it's a recognized variant.
+    // An unknown value (or one containing whitespace, e.g.
+    // `"flow danger"` from a malformed template) would otherwise split
+    // into multiple classes and collide with internal modifiers
+    // (`.danger`, `.shadow`, `.clickable`, etc.) defined on `.label`.
+    const variantClass =
+      this.type && PILL_TYPES.has(this.type) ? `pill-${this.type}` : '';
+
+    const removeAriaLabel = this.removeLabel || msg('Remove');
 
     return html`
       <div
@@ -244,7 +263,7 @@ export default class Label extends LitElement {
             ? html`<button
                 class="remove"
                 @click=${this.handleRemove}
-                aria-label="Remove"
+                aria-label=${removeAriaLabel}
               >
                 <temba-icon name="x" size="0.85"></temba-icon>
               </button>`

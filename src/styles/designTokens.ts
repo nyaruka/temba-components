@@ -54,6 +54,13 @@ export const designTokens = css`
     --neutral-bg: #eef0f3;
     --neutral-border: #d8dce2;
 
+    /* Pill anchor hues — pillVariants derives bg/fg/border via
+       color-mix(in oklab, ...) so host pages can re-theme by
+       overriding just the anchor. (Recipient pills reuse --accent.) */
+    --flow: #166534;
+    --channel: #6b21a8;
+    --field: #854d0e;
+
     /* type */
     --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --font-mono:

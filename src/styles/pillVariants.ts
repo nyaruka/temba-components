@@ -3,15 +3,72 @@ import { css } from 'lit';
 /**
  * TextIt Design System pill color variants — single source of truth.
  *
- * Provides only the color triple (background / foreground / border)
- * keyed off `.pill-{type}`. Shape (height, padding, radius, icon
- * spacing) is the consumer's concern, since pill use-cases differ:
- * Select chips have a remove button on the right, ContactDetails
- * pills are clickable links, etc.
+ * Provides the color triple (background / foreground / border) keyed
+ * off `.pill-{type}` plus the JS-side taxonomy (`PILL_TYPES`,
+ * `PILL_TYPE_ICONS`, `iconToPillType`) consumed by Select.ts and
+ * flow/utils.ts. Variants derive their ramp from a single anchor
+ * (--accent, --flow, --channel, --field) via `color-mix(in oklab, …)`
+ * so a host page can re-theme by overriding the anchor alone.
  *
- * To add a new variant: append a class here and (if useful) extend
- * `PILL_TYPES` / `PILL_TYPE_ICONS` in form/select/Select.ts.
+ * Shape (height, padding, radius, icon spacing) is the consumer's
+ * concern, since pill use-cases differ: Select chips have a remove
+ * button on the right, ContactDetails pills are clickable links, etc.
+ *
+ * To add a new variant: extend `PILL_TYPES`, optionally add an entry
+ * to `PILL_TYPE_ICONS` / `ICON_TO_PILL_TYPE`, append a `.pill-{type}`
+ * block below, and reference an anchor in `designTokens.ts`.
  */
+
+/** Recognized pill variants. Anything outside this set falls back to
+ * `pill-neutral` (or is rejected by callers as not a pill at all). */
+export const PILL_TYPES: ReadonlySet<string> = new Set([
+  'neutral',
+  'flow',
+  'group',
+  'contact',
+  'field',
+  'label',
+  'keyword',
+  'channel'
+]);
+
+/** Default icon name for each pill variant. Used when a consumer
+ * specifies `type` but not `icon` — keeps Omnibox-style options and
+ * Django-form-rendered options visually consistent without making the
+ * data layer set both fields. */
+export const PILL_TYPE_ICONS: Readonly<Record<string, string>> = {
+  group: 'group',
+  contact: 'contact',
+  field: 'fields',
+  flow: 'flow',
+  label: 'label'
+};
+
+/** Inverse mapping: icon name (alias or resolved SVG id) → pill type.
+ * Both forms are valid since flow-action items pass through either. */
+const ICON_TO_PILL_TYPE: Readonly<Record<string, string>> = {
+  flow: 'flow',
+  group: 'group',
+  contact: 'contact',
+  contacts: 'contact',
+  field: 'field',
+  fields: 'field',
+  label: 'label',
+  // resolved Icon enum SVG ids
+  'users-01': 'group',
+  'atom-01': 'group',
+  'user-01': 'contact',
+  'tag-01': 'label'
+};
+
+export const iconToPillType = (icon?: string): string | undefined => {
+  if (!icon) return undefined;
+  if (ICON_TO_PILL_TYPE[icon]) return ICON_TO_PILL_TYPE[icon];
+  // Legacy alias prefix (e.g. 'group_smart' → 'group').
+  if (icon.startsWith('group')) return 'group';
+  return undefined;
+};
+
 export const pillVariants = css`
   .pill-neutral {
     background: var(--sunken);
@@ -20,14 +77,12 @@ export const pillVariants = css`
     --icon-color: var(--text-2);
   }
   .pill-flow {
-    background: #ecf7f1;
-    color: #166534;
-    border-color: #d2ebdc;
-    --icon-color: #166534;
+    background: color-mix(in oklab, var(--flow) 12%, white);
+    color: var(--flow);
+    border-color: color-mix(in oklab, var(--flow) 25%, white);
+    --icon-color: var(--flow);
   }
-  /* Recipient color — shared by contacts and groups.
-     Border is one ramp step darker than the bg, matching the
-     bg-to-border relationship of the flow pill. */
+  /* Recipient color — shared by contacts and groups. */
   .pill-contact,
   .pill-group {
     background: var(--accent-100);
@@ -35,18 +90,17 @@ export const pillVariants = css`
     border-color: var(--accent-200);
     --icon-color: var(--accent-700);
   }
-  /* Channel → lavender. */
   .pill-channel {
-    background: #f4eefb;
-    color: #6b21a8;
-    border-color: #e5d6f4;
-    --icon-color: #6b21a8;
+    background: color-mix(in oklab, var(--channel) 12%, white);
+    color: var(--channel);
+    border-color: color-mix(in oklab, var(--channel) 25%, white);
+    --icon-color: var(--channel);
   }
   .pill-field {
-    background: #fef6e1;
-    color: #854d0e;
-    border-color: #f5e1ac;
-    --icon-color: #854d0e;
+    background: color-mix(in oklab, var(--field) 14%, white);
+    color: var(--field);
+    border-color: color-mix(in oklab, var(--field) 28%, white);
+    --icon-color: var(--field);
   }
   .pill-keyword {
     background: var(--sunken);

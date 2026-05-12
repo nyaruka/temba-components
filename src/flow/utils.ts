@@ -1,4 +1,5 @@
 import { html, TemplateResult } from 'lit-html';
+import { iconToPillType } from '../styles/pillVariants';
 import { Action, NamedObject, FlowPosition } from '../store/flow-definition';
 import { FlowIssue, zustand } from '../store/AppState';
 import { CustomEventType } from '../interfaces';
@@ -257,26 +258,13 @@ export const renderClamped = (
 };
 
 /**
- * Maps a flow-action icon to its design-system pill variant. Callers
- * may pass either the Icon enum alias ('group', 'flow') or the
- * resolved SVG id (Icon.group → 'users-01'); both are recognised here.
- * Keep in sync with PILL_TYPES / PILL_TYPE_ICONS in
- * form/select/Select.ts — those are inverse mappings of the same set.
+ * Inline margin for stacked pills — the previous implementation used
+ * `class="mr-1 mb-1"` (Tailwind utility classes), but this package
+ * doesn't ship Tailwind, so the classes resolved to no-ops in any host
+ * page that didn't already include it. Inline style is predictable
+ * across hosts.
  */
-const iconToPillType = (icon?: string): string | undefined => {
-  if (!icon) return undefined;
-  // aliases
-  if (icon === 'flow') return 'flow';
-  if (icon.startsWith('group')) return 'group';
-  if (icon === 'contact' || icon === 'contacts') return 'contact';
-  if (icon === 'fields' || icon === 'field') return 'field';
-  if (icon === 'label') return 'label';
-  // resolved SVG ids (Icon enum values)
-  if (icon === 'users-01' || icon === 'atom-01') return 'group';
-  if (icon === 'user-01') return 'contact';
-  if (icon === 'tag-01') return 'label';
-  return undefined;
-};
+const PILL_MARGIN_STYLE = 'margin: 0 4px 4px 0;';
 
 /**
  * Renders a single line item with optional icon.
@@ -291,7 +279,7 @@ export const renderLineItem = (
   return html`<temba-label
     icon=${icon || ''}
     type=${pillType || 'neutral'}
-    class="mr-1 mb-1"
+    style=${PILL_MARGIN_STYLE}
     title="${name}"
     >${content || name}</temba-label
   >`;
@@ -338,7 +326,7 @@ export const renderStringList = (
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
     itemElements.push(
-      html`<temba-label type="neutral" class="mr-1 mb-1"
+      html`<temba-label type="neutral" style=${PILL_MARGIN_STYLE}
         >+${remainingCount} more</temba-label
       >`
     );
@@ -384,7 +372,7 @@ export const renderMixedList = (items: MixedListItem[]) => {
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
     itemElements.push(
-      html`<temba-label type="neutral" class="mr-1 mb-1"
+      html`<temba-label type="neutral" style=${PILL_MARGIN_STYLE}
         >+${remainingCount} more</temba-label
       >`
     );
@@ -420,7 +408,7 @@ const renderLinkedObject = (
     icon=${icon || ''}
     type=${pillType || 'neutral'}
     clickable
-    class="mr-1 mb-1"
+    style=${PILL_MARGIN_STYLE}
     title="${obj.name}"
     @click=${handleClick}
     >${obj.name}</temba-label
@@ -449,7 +437,7 @@ const renderLinkedObjects = (
   if (objects.length > maxDisplay && objects.length !== 4) {
     const remainingCount = objects.length - maxDisplay;
     itemElements.push(
-      html`<temba-label type="neutral" class="mr-1 mb-1"
+      html`<temba-label type="neutral" style=${PILL_MARGIN_STYLE}
         >+${remainingCount} more</temba-label
       >`
     );

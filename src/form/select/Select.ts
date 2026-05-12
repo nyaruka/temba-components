@@ -35,7 +35,11 @@ import {
   tokenCss
 } from '../../excellent/token-styles';
 import { Store } from '../../store/Store';
-import { pillVariants } from '../../styles/pillVariants';
+import {
+  pillVariants,
+  PILL_TYPES,
+  PILL_TYPE_ICONS
+} from '../../styles/pillVariants';
 import { StyleInfo, styleMap } from 'lit-html/directives/style-map.js';
 import { Icon } from '../../Icons';
 import { msg } from '@lit/localize';
@@ -57,46 +61,20 @@ export interface SelectOption {
 }
 
 /**
- * Recognized pill variants. `option.type` is treated as a pill class
- * only if it appears here — otherwise the field is some domain code
- * (e.g. Flow.flow_type = 'M' | 'V' | …) and we fall through to the
- * endpoint inference below.
- */
-const PILL_TYPES = new Set([
-  'neutral',
-  'flow',
-  'group',
-  'contact',
-  'field',
-  'label',
-  'keyword',
-  'channel'
-]);
-
-/**
- * Default icon for each pill variant. Used when an option has a
- * recognized `type` but no explicit `icon` — keeps Omnibox-style
- * options and Django-form-rendered options visually consistent
- * without making the data layer set both fields.
- */
-const PILL_TYPE_ICONS: Record<string, string> = {
-  group: 'group',
-  contact: 'contact',
-  field: 'fields',
-  flow: 'flow',
-  label: 'label'
-};
-
-/**
- * Endpoint URL → pill variant. Adding a new entry here is the only
- * change needed to make a new endpoint auto-color its chips.
+ * Endpoint URL → pill variant. Each pattern is anchored on a path
+ * terminator (`/`, `.json`, `?`, end-of-string) so it can't match
+ * substrings like `/groupsearch` or `/contact/group/<uuid>/`. Adding a
+ * new entry here is the only change needed to make a new endpoint
+ * auto-color its chips. (PILL_TYPES / PILL_TYPE_ICONS live in
+ * src/styles/pillVariants.ts — the single source of truth shared with
+ * Label / flow utils.)
  */
 const ENDPOINT_PILL_TYPES: { pattern: RegExp; type: string }[] = [
-  { pattern: /\/groups(\.json)?/, type: 'group' },
-  { pattern: /\/contacts(\.json)?/, type: 'contact' },
-  { pattern: /\/labels(\.json)?/, type: 'label' },
-  { pattern: /\/flows(\.json)?/, type: 'flow' },
-  { pattern: /\/fields(\.json)?/, type: 'field' }
+  { pattern: /\/groups(\.json|\/|\?|$)/, type: 'group' },
+  { pattern: /\/contacts(\.json|\/|\?|$)/, type: 'contact' },
+  { pattern: /\/labels(\.json|\/|\?|$)/, type: 'label' },
+  { pattern: /\/flows(\.json|\/|\?|$)/, type: 'flow' },
+  { pattern: /\/fields(\.json|\/|\?|$)/, type: 'field' }
 ];
 
 export class Select<T extends SelectOption> extends FieldElement {
@@ -1010,6 +988,7 @@ export class Select<T extends SelectOption> extends FieldElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeHintRepositionListeners();
+    this.detachPointerReleaseHandler();
   }
 
   private updateEnterHintPosition() {
@@ -1843,17 +1822,38 @@ export class Select<T extends SelectOption> extends FieldElement {
   // flag is on we keep the dropdown open and re-focus the input.
   private pointerInsideOptions = false;
 
+  // The active pointerup/pointercancel release handler, if any. We
+  // stash it on the instance so disconnectedCallback can detach it as
+  // a safety net — without that, a component removed mid-drag (or
+  // with the pointer dragged into an ancestor iframe so the release
+  // events never reach `window`) would leak the listener and pin
+  // `this` for the lifetime of the page.
+  private pointerReleaseHandler: ((e: Event) => void) | null = null;
+
+  private detachPointerReleaseHandler() {
+    if (!this.pointerReleaseHandler) return;
+    window.removeEventListener('pointerup', this.pointerReleaseHandler, true);
+    window.removeEventListener(
+      'pointercancel',
+      this.pointerReleaseHandler,
+      true
+    );
+    this.pointerReleaseHandler = null;
+  }
+
   private handleOptionsPointerDown = () => {
     this.pointerInsideOptions = true;
+    // Replace any in-flight handler so we never accumulate listeners.
+    this.detachPointerReleaseHandler();
     const release = () => {
       // small delay so a focus-shift triggered by the click lands
       // before we re-allow blur-driven closure.
       setTimeout(() => {
         this.pointerInsideOptions = false;
       }, 0);
-      window.removeEventListener('pointerup', release, true);
-      window.removeEventListener('pointercancel', release, true);
+      this.detachPointerReleaseHandler();
     };
+    this.pointerReleaseHandler = release;
     window.addEventListener('pointerup', release, true);
     window.addEventListener('pointercancel', release, true);
   };
@@ -2170,7 +2170,7 @@ export class Select<T extends SelectOption> extends FieldElement {
           : null}<span>${this.renderHighlightedName(option)}</span>${count !==
           undefined && count !== null
           ? html`<span class="option-count"
-              >${(count as number).toLocaleString()}</span
+              >${Number(count).toLocaleString()}</span
             >`
           : null}
       </div>

@@ -133,17 +133,10 @@ const renderInfoList = (
     return html`<div style=${eventLineStyle}>
       ${singular} ${groupPill(items[0])}
     </div>`;
-  } else if (items.length === 2) {
-    return html`<div style=${eventLineStyle}>
-      ${plural} ${groupPill(items[0])} and ${groupPill(items[1])}
-    </div>`;
-  } else {
-    const last = items[items.length - 1];
-    const middle = items.slice(0, -1).map((item) => groupPill(item));
-    return html`<div style=${eventLineStyle}>
-      ${plural} ${middle} and ${groupPill(last)}
-    </div>`;
   }
+  return html`<div style=${eventLineStyle}>
+    ${plural} ${oxfordFn(items, groupPill)}
+  </div>`;
 };
 
 export const renderRunEvent = (event: RunEvent): TemplateResult => {
