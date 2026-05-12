@@ -2438,6 +2438,17 @@ export class Select<T extends SelectOption> extends FieldElement {
             <temba-sortable-list
               horizontal
               gap="4px"
+              .prepareGhost=${(ghost: HTMLElement) => {
+                // The chip rendered width can be a few px wider than
+                // its actual content (subpixel rounding, max-width
+                // cap, etc.). When SortableList pins the ghost root
+                // to `rect.width`, that extra shows up as a stray
+                // gap on the right of the dragged chip. Size the
+                // ghost to its content instead so it looks identical
+                // to the source chip the user grabbed.
+                ghost.style.width = 'max-content';
+                ghost.style.minWidth = '0';
+              }}
               @temba-order-changed=${this.handleOrderChanged}
             >
               ${this.values.map(

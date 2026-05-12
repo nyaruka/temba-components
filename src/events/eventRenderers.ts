@@ -134,8 +134,18 @@ const renderInfoList = (
       ${singular} ${groupPill(items[0])}
     </div>`;
   }
+  if (items.length === 2) {
+    return html`<div style=${eventLineStyle}>
+      ${plural} ${groupPill(items[0])} and ${groupPill(items[1])}
+    </div>`;
+  }
+  // No commas between pills — the flex `gap` on eventLineStyle
+  // already provides visual separation, and a pill list reads as a
+  // single "set" rather than a sentence.
+  const middle = items.slice(0, -1).map((item) => groupPill(item));
+  const last = items[items.length - 1];
   return html`<div style=${eventLineStyle}>
-    ${plural} ${oxfordFn(items, groupPill)}
+    ${plural} ${middle} and ${groupPill(last)}
   </div>`;
 };
 

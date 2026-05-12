@@ -266,21 +266,25 @@ export class SortableList extends RapidElement {
   }
 
   /** CSS properties copied from the original to the ghost. Covers
-   * layout (flex/spacing), visual (colors, borders, radii, shadows),
-   * and text (font, white-space, alignment) — enough to make a
-   * faithful free-floating clone without resolving the entire ~400
-   * properties getComputedStyle returns.
+   * layout (flex/sizing/spacing), visual (colors, borders, radii,
+   * shadows), and text (font, white-space, alignment) — enough to
+   * make a faithful free-floating clone without resolving the entire
+   * ~400 properties getComputedStyle returns.
    *
-   * Deliberately omits width/height/min/max-* — the ghost root gets
-   * sized by `startDrag` directly from the original's bounding rect,
-   * and children should size to content under their inlined flex
-   * rules. Inlining widths on children otherwise pins them to whatever
-   * pixel value happened to be rendered at clone time, leaving stray
-   * gaps when font subpixel rounding shifts in the new document.body
-   * context (e.g. extra empty space to the right of a select chip). */
+   * Important: `getComputedStyle` returns LONGHAND values only —
+   * asking for shorthand like `padding` / `margin` / `border` returns
+   * an empty string in most browsers. We list longhands explicitly so
+   * inlined chip padding / borders survive the move to document.body.
+   *
+   * Width/height ARE included: nested elements that depend on
+   * shadow-root class rules for sized boxes (e.g. select's
+   * `.remove-item { width: 16px; height: 16px }`) collapse to their
+   * content size without it, leaving a stray gap inside the chip. */
   private static GHOST_COPY_PROPS = [
     'display',
-    'flex',
+    'flex-grow',
+    'flex-shrink',
+    'flex-basis',
     'flex-direction',
     'flex-wrap',
     'align-items',
@@ -289,18 +293,37 @@ export class SortableList extends RapidElement {
     'gap',
     'column-gap',
     'row-gap',
-    'padding',
-    'margin',
-    'border-width',
-    'border-style',
-    'border-color',
-    'border-radius',
-    'background',
+    'padding-top',
+    'padding-right',
+    'padding-bottom',
+    'padding-left',
+    'margin-top',
+    'margin-right',
+    'margin-bottom',
+    'margin-left',
+    'border-top-width',
+    'border-right-width',
+    'border-bottom-width',
+    'border-left-width',
+    'border-top-style',
+    'border-right-style',
+    'border-bottom-style',
+    'border-left-style',
+    'border-top-color',
+    'border-right-color',
+    'border-bottom-color',
+    'border-left-color',
+    'border-top-left-radius',
+    'border-top-right-radius',
+    'border-bottom-right-radius',
+    'border-bottom-left-radius',
     'background-color',
+    'background-image',
     'color',
     'font-family',
     'font-size',
     'font-weight',
+    'font-style',
     'line-height',
     'letter-spacing',
     'text-align',
@@ -309,6 +332,12 @@ export class SortableList extends RapidElement {
     'text-overflow',
     'box-shadow',
     'opacity',
+    'width',
+    'min-width',
+    'max-width',
+    'height',
+    'min-height',
+    'max-height',
     'box-sizing',
     'cursor',
     'user-select',
