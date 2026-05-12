@@ -16,7 +16,7 @@ export class Button extends LitElement {
       .button-container {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
+        justify-content: var(--button-justify, center);
         gap: 6px;
         flex-grow: 1;
         height: 28px;
@@ -265,7 +265,7 @@ export class Button extends LitElement {
           'destructive-button': this.destructive,
           'light-button': this.light,
           'lined-button': this.lined,
-          'icon-button': !!this.icon,
+          'icon-button': !!this.icon && !this.name,
           small: this.small
         })}"
         tabindex="0"

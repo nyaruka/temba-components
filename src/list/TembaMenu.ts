@@ -627,6 +627,7 @@ export class TembaMenu extends ResizeElement {
         margin-bottom: 0.2em;
         margin-left: 0.75em;
         margin-right: 0.75em;
+        --button-justify: flex-start;
       }
 
       .expand-icon {
