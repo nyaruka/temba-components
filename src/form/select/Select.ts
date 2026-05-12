@@ -307,6 +307,23 @@ export class Select<T extends SelectOption> extends FieldElement {
         flex: 0 1 auto;
         font-size: inherit;
         padding: 0;
+        /* Let the option-name shrink inside the chip and clip its
+           contents with an ellipsis when the chip hits its 240px
+           max-width. Without min-width:0 the flex item refuses to
+           shrink below its content size, defeating the overflow. */
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      /* The renderOptionDefault wraps the name in a <span>. That's the
+         actual text node that needs the ellipsis chrome — the parent
+         option-name is a flex row (icon + name) so the ellipsis lives
+         on the name span only, leaving the icon untouched. */
+      .multi .selected-item .option-name > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .multi .selected .selected-item.focused {
