@@ -2,6 +2,7 @@ import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { renderMarkdownInline } from '../markdown';
+import { designTokens } from '../styles/designTokens';
 
 /**
  * FieldElement is a base class for form components that provides built-in
@@ -62,26 +63,25 @@ export abstract class FieldElement extends RapidElement {
 
   static get styles() {
     return css`
+      ${designTokens}
+
       :host {
         font-family: var(--font-family);
       }
 
       label {
-        margin-bottom: 5px;
-        margin-left: 4px;
+        margin-bottom: 6px;
         display: block;
-        font-weight: 400;
-        font-size: var(--label-size);
-        letter-spacing: 0.05em;
+        font-weight: var(--w-medium);
+        font-size: 12.5px;
         line-height: normal;
-        color: var(--color-label, #777);
+        color: var(--color-label);
       }
 
       .help-text {
-        font-size: var(--help-text-size);
+        font-size: 12px;
         line-height: normal;
         color: var(--color-text-help);
-        margin-left: var(--help-text-margin-left);
         margin-top: 6px;
         opacity: 1;
       }

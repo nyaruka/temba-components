@@ -105,28 +105,31 @@ export class Omnibox extends Select<OmniOption> {
     return null;
   }
 
-  /** Selection in the multi-select select box */
+  /**
+   * Chip rendering — icon + name, plus the group count when the option
+   * is a Group. Counts are intentionally suppressed in the base Select
+   * chip (noise for action editors like Add to Group), but Omnibox is
+   * the start-flow recipients picker where group size is a key part
+   * of the chip's identity. Contacts skip the post-name URN that the
+   * dropdown shows — chips already have a tight footprint.
+   */
   public renderSelectedItemDefault(option: OmniOption): TemplateResult {
-    return html`
-      <div
-        style="flex:1 1 auto; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display: flex; align-items: stretch; color: var(--color-text-dark); font-size: 12px;"
+    const base = super.renderOptionDefault(option);
+    if (
+      option.type === OmniType.Group &&
+      option.count !== undefined &&
+      option.count !== null
+    ) {
+      return html`<div
+        style="display:flex; align-items:center; gap:6px;"
       >
-        <div style="align-self: center; padding: 0px 7px; color: #bbb">
-          ${this.getIcon(option)}
-        </div>
-        <div
-          class="name"
-          style="align-self: center; padding: 0px; font-size: 12px;"
+        ${base}<span
+          style="opacity:0.7; font-size:11px; font-variant-numeric: tabular-nums; font-weight: var(--w-medium);"
+          >${option.count.toLocaleString()}</span
         >
-          ${option.name}
-        </div>
-        <div
-          style="background: rgba(100, 100, 100, 0.05); border-left: 1px solid rgba(100, 100, 100, 0.1); margin-left: 12px; display: flex; align-items: center"
-        >
-          ${this.getPostName(option)}
-        </div>
-      </div>
-    `;
+      </div>`;
+    }
+    return base;
   }
 
   private getIcon(option: OmniOption): TemplateResult {

@@ -5,10 +5,13 @@ import { RapidElement, EventHandler } from '../RapidElement';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { getClasses, getScrollParent, throttle } from '../utils';
 import { msg } from '@lit/localize';
+import { designTokens } from '../styles/designTokens';
 
 export class Options extends RapidElement {
   static get styles() {
     return css`
+      ${designTokens}
+
       :host {
         --transition-speed: 0;
       }
@@ -41,6 +44,10 @@ export class Options extends RapidElement {
         flex-grow: 1;
         height: 100%;
         border: none;
+        /* Block-mode is inline (ticket sidebar, etc.) — drop the
+           z-index so floating popups (selects, dropdowns) opened over
+           the block list always stack above its options. */
+        z-index: auto;
       }
 
       :host([block]) .options-scroll {
@@ -96,23 +103,73 @@ export class Options extends RapidElement {
         border: none;
       }
 
+      /* When shown, the popup is opaque and clickable. Keep the
+         high z-index from .options-container so the popup stacks
+         above neighboring widgets — e.g. embedded prefix labels of
+         later form fields, which sit absolutely positioned at the
+         top edge of their host element. */
       .show {
-        border: 1px solid var(--color-widget-border);
         opacity: 1;
-        z-index: 1;
         pointer-events: auto;
         margin-top: var(--options-margin-top);
       }
 
+      /* Floating popup border uses --focus-muted (not --color-focus)
+         so a parent field's error state — which overrides
+         --color-focus to red via .has-error — doesn't turn the
+         popup red. The popup stays blue regardless. Single source
+         of truth: --focus in designTokens. No halo here — the
+         dropdown is an attached panel, not its own focus indicator
+         (the parent select keeps its own halo). Block-mode renders
+         inline and skips this rule entirely. */
+      :host(:not([block])) .show {
+        border: 1px solid var(--temba-options-focus-border, var(--focus-muted));
+      }
+
+      /* Each option is a DS-style list row: flat, fixed height,
+         tight padding, no inter-item margin. Full-bleed background on
+         hover/focus → no border-radius (rounded corners would leave
+         visible gaps at the dropdown edges). */
       .option {
-        font-size: var(--temba-options-font-size);
-        padding: var(--temba-options-option-padding, 5px 10px);
-        border-radius: var(--temba-options-option-radius, 4px);
-        margin: var(--temba-options-option-margin, 0.3em);
+        font-size: var(--temba-options-font-size, 13.5px);
+        padding: var(--temba-options-option-padding, 0 var(--pad));
+        border-radius: var(--temba-options-option-radius, 0);
+        margin: var(--temba-options-option-margin, 0);
+        min-height: var(--temba-options-option-min-height, 32px);
+        display: flex;
+        align-items: center;
         cursor: pointer;
-        color: var(--color-text-dark);
+        color: var(--text-1);
         scroll-margin: 5px 0px;
         text-align: left;
+      }
+
+      /* A single wrapping renderOption child stretches to fill the row
+         so custom templates (e.g. ones using justify-content:
+         space-between to right-align trailing badges) get the full
+         width to lay out in. Scoped to :only-child so a renderOption
+         that emits multiple top-level siblings keeps its natural
+         layout instead of getting an equal-width flex partition. */
+      .option > :only-child {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* Block-mode (inline, always-visible lists like the ticket
+         sidebar): inset every option uniformly from the container
+         and from each other (padding + flex gap), and re-add the
+         radius so the focused/active wash reads as a rounded pill
+         instead of a stripe. Rich custom renderOption content
+         (multi-line ticket cards, etc.) also wants more vertical
+         padding than the dropdown's compact rows. */
+      :host([block]) .options-scroll {
+        padding: 4px;
+        gap: 4px;
+      }
+      :host([block]) .option {
+        margin: 0;
+        padding: 8px var(--pad);
+        border-radius: var(--r-sm);
       }
 
       .option * {
@@ -169,20 +226,18 @@ export class Options extends RapidElement {
         max-height: 1.1em;
       }
 
-      .option:hover {
-        background: var(
-          --temba-options-option-hover-bg,
-          var(--option-hover-bg)
-        );
-        color: var(--temba-options-option-hover-text, var(--option-hover-text));
-      }
-
+      /* The component syncs cursorIndex to pointer position on
+         mousemove, so .focused already follows the mouse. A
+         separate :hover rule would just create a second highlight
+         that flickers between rows on transition — keep only the
+         single focused/active state. */
       .option.focused {
         background: var(
           --temba-options-option-focus-bg,
           var(--color-selection)
         );
-        color: var(--temba-options-option-focus-text, var(--color-text-dark));
+        color: var(--temba-options-option-focus-text, var(--accent-700));
+        --icon-color: var(--accent-700);
       }
 
       .option.no-options {

@@ -56,28 +56,100 @@ export enum Events {
   WEBHOOK_CALLED = 'webhook_called'
 }
 
+/**
+ * Renders a single DS pill of the given type. temba-label auto-resolves
+ * the icon from `type` (via PILL_TYPE_ICONS), so we don't pass `icon`
+ * unless the consumer explicitly overrides it. When `href` is provided
+ * the pill is wrapped in a navigation anchor (SPA goto); otherwise it's
+ * rendered inline as a plain pill. Single source of truth for the
+ * "entity pill in chat history" look — inline margin keeps wrapping
+ * airy, and inline style works regardless of host-page Tailwind reach.
+ */
+const renderEntityPill = (
+  pillType: string,
+  name: string,
+  opts: { href?: string; icon?: string } = {}
+): TemplateResult => {
+  const pill = opts.icon
+    ? html`<temba-label
+        icon=${opts.icon}
+        type=${pillType}
+        ?clickable=${!!opts.href}
+        style="margin: 1px 2px; vertical-align: middle;"
+        >${name}</temba-label
+      >`
+    : html`<temba-label
+        type=${pillType}
+        ?clickable=${!!opts.href}
+        style="margin: 1px 2px; vertical-align: middle;"
+        >${name}</temba-label
+      >`;
+  return opts.href
+    ? html`<a
+        href=${opts.href}
+        onclick="goto(event, this)"
+        style="vertical-align: middle;"
+        >${pill}</a
+      >`
+    : pill;
+};
+
+const groupPill = (item: any) =>
+  renderEntityPill('group', item.name, {
+    href: `/contact/group/${item.uuid}/`
+  });
+
+const flowPill = (flow: any) =>
+  renderEntityPill('flow', flow.name, {
+    href: `/flow/editor/${flow.uuid}/`
+  });
+
+const fieldPill = (field: any) => renderEntityPill('field', field.name);
+
+/**
+ * Renders a generic value as a neutral pill (white bg, gray border).
+ * Used for "after" values in update/change events — visually paired
+ * with the type pill on the left side of the line, without claiming
+ * a domain hue.
+ */
+const valuePill = (value: string | number) =>
+  html`<span
+    style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; margin: 1px 2px; border-radius: 999px; border: 1px solid var(--border-strong, #d2d6dc); background: #fff; color: var(--text-1, #1a1f26); font-size: 11.5px; font-weight: 400; line-height: 1; vertical-align: middle;"
+    >${value}</span
+  >`;
+
+/**
+ * Inline-flex wrapper style that text + pills share. Without it,
+ * plain text sits on its own baseline while vertical-align: middle
+ * pills sit slightly above and the text appears to "float". flex
+ * centering keeps the row of words and pills on one cross-axis.
+ */
+const eventLineStyle =
+  'display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 2px 4px;';
+
 const renderInfoList = (
   singular: string,
   plural: string,
   items: any[]
 ): TemplateResult => {
   if (items.length === 1) {
-    return html`<div>${singular} <strong>${items[0].name}</strong></div>`;
-  } else {
-    const list = items.map((item) => item.name);
-    if (list.length === 2) {
-      return html`<div>
-        ${plural} <strong>${list[0]}</strong> and <strong>${list[1]}</strong>
-      </div>`;
-    } else {
-      const last = list.pop();
-      const middle = list.map(
-        (name, index) =>
-          html`<strong>${name}</strong>${index < list.length - 1 ? ', ' : ''}`
-      );
-      return html`<div>${plural} ${middle}, and <strong>${last}</strong></div>`;
-    }
+    return html`<div style=${eventLineStyle}>
+      ${singular} ${groupPill(items[0])}
+    </div>`;
   }
+  if (items.length === 2) {
+    return html`<div style=${eventLineStyle}>
+      ${plural} ${groupPill(items[0])} and ${groupPill(items[1])}
+    </div>`;
+  }
+  // No commas between pills — the flex `gap` on eventLineStyle
+  // already provides visual separation, and a pill list reads as a
+  // single "set" rather than a sentence.
+  const middle = items.slice(0, -1).map((item) => groupPill(item));
+  const last = items[items.length - 1];
+  return html`<div style=${eventLineStyle}>
+    ${plural} ${middle} and ${groupPill(last)}
+  </div>`;
 };
 
 export const renderRunEvent = (event: RunEvent): TemplateResult => {
@@ -92,11 +164,8 @@ export const renderRunEvent = (event: RunEvent): TemplateResult => {
     }
   }
 
-  return html`<div>
-    ${verb}
-    <a href="/flow/editor/${event.flow.uuid}/"
-      ><strong>${event.flow.name}</strong></a
-    >
+  return html`<div style=${eventLineStyle}>
+    ${verb} ${flowPill(event.flow)}
   </div>`;
 };
 
@@ -112,27 +181,27 @@ export const renderChatStartedEvent = (
 
 export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
   return event.value
-    ? html`<div>
-        Updated <strong>${event.field.name}</strong> to
-        <strong>${event.value.text}</strong>
+    ? html`<div style=${eventLineStyle}>
+        Updated ${fieldPill(event.field)} to ${valuePill(event.value.text)}
       </div>`
-    : html`<div>Cleared <strong>${event.field.name}</strong></div>`;
+    : html`<div style=${eventLineStyle}>
+        Cleared ${fieldPill(event.field)}
+      </div>`;
 };
 
 export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
-  return html`<div>
-    Updated <strong>name</strong> to <strong>${event.name}</strong>
+  return html`<div style=${eventLineStyle}>
+    Updated name to ${valuePill(event.name)}
   </div>`;
 };
 
 export const renderContactURNsChanged = (
   event: URNsChangedEvent
 ): TemplateResult => {
-  return html`<div>
-    Updated <strong>URNs</strong> to
-    ${oxfordFn(
-      event.urns,
-      (urn: string) => html`<strong>${urn.split(':')[1].split('?')[0]}</strong>`
+  return html`<div style=${eventLineStyle}>
+    Updated URNs to
+    ${oxfordFn(event.urns, (urn: string) =>
+      valuePill(urn.split(':')[1].split('?')[0])
     )}
   </div>`;
 };
@@ -214,15 +283,11 @@ export const renderContactGroupsEvent = (
 ): TemplateResult => {
   const groupsEvent = event as ContactGroupsEvent;
   if (groupsEvent.groups_added) {
-    return renderInfoList(
-      'Added to group',
-      'Added to groups',
-      groupsEvent.groups_added
-    );
+    return renderInfoList('Added to', 'Added to', groupsEvent.groups_added);
   } else if (groupsEvent.groups_removed) {
     return renderInfoList(
-      'Removed from group',
-      'Removed from groups',
+      'Removed from',
+      'Removed from',
       groupsEvent.groups_removed
     );
   }
@@ -375,9 +440,7 @@ export const renderBroadcastCreated = (event: any): TemplateResult | null => {
 export const renderSessionTriggered = (event: any): TemplateResult | null => {
   const flow = event.flow;
   if (flow) {
-    return html`<div>
-      Started somebody else in <strong>${flow.name}</strong>
-    </div>`;
+    return html`<div>Started somebody else in ${flowPill(flow)}</div>`;
   }
   return null;
 };

@@ -1,13 +1,27 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
+import { msg } from '@lit/localize';
 import { getClasses } from '../utils';
 import { styleMap } from 'lit-html/directives/style-map.js';
+import { designTokens } from '../styles/designTokens';
+import {
+  pillVariants,
+  PILL_TYPES,
+  PILL_TYPE_ICONS
+} from '../styles/pillVariants';
 
 export default class Label extends LitElement {
   static get styles() {
     return css`
+      ${designTokens}
+
       :host {
         display: inline-block;
+        /* Cap at parent width so a pill sitting in a constrained
+           container (e.g. a flow canvas node body) shrinks to fit
+           rather than overflowing. The slot/mask below have the
+           min-width:0 needed to let the ellipsis engage. */
+        max-width: 100%;
       }
 
       slot {
@@ -15,12 +29,19 @@ export default class Label extends LitElement {
         overflow-x: hidden;
         text-overflow: ellipsis;
         display: block;
+        /* Without min-width:0 the slot — as a flex item inside .mask —
+           refuses to shrink below its content size, defeating the
+           overflow/ellipsis. */
+        min-width: 0;
       }
 
       .mask {
         padding: 3px 8px;
         border-radius: 12px;
         display: flex;
+        /* Same reason as slot — let the mask shrink below its content
+           size so the inner slot can ellipsize. */
+        min-width: 0;
       }
 
       temba-icon {
@@ -41,6 +62,72 @@ export default class Label extends LitElement {
         color: var(--color-overlay-light-text);
         --icon-color: var(--color-overlay-light-text);
         text-shadow: none;
+      }
+
+      /* DS pill mode — engaged when the consumer sets [type]. Overrides
+         the legacy chip chrome (shadow) and shape (12px radius) with
+         the design-system pill (flat, type-colored via .pill-{type},
+         1px border, 999px radius). Background/foreground/icon-color
+         are owned by pillVariants — we only set non-color chrome here
+         so we don't outrank the variant. */
+      .label[class*='pill-'] {
+        font-size: 11.5px;
+        font-weight: var(--w-regular);
+        /* border color is owned by .pill-{type} in pillVariants — only
+           set width/style here so we don't outrank the variant. */
+        border-width: 1px;
+        border-style: solid;
+        border-radius: 999px;
+        box-shadow: none;
+      }
+      .label[class*='pill-'] .mask {
+        padding: 0 7px;
+        height: 20px;
+        align-items: center;
+        gap: 4px;
+        border-radius: 999px;
+      }
+      /* Hover tint pulled from the pill's own foreground (which is the
+         dark variant shade), so flow stays bluish, group stays purplish,
+         etc. — no grey wash. */
+      .label[class*='pill-'].clickable .mask:hover {
+        background: color-mix(in oklab, currentColor 10%, transparent);
+      }
+      .label[class*='pill-'] temba-icon {
+        margin-right: 0;
+        padding-bottom: 0;
+      }
+
+      /* Chip-style X button — matches the multi-select chip's
+         .remove-item. currentColor-tinted bg so it picks up the
+         pill variant's hue. Sits on the left, ahead of the icon. */
+      .label[class*='pill-'] .remove {
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        border-radius: 999px;
+        background: color-mix(in oklab, currentColor 25%, transparent);
+        color: inherit;
+        opacity: 0.8;
+        --icon-color: currentColor;
+      }
+      .label[class*='pill-'] .remove:hover {
+        opacity: 1;
+        background: color-mix(in oklab, currentColor 45%, transparent);
+      }
+
+      /* When a removable X is present, tighten the mask's left padding
+         so the X sits snug against the pill edge (matches the
+         multi-select chip's 4px left padding). Right padding stays so
+         the trailing icon/name keep their breathing room. */
+      .label[class*='pill-']:has(.remove) .mask {
+        padding-left: 4px;
       }
 
       .danger {
@@ -79,6 +166,11 @@ export default class Label extends LitElement {
       .shadow {
         box-shadow: 1px 1px 2px 1px rgba(0, 0, 0, 0.1);
       }
+
+      /* DS pill variants come last so .pill-{type} wins on source
+         order against equal-specificity legacy rules above (.label,
+         .danger, .primary, etc.). */
+      ${pillVariants}
     `;
   }
 
@@ -106,11 +198,46 @@ export default class Label extends LitElement {
   @property({ type: String })
   icon: string;
 
+  /**
+   * Design-system pill variant — `flow`, `group`, `contact`, `field`,
+   * `keyword`, `label`, or `neutral`. When set, switches the chrome to
+   * a flat DS pill (rounded 999px, type-colored). Stays the legacy
+   * shadowed label when unset, so existing consumers are unaffected.
+   */
+  @property({ type: String })
+  type: string;
+
+  /**
+   * Render a chip-style X button on the left of the pill. Clicking it
+   * fires a `temba-remove` event; the rest of the pill stays clickable
+   * for navigation as usual.
+   */
+  @property({ type: Boolean })
+  removable: boolean;
+
+  /**
+   * Accessible label for the remove button. Defaults to a localized
+   * "Remove", but consumers whose action verb differs (e.g.
+   * "Interrupt flow") should pass their own — the X button is the
+   * affordance for whatever action `temba-remove` triggers, so the
+   * accessible name should match.
+   */
+  @property({ type: String })
+  removeLabel: string;
+
   @property()
   backgroundColor: string;
 
   @property()
   textColor: string;
+
+  private handleRemove(e: MouseEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    this.dispatchEvent(
+      new CustomEvent('temba-remove', { bubbles: true, composed: true })
+    );
+  }
 
   public render(): TemplateResult {
     const labelStyle = {};
@@ -124,6 +251,22 @@ export default class Label extends LitElement {
       labelStyle['--icon-color'] = this.textColor;
     }
 
+    // Only emit `pill-${this.type}` if it's a recognized variant.
+    // An unknown value (or one containing whitespace, e.g.
+    // `"flow danger"` from a malformed template) would otherwise split
+    // into multiple classes and collide with internal modifiers
+    // (`.danger`, `.shadow`, `.clickable`, etc.) defined on `.label`.
+    const validType = this.type && PILL_TYPES.has(this.type);
+    const variantClass = validType ? `pill-${this.type}` : '';
+    // When the consumer sets a recognized `type` (group / flow / etc.)
+    // but doesn't supply an explicit `icon`, fall back to the type's
+    // default icon from PILL_TYPE_ICONS. Call sites then only need
+    // `type="group"` instead of `type="group" icon="group"`.
+    const resolvedIcon =
+      this.icon || (validType ? PILL_TYPE_ICONS[this.type] : undefined);
+
+    const removeAriaLabel = this.removeLabel || msg('Remove');
+
     return html`
       <div
         class="label ${getClasses({
@@ -134,11 +277,22 @@ export default class Label extends LitElement {
           shadow: this.shadow,
           danger: this.danger,
           dark: this.dark
-        })}"
+        })} ${variantClass}"
         style=${styleMap(labelStyle)}
       >
         <div class="mask">
-          ${this.icon ? html`<temba-icon name=${this.icon} />` : null}
+          ${this.removable
+            ? html`<button
+                class="remove"
+                @click=${this.handleRemove}
+                aria-label=${removeAriaLabel}
+              >
+                <temba-icon name="x" size="0.85"></temba-icon>
+              </button>`
+            : null}
+          ${resolvedIcon
+            ? html`<temba-icon name=${resolvedIcon} />`
+            : null}
           <slot></slot>
         </div>
       </div>

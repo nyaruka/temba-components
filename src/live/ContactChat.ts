@@ -7,6 +7,7 @@ import {
   TemplateResult
 } from 'lit';
 import { property } from 'lit/decorators.js';
+import { msg } from '@lit/localize';
 import {
   Contact,
   CustomEventType,
@@ -313,45 +314,51 @@ export class ContactChat extends ContactStoreElement {
         border-color: #ccc;
       }
 
-      .action-bar {
-      }
-
+      /* "Currently in [flow]" treatment.
+         Lives in the chat footer to advertise the active run with an
+         optional Interrupt action (the chip's X). Sized to its
+         contents only (inline-flex) so the chat scrollbar to the
+         right remains clickable, and pointer-events:none on the
+         wrapping footer means the rest of the row doesn't intercept
+         scrollbar drags either. Translucent white bg + backdrop
+         blur keeps the chat history legible through the chip. */
       .in-flow {
-        border-radius: 0.8em;
-        align-items: center;
-        background: #666;
-        padding: 0.5em 1em;
-        margin: 1em;
-        margin-right: 2em;
         display: inline-flex;
-        opacity: 0.9;
+        align-items: center;
+        gap: 8px;
+        padding: 0.4em 0.75em;
+        margin: 0.5em;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: var(--shadow-1);
       }
 
       .flow-footer {
         text-align: center;
         pointer-events: none;
+        /* The chat history has a scrollbar on the right edge; the
+           footer overlay spans the full container width, so centering
+           inside it lands the chip slightly right-of-center relative
+           to the visible message area. Reserve the scrollbar width on
+           the right so the chip is centered to what the user sees. */
+        padding-right: 15px;
       }
 
       .flow-footer .in-flow {
         pointer-events: auto;
       }
 
-      .in-flow:hover {
-        opacity: 1;
-      }
-
       .in-flow .flow-name {
-        display: flex;
-        color: #fff;
-      }
-
-      .in-flow a {
-        font-weight: bold;
-        color: #fff;
-      }
-
-      .in-flow .interrupt-button {
-        margin-left: 1em;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        /* Match the chat history event text — same hue + size — so
+           the "Currently in" line reads as one of the events rather
+           than its own UI chrome. */
+        font-size: 13.5px;
+        color: #8e8e93;
       }
 
       .in-flow .interrupt {
@@ -1420,26 +1427,21 @@ export class ContactChat extends ContactStoreElement {
                       <div slot="footer" class="flow-footer">
                         <div class="in-flow">
                           <div class="flow-name">
-                            <temba-icon name="flow" size="1.2"></temba-icon>
-                            <div>
-                              Currently in
-                              <a
-                                href="/flow/editor/${this.currentContact.flow
-                                  .uuid}/"
-                                >${this.currentContact.flow.name}</a
-                              >
-                            </div>
+                            <span>Currently in</span>
+                            <a
+                              href="/flow/editor/${this.currentContact.flow
+                                .uuid}/"
+                              onclick="goto(event, this)"
+                              ><temba-label
+                                type="flow"
+                                clickable
+                                ?removable=${this.showInterrupt}
+                                removeLabel=${msg('Interrupt flow')}
+                                @temba-remove=${this.handleInterrupt}
+                                >${this.currentContact.flow.name}</temba-label
+                              ></a
+                            >
                           </div>
-                          ${this.showInterrupt
-                            ? html`<temba-button
-                                class="interrupt-button"
-                                destructive
-                                small
-                                @click=${this.handleInterrupt}
-                                name="Interrupt"
-                              >
-                              </temba-button>`
-                            : null}
                         </div>
                       </div>
                     `

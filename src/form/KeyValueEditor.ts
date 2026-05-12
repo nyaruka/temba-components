@@ -282,10 +282,10 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
       .remove-btn {
         width: 32px;
         height: 32px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background: #f8f8f8;
-        color: #666;
+        border: 1px solid var(--color-widget-border);
+        border-radius: var(--curvature-widget);
+        background: var(--sunken);
+        color: var(--text-2);
         cursor: pointer;
         display: flex;
         align-items: center;

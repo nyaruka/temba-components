@@ -35,6 +35,11 @@ import {
   tokenCss
 } from '../../excellent/token-styles';
 import { Store } from '../../store/Store';
+import {
+  pillVariants,
+  PILL_TYPES,
+  PILL_TYPE_ICONS
+} from '../../styles/pillVariants';
 import { StyleInfo, styleMap } from 'lit-html/directives/style-map.js';
 import { Icon } from '../../Icons';
 import { msg } from '@lit/localize';
@@ -47,7 +52,30 @@ export interface SelectOption {
   expression?: boolean;
   selected?: boolean;
   arbitrary?: boolean;
+  /**
+   * Pill variant for this option. Lets a single select hold mixed types
+   * (e.g. Omnibox: groups + contacts) and color each chip correctly.
+   * Falls back to the widget's resolved pill type — see `Select.getPillType`.
+   */
+  type?: string;
 }
+
+/**
+ * Endpoint URL → pill variant. Each pattern is anchored on a path
+ * terminator (`/`, `.json`, `?`, end-of-string) so it can't match
+ * substrings like `/groupsearch` or `/contact/group/<uuid>/`. Adding a
+ * new entry here is the only change needed to make a new endpoint
+ * auto-color its chips. (PILL_TYPES / PILL_TYPE_ICONS live in
+ * src/styles/pillVariants.ts — the single source of truth shared with
+ * Label / flow utils.)
+ */
+const ENDPOINT_PILL_TYPES: { pattern: RegExp; type: string }[] = [
+  { pattern: /\/groups(\.json|\/|\?|$)/, type: 'group' },
+  { pattern: /\/contacts(\.json|\/|\?|$)/, type: 'contact' },
+  { pattern: /\/labels(\.json|\/|\?|$)/, type: 'label' },
+  { pattern: /\/flows(\.json|\/|\?|$)/, type: 'flow' },
+  { pattern: /\/fields(\.json|\/|\?|$)/, type: 'field' }
+];
 
 export class Select<T extends SelectOption> extends FieldElement {
   private hiddenInputs: HTMLInputElement[] = [];
@@ -55,6 +83,7 @@ export class Select<T extends SelectOption> extends FieldElement {
   static get styles() {
     return css`
       ${super.styles}
+      ${pillVariants}
 
       :host {
         --transition-speed: 0;
@@ -71,10 +100,13 @@ export class Select<T extends SelectOption> extends FieldElement {
         --temba-options-font-size: var(--temba-select-selected-font-size);
         --icon-color: var(--color-text-dark);
         --color-options-bg: #fff;
-        /* Always use normal border colors for options popup, even when select is in error state */
-        --color-widget-border: #ddd;
-        --color-focus: #007bff;
-        --widget-box-shadow-focused: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        /* Keep the popup neutral when the parent field is in an
+           error state — FieldElement's .has-error sets
+           --color-widget-border / --color-focus to red, which would
+           otherwise cascade into the popup. The popup itself uses
+           --focus-muted / --focus-halo (error-immune) for its
+           outline; here we only reset the widget-border alias. */
+        --color-widget-border: var(--border-strong);
       }
 
       :host:focus {
@@ -88,22 +120,6 @@ export class Select<T extends SelectOption> extends FieldElement {
         height: 25px;
       }
 
-      .remove-item {
-        cursor: pointer;
-        display: inline-block;
-        padding: 3px 6px;
-        border-right: 1px solid rgba(100, 100, 100, 0.2);
-        margin: 0;
-      }
-
-      .selected-item.multi .remove-item {
-        display: none;
-      }
-
-      .remove-item:hover {
-        background: rgba(100, 100, 100, 0.1);
-      }
-
       input:focus {
         outline: none;
         box-shadow: none;
@@ -111,11 +127,8 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
 
       .wrapper-bg {
-        background: var(--select-wrapper-bg, #fff);
-        box-shadow: var(
-          --select-wrapper-shadow,
-          inset 0px 0px 4px rgb(0 0 0 / 10%)
-        );
+        background: var(--select-wrapper-bg, var(--surface));
+        box-shadow: var(--select-wrapper-shadow, none);
         border-radius: var(--curvature-widget);
       }
 
@@ -125,16 +138,21 @@ export class Select<T extends SelectOption> extends FieldElement {
         flex-wrap: nowrap;
         align-items: center;
         border: 1px solid var(--color-widget-border);
-        transition: all ease-in-out var(--transition-speed);
+        transition:
+          border-color 120ms ease-in-out,
+          box-shadow 120ms ease-in-out;
         cursor: pointer;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
-        padding-top: 1px;
         box-shadow: var(--widget-box-shadow);
         position: relative;
-        min-height: var(--temba-select-min-height, 2.4em);
+        min-height: var(--temba-select-min-height, 34px);
         max-height: var(--temba-select-max-height, none);
-        overflow: hidden;
+        /* Default clip so chevron / chip overflow doesn't escape the
+           widget. Embedded-label use cases (e.g. ContactFieldEditor's
+           location selects) override this to visible so the slotted
+           prefix label can extend above the top border. */
+        overflow: var(--temba-select-container-overflow, hidden);
       }
 
       temba-icon.select-open:hover,
@@ -150,15 +168,23 @@ export class Select<T extends SelectOption> extends FieldElement {
         /* background: var(--color-widget-bg); */
       }
 
+      /* Focus border + halo are global DS tokens — change them once
+         in designTokens.ts and every form widget follows. The
+         per-component tokens still exist so embedded use cases (e.g.
+         WorkspaceSelect inside TembaMenu) can opt out by setting them
+         to transparent/none on their own :host. */
       .select-container.focused {
         background: var(--color-widget-bg-focused);
-        border-color: var(--color-focus);
-        box-shadow: var(--widget-box-shadow-focused);
+        border-color: var(--temba-select-focus-border, var(--color-focus));
+        box-shadow: var(
+          --temba-select-focus-halo,
+          var(--widget-box-shadow-focused)
+        );
       }
 
       .left-side {
         flex: 1;
-        overflow: hidden;
+        overflow: var(--temba-select-container-overflow, hidden);
         display: flex;
         align-items: center;
       }
@@ -167,70 +193,144 @@ export class Select<T extends SelectOption> extends FieldElement {
         display: block;
       }
 
+      /* layout container — padding is the single source of left/right
+         offset for placeholder, selected values, and the input. Keep it
+         stable across empty/focused/typing/selected states so the widget
+         never reflows. */
       .selected {
         flex: 1;
         display: flex;
         flex-direction: row;
-        align-items: stretch;
+        align-items: center;
         user-select: none;
-        padding: var(--temba-select-selected-padding, 0px 4px);
+        padding: var(--temba-select-selected-padding, 0 var(--pad));
+        min-width: 0;
       }
 
-      .searchable .selected {
-        padding: 4px !important;
-      }
-
+      /* Multi mode: when empty, placeholder/search input share the
+         var(--pad) inset with adjacent text widgets so the cursor
+         lines up. Once chips appear, tighten to 4px so the first
+         pill sits flush to the left. */
       .multi .selected {
         flex-wrap: wrap;
-        padding: 4px;
+        gap: 4px;
+        padding: 4px var(--pad);
       }
-
-      .multi.empty .selected {
-        padding: var(--temba-select-selected-padding);
+      .multi:not(.empty) .selected {
+        padding: 4px;
       }
 
       .selected .selected-item {
         display: flex;
-        overflow: hidden;
-        color: var(--color-widget-text);
+        align-items: center;
         line-height: var(--temba-select-selected-line-height);
-        --icon-color: var(--color-text-dark);
       }
 
+      /* Single-mode selected text uses the widget's own colors. Multi-
+         mode chips get color/icon-color/border-color from
+         pillVariants (.pill-{type}) — don't set them on the shared
+         base rule or they'll outrank the variant on specificity. */
+      .single .selected .selected-item {
+        flex: 1;
+        min-width: 0;
+        color: var(--color-widget-text);
+        --icon-color: var(--text-2);
+      }
+
+      /* multi-mode chips — TextIt design system pills. Shape lives
+         here; color variants come from pillVariants (.pill-{type}).
+         overflow: hidden is needed so the pill bg clips to the rounded
+         radius — but it's only set in multi mode, otherwise it would
+         clip glyph descenders on single-mode selected text.
+         border-color is owned by .pill-{type}; only width/style live
+         here so the variant isn't outranked on specificity. */
       .multi .selected .selected-item {
         vertical-align: middle;
-        background: #fff;
-        border: 1px solid rgba(100, 100, 100, 0.3);
-        user-select: none;
-        border-radius: 2px;
-        align-items: stretch;
+        align-items: center;
         flex-direction: row;
         flex-wrap: nowrap;
-        margin: 2px 2px;
+        /* X is on the left now; keep it snug to the chip edge (small
+           left padding) and give the name side more breathing room
+           (larger right padding). */
+        gap: 5px;
+        height: 20px;
+        padding: 0 9px 0 2px;
+        margin: 0;
+        border-radius: 999px;
+        overflow: hidden;
+        font-size: 11.5px;
+        font-weight: var(--w-regular);
+        border-width: 1px;
+        border-style: solid;
+        user-select: none;
+        white-space: nowrap;
+        max-width: 240px;
+      }
+
+      .option-name {
+        flex: 1 1 auto;
+        align-self: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: var(--temba-select-option-padding, 2px 8px);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* Keep the type icon perfectly round even when the chip's name
+         is long enough to push the chip against its max-width. Same
+         reason as the flex-shrink:0 on .multi .remove-item — the span
+         next to the icon is what should clip with ellipsis. */
+      .option-name > temba-icon {
+        flex-shrink: 0;
       }
 
       .option-name > span {
         text-align: left;
       }
 
+      /* Single-mode selected: drop the option-name's overflow:hidden
+         (and its companion text-overflow:ellipsis) so glyph descenders
+         on "y", "p", "g" aren't clipped. Long names still clip at
+         .left-side, which has overflow:hidden of its own. Multi-mode
+         chips re-establish overflow:hidden via the .multi rule below. */
       .selected-item .option-name {
         padding: 0px;
         font-size: var(--temba-select-selected-font-size);
         align-self: center;
+        overflow: visible;
       }
 
       .multi .selected-item .option-name {
-        flex: 1 1 auto;
-        align-self: center;
-        white-space: nowrap;
+        flex: 0 1 auto;
+        font-size: inherit;
+        padding: 0;
+        /* Let the option-name shrink inside the chip and clip its
+           contents with an ellipsis when the chip hits its 240px
+           max-width. Without min-width:0 the flex item refuses to
+           shrink below its content size, defeating the overflow. */
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      /* The renderOptionDefault wraps the name in a <span>. That's the
+         actual text node that needs the ellipsis chrome — the parent
+         option-name is a flex row (icon + name) so the ellipsis lives
+         on the name span only, leaving the icon untouched. */
+      .multi .selected-item .option-name > span {
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 12px;
-        padding: 2px 8px;
+        white-space: nowrap;
       }
 
       .multi .selected .selected-item.focused {
-        background: rgba(100, 100, 100, 0.3);
+        background: var(--accent-600);
+        color: white;
+        border-color: var(--accent-600);
+        --icon-color: white;
       }
 
       .multi .selected-item.sortable {
@@ -246,8 +346,42 @@ export class Select<T extends SelectOption> extends FieldElement {
         flex-grow: 1;
       }
 
+      /* chip remove button — DS pill-x. Lives on the LEFT of the chip
+         so successive deletions can be done with the cursor parked at
+         the same screen position (each removal pulls the next chip
+         leftward into the same spot). Has its own tinted background
+         (currentColor-mixed so it follows the pill variant) so the X
+         reads as a distinct hit target and the rest of the chip is
+         visually balanced. */
+      .multi .remove-item {
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        /* Pin the X to a perfect 16×16 circle even when the chip's
+           content is wide enough to bump the chip against its
+           max-width (240px) — without flex-shrink:0 the row's flex
+           layout squeezes the X horizontally before clipping the
+           name. */
+        flex-shrink: 0;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        border-radius: 999px;
+        background: color-mix(in oklab, currentColor 25%, transparent);
+        color: inherit;
+        opacity: 0.8;
+        --icon-color: currentColor;
+      }
+      .multi .remove-item:hover {
+        opacity: 1;
+        background: color-mix(in oklab, currentColor 45%, transparent);
+      }
+
       input {
-        font-size: 13px;
+        font-size: var(--temba-select-selected-font-size);
         width: 0px;
         cursor: pointer;
         background: none;
@@ -261,7 +395,6 @@ export class Select<T extends SelectOption> extends FieldElement {
         box-shadow: none !important;
         font-family: var(--font-family);
         caret-color: var(--input-caret);
-        border: 0px solid purple !important;
       }
 
       .input-wrapper:focus-within {
@@ -271,17 +404,11 @@ export class Select<T extends SelectOption> extends FieldElement {
 
       .input-wrapper {
         min-width: 1px;
-        margin-left: 6px;
-        margin-right: -6px;
         display: none;
         pointer-events: none;
       }
 
       .multi .input-wrapper {
-        margin-left: 6px !important;
-        margin-right: 2px !important;
-        margin-top: 2px;
-        margin-bottom: 2px;
         min-width: 50px;
         flex: 1 0 auto;
         align-self: center;
@@ -350,10 +477,10 @@ export class Select<T extends SelectOption> extends FieldElement {
 
       .placeholder {
         font-size: var(--temba-select-selected-font-size);
+        font-weight: var(--w-regular);
         color: var(--color-placeholder);
         display: none;
         line-height: var(--temba-select-selected-line-height);
-        margin-left: 6px;
         pointer-events: none;
       }
 
@@ -363,8 +490,6 @@ export class Select<T extends SelectOption> extends FieldElement {
 
       .multi .placeholder {
         display: block;
-        margin: 2px 2px;
-        padding: 2px 8px;
         align-self: center;
       }
 
@@ -378,15 +503,25 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
 
       .small {
-        --temba-select-selected-padding: 6px;
+        /* Match TextInput's small flavor (6px 8px) so a select sitting
+           next to a text field in the same form has its value text
+           horizontally aligned with the field's text. */
+        --temba-select-selected-padding: 6px 8px;
         --temba-select-selected-line-height: 12px;
         --temba-select-selected-font-size: 14px;
         --temba-select-min-height: 2.28em;
       }
 
       .xsmall {
-        --temba-select-selected-padding: 4px 6px;
-        --temba-select-selected-line-height: 13px;
+        /* Match RichEditor's xsmall (6px 8px padding, 13px font,
+           line-height: normal, no min-height floor) so a rule editor
+           row of [operator select | rich-edit argument | category
+           textinput] renders all three widgets at the same height.
+           The rich-edit argument has no 34px --input-h floor, so the
+           select drops that floor here too — TextInput's xsmall makes
+           the same opt-out via --temba-textinput-min-height: 0. */
+        --temba-select-selected-padding: 6px 8px;
+        --temba-select-selected-line-height: 1.2;
         --temba-select-selected-font-size: 13px;
         --temba-select-min-height: 0em;
       }
@@ -545,6 +680,15 @@ export class Select<T extends SelectOption> extends FieldElement {
 
   @property({ type: String })
   flavor = 'default';
+
+  /**
+   * Explicit pill variant for selected-value chips (one of: neutral,
+   * flow, group, field, label, keyword, contact). When unset, the
+   * variant is resolved automatically — see `getPillType`. Set this
+   * only to override the auto-resolution.
+   */
+  @property({ type: String, attribute: 'pill_type' })
+  pillType?: string;
 
   @property({ type: String, attribute: 'info_text' })
   infoText = '';
@@ -761,6 +905,18 @@ export class Select<T extends SelectOption> extends FieldElement {
       'slotchange',
       this.handleSlotChange.bind(this)
     );
+    // Capture-phase pointerdown anywhere within the options popup so
+    // we can mark "user is interacting" before any focus shift fires.
+    // Used by handleBlur to keep the dropdown open while the user
+    // drags the native scrollbar.
+    const optionsEl = this.shadowRoot.querySelector('temba-options');
+    if (optionsEl) {
+      optionsEl.addEventListener(
+        'pointerdown',
+        this.handleOptionsPointerDown,
+        true
+      );
+    }
   }
 
   public willUpdate(changes: PropertyValues) {
@@ -863,6 +1019,7 @@ export class Select<T extends SelectOption> extends FieldElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeHintRepositionListeners();
+    this.detachPointerReleaseHandler();
   }
 
   private updateEnterHintPosition() {
@@ -1235,6 +1392,42 @@ export class Select<T extends SelectOption> extends FieldElement {
     return this.values.some(
       (v: any) => (v.value || v.name || '').toLowerCase() === val
     );
+  }
+
+  /**
+   * Resolves the design-system pill variant for a chip.
+   *
+   * Resolution order, most-specific to least:
+   *   1. option.type        — set by the data (Omnibox-style mixed types)
+   *   2. this.pillType      — explicit override from the consumer
+   *   3. tags mode          — keyword (mono) chips
+   *   4. endpoint inference — see ENDPOINT_PILL_TYPES
+   *   5. fallback           — neutral
+   *
+   * Add new endpoint mappings to ENDPOINT_PILL_TYPES rather than
+   * branching here, so the rule stays declarative.
+   */
+  protected getPillType(option: any): string {
+    // option.type wins, but only if it names a pill variant. Domain
+    // codes (Flow.flow_type, etc.) reuse the same field name and must
+    // fall through to endpoint inference rather than become a class.
+    if (option && option.type && PILL_TYPES.has(option.type)) {
+      return option.type;
+    }
+    if (this.pillType) {
+      return this.pillType;
+    }
+    if (this.tags) {
+      return 'keyword';
+    }
+    if (this.endpoint) {
+      for (const m of ENDPOINT_PILL_TYPES) {
+        if (m.pattern.test(this.endpoint)) {
+          return m.type;
+        }
+      }
+    }
+    return 'neutral';
   }
 
   /**
@@ -1654,10 +1847,62 @@ export class Select<T extends SelectOption> extends FieldElement {
     }
   }
 
+  // Set true while a pointer is held down inside our temba-options.
+  // Native scrollbar drags shift focus off the search input, firing
+  // blur, which would otherwise tear down visibleOptions. While this
+  // flag is on we keep the dropdown open and re-focus the input.
+  private pointerInsideOptions = false;
+
+  // The active pointerup/pointercancel release handler, if any. We
+  // stash it on the instance so disconnectedCallback can detach it as
+  // a safety net — without that, a component removed mid-drag (or
+  // with the pointer dragged into an ancestor iframe so the release
+  // events never reach `window`) would leak the listener and pin
+  // `this` for the lifetime of the page.
+  private pointerReleaseHandler: ((e: Event) => void) | null = null;
+
+  private detachPointerReleaseHandler() {
+    if (!this.pointerReleaseHandler) return;
+    window.removeEventListener('pointerup', this.pointerReleaseHandler, true);
+    window.removeEventListener(
+      'pointercancel',
+      this.pointerReleaseHandler,
+      true
+    );
+    this.pointerReleaseHandler = null;
+  }
+
+  private handleOptionsPointerDown = () => {
+    this.pointerInsideOptions = true;
+    // Replace any in-flight handler so we never accumulate listeners.
+    this.detachPointerReleaseHandler();
+    const release = () => {
+      // small delay so a focus-shift triggered by the click lands
+      // before we re-allow blur-driven closure.
+      setTimeout(() => {
+        this.pointerInsideOptions = false;
+      }, 0);
+      this.detachPointerReleaseHandler();
+    };
+    this.pointerReleaseHandler = release;
+    window.addEventListener('pointerup', release, true);
+    window.addEventListener('pointercancel', release, true);
+  };
+
   private handleBlur() {
     // defer to avoid scheduling an update during the current cycle;
     // blur can fire synchronously during the lit-html render when DOM changes
     setTimeout(() => {
+      if (this.pointerInsideOptions) {
+        // user is interacting with the options popup (e.g. dragging
+        // its scrollbar) — keep the dropdown open and re-focus the input.
+        const input = this.shadowRoot?.querySelector(
+          '.searchbox'
+        ) as HTMLElement | null;
+        input?.focus();
+        return;
+      }
+
       this.focused = false;
       this.attemptedOpen = false;
       if (this.visibleOptions.length > 0) {
@@ -1935,24 +2180,32 @@ export class Select<T extends SelectOption> extends FieldElement {
       return null;
     }
 
-    // special case for icons on any option type
-    const icon = (option as any).icon;
+    // Icon resolution, most-specific to least:
+    //   1. option.icon — explicit per-row override
+    //   2. option.type's default icon — when the data layer marks the
+    //      row's pill variant (Omnibox-style mixed types)
+    //   3. the widget's resolved pill type — endpoint inference for
+    //      sources that return plain rows (e.g. /api/v2/groups.json)
+    // The fall-through to (3) is what lets `Add to Group` / `Remove
+    // from Group` chips show the group icon even though the API rows
+    // don't carry a `type` field.
+    const optType = (option as any).type;
+    const icon =
+      (option as any).icon ||
+      (optType && PILL_TYPE_ICONS[optType]) ||
+      PILL_TYPE_ICONS[this.getPillType(option)] ||
+      undefined;
+    // Inline flex on the wrapper itself so layout works in both shadow
+    // roots — Select's (chip rendering) and temba-options' (dropdown
+    // rendering). Otherwise the dropdown would fall back to inline flow
+    // and stack the icon above the name.
     return html`
       <div
         class="option-name"
-        style="flex: 1 1 auto;
-        align-self: center;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        padding: var(--temba-select-option-padding, 2px 8px);
-        display: flex;"
+        style="display:flex; align-items:center; gap:6px;"
       >
         ${icon
-          ? html`<temba-icon
-              name="${icon}"
-              style="margin-right:0.5em;"
-            ></temba-icon>`
+          ? html`<temba-icon name="${icon}"></temba-icon>`
           : null}<span>${this.renderHighlightedName(option)}</span>
       </div>
     `;
@@ -2185,6 +2438,32 @@ export class Select<T extends SelectOption> extends FieldElement {
         `
       : null;
 
+    const renderRemove = (selected: any) => html`
+      <div
+        class="remove-item"
+        @click=${(evt: MouseEvent) => {
+          evt.preventDefault();
+          evt.stopPropagation();
+          this.handleRemoveSelection(selected);
+        }}
+      >
+        <temba-icon name="${Icon.delete_small}" size="1"></temba-icon>
+      </div>
+    `;
+
+    // pill-{type} colors are only applied in multi mode (chip rendering).
+    // In single mode the selected value sits inside the input box and
+    // shouldn't have a fill — otherwise the variant bg bleeds across
+    // the whole input row.
+    const chipClass = (option: any, index: number, sortable: boolean) => {
+      const variant = this.isMultiMode
+        ? `pill-${this.getPillType(option)}`
+        : '';
+      return `${sortable ? 'sortable ' : ''}selected-item ${variant} ${
+        index === this.selectedIndex ? 'focused' : ''
+      } ${this.draggingId === `selected-${index}` ? 'dragging' : ''}`;
+    };
+
     const multiItems =
       this.isMultiMode &&
       (this.emails || this.tags || this.values.length > 1) &&
@@ -2192,62 +2471,27 @@ export class Select<T extends SelectOption> extends FieldElement {
         ? html`
             <temba-sortable-list
               horizontal
+              gap="4px"
+              .prepareGhost=${(ghost: HTMLElement) => {
+                // The chip rendered width can be a few px wider than
+                // its actual content (subpixel rounding, max-width
+                // cap, etc.). When SortableList pins the ghost root
+                // to `rect.width`, that extra shows up as a stray
+                // gap on the right of the dragged chip. Size the
+                // ghost to its content instead so it looks identical
+                // to the source chip the user grabbed.
+                ghost.style.width = 'max-content';
+                ghost.style.minWidth = '0';
+              }}
               @temba-order-changed=${this.handleOrderChanged}
             >
               ${this.values.map(
                 (selected: any, index: number) => html`
                   <div
-                    class="sortable selected-item ${index === this.selectedIndex
-                      ? 'focused'
-                      : ''} ${this.draggingId === `selected-${index}`
-                      ? 'dragging'
-                      : ''}"
+                    class=${chipClass(selected, index, true)}
                     id="selected-${index}"
-                    style="
-                                vertical-align: middle;
-                                background: #fff;
-                                border: 1px solid rgba(100,100,100,0.3);
-                                user-select: none;
-                                border-radius: 2px;
-                                align-items: center;
-                                flex-direction: row;
-                                flex-wrap: nowrap;
-                                margin: 2px 2px;
-                                display: flex;
-                                overflow: hidden;
-                                color: var(--color-widget-text);
-                                line-height: var(--temba-select-selected-line-height);
-                                --icon-color: var(--color-text-dark);
-                                ${index === this.selectedIndex
-                      ? 'background: rgba(100,100,100,0.3);'
-                      : ''}
-                                ${this.draggingId === `selected-${index}`
-                      ? 'opacity: 0.5;'
-                      : ''}
-                              "
                   >
-                    <div
-                      class="remove-item"
-                      style="
-                                      cursor: pointer;
-                                      display: inline-block;
-                                      padding: 3px 6px;
-                                      border-right: 1px solid rgba(100,100,100,0.2);
-                                      margin: 0;
-                                      background: rgba(100,100,100,0.05);
-                                      margin-top:1px;
-                                    "
-                      @click=${(evt: MouseEvent) => {
-                        evt.preventDefault();
-                        evt.stopPropagation();
-                        this.handleRemoveSelection(selected);
-                      }}
-                    >
-                      <temba-icon
-                        name="${Icon.delete_small}"
-                        size="1"
-                      ></temba-icon>
-                    </div>
+                    ${renderRemove(selected)}
                     ${this.renderSelectedItem(selected)}
                   </div>
                 `
@@ -2260,44 +2504,8 @@ export class Select<T extends SelectOption> extends FieldElement {
     const singleItems = !multiItems
       ? html`${this.values.map(
           (selected: any, index: number) => html`
-            <div
-              class="selected-item ${index === this.selectedIndex
-                ? 'focused'
-                : ''}"
-              style="
-                            display: flex;
-                            overflow: hidden;
-                            color: var(--color-widget-text);
-                            line-height: var(--temba-select-selected-line-height);
-                            --icon-color: var(--color-text-dark);
-                            ${this.isMultiMode
-                ? 'vertical-align: middle; background: #fff; border: 1px solid rgba(100,100,100,0.3); user-select: none; border-radius: 2px; align-items: center; flex-direction: row; flex-wrap: nowrap; margin: 2px 2px;'
-                : 'flex: 1; min-width: 0;'}
-                            ${index === this.selectedIndex
-                ? 'background: rgba(100,100,100,0.3);'
-                : ''}
-                          "
-            >
-              ${this.isMultiMode
-                ? html`
-                    <div
-                      class="remove-item"
-                      style="cursor: pointer; display: inline-block; padding: 3px 6px;
-                             border-right: 1px solid rgba(100,100,100,0.2);
-                             margin: 0; background: rgba(100,100,100,0.05); margin-top:1px;"
-                      @click=${(evt: MouseEvent) => {
-                        evt.preventDefault();
-                        evt.stopPropagation();
-                        this.handleRemoveSelection(selected);
-                      }}
-                    >
-                      <temba-icon
-                        name="${Icon.delete_small}"
-                        size="1"
-                      ></temba-icon>
-                    </div>
-                  `
-                : null}
+            <div class=${chipClass(selected, index, false)}>
+              ${this.isMultiMode ? renderRemove(selected) : null}
               ${!this.input || this.isMultiMode
                 ? this.renderSelectedItem(selected)
                 : null}

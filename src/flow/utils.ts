@@ -1,4 +1,5 @@
 import { html, TemplateResult } from 'lit-html';
+import { iconToPillType } from '../styles/pillVariants';
 import { Action, NamedObject, FlowPosition } from '../store/flow-definition';
 import { FlowIssue, zustand } from '../store/AppState';
 import { CustomEventType } from '../interfaces';
@@ -257,6 +258,15 @@ export const renderClamped = (
 };
 
 /**
+ * Inline margin for stacked pills — the previous implementation used
+ * `class="mr-1 mb-1"` (Tailwind utility classes), but this package
+ * doesn't ship Tailwind, so the classes resolved to no-ops in any host
+ * page that didn't already include it. Inline style is predictable
+ * across hosts.
+ */
+const PILL_MARGIN_STYLE = 'margin: 0 4px 4px 0;';
+
+/**
  * Renders a single line item with optional icon.
  * Content can be plain text or a TemplateResult (e.g. highlighted text).
  */
@@ -265,17 +275,14 @@ export const renderLineItem = (
   icon?: string,
   content?: TemplateResult
 ) => {
-  return html`<div style="display:flex;align-items:center;">
-    ${icon
-      ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
-      : null}
-    <div
-      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"
-      title="${name}"
-    >
-      ${content || name}
-    </div>
-  </div>`;
+  const pillType = iconToPillType(icon);
+  return html`<temba-label
+    icon=${icon || ''}
+    type=${pillType || 'neutral'}
+    style=${PILL_MARGIN_STYLE}
+    title="${name}"
+    >${content || name}</temba-label
+  >`;
 };
 
 /**
@@ -319,12 +326,9 @@ export const renderStringList = (
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
-        ${icon
-          ? html`<div style="margin-right:0.4em; width: 1em;"></div>` // spacing placeholder
-          : null}
-        <div style="font-size:0.8em">+${remainingCount} more</div>
-      </div>`
+      html`<temba-label type="neutral" style=${PILL_MARGIN_STYLE}
+        >+${remainingCount} more</temba-label
+      >`
     );
   }
   return itemElements;
@@ -368,17 +372,16 @@ export const renderMixedList = (items: MixedListItem[]) => {
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
-        <div style="margin-right:0.4em; width: 1em;"></div>
-        <div style="font-size:0.8em">+${remainingCount} more</div>
-      </div>`
+      html`<temba-label type="neutral" style=${PILL_MARGIN_STYLE}
+        >+${remainingCount} more</temba-label
+      >`
     );
   }
   return itemElements;
 };
 
 /**
- * Renders a named object as a clickable link that fires a custom event
+ * Renders a named object as a clickable DS pill that fires a custom event
  */
 const renderLinkedObject = (
   obj: NamedObject,
@@ -400,18 +403,16 @@ const renderLinkedObject = (
     }
   };
 
-  return html`<div style="display:flex;align-items:center;max-width:100%;">
-    ${icon
-      ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
-      : null}
-    <div
-      class="linked-name"
-      @click=${handleClick}
-      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; text-decoration: underline; cursor: pointer;"
-    >
-      ${obj.name}
-    </div>
-  </div>`;
+  const pillType = iconToPillType(icon);
+  return html`<temba-label
+    icon=${icon || ''}
+    type=${pillType || 'neutral'}
+    clickable
+    style=${PILL_MARGIN_STYLE}
+    title="${obj.name}"
+    @click=${handleClick}
+    >${obj.name}</temba-label
+  >`;
 };
 
 /**
@@ -436,12 +437,9 @@ const renderLinkedObjects = (
   if (objects.length > maxDisplay && objects.length !== 4) {
     const remainingCount = objects.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
-        ${icon
-          ? html`<div style="margin-right:0.4em; width: 1em;"></div>`
-          : null}
-        <div style="font-size:0.8em">+${remainingCount} more</div>
-      </div>`
+      html`<temba-label type="neutral" style=${PILL_MARGIN_STYLE}
+        >+${remainingCount} more</temba-label
+      >`
     );
   }
   return itemElements;

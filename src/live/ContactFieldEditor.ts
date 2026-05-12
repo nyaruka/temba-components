@@ -101,16 +101,20 @@ export class ContactFieldEditor extends RapidElement {
         overflow: hidden;
         text-overflow: ellipsis;
         display: flex;
+        /* Pin to the top-left of the host (temba-select :host is
+           position: relative). Using top rather than margin-top keeps
+           the absolute element out of the flex flow of .left-side so
+           it doesn't push the selected value down. */
         position: absolute;
-        margin-top: -0.6em;
-        margin-left: 0.5em;
+        top: -0.6em;
+        left: 0.5em;
         pointer-events: none;
         background: #fff;
         border-radius: var(--curvature);
       }
 
       temba-select .prefix {
-        margin-top: -1em;
+        top: -0.7em;
       }
 
       .wrapper {
@@ -191,19 +195,22 @@ export class ContactFieldEditor extends RapidElement {
         display: none;
       }
 
+      /* Keep popper icons within the widget's 34px content area so
+         the field height doesn't change when the search/copy buttons
+         appear (i.e. when a value is set). Horizontal padding only —
+         vertical sizing comes from align-items: stretch on the
+         flex .input-container. Inner elements (icons, save button)
+         own their own horizontal spacing via margin, so the popper
+         itself doesn't add asymmetric padding (which would offset
+         its contents and prevent centering). */
       .popper temba-icon {
-        padding: 0.5em 0em;
-        padding-right: 1em;
+        padding: 0 0.6em 0 0;
       }
 
-      .popper:first-child {
-        padding: 0.5em 0em;
-        padding-right: 0.5em;
-        padding-left: 1em;
-      }
-
-      .popper:last-child {
-        padding-right: 0em;
+      /* First icon gets extra left padding so it doesn't hug the
+         popper's left edge — visually balances the inter-icon gap. */
+      .popper temba-icon:first-of-type {
+        padding-left: 0.6em;
       }
 
       .copy.clicked temba-icon {
@@ -223,8 +230,21 @@ export class ContactFieldEditor extends RapidElement {
         align-items: center;
       }
 
-      .save-button {
-        padding-right: 1em;
+      /* .save-button is the class on the <temba-button> element
+         itself. Use tag+class selector and !important to outrank
+         :host { align-self: stretch } from inside Button.ts. min/max
+         height pin the button size so it can't grow with the parent
+         line height (relevant in DatePicker, where the container
+         wraps and the line is ~50px tall). */
+      temba-button.save-button {
+        align-self: center !important;
+        height: 22px !important;
+        min-height: 22px !important;
+        max-height: 22px !important;
+        margin: 5px 6px;
+        --button-y: 0;
+        --button-x: 10px;
+        font-size: 12px;
       }
 
       .dirty .copy,
@@ -272,22 +292,6 @@ export class ContactFieldEditor extends RapidElement {
         padding: 0;
       }
 
-      .dirty temba-datepicker .popper:first-child {
-        padding-left: 1em;
-      }
-
-      .success temba-datepicker .popper:first-child {
-        padding-left: 1em;
-      }
-
-      .failure temba-datepicker .popper:first-child {
-        padding-left: 1em;
-      }
-
-      .saving temba-datepicker .popper:first-child {
-        padding-left: 1em;
-      }
-
       temba-datepicker .postfix {
         margin-left: 0;
       }
@@ -305,6 +309,9 @@ export class ContactFieldEditor extends RapidElement {
 
       temba-select {
         --color-widget-bg: white;
+        /* Let the slotted prefix label escape the widget's top edge
+           — same notched-border look as the textinput / datepicker. */
+        --temba-select-container-overflow: visible;
       }
 
       temba-option {

@@ -2,6 +2,100 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 process.env.PUPPETEER_DISABLE_HEADLESS_WARNING = '1';
 import { puppeteerLauncher } from '@web/test-runner-puppeteer';
+import { defaultReporter, summaryReporter } from '@web/test-runner';
+
+// Workaround for a wtr OOM under coverage on this branch. With our
+// volume of instrumented code, the merged istanbul-coverage payload
+// across all 121 test sessions overflows V8's max string length
+// (~512MB) when `getTestCoverage` deep-clones it via
+// `JSON.parse(JSON.stringify(coverages))`. That clone exists only to
+// insulate watch mode from istanbul's in-place mutation of the
+// originals — in non-watch coverage mode the clone is dead weight.
+// The throw is caught inside `onSessionFinished`'s try/catch, which
+// calls `runner.stop(error)` and silently exits 1 (the `console.error`
+// it logs is swallowed by wtr's BufferedLogger before the final
+// reportEnd flush ever runs).
+//
+// We can't import `getTestCoverage` directly (it's a transitive dep
+// not re-exported by `@web/test-runner`), so we shim JSON.parse: when
+// it's handed the sentinel produced by our JSON.stringify shim, it
+// returns the original `coverages` array instead of the stringified
+// copy. The shim is intentionally narrow:
+//
+//   - Gated on `WTR_COVERAGE_SHIM` (defaults on when --coverage is in
+//     argv; can be force-disabled by setting it to "0") so it never
+//     runs in plain `pnpm test`, only in the coverage path.
+//   - Sentinel is a runtime-random string, so a fixture/cached body
+//     containing the literal can't collide.
+//   - `__pendingCoverages` is cleared on every parse — matched OR not —
+//     so the ~512MB reference never lingers past one call pair, and
+//     mismatched call sequences never silently corrupt other parses.
+//   - The shape check `__looksLikeCoverageArray` only matches arrays
+//     whose first element is an object keyed by absolute file paths
+//     pointing at istanbul-shaped entries; it can't be triggered by
+//     ordinary JSON the orchestrator stringifies (HTTP responses, etc.)
+//
+// A wtr update that changes how getTestCoverage clones would make the
+// shim a no-op (`__looksLikeCoverageArray` returns false) — we'd then
+// regress to the original OOM rather than silently corrupt data, and
+// the next coverage run would surface it immediately. Long-term, the
+// right fix is patch-package on `@web/test-runner-core`'s
+// `getTestCoverage` to skip the clone in non-watch mode; this shim is
+// scoped to keep that scope-creep out of this PR.
+const __WTR_COVERAGE_SHIM_ON =
+  process.env.WTR_COVERAGE_SHIM !== '0' &&
+  (process.env.WTR_COVERAGE_SHIM === '1' ||
+    process.argv.some((a) => a === '--coverage' || a === '--watch-coverage'));
+
+if (__WTR_COVERAGE_SHIM_ON) {
+  const __origStringify = JSON.stringify;
+  const __origParse = JSON.parse;
+  // Random sentinel so the literal string in user content can't
+  // accidentally trigger the parse shim.
+  const __CLONE_SENTINEL =
+    '__WTR_COVERAGE_CLONE__' + Math.random().toString(36).slice(2);
+  let __pendingCoverages = null;
+
+  const __looksLikeCoverageArray = (value) => {
+    if (!Array.isArray(value) || value.length === 0) return false;
+    const first = value[0];
+    if (!first || typeof first !== 'object' || Array.isArray(first)) {
+      return false;
+    }
+    const keys = Object.keys(first);
+    if (keys.length === 0) return false;
+    if (!keys.every((k) => k.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(k))) {
+      return false;
+    }
+    const entry = first[keys[0]];
+    return (
+      entry &&
+      typeof entry === 'object' &&
+      (entry.statementMap || entry.fnMap || entry.b || entry.s)
+    );
+  };
+
+  JSON.stringify = function (value, ...rest) {
+    if (__looksLikeCoverageArray(value)) {
+      // A second matched stringify before a matched parse would
+      // otherwise silently drop the first payload — clear first.
+      __pendingCoverages = value;
+      return __CLONE_SENTINEL;
+    }
+    return __origStringify(value, ...rest);
+  };
+  JSON.parse = function (text, ...rest) {
+    // Always clear pending on parse (matched or not). Keeps the ~512MB
+    // reference from outliving a single call pair even if the matched
+    // parse never arrives (e.g. wtr throws between the two calls).
+    const pending = __pendingCoverages;
+    __pendingCoverages = null;
+    if (text === __CLONE_SENTINEL && pending) {
+      return pending;
+    }
+    return __origParse(text, ...rest);
+  };
+}
 import { esbuildPlugin } from '@web/dev-server-esbuild';
 import fs from 'fs';
 import * as path from 'path';
@@ -346,6 +440,10 @@ export default {
   coverageConfig: {
     include: ['src/**']
   },
+  reporters: [
+    defaultReporter({ reportTestResults: true, reportTestProgress: true }),
+    summaryReporter({ flatten: true })
+  ],
   testFramework: {
     config: {
       timeout: '10000'

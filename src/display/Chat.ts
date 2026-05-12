@@ -153,6 +153,11 @@ export class Chat extends RapidElement {
         left: 0;
         right: 0;
         display: block;
+        /* The slot overlays the bottom of the chat history, so clicks
+           on the chat scrollbar or messages behind it must pass
+           through. Slotted footer content can opt back in with
+           pointer-events: auto on its interactive bits. */
+        pointer-events: none;
       }
 
       .block {
@@ -447,6 +452,9 @@ export class Chat extends RapidElement {
         display: none;
       }
 
+      /* Top/bottom scroll-shadow indicators. Decorative only — they
+         must not intercept clicks (would otherwise block the chat
+         scrollbar and the bottom edge of the messages area). */
       .messages:before {
         content: '';
         background: radial-gradient(
@@ -461,6 +469,7 @@ export class Chat extends RapidElement {
         width: 100%;
         transition: opacity var(--toggle-speed, 200ms) ease-out;
         z-index: 1;
+        pointer-events: none;
       }
 
       .messages:after {
@@ -480,6 +489,7 @@ export class Chat extends RapidElement {
         margin-right: 5em;
         transition: opacity var(--toggle-speed, 200ms) ease-out;
         z-index: 1;
+        pointer-events: none;
       }
 
       .bubble-wrap {

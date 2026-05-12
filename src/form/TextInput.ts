@@ -26,13 +26,32 @@ export class TextInput extends FieldElement {
         display: flex;
         flex-direction: row;
         align-items: stretch;
+        min-height: var(--temba-textinput-min-height, var(--input-h));
         box-shadow: var(--widget-box-shadow);
         caret-color: var(--input-caret);
+        /* Establish a stable containing block for slotted absolutely-
+           positioned children (e.g. ContactFieldEditor's embedded
+           prefix label). Setting position: relative only on
+           :focus-within would re-anchor the prefix when focused,
+           visually shifting the label. */
+        position: relative;
+      }
+
+      .input-container.textarea,
+      .input-container:has(textarea) {
+        min-height: 0;
       }
 
       .xsmall {
         --temba-textinput-padding: 6px 8px;
         --temba-textinput-font-size: 13px;
+        /* Opt out of the 34px --input-h floor so an xsmall textinput
+           lines up with RichEditor xsmall (the "evaluated" argument
+           input in rule editor rows) and with Select xsmall, neither
+           of which carry the floor. Without this, a [operator select
+           | rich-edit argument | textinput category] row renders the
+           category ~4px taller than its neighbors. */
+        --temba-textinput-min-height: 0;
       }
 
       .small {
@@ -66,7 +85,6 @@ export class TextInput extends FieldElement {
         border-color: var(--color-focus);
         background: var(--color-widget-bg-focused);
         box-shadow: var(--widget-box-shadow-focused);
-        position: relative;
       }
 
       .input-container:hover {

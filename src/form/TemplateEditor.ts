@@ -99,9 +99,9 @@ export class TemplateEditor extends FieldElement {
       }
 
       .button {
-        background: #fff;
+        background: var(--surface);
         padding: 0.3em 1em;
-        border: 1px solid #e6e6e6;
+        border: 1px solid var(--color-widget-border);
         border-radius: var(--curvature);
         min-height: 23px;
         display: flex;
@@ -118,7 +118,7 @@ export class TemplateEditor extends FieldElement {
 
       .button .display {
         margin-right: 0.5em;
-        background: #f9f9f9;
+        background: var(--sunken);
         padding: 0.25em 1em;
         border-radius: var(--curvature);
       }
@@ -130,7 +130,7 @@ export class TemplateEditor extends FieldElement {
       }
 
       .template {
-        background: #fff;
+        background: var(--surface);
         border-radius: var(--curvature);
         border: 1px solid var(--color-widget-border);
         padding: 1em;

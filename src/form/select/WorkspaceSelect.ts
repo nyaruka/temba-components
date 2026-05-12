@@ -14,8 +14,14 @@ export class WorkspaceSelect extends Select<WorkspaceOption> {
     return css`
       ${super.styles}
 
+      /* Workspace chooser is embedded in the account menu, not a
+         standalone form widget — suppress the focus border + halo
+         on both the select itself and the dropdown popup. */
       :host {
-        border: 0px solid blue;
+        --temba-select-focus-border: transparent;
+        --temba-select-focus-halo: none;
+        --temba-options-focus-border: transparent;
+        --temba-options-focus-halo: none;
       }
     `;
   }

@@ -13,9 +13,9 @@ export class TembaSlider extends FieldElement {
 
       .track {
         height: 2px;
-        border-top: 0.5em solid #fff;
-        border-bottom: 0.5em solid #fff;
-        background: #ddd;
+        border-top: 0.5em solid var(--surface);
+        border-bottom: 0.5em solid var(--surface);
+        background: var(--border-strong);
         flex-grow: 1;
       }
 
@@ -24,11 +24,11 @@ export class TembaSlider extends FieldElement {
         margin-left: -0.5em;
         width: 0.75em;
         height: 0.75em;
-        border: 2px solid #999;
+        border: 2px solid var(--border-strong);
         border-radius: 999px;
         position: relative;
-        background: #fff;
-        box-shadow: 0 0 0 4px rgb(255, 255, 255);
+        background: var(--surface);
+        box-shadow: 0 0 0 4px var(--surface);
         transition: transform 200ms ease-in-out;
       }
 
@@ -37,13 +37,13 @@ export class TembaSlider extends FieldElement {
       }
 
       :hover .circle {
-        border-color: #777;
+        border-color: var(--text-2);
         cursor: pointer;
       }
 
       .grabbed .circle {
-        border-color: var(--color-primary-dark);
-        background: #fff;
+        border-color: var(--accent);
+        background: var(--surface);
       }
 
       .grabbed .circle {
@@ -58,7 +58,7 @@ export class TembaSlider extends FieldElement {
       .pre,
       .post {
         font-size: 0.9em;
-        color: #999;
+        color: var(--text-3);
         padding: 0em 1em;
       }
     `;
