@@ -4,7 +4,11 @@ import { msg } from '@lit/localize';
 import { getClasses } from '../utils';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { designTokens } from '../styles/designTokens';
-import { pillVariants, PILL_TYPES } from '../styles/pillVariants';
+import {
+  pillVariants,
+  PILL_TYPES,
+  PILL_TYPE_ICONS
+} from '../styles/pillVariants';
 
 export default class Label extends LitElement {
   static get styles() {
@@ -252,8 +256,14 @@ export default class Label extends LitElement {
     // `"flow danger"` from a malformed template) would otherwise split
     // into multiple classes and collide with internal modifiers
     // (`.danger`, `.shadow`, `.clickable`, etc.) defined on `.label`.
-    const variantClass =
-      this.type && PILL_TYPES.has(this.type) ? `pill-${this.type}` : '';
+    const validType = this.type && PILL_TYPES.has(this.type);
+    const variantClass = validType ? `pill-${this.type}` : '';
+    // When the consumer sets a recognized `type` (group / flow / etc.)
+    // but doesn't supply an explicit `icon`, fall back to the type's
+    // default icon from PILL_TYPE_ICONS. Call sites then only need
+    // `type="group"` instead of `type="group" icon="group"`.
+    const resolvedIcon =
+      this.icon || (validType ? PILL_TYPE_ICONS[this.type] : undefined);
 
     const removeAriaLabel = this.removeLabel || msg('Remove');
 
@@ -280,7 +290,9 @@ export default class Label extends LitElement {
                 <temba-icon name="x" size="0.85"></temba-icon>
               </button>`
             : null}
-          ${this.icon ? html`<temba-icon name=${this.icon} />` : null}
+          ${resolvedIcon
+            ? html`<temba-icon name=${resolvedIcon} />`
+            : null}
           <slot></slot>
         </div>
       </div>

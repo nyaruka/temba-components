@@ -248,7 +248,6 @@ export class FieldManager extends EndpointMonitorElement {
           style="display: flex; min-width: 200px; width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 2em"
         >
           <temba-label
-            icon="fields"
             type="field"
             clickable
             @click=${this.handleFieldAction}

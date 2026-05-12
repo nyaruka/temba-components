@@ -1433,7 +1433,6 @@ export class ContactChat extends ContactStoreElement {
                                 .uuid}/"
                               onclick="goto(event, this)"
                               ><temba-label
-                                icon="flow"
                                 type="flow"
                                 clickable
                                 ?removable=${this.showInterrupt}

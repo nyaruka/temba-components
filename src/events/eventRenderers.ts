@@ -57,29 +57,33 @@ export enum Events {
 }
 
 /**
- * Renders a single DS pill of the given type. Icon name defaults to
- * the pill type, but can be overridden for types whose icon-enum key
- * differs (e.g. type 'field' uses the 'fields' icon). When href is
- * provided the pill is wrapped in a navigation anchor (SPA goto);
- * otherwise it's rendered inline as a plain pill. Single source of
- * truth for the "entity pill in chat history" look — inline margin
- * keeps wrapping airy, and inline style works regardless of
- * host-page Tailwind reach (utility classes don't penetrate the
- * shadow DOM that chat events render in).
+ * Renders a single DS pill of the given type. temba-label auto-resolves
+ * the icon from `type` (via PILL_TYPE_ICONS), so we don't pass `icon`
+ * unless the consumer explicitly overrides it. When `href` is provided
+ * the pill is wrapped in a navigation anchor (SPA goto); otherwise it's
+ * rendered inline as a plain pill. Single source of truth for the
+ * "entity pill in chat history" look — inline margin keeps wrapping
+ * airy, and inline style works regardless of host-page Tailwind reach.
  */
 const renderEntityPill = (
   pillType: string,
   name: string,
   opts: { href?: string; icon?: string } = {}
 ): TemplateResult => {
-  const icon = opts.icon || pillType;
-  const pill = html`<temba-label
-    icon=${icon}
-    type=${pillType}
-    ?clickable=${!!opts.href}
-    style="margin: 1px 2px; vertical-align: middle;"
-    >${name}</temba-label
-  >`;
+  const pill = opts.icon
+    ? html`<temba-label
+        icon=${opts.icon}
+        type=${pillType}
+        ?clickable=${!!opts.href}
+        style="margin: 1px 2px; vertical-align: middle;"
+        >${name}</temba-label
+      >`
+    : html`<temba-label
+        type=${pillType}
+        ?clickable=${!!opts.href}
+        style="margin: 1px 2px; vertical-align: middle;"
+        >${name}</temba-label
+      >`;
   return opts.href
     ? html`<a
         href=${opts.href}
@@ -100,8 +104,7 @@ const flowPill = (flow: any) =>
     href: `/flow/editor/${flow.uuid}/`
   });
 
-const fieldPill = (field: any) =>
-  renderEntityPill('field', field.name, { icon: 'fields' });
+const fieldPill = (field: any) => renderEntityPill('field', field.name);
 
 /**
  * Renders a generic value as a neutral pill (white bg, gray border).
