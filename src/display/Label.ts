@@ -13,6 +13,11 @@ export default class Label extends LitElement {
 
       :host {
         display: inline-block;
+        /* Cap at parent width so a pill sitting in a constrained
+           container (e.g. a flow canvas node body) shrinks to fit
+           rather than overflowing. The slot/mask below have the
+           min-width:0 needed to let the ellipsis engage. */
+        max-width: 100%;
       }
 
       slot {
@@ -20,12 +25,19 @@ export default class Label extends LitElement {
         overflow-x: hidden;
         text-overflow: ellipsis;
         display: block;
+        /* Without min-width:0 the slot — as a flex item inside .mask —
+           refuses to shrink below its content size, defeating the
+           overflow/ellipsis. */
+        min-width: 0;
       }
 
       .mask {
         padding: 3px 8px;
         border-radius: 12px;
         display: flex;
+        /* Same reason as slot — let the mask shrink below its content
+           size so the inner slot can ellipsize. */
+        min-width: 0;
       }
 
       temba-icon {

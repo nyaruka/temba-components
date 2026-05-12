@@ -279,16 +279,6 @@ export class Select<T extends SelectOption> extends FieldElement {
         gap: 6px;
       }
 
-      /* compact tabular-nums count after the name (e.g. group sizes
-         in Omnibox). Inherits color so it tints with the pill variant. */
-      .option-count {
-        font-size: 11px;
-        font-variant-numeric: tabular-nums;
-        font-weight: var(--w-medium);
-        color: inherit;
-        opacity: 0.7;
-      }
-
       .option-name > span {
         text-align: left;
       }
@@ -2149,13 +2139,21 @@ export class Select<T extends SelectOption> extends FieldElement {
       return null;
     }
 
-    // explicit icon wins; otherwise fall back to a type-driven icon
+    // Icon resolution, most-specific to least:
+    //   1. option.icon — explicit per-row override
+    //   2. option.type's default icon — when the data layer marks the
+    //      row's pill variant (Omnibox-style mixed types)
+    //   3. the widget's resolved pill type — endpoint inference for
+    //      sources that return plain rows (e.g. /api/v2/groups.json)
+    // The fall-through to (3) is what lets `Add to Group` / `Remove
+    // from Group` chips show the group icon even though the API rows
+    // don't carry a `type` field.
     const optType = (option as any).type;
     const icon =
       (option as any).icon ||
       (optType && PILL_TYPE_ICONS[optType]) ||
+      PILL_TYPE_ICONS[this.getPillType(option)] ||
       undefined;
-    const count = (option as any).count;
     // Inline flex on the wrapper itself so layout works in both shadow
     // roots — Select's (chip rendering) and temba-options' (dropdown
     // rendering). Otherwise the dropdown would fall back to inline flow
@@ -2167,12 +2165,7 @@ export class Select<T extends SelectOption> extends FieldElement {
       >
         ${icon
           ? html`<temba-icon name="${icon}"></temba-icon>`
-          : null}<span>${this.renderHighlightedName(option)}</span>${count !==
-          undefined && count !== null
-          ? html`<span class="option-count"
-              >${Number(count).toLocaleString()}</span
-            >`
-          : null}
+          : null}<span>${this.renderHighlightedName(option)}</span>
       </div>
     `;
   }
