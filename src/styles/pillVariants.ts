@@ -97,10 +97,15 @@ export const pillVariants = css`
     --icon-color: var(--channel);
   }
   .pill-field {
-    background: color-mix(in oklab, var(--field) 14%, white);
-    color: var(--field);
-    border-color: color-mix(in oklab, var(--field) 28%, white);
-    --icon-color: var(--field);
+    /* Field stays bright yellow: yellow has very low contrast against
+       white, so color-mix-with-white at the same percentage as the
+       other variants washes out. We use the brighter Tailwind yellow
+       ramp directly (100 bg / 300 border / 800 fg) so the pill reads
+       as a clear yellow swatch with readable dark-yellow text. */
+    background: #fef9c3;
+    color: #854d0e;
+    border-color: #fde68a;
+    --icon-color: #a16207;
   }
   .pill-keyword {
     background: var(--sunken);
