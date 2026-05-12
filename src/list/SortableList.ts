@@ -252,7 +252,137 @@ export class SortableList extends RapidElement {
     // Copy form values for the root element and all descendants
     copyFormValues(element, clone);
 
+    // Inline computed styles onto the clone so it renders faithfully
+    // once detached from its original shadow-DOM scope. The ghost is
+    // appended to document.body (see startDrag), which means the
+    // original's shadow-root-scoped CSS rules no longer apply — chips
+    // would lose their flex layout, the X button would lose its shape,
+    // and the pill --icon-color would stop inheriting. Walk the cloned
+    // light DOM in parallel with the original and inline the layout
+    // properties + a curated set of DS custom properties.
+    this.inlineComputedStyles(element, clone);
+
     return clone;
+  }
+
+  /** CSS properties copied from the original to the ghost. Covers
+   * layout (flex/spacing), visual (colors, borders, radii, shadows),
+   * and text (font, white-space, alignment) — enough to make a
+   * faithful free-floating clone without resolving the entire ~400
+   * properties getComputedStyle returns.
+   *
+   * Deliberately omits width/height/min/max-* — the ghost root gets
+   * sized by `startDrag` directly from the original's bounding rect,
+   * and children should size to content under their inlined flex
+   * rules. Inlining widths on children otherwise pins them to whatever
+   * pixel value happened to be rendered at clone time, leaving stray
+   * gaps when font subpixel rounding shifts in the new document.body
+   * context (e.g. extra empty space to the right of a select chip). */
+  private static GHOST_COPY_PROPS = [
+    'display',
+    'flex',
+    'flex-direction',
+    'flex-wrap',
+    'align-items',
+    'align-self',
+    'justify-content',
+    'gap',
+    'column-gap',
+    'row-gap',
+    'padding',
+    'margin',
+    'border-width',
+    'border-style',
+    'border-color',
+    'border-radius',
+    'background',
+    'background-color',
+    'color',
+    'font-family',
+    'font-size',
+    'font-weight',
+    'line-height',
+    'letter-spacing',
+    'text-align',
+    'white-space',
+    'overflow',
+    'text-overflow',
+    'box-shadow',
+    'opacity',
+    'box-sizing',
+    'cursor',
+    'user-select',
+    'vertical-align'
+  ];
+
+  /** Design-system custom properties carried over to the ghost so
+   * nested custom elements (temba-icon's --icon-color, pill variants,
+   * etc.) read the correct values once detached from the original
+   * shadow-root scope. */
+  private static GHOST_COPY_CUSTOM_PROPS = [
+    '--icon-color',
+    '--color-widget-text',
+    '--color-text-help',
+    '--accent',
+    '--accent-100',
+    '--accent-200',
+    '--accent-700',
+    '--flow',
+    '--field',
+    '--channel',
+    '--text-1',
+    '--text-2',
+    '--sunken',
+    '--border',
+    '--border-strong',
+    '--font-family',
+    '--w-regular',
+    '--w-medium',
+    '--curvature',
+    '--curvature-widget'
+  ];
+
+  private inlineComputedStyles(original: Element, clone: Element): void {
+    if (
+      !(original instanceof HTMLElement) ||
+      !(clone instanceof HTMLElement)
+    ) {
+      return;
+    }
+
+    const apply = (orig: HTMLElement, cln: HTMLElement) => {
+      const cs = window.getComputedStyle(orig);
+      let inline = '';
+      for (const p of SortableList.GHOST_COPY_PROPS) {
+        const v = cs.getPropertyValue(p);
+        if (v) inline += `${p}:${v};`;
+      }
+      for (const p of SortableList.GHOST_COPY_CUSTOM_PROPS) {
+        const v = cs.getPropertyValue(p);
+        if (v) inline += `${p}:${v};`;
+      }
+      // existing inline style wins by sitting AFTER the inlined
+      // computed values — preserves anything we just authored elsewhere
+      // (e.g. .option-name's explicit display:flex).
+      cln.setAttribute('style', inline + (cln.getAttribute('style') || ''));
+    };
+
+    const walk = (orig: Element, cln: Element) => {
+      if (orig instanceof HTMLElement && cln instanceof HTMLElement) {
+        apply(orig, cln);
+      }
+      // Descend into both light-DOM and custom-element subtrees: the
+      // latter's slotted/light children still need styles inlined, and
+      // its own shadow DOM rebuilds itself when the clone upgrades.
+      const oc = Array.from(orig.children);
+      const cc = Array.from(cln.children);
+      const n = Math.min(oc.length, cc.length);
+      for (let i = 0; i < n; i++) {
+        walk(oc[i], cc[i]);
+      }
+    };
+
+    walk(original, clone);
   }
 
   public getIds() {
