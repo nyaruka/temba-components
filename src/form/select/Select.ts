@@ -496,8 +496,15 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
 
       .xsmall {
-        --temba-select-selected-padding: 4px 8px;
-        --temba-select-selected-line-height: 13px;
+        /* Match RichEditor's xsmall (6px 8px padding, 13px font,
+           line-height: normal, no min-height floor) so a rule editor
+           row of [operator select | rich-edit argument | category
+           textinput] renders all three widgets at the same height.
+           The rich-edit argument has no 34px --input-h floor, so the
+           select drops that floor here too — TextInput's xsmall makes
+           the same opt-out via --temba-textinput-min-height: 0. */
+        --temba-select-selected-padding: 6px 8px;
+        --temba-select-selected-line-height: 1.2;
         --temba-select-selected-font-size: 13px;
         --temba-select-min-height: 0em;
       }

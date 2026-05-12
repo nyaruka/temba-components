@@ -45,6 +45,13 @@ export class TextInput extends FieldElement {
       .xsmall {
         --temba-textinput-padding: 6px 8px;
         --temba-textinput-font-size: 13px;
+        /* Opt out of the 34px --input-h floor so an xsmall textinput
+           lines up with RichEditor xsmall (the "evaluated" argument
+           input in rule editor rows) and with Select xsmall, neither
+           of which carry the floor. Without this, a [operator select
+           | rich-edit argument | textinput category] row renders the
+           category ~4px taller than its neighbors. */
+        --temba-textinput-min-height: 0;
       }
 
       .small {
