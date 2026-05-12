@@ -59,7 +59,11 @@ export const designTokens = css`
        overriding just the anchor. (Recipient pills reuse --accent.) */
     --flow: #16a34a;
     --channel: #6b21a8;
-    --field: #eab308;
+    /* Field stays slightly darker than the bright yellow-500 anchor
+       used for flow/channel — yellow-500 has too little contrast
+       against white to read as a foreground / icon hue on its own.
+       Yellow-700 doubles as the pill's icon color via .pill-field. */
+    --field: #a16207;
 
     /* type */
     --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

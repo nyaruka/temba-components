@@ -6,9 +6,20 @@ import { css } from 'lit';
  * Provides the color triple (background / foreground / border) keyed
  * off `.pill-{type}` plus the JS-side taxonomy (`PILL_TYPES`,
  * `PILL_TYPE_ICONS`, `iconToPillType`) consumed by Select.ts and
- * flow/utils.ts. Variants derive their ramp from a single anchor
- * (--accent, --flow, --channel, --field) via `color-mix(in oklab, …)`
- * so a host page can re-theme by overriding the anchor alone.
+ * flow/utils.ts.
+ *
+ * Variant theming:
+ *   - .pill-contact / .pill-group: full ramp derived from --accent
+ *     via `color-mix(in oklab, …)`. Override --accent to re-theme.
+ *   - .pill-flow, .pill-channel: bg/border derived from --flow /
+ *     --channel via color-mix; text + icon use the anchor directly.
+ *   - .pill-field: bg/border are fixed at the Tailwind yellow ramp
+ *     (yellow-100 / yellow-300) because yellow has too little
+ *     contrast against white to color-mix into a recognizable swatch.
+ *     Text uses yellow-900 for readability; the icon uses --field
+ *     directly, which is the only knob a host page can re-theme.
+ *   - .pill-neutral / .pill-label / .pill-keyword: greys; not
+ *     anchor-driven.
  *
  * Shape (height, padding, radius, icon spacing) is the consumer's
  * concern, since pill use-cases differ: Select chips have a remove
@@ -97,15 +108,16 @@ export const pillVariants = css`
     --icon-color: var(--channel);
   }
   .pill-field {
-    /* Field stays bright yellow: yellow has very low contrast against
-       white, so color-mix-with-white at the same percentage as the
-       other variants washes out. We use the brighter Tailwind yellow
-       ramp directly (100 bg / 300 border / 800 fg) so the pill reads
-       as a clear yellow swatch with readable dark-yellow text. */
+    /* Yellow has very low contrast against white, so the color-mix
+       approach used by other variants washes out at any readable mix
+       percentage. We use the Tailwind yellow ramp directly for bg
+       (yellow-100) / border (yellow-300) / text (yellow-900). The
+       icon hue stays anchored to --field so a host page can still
+       re-theme the variant by overriding that one token. */
     background: #fef9c3;
     color: #854d0e;
     border-color: #fde68a;
-    --icon-color: #a16207;
+    --icon-color: var(--field);
   }
   .pill-keyword {
     background: var(--sunken);
