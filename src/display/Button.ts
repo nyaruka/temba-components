@@ -7,170 +7,149 @@ export class Button extends LitElement {
   static get styles() {
     return css`
       :host {
-        display: flex;
+        display: inline-flex;
         align-self: stretch;
-        font-family: var(--font-family);
-        font-weight: 400;
+        font-family: var(--font);
       }
 
-      .small {
-        font-size: 0.8em;
-        --button-y: 0px;
-        --button-x: 0.5em;
-      }
-
-      .v-2.button-container {
-        background: var(--button-bg);
-        background-image: var(--button-bg-img);
-        color: var(--button-text);
-        box-shadow: var(--button-shadow);
-        transition: all calc(var(--transition-speed) / 2) ease-in;
-      }
-
+      /* DS .btn-sm — sizing, type, transition, shape */
       .button-container {
-        color: #fff;
-        cursor: pointer;
-        display: flex;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
         flex-grow: 1;
-        border-radius: var(--curvature);
-        outline: none;
-        transition: background ease-in var(--transition-speed);
+        height: 28px;
+        padding: 0 10px;
+        border: 1px solid transparent;
+        border-radius: var(--r-sm);
+        font-size: 12.5px;
+        font-weight: var(--w-regular);
+        letter-spacing: -0.005em;
+        line-height: 1;
+        white-space: nowrap;
+        cursor: pointer;
         user-select: none;
         -webkit-user-select: none;
-        text-align: center;
-        border: var(--button-border, none);
+        outline: none;
+        box-sizing: border-box;
+        transition:
+          background 120ms,
+          border-color 120ms,
+          color 120ms,
+          box-shadow 120ms;
+      }
+
+      .button-mask {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        line-height: 1;
       }
 
       .button-name {
         white-space: nowrap;
       }
 
-      .secondary-button:hover .button-mask {
-        border: 1px solid rgba(0, 0, 0, 0.15);
+      /* even smaller variant (compact lists, list-row actions, etc.) */
+      .small {
+        height: 24px;
+        padding: 0 8px;
+        font-size: 12px;
       }
 
-      .button-mask:hover {
-        background: rgba(0, 0, 0, 0.05);
+      /* DS .btn-primary — solid accent with subtle inset highlight */
+      .primary-button {
+        background: var(--accent-600);
+        color: #fff;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+          0 1px 1px rgba(15, 22, 36, 0.1);
+      }
+      .primary-button:hover {
+        background: var(--accent-700);
       }
 
-      .button-mask:active {
-        background: rgba(0, 0, 0, 0.12);
+      /* DS .btn-secondary — surface bg + strong border */
+      .secondary-button {
+        background: var(--surface);
+        border-color: var(--border-strong);
+        color: var(--text-1);
+      }
+      .secondary-button:hover {
+        background: var(--sunken);
       }
 
-      .button-container:focus {
-        outline: none;
+      /* affirmative + attention share DS .btn-primary chrome but tint
+         green; treat them as solid CTAs. */
+      .attention-button,
+      .affirmative {
+        background: var(--success, #16a34a);
+        color: #fff;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+          0 1px 1px rgba(15, 22, 36, 0.1);
+      }
+      .attention-button:hover,
+      .affirmative:hover {
+        background: color-mix(in srgb, var(--success, #16a34a) 88%, black);
       }
 
-      /* Only show the focus ring for keyboard navigation, never on click. */
+      /* DS .btn-danger */
+      .destructive-button {
+        background: var(--danger, #d03f3f);
+        color: #fff;
+      }
+      .destructive-button:hover {
+        background: color-mix(in srgb, var(--danger, #d03f3f) 88%, black);
+      }
+
+      /* DS .btn-ghost — text-only, hover fills with sunken */
+      .light-button,
+      .lined-button {
+        background: var(--surface);
+        border-color: var(--border-strong);
+        color: var(--text-1);
+      }
+      .light-button:hover,
+      .lined-button:hover {
+        background: var(--sunken);
+      }
+
+      /* icon-only button — square footprint, ghost chrome */
+      .icon-button {
+        width: 32px;
+        padding: 0;
+        background: transparent;
+        border-color: transparent;
+        color: var(--text-2);
+      }
+      .icon-button:hover {
+        background: var(--sunken);
+        color: var(--text-1);
+      }
+      .icon-button.small {
+        width: 28px;
+      }
+
+      /* active = pressed-down look — slightly inset */
+      .button-container.active-button {
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+      }
+      .secondary-button.active-button {
+        background: var(--sunken);
+      }
+
+      /* disabled */
+      .button-container.disabled-button {
+        opacity: 0.45;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
+      /* focus ring — keyboard nav only */
       .button-container:focus-visible {
         box-shadow: var(--widget-box-shadow-focused);
-      }
-
-      .button-container.secondary-button:focus-visible .button-mask {
-        background: transparent;
-      }
-
-      .button-mask {
-        padding: var(--button-y) var(--button-x);
-        border-radius: var(--curvature);
-        border: 1px solid transparent;
-        transition: var(--transition-speed);
-        background: var(--button-mask);
-        display: flex;
-        align-items: center;
-      }
-
-      .button-container.disabled-button {
-        background: rgba(0, 0, 0, 0.05);
-        color: rgba(255, 255, 255, 0.45);
-        cursor: default;
-      }
-
-      .button-container.disabled-button .button-mask {
-        box-shadow: 0 0 0px 1px var(--color-button-disabled);
-      }
-
-      .button-container.disabled-button:hover .button-mask {
-        box-shadow: 0 0 0px 1px var(--color-button-disabled);
-        background: rgba(0, 0, 0, 0.05);
-      }
-
-      .button-container.active-button .button-mask {
-      }
-
-      .secondary-button.active-button {
-        background: transparent;
-        color: var(--color-text);
-      }
-
-      .secondary-button.active-button .button-mask {
-        border: 1px solid transparent;
-      }
-
-      .button-container.secondary-button.active-button:focus-visible
-        .button-mask {
-        background: transparent;
-        box-shadow: none;
-      }
-
-      .primary-button {
-        background: var(--color-button-primary);
-        color: var(--color-button-primary-text);
-      }
-
-      .affirmative {
-        background: var(--color-button-attention);
-      }
-
-      .light-button {
-        background: var(--color-button-light);
-        color: var(--color-button-light-text);
-      }
-
-      .lined-button {
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        color: rgba(0, 0, 0, 0.7);
-        background: transparent;
-      }
-
-      .lined-button .button-mask {
-        flex-grow: 1;
-      }
-
-      .lined-button .button-mask:hover {
-        background: rgba(0, 0, 0, 0.03);
-      }
-
-      .icon-button {
-        --button-y: 0.2em;
-        --button-x: 0em;
-      }
-
-      .icon-button temba-icon {
-        padding: 0 0.5em;
-      }
-
-      .attention-button {
-        background: var(--color-button-attention);
-        color: var(--color-button-primary-text);
-      }
-
-      .secondary-button {
-        background: transparent;
-        color: var(--color-text);
-      }
-
-      .destructive-button {
-        background: var(--color-button-destructive);
-        color: var(--color-button-destructive-text);
-      }
-
-      .button-mask.disabled-button {
-        background: rgba(0, 0, 0, 0.1);
-      }
-
-      .secondary-button .button-mask:hover {
-        background: transparent;
       }
 
       .submit-animation {

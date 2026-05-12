@@ -2204,9 +2204,9 @@ export class Select<T extends SelectOption> extends FieldElement {
         class="option-name"
         style="display:flex; align-items:center; gap:6px;"
       >
-        ${icon
-          ? html`<temba-icon name="${icon}"></temba-icon>`
-          : null}<span>${this.renderHighlightedName(option)}</span>
+        ${icon ? html`<temba-icon name="${icon}"></temba-icon>` : null}<span
+          >${this.renderHighlightedName(option)}</span
+        >
       </div>
     `;
   }

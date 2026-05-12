@@ -555,7 +555,7 @@ export class Dialog extends ResizeElement {
                     ?destructive=${button.type == 'primary' && this.destructive}
                     ?primary=${button.type == 'primary' && !this.destructive}
                     ?secondary=${button.type == 'secondary'}
-                    ?submitting=${this.submitting}
+                    ?submitting=${this.submitting && button.type == 'primary'}
                     ?disabled=${this.disabled && !button.closes}
                     index=${index}
                     @click=${this.handleClick}

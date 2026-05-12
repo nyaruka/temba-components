@@ -29,7 +29,6 @@ export class ColorPicker extends FieldElement {
       :host {
         color: var(--color-text);
         display: inline-block;
-        --curvature: 0.55em;
         width: 100%;
 
         --temba-textinput-padding: 0.4em;
@@ -37,13 +36,16 @@ export class ColorPicker extends FieldElement {
 
       temba-textinput {
         margin-left: 0.3em;
-        width: 5em;
+        width: 7em;
+        --temba-textinput-min-height: 0;
+        --temba-textinput-padding: 4px 8px;
+        --temba-textinput-font-size: 12.5px;
       }
 
       .wrapper {
         border: 1px solid var(--color-widget-border);
         padding: calc(var(--curvature) / 2);
-        border-radius: calc(var(--curvature) * 1.5);
+        border-radius: var(--curvature);
         transition: all calc(var(--transition-speed) * 2) var(--bounce);
 
         display: flex;

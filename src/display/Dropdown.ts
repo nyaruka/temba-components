@@ -233,6 +233,17 @@ export class Dropdown extends RapidElement {
         arrowLeft = 10;
       }
 
+      // safety: keep dropdown off the viewport's left edge so popups
+      // anchored to far-left toggles (e.g. rail items) don't rub against
+      // the window edge. Shift the dropdown right and slide the arrow
+      // back the same amount so it still points at the toggle.
+      const MIN_LEFT = 8;
+      if (dropdownBounds.left < MIN_LEFT && !bumpedLeft) {
+        const shift = MIN_LEFT - dropdownBounds.left;
+        dropdownStyle['left'] = MIN_LEFT + 'px';
+        arrowLeft -= shift;
+      }
+
       const arrowStyle = {
         left: arrowLeft + 'px',
         borderWidth: this.arrowSize + 'px',

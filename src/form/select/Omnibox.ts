@@ -120,9 +120,7 @@ export class Omnibox extends Select<OmniOption> {
       option.count !== undefined &&
       option.count !== null
     ) {
-      return html`<div
-        style="display:flex; align-items:center; gap:6px;"
-      >
+      return html`<div style="display:flex; align-items:center; gap:6px;">
         ${base}<span
           style="opacity:0.7; font-size:11px; font-variant-numeric: tabular-nums; font-weight: var(--w-medium);"
           >${option.count.toLocaleString()}</span

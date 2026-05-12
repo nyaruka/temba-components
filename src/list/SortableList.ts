@@ -372,10 +372,7 @@ export class SortableList extends RapidElement {
   ];
 
   private inlineComputedStyles(original: Element, clone: Element): void {
-    if (
-      !(original instanceof HTMLElement) ||
-      !(clone instanceof HTMLElement)
-    ) {
+    if (!(original instanceof HTMLElement) || !(clone instanceof HTMLElement)) {
       return;
     }
 

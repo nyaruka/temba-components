@@ -13,18 +13,21 @@ import { css } from 'lit';
  */
 export const designTokens = css`
   :host {
-    /* accent ramp — derived from a single anchor via OKLab mixing */
-    --accent: #2a6fb5;
-    --accent-50: color-mix(in oklab, var(--accent) 6%, white);
-    --accent-100: color-mix(in oklab, var(--accent) 12%, white);
-    --accent-200: color-mix(in oklab, var(--accent) 25%, white);
-    --accent-300: color-mix(in oklab, var(--accent) 45%, white);
-    --accent-400: color-mix(in oklab, var(--accent) 75%, white);
-    --accent-500: var(--accent);
-    --accent-600: color-mix(in oklab, var(--accent) 88%, black);
-    --accent-700: color-mix(in oklab, var(--accent) 75%, black);
-    --accent-800: color-mix(in oklab, var(--accent) 60%, black);
-    --accent-900: color-mix(in oklab, var(--accent) 45%, black);
+    /* accent ramp — the primary color sits at 400 and the ramp is
+       derived from it in both directions via sRGB mixing.
+       The anchor reads from --primary-rgb so host pages can re-theme
+       the entire ramp by setting e.g. --primary-rgb: 112, 0, 132. */
+    --accent: rgb(var(--primary-rgb, 98, 147, 201));
+    --accent-50: color-mix(in srgb, var(--accent) 6%, white);
+    --accent-100: color-mix(in srgb, var(--accent) 16%, white);
+    --accent-200: color-mix(in srgb, var(--accent) 32%, white);
+    --accent-300: color-mix(in srgb, var(--accent) 60%, white);
+    --accent-400: var(--accent);
+    --accent-500: color-mix(in srgb, var(--accent) 90%, black);
+    --accent-600: color-mix(in srgb, var(--accent) 80%, black);
+    --accent-700: color-mix(in srgb, var(--accent) 65%, black);
+    --accent-800: color-mix(in srgb, var(--accent) 50%, black);
+    --accent-900: color-mix(in srgb, var(--accent) 35%, black);
 
     /* neutrals */
     --bg: #f6f7f9;
@@ -55,8 +58,11 @@ export const designTokens = css`
     --neutral-border: #d8dce2;
 
     /* Pill anchor hues — pillVariants derives bg/fg/border via
-       color-mix(in oklab, ...) so host pages can re-theme by
-       overriding just the anchor. (Recipient pills reuse --accent.) */
+       color-mix(in srgb, ...) so host pages can re-theme by
+       overriding just the anchor. These are intentionally fixed and
+       do NOT track --primary-rgb so that pill identity (group/flow/
+       field/channel) stays stable across brand themes. */
+    --recipient: #2a6fb5;
     --flow: #16a34a;
     --channel: #6b21a8;
     /* Field stays slightly darker than the bright yellow-500 anchor
@@ -72,7 +78,7 @@ export const designTokens = css`
     --w-regular: 400;
     --w-medium: 500;
     --w-semibold: 600;
-    --w-bold: 700;
+    --w-bold: 600;
 
     /* shape */
     --r: 8px;
@@ -111,9 +117,15 @@ export const designTokens = css`
        Surfaces that should stay blue even during a parent field's
        error state (e.g. the dropdown popup) reference --focus-muted
        / --focus-halo directly to skip that override. */
-    --focus: #5b9ce5;
-    --focus-muted: color-mix(in oklab, var(--focus) 60%, white);
-    --focus-halo: 0 0 0 3px color-mix(in oklab, var(--focus) 30%, transparent);
+    --focus: rgb(var(--focus-rgb, 91, 156, 229));
+    --focus-50: color-mix(in srgb, var(--focus) 12%, white);
+    --focus-100: color-mix(in srgb, var(--focus) 24%, white);
+    --focus-200: color-mix(in srgb, var(--focus) 40%, white);
+    --focus-300: color-mix(in srgb, var(--focus) 60%, white);
+    --focus-600: color-mix(in srgb, var(--focus) 60%, black);
+    --focus-700: color-mix(in srgb, var(--focus) 45%, black);
+    --focus-muted: color-mix(in srgb, var(--focus) 60%, white);
+    --focus-halo: 0 0 0 3px color-mix(in srgb, var(--focus) 30%, transparent);
     --color-focus: var(--focus-muted);
     --widget-box-shadow-focused: var(--focus-halo);
 

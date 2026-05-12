@@ -1,13 +1,14 @@
 import { Feature, Geometry } from 'geojson';
-import {
+import type {
   GeoJSON,
-  geoJSON,
   LeafletEvent,
   LeafletMouseEvent,
   Map as RenderedMap,
-  map as createMap,
   Path
 } from 'leaflet';
+import * as L from 'leaflet';
+
+const { geoJSON, map: createMap } = L;
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
