@@ -396,6 +396,18 @@ export class ContactChat extends ContactStoreElement {
         background: rgba(0, 0, 0, 0.03);
       }
 
+      /* Keep the assignment + topic controls the same height as the
+         Close button so the row reads as one strip. Shrink the user
+         avatars (--temba-scale) so they fit in the smaller box. */
+      .in-ticket temba-user-select,
+      .in-ticket temba-select {
+        --temba-select-min-height: 28px;
+      }
+
+      .in-ticket temba-user-select {
+        --temba-scale: 0.75;
+      }
+
       temba-user {
         border: 1px solid #ddd;
         padding: 0.2em 0.5em;

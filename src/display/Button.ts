@@ -58,19 +58,19 @@ export class Button extends LitElement {
         font-size: 12px;
       }
 
-      /* DS .btn-primary — solid accent with subtle inset highlight */
+      /* DS .btn-primary — solid accent fill with a slightly darker
+         1px border so the visible box matches the secondary's
+         1px-bordered box. */
       .primary-button {
         background: var(--accent-600);
+        border-color: var(--accent-700);
         color: #fff;
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.18),
-          0 1px 1px rgba(15, 22, 36, 0.1);
       }
       .primary-button:hover {
         background: var(--accent-700);
       }
 
-      /* DS .btn-secondary — surface bg + strong border */
+      /* DS .btn-secondary — surface bg with a 1px gray outline. */
       .secondary-button {
         background: var(--surface);
         border-color: var(--border-strong);
@@ -85,10 +85,8 @@ export class Button extends LitElement {
       .attention-button,
       .affirmative {
         background: var(--success, #16a34a);
+        border-color: color-mix(in srgb, var(--success, #16a34a) 80%, black);
         color: #fff;
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.18),
-          0 1px 1px rgba(15, 22, 36, 0.1);
       }
       .attention-button:hover,
       .affirmative:hover {
@@ -98,6 +96,7 @@ export class Button extends LitElement {
       /* DS .btn-danger */
       .destructive-button {
         background: var(--danger, #d03f3f);
+        border-color: color-mix(in srgb, var(--danger, #d03f3f) 80%, black);
         color: #fff;
       }
       .destructive-button:hover {
@@ -257,6 +256,7 @@ export class Button extends LitElement {
             (!this.primary &&
               !this.secondary &&
               !this.attention &&
+              !this.destructive &&
               this.v == 1),
           'secondary-button': this.secondary,
           'disabled-button': this.disabled,
