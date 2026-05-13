@@ -153,8 +153,13 @@ const valueText = (value: string | number) => {
  * pills sit slightly above and the text appears to "float". flex
  * centering keeps the row of words and pills on one cross-axis.
  */
+// min-height keeps the row a consistent height across renderers
+// whether or not they contain a pill (which is ~22px tall) — without
+// it, plain-text events like "Cleared language" sit a few pixels
+// shorter than "Removed from <group pill>" and the chat history
+// looks unevenly spaced.
 const eventLineStyle =
-  'display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 2px 4px;';
+  'display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 2px 4px; min-height: 24px;';
 
 const renderInfoList = (
   singular: string,
