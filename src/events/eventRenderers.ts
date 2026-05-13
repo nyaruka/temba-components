@@ -13,7 +13,7 @@ import {
   UpdateFieldEvent,
   URNsChangedEvent
 } from '../events';
-import { colorHash, extractInitials, oxfordFn } from '../utils';
+import { oxfordFn } from '../utils';
 
 export enum Events {
   AIRTIME_TRANSFERRED = 'airtime_transferred',
@@ -112,50 +112,22 @@ const topicPill = (topic: any) =>
   });
 
 /**
- * User pill — avatar + full name in a clickable chip. Links to the
- * "All" ticket folder filtered by this assignee. Used in ticket
- * assignment events in the chat history.
+ * Renders a user as a plain text link to the "All" ticket folder
+ * filtered by that assignee. Used for actor attribution in the
+ * chat history (ticket assigned / opened / closed events).
  *
- * Supports two visual variants — kept around because we plan to use
- * the collapsed form in denser surfaces (history rows with many
- * actors, etc.) — but assignment events currently render both the
- * actor and the assignee expanded:
- *   - Collapsed: just the avatar; hovering expands to show the
- *     name + chip border.
- *   - Expanded (`opts.expanded`, the default for now in chat
- *     history): name + chip border always visible; hover darkens
- *     the bg.
+ * The richer avatar-chip variant is parked in git history (see
+ * userPill) — we'll bring it back if denser surfaces need it.
  */
-const userPill = (user: any, opts: { expanded?: boolean } = {}) => {
-  const url = `/ticket/all/open/?assignee=${user.uuid}`;
-  // User objects in this repo carry the display name as either `name`
-  // or `first_name + last_name` — match getFullName() in TembaUser.ts
-  // so we don't render empty initials when only first/last are set.
+const userLink = (user: any): TemplateResult => {
   const name =
     user.name || [user.first_name, user.last_name].filter(Boolean).join(' ');
-  const initials = extractInitials(name);
-  const seed = user.email || name;
-  const avatarBg = user.avatar
-    ? `center / cover no-repeat url('${user.avatar}')`
-    : seed
-      ? colorHash.hex(seed)
-      : '#9aa0a6';
   return html`<a
-    href=${url}
+    href="/ticket/all/open/?assignee=${user.uuid}"
     onclick="goto(event, this)"
-    aria-label=${name}
     title=${name}
-    class="pill-user-link ${opts.expanded ? 'expanded' : ''}"
-  >
-    <span class="pill-user ${opts.expanded ? 'expanded' : ''}">
-      <span
-        class="pill-user-avatar"
-        style="background: ${avatarBg};"
-        >${user.avatar ? '' : initials}</span
-      >
-      <span class="pill-user-name">${name}</span>
-    </span>
-  </a>`;
+    >${name}</a
+  >`;
 };
 
 /**
@@ -283,12 +255,10 @@ export const renderTicketAction = (
       : null;
   }
 
-  const actor = (event as any)._user
-    ? userPill((event as any)._user, { expanded: true })
-    : null;
-  return actor
+  const user = (event as any)._user;
+  return user
     ? html`<div style=${eventLineStyle}>
-        ${actor} ${action} a
+        ${userLink(user)} ${action} a
         <a href="/ticket/all/closed/${ticketUUID}/">ticket</a>
       </div>`
     : html`<div style=${eventLineStyle}>
@@ -303,7 +273,7 @@ export const renderTicketAssigneeChanged = (
   if (event._user) {
     if (event.assignee) {
       // Self-assignment ("took the ticket") reads naturally as one
-      // user pill + verb, rather than "<user> assigned to <same user>".
+      // user link + verb, rather than "<user> assigned to <same user>".
       // Match on uuid when present, falling back to email — depending
       // on the API surface a user payload may carry one or the other.
       const actor = event._user as any;
@@ -313,23 +283,22 @@ export const renderTicketAssigneeChanged = (
         (actor.email && actor.email === assignee.email);
       if (sameUser) {
         return html`<div style=${eventLineStyle}>
-          ${userPill(actor, { expanded: true })} took this ticket
+          ${userLink(actor)} took this ticket
         </div>`;
       }
       return html`<div style=${eventLineStyle}>
-        ${userPill(event._user, { expanded: true })} assigned this ticket to
-        ${userPill(event.assignee, { expanded: true })}
+        ${userLink(event._user)} assigned this ticket to
+        ${userLink(event.assignee)}
       </div>`;
     } else {
       return html`<div style=${eventLineStyle}>
-        ${userPill(event._user, { expanded: true })} unassigned this ticket
+        ${userLink(event._user)} unassigned this ticket
       </div>`;
     }
   } else {
     if (event.assignee) {
       return html`<div style=${eventLineStyle}>
-        This ticket was assigned to
-        ${userPill(event.assignee, { expanded: true })}
+        This ticket was assigned to ${userLink(event.assignee)}
       </div>`;
     } else {
       return html`<div>This ticket was unassigned</div>`;
@@ -338,12 +307,10 @@ export const renderTicketAssigneeChanged = (
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  const actor = (event as any)._user
-    ? userPill((event as any)._user, { expanded: true })
-    : null;
-  return actor
+  const user = (event as any)._user;
+  return user
     ? html`<div style=${eventLineStyle}>
-        ${actor} opened ticket in ${topicPill(event.ticket.topic)}
+        ${userLink(user)} opened ticket in ${topicPill(event.ticket.topic)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Opened ticket in ${topicPill(event.ticket.topic)}
