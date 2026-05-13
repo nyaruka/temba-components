@@ -1,7 +1,6 @@
 import { expect } from '@open-wc/testing';
 import { zustand } from '../src/store/AppState';
 import { shouldExcludeFlow, hasLLMRole } from '../src/flow/flow-utils';
-import { getLanguageDisplayName } from '../src/flow/utils';
 
 function setFlowType(type: string) {
   const state = zustand.getState();
@@ -61,35 +60,3 @@ describe('hasLLMRole', () => {
   });
 });
 
-describe('getLanguageDisplayName', () => {
-  afterEach(() => {
-    zustand.setState({ languageNames: {} });
-  });
-
-  it('returns "Unknown" for the "und" code', () => {
-    expect(getLanguageDisplayName('und')).to.equal('Unknown');
-  });
-
-  it('returns the display name for known codes', () => {
-    expect(getLanguageDisplayName('eng')).to.equal('English');
-  });
-
-  it('falls back to the raw code for unknown codes', () => {
-    expect(getLanguageDisplayName('xx-invalid-code')).to.equal(
-      'xx-invalid-code'
-    );
-  });
-
-  it('uses names from the store for ISO 639-3 codes Intl does not cover', () => {
-    zustand.setState({
-      languageNames: { prd: 'Parsi-Dari', pst: 'Central Pashto' }
-    });
-    expect(getLanguageDisplayName('prd')).to.equal('Parsi-Dari');
-    expect(getLanguageDisplayName('pst')).to.equal('Central Pashto');
-  });
-
-  it('prefers store names over Intl lookups', () => {
-    zustand.setState({ languageNames: { eng: 'Anglais' } });
-    expect(getLanguageDisplayName('eng')).to.equal('Anglais');
-  });
-});

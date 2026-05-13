@@ -1,5 +1,6 @@
 import { createStore, StoreApi } from 'zustand/vanilla';
-import { fetchResults, generateUUID } from '../utils';
+import { generateUUID } from '../utils';
+import { getLanguageName } from '../languages';
 import {
   Action,
   Exit,
@@ -193,7 +194,6 @@ export interface AppState {
   issuesByAction: Map<string, FlowIssue[]>;
 
   languageCode: string;
-  languageNames: { [code: string]: string };
   workspace: Workspace;
   isTranslating: boolean;
   viewingRevision: boolean;
@@ -209,7 +209,6 @@ export interface AppState {
   getCurrentActivity: () => Activity | null;
   fetchRevision: (endpoint: string, id?: string) => Promise<void>;
   fetchWorkspace: (endpoint: string) => Promise<void>;
-  fetchAllLanguages: (endpoint: string) => Promise<void>;
   fetchActivity: (endpoint: string) => Promise<void>;
   setActivityEndpoint: (endpoint: string) => void;
   updateActivity: (activity: Activity) => void;
@@ -267,7 +266,6 @@ export const zustand = createStore<AppState>()(
     immer((set, get) => ({
       features: [] as string[],
       brand: '',
-      languageNames: {},
       canvasSize: { width: 0, height: 0 },
       languageCode: '',
       workspace: null,
@@ -331,21 +329,6 @@ export const zustand = createStore<AppState>()(
         set({ workspace: data });
       },
 
-      fetchAllLanguages: async (endpoint) => {
-        const results = await fetchResults(endpoint);
-
-        // convert array to map for easier lookup
-        const allLanguages = results.reduce(function (
-          languages: any,
-          result: any
-        ) {
-          languages[result.value] = result.name;
-          return languages;
-        }, {});
-
-        set({ languageNames: allLanguages });
-      },
-
       setActivityEndpoint: (endpoint: string) => {
         set({ activityEndpoint: endpoint });
       },
@@ -394,8 +377,7 @@ export const zustand = createStore<AppState>()(
       getLanguage: () => {
         const state = get();
         const languageCode = state.languageCode;
-        const languageNames = state.languageNames;
-        return { name: languageNames[languageCode], code: languageCode };
+        return { name: getLanguageName(languageCode), code: languageCode };
       },
 
       setFeatures: (features: string[]) => {

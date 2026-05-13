@@ -43,21 +43,4 @@ describe('temba-store', () => {
     assert.equal(response.status, 404);
   });
 
-  describe('getLanguageName', () => {
-    it('returns "Unknown" for the "und" code', async () => {
-      const store = await createStore('<temba-store></temba-store>');
-      assert.equal(store.getLanguageName('und'), 'Unknown');
-    });
-
-    it('returns "Unknown" when stored name is "und"', async () => {
-      const store = await createStore('<temba-store></temba-store>');
-      (store as any).languages = { und: 'und' };
-      assert.equal(store.getLanguageName('und'), 'Unknown');
-    });
-
-    it('falls back to Intl display name for unknown codes', async () => {
-      const store = await createStore('<temba-store></temba-store>');
-      assert.equal(store.getLanguageName('eng'), 'English');
-    });
-  });
 });

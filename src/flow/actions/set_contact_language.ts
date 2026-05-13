@@ -8,14 +8,15 @@ import {
 } from '../types';
 import { Node, SetContactLanguage } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
-import { getLanguageDisplayName, renderClamped } from '../utils';
+import { renderClamped } from '../utils';
+import { getLanguageName } from '../../languages';
 
 export const set_contact_language: ActionConfig = {
   name: 'Update Language',
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactLanguage) => {
-    const name = getLanguageDisplayName(action.language);
+    const name = getLanguageName(action.language);
     return renderClamped(
       html`Set to <strong>${name}</strong>`,
       `Set to ${name}`
@@ -37,7 +38,7 @@ export const set_contact_language: ActionConfig = {
         if (workspace?.languages && Array.isArray(workspace.languages)) {
           return workspace.languages.map((languageCode: string) => ({
             value: languageCode,
-            name: getLanguageDisplayName(languageCode)
+            name: getLanguageName(languageCode)
           }));
         }
         return [];
@@ -51,7 +52,7 @@ export const set_contact_language: ActionConfig = {
         language: [
           {
             value: action.language,
-            name: getLanguageDisplayName(action.language)
+            name: getLanguageName(action.language)
           }
         ],
         uuid: action.uuid

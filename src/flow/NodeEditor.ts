@@ -37,7 +37,7 @@ import {
   fromStore,
   zustand
 } from '../store/AppState';
-import { getStore } from '../store/Store';
+import { getLanguageName } from '../languages';
 
 export class NodeEditor extends RapidElement {
   static get styles() {
@@ -2656,7 +2656,7 @@ export class NodeEditor extends RapidElement {
     const dialogSize = config?.dialogSize || 'medium'; // Default to 'large' if not specified
 
     const languageName = this.isTranslating
-      ? getStore().getLanguageName(this.languageCode)
+      ? getLanguageName(this.languageCode)
       : '';
 
     let header = config?.name || 'Edit';
