@@ -393,11 +393,11 @@ export const renderContactGroupsEvent = (
 ): TemplateResult => {
   const actor = actorPill(event);
   if (event.groups_added) {
-    return renderInfoList('Added to', 'added', event.groups_added, actor);
+    return renderInfoList('Added to', 'added to', event.groups_added, actor);
   } else if (event.groups_removed) {
     return renderInfoList(
       'Removed from',
-      'removed',
+      'removed from',
       event.groups_removed,
       actor
     );
