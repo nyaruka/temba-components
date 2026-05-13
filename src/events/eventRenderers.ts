@@ -283,10 +283,18 @@ export const renderTicketAction = (
       : null;
   }
 
-  return html`<div style=${eventLineStyle}>
-    Ticket was
-    <a href="/ticket/all/closed/${ticketUUID}/">${action}</a>
-  </div>`;
+  const actor = (event as any)._user
+    ? userPill((event as any)._user, { expanded: true })
+    : null;
+  return actor
+    ? html`<div style=${eventLineStyle}>
+        ${actor} ${action} a
+        <a href="/ticket/all/closed/${ticketUUID}/">ticket</a>
+      </div>`
+    : html`<div style=${eventLineStyle}>
+        Ticket was
+        <a href="/ticket/all/closed/${ticketUUID}/">${action}</a>
+      </div>`;
 };
 
 export const renderTicketAssigneeChanged = (
@@ -330,9 +338,16 @@ export const renderTicketAssigneeChanged = (
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  return html`<div style=${eventLineStyle}>
-    Opened ticket in ${topicPill(event.ticket.topic)}
-  </div>`;
+  const actor = (event as any)._user
+    ? userPill((event as any)._user, { expanded: true })
+    : null;
+  return actor
+    ? html`<div style=${eventLineStyle}>
+        ${actor} opened ticket in ${topicPill(event.ticket.topic)}
+      </div>`
+    : html`<div style=${eventLineStyle}>
+        Opened ticket in ${topicPill(event.ticket.topic)}
+      </div>`;
 };
 
 export const renderContactGroupsEvent = (
