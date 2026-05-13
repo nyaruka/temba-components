@@ -131,16 +131,21 @@ const userLink = (user: any): TemplateResult => {
 };
 
 /**
- * Renders a generic value as a neutral pill (white bg, gray border).
- * Used for "after" values in update/change events — visually paired
- * with the type pill on the left side of the line, without claiming
- * a domain hue.
+ * Renders a contact-data value (field text, name, URN, language,
+ * status, amount, etc.) as bold inline text, truncated with an
+ * ellipsis past a reasonable width. Pills are reserved for system-
+ * level objects (group, flow, field, topic, …) — these are just
+ * values, so the chip chrome would over-state them. The full value
+ * is exposed via `title` for hover inspection.
  */
-const valuePill = (value: string | number) =>
-  html`<span
-    style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; margin: 1px 2px; border-radius: 999px; border: 1px solid var(--border-strong, #d2d6dc); background: #fff; color: var(--text-1, #1a1f26); font-size: 11.5px; font-weight: 400; line-height: 1; vertical-align: middle;"
-    >${value}</span
+const valueText = (value: string | number) => {
+  const str = String(value);
+  return html`<span
+    title=${str}
+    style="display: inline-block; max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; font-weight: 600;"
+    >${str}</span
   >`;
+};
 
 /**
  * Inline-flex wrapper style that text + pills share. Without it,
@@ -206,7 +211,7 @@ export const renderChatStartedEvent = (
 export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
   return event.value
     ? html`<div style=${eventLineStyle}>
-        Updated ${fieldPill(event.field)} to ${valuePill(event.value.text)}
+        Updated ${fieldPill(event.field)} to ${valueText(event.value.text)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Cleared ${fieldPill(event.field)}
@@ -218,7 +223,7 @@ export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
     return html`<div style=${eventLineStyle}>Cleared name</div>`;
   }
   return html`<div style=${eventLineStyle}>
-    Updated name to ${valuePill(event.name)}
+    Updated name to ${valueText(event.name)}
   </div>`;
 };
 
@@ -231,7 +236,7 @@ export const renderContactURNsChanged = (
   return html`<div style=${eventLineStyle}>
     Updated URNs to
     ${oxfordFn(event.urns, (urn: string) =>
-      valuePill(urn.split(':')[1].split('?')[0])
+      valueText(urn.split(':')[1].split('?')[0])
     )}
   </div>`;
 };
@@ -338,7 +343,7 @@ export const renderAirtimeTransferredEvent = (
     return html`<div>Airtime transfer failed</div>`;
   }
   return html`<div style=${eventLineStyle}>
-    Transferred ${valuePill(event.amount)} ${event.currency} of airtime
+    Transferred ${valueText(event.amount)} ${event.currency} of airtime
   </div>`;
 };
 
@@ -349,7 +354,7 @@ export const renderContactLanguageChangedEvent = (
     return html`<div style=${eventLineStyle}>Cleared language</div>`;
   }
   return html`<div style=${eventLineStyle}>
-    Language updated to ${valuePill(event.language)}
+    Language updated to ${valueText(event.language)}
   </div>`;
 };
 
@@ -360,7 +365,7 @@ export const renderContactStatusChangedEvent = (
     return html`<div style=${eventLineStyle}>Cleared status</div>`;
   }
   return html`<div style=${eventLineStyle}>
-    Status updated to ${valuePill(event.status)}
+    Status updated to ${valueText(event.status)}
   </div>`;
 };
 
