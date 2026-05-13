@@ -116,11 +116,15 @@ const topicPill = (topic: any) =>
  * "All" ticket folder filtered by this assignee. Used in ticket
  * assignment events in the chat history.
  *
- * Two variants:
- *   - Collapsed (default): just the avatar, hovering expands to
- *     show the name + chip border.
- *   - Expanded (`opts.expanded`): name + chip border always visible;
- *     hover darkens the bg.
+ * Supports two visual variants — kept around because we plan to use
+ * the collapsed form in denser surfaces (history rows with many
+ * actors, etc.) — but assignment events currently render both the
+ * actor and the assignee expanded:
+ *   - Collapsed: just the avatar; hovering expands to show the
+ *     name + chip border.
+ *   - Expanded (`opts.expanded`, the default for now in chat
+ *     history): name + chip border always visible; hover darkens
+ *     the bg.
  */
 const userPill = (user: any, opts: { expanded?: boolean } = {}) => {
   const url = `/ticket/all/open/?assignee=${user.uuid}`;
@@ -290,13 +294,20 @@ export const renderTicketAssigneeChanged = (
 ): TemplateResult => {
   if (event._user) {
     if (event.assignee) {
+      // Self-assignment ("took the ticket") reads naturally as one
+      // user pill + verb, rather than "<user> assigned to <same user>".
+      if (event._user.uuid && event._user.uuid === event.assignee.uuid) {
+        return html`<div style=${eventLineStyle}>
+          ${userPill(event._user, { expanded: true })} took this ticket
+        </div>`;
+      }
       return html`<div style=${eventLineStyle}>
-        ${userPill(event._user)} assigned this ticket to
+        ${userPill(event._user, { expanded: true })} assigned this ticket to
         ${userPill(event.assignee, { expanded: true })}
       </div>`;
     } else {
       return html`<div style=${eventLineStyle}>
-        ${userPill(event._user)} unassigned this ticket
+        ${userPill(event._user, { expanded: true })} unassigned this ticket
       </div>`;
     }
   } else {
