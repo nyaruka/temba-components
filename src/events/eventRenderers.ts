@@ -316,13 +316,16 @@ export const renderTicketAssigneeChanged = (
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
+  const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
+  const href = `/ticket/all/open/${ticketUUID}/`;
   return event._user
     ? html`<div style=${eventLineStyle}>
-        ${userLink(event._user)} opened ticket in
+        ${userLink(event._user)} opened a <a href=${href}>ticket</a> in
         ${topicPill(event.ticket.topic)}
       </div>`
     : html`<div style=${eventLineStyle}>
-        Opened ticket in ${topicPill(event.ticket.topic)}
+        A <a href=${href}>ticket</a> was opened in
+        ${topicPill(event.ticket.topic)}
       </div>`;
 };
 
