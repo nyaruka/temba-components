@@ -124,7 +124,11 @@ const topicPill = (topic: any) =>
  */
 const userPill = (user: any, opts: { expanded?: boolean } = {}) => {
   const url = `/ticket/all/open/?assignee=${user.uuid}`;
-  const name = user.name || '';
+  // User objects in this repo carry the display name as either `name`
+  // or `first_name + last_name` — match getFullName() in TembaUser.ts
+  // so we don't render empty initials when only first/last are set.
+  const name =
+    user.name || [user.first_name, user.last_name].filter(Boolean).join(' ');
   const initials = extractInitials(name);
   const seed = user.email || name;
   const avatarBg = user.avatar
@@ -135,6 +139,8 @@ const userPill = (user: any, opts: { expanded?: boolean } = {}) => {
   return html`<a
     href=${url}
     onclick="goto(event, this)"
+    aria-label=${name}
+    title=${name}
     class="pill-user-link ${opts.expanded ? 'expanded' : ''}"
   >
     <span class="pill-user ${opts.expanded ? 'expanded' : ''}">
@@ -254,46 +260,20 @@ export const renderTicketAction = (
 ): TemplateResult => {
   const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
 
-  const noteUser = event._user;
-  const actionNote = event.note
-    ? html`<div
-        style="width: 100%; display: flex; flex-direction: column; align-items: flex-end;"
-      >
-        <div
-          style="max-width: 70%; background: #fffac3; padding: 10px 14px; border-radius: 18px; border-bottom-right-radius: 4px; line-height: 1.3em; word-break: break-word; color: rgba(0, 0, 0, 0.75); text-align: left;"
-        >
-          <div
-            style="color: rgba(0, 0, 0, 0.5); font-size: 0.95em; margin-bottom: 0.25em;"
-          >
-            ${noteUser ? noteUser.name : 'Someone'}
-          </div>
-          <div style="white-space: pre-wrap;">${event.note}</div>
-        </div>
-        <div
-          style="display: flex; align-items: center; gap: 0.4em; margin-top: 0.35em; color: rgba(0, 0, 0, 0.5); font-size: 0.95em;"
-        >
-          <temba-date
-            value=${event.created_on.toISOString()}
-            display="relative"
-          ></temba-date>
-          ${noteUser
-            ? html`<temba-user
-                uuid=${noteUser.uuid || ''}
-                name=${noteUser.name || ''}
-                first_name=${noteUser.first_name || ''}
-                last_name=${noteUser.last_name || ''}
-                avatar=${noteUser.avatar || ''}
-              ></temba-user>`
-            : null}
-        </div>
-      </div>`
-    : null;
-
+  // Notes in the real chat history now go through Chat.ts#renderNote
+  // (see ContactChat.ts: ticket_note_added bypasses prerender). This
+  // path only runs for non-chat consumers (e.g. the flow Simulator).
+  // Render notes as a simple inline italic line — the chat-bubble
+  // styling lives in Chat.ts so the two can't drift.
   if (action === 'noted') {
-    return html`${actionNote}`;
+    return event.note
+      ? html`<div style="white-space: pre-wrap; font-style: italic;">
+          ${event.note}
+        </div>`
+      : null;
   }
 
-  const description = event._user
+  return event._user
     ? html`<div>
         <strong>${event._user.name}</strong> ${action} a
         <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
@@ -303,11 +283,6 @@ export const renderTicketAction = (
         <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
         was <strong>${action}</strong>
       </div>`;
-
-  return html`<div style="${actionNote ? 'margin-bottom: 1em;' : ''}">
-      ${description}
-    </div>
-    ${actionNote}`;
 };
 
 export const renderTicketAssigneeChanged = (

@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
+import { TicketEvent } from '../events';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
@@ -1410,7 +1411,7 @@ export class Chat extends RapidElement {
   }
 
   private renderNote(
-    event: any,
+    event: TicketEvent,
     name: string | null,
     isLast: boolean
   ): TemplateResult {
@@ -1440,7 +1441,7 @@ export class Chat extends RapidElement {
     }
 
     if (event.type === 'ticket_note_added') {
-      return this.renderNote(event as any, name, isLast);
+      return this.renderNote(event as TicketEvent, name, isLast);
     }
 
     const message = event as MsgEvent;
