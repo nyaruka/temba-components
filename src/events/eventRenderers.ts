@@ -209,7 +209,11 @@ export const renderChatStartedEvent = (
 };
 
 export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
-  return event.value
+  // Treat both a missing value object and an empty-string text as a
+  // cleared field — backfill / reset payloads sometimes arrive as
+  // `value: { text: '' }`, which would otherwise render with an
+  // empty value pill.
+  return event.value && event.value.text
     ? html`<div style=${eventLineStyle}>
         Updated ${fieldPill(event.field)} to ${valueText(event.value.text)}
       </div>`
@@ -260,15 +264,17 @@ export const renderTicketAction = (
       : null;
   }
 
-  const user = (event as any)._user;
-  return user
+  // closed → ticket is in the closed folder now; reopened → it's
+  // back in open. Linking the word "ticket" lets a reader jump to
+  // wherever the ticket actually lives.
+  const folder = action === 'closed' ? 'closed' : 'open';
+  const href = `/ticket/all/${folder}/${ticketUUID}/`;
+  return event._user
     ? html`<div style=${eventLineStyle}>
-        ${userLink(user)} ${action} a
-        <a href="/ticket/all/closed/${ticketUUID}/">ticket</a>
+        ${userLink(event._user)} ${action} a <a href=${href}>ticket</a>
       </div>`
     : html`<div style=${eventLineStyle}>
-        Ticket was
-        <a href="/ticket/all/closed/${ticketUUID}/">${action}</a>
+        A <a href=${href}>ticket</a> was ${action}
       </div>`;
 };
 
@@ -281,14 +287,12 @@ export const renderTicketAssigneeChanged = (
       // user link + verb, rather than "<user> assigned to <same user>".
       // Match on uuid when present, falling back to email — depending
       // on the API surface a user payload may carry one or the other.
-      const actor = event._user as any;
-      const assignee = event.assignee as any;
       const sameUser =
-        (actor.uuid && actor.uuid === assignee.uuid) ||
-        (actor.email && actor.email === assignee.email);
+        (event._user.uuid && event._user.uuid === event.assignee.uuid) ||
+        (event._user.email && event._user.email === event.assignee.email);
       if (sameUser) {
         return html`<div style=${eventLineStyle}>
-          ${userLink(actor)} took this ticket
+          ${userLink(event._user)} took this ticket
         </div>`;
       }
       return html`<div style=${eventLineStyle}>
@@ -312,10 +316,10 @@ export const renderTicketAssigneeChanged = (
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  const user = (event as any)._user;
-  return user
+  return event._user
     ? html`<div style=${eventLineStyle}>
-        ${userLink(user)} opened ticket in ${topicPill(event.ticket.topic)}
+        ${userLink(event._user)} opened ticket in
+        ${topicPill(event.ticket.topic)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Opened ticket in ${topicPill(event.ticket.topic)}
@@ -612,7 +616,7 @@ export const renderEvent = (
       content = renderTicketAction(event as TicketEvent, 'closed');
       break;
     case Events.TICKET_OPENED:
-      content = renderTicketAction(event as TicketEvent, 'opened');
+      content = renderTicketOpened(event as TicketEvent);
       break;
     case Events.TICKET_NOTE_ADDED:
       content = renderTicketAction(event as TicketEvent, 'noted');

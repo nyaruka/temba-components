@@ -45,6 +45,21 @@ describe('renderTicketAssigneeChanged', () => {
     expect(el.textContent).to.contain('took this ticket');
   });
 
+  it('renders "took this ticket" when actor and assignee share the same email (no uuid on payload)', async () => {
+    // Isolates the email-fallback branch: if the OR-guard ever loses
+    // its email half, the uuid-only test above stays green but this
+    // one will fail.
+    const event = makeEvent({
+      _user: { name: 'Adam', email: 'adam@example.com' },
+      assignee: { name: 'Adam', email: 'adam@example.com' }
+    });
+
+    const el = await fixture(
+      html`<div>${renderTicketAssigneeChanged(event)}</div>`
+    );
+    expect(el.textContent).to.contain('took this ticket');
+  });
+
   it('renders "<actor> assigned this ticket to <assignee>" for cross-user assignment', async () => {
     const event = makeEvent({
       _user: { uuid: 'u-adam', name: 'Adam', email: 'adam@example.com' },
