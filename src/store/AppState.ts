@@ -329,7 +329,7 @@ export const zustand = createStore<AppState>()(
         set({ workspace: data });
       },
 
-setActivityEndpoint: (endpoint: string) => {
+      setActivityEndpoint: (endpoint: string) => {
         set({ activityEndpoint: endpoint });
       },
 

@@ -42,6 +42,7 @@ const ADDITIONAL_LANGUAGE_NAMES: { [code: string]: string } = {
 };
 
 export function getLanguageName(code: string): string {
+  if (!code) return '';
   if (code === 'und') return 'Unknown';
 
   try {

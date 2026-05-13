@@ -22,4 +22,9 @@ describe('getLanguageName', () => {
   it('returns the raw code for codes not in either source', () => {
     expect(getLanguageName('xx-invalid-code')).to.equal('xx-invalid-code');
   });
+
+  it('returns an empty string for empty or undefined input', () => {
+    expect(getLanguageName('')).to.equal('');
+    expect(getLanguageName(undefined as unknown as string)).to.equal('');
+  });
 });

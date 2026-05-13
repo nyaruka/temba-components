@@ -362,7 +362,7 @@ export class Store extends RapidElement {
     return this.featuredFields;
   }
 
-public isDynamicGroup(uuid: string): boolean {
+  public isDynamicGroup(uuid: string): boolean {
     const group = this.groups[uuid];
     // we treat missing groups as dynamic since the
     // api excludes initializing groups
