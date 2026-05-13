@@ -274,6 +274,11 @@ export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
 
 export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
   const actor = actorPill(event);
+  if (!event.name) {
+    return actor
+      ? html`<div style=${eventLineStyle}>${actor} cleared name</div>`
+      : html`<div style=${eventLineStyle}>Cleared name</div>`;
+  }
   return actor
     ? html`<div style=${eventLineStyle}>
         ${actor} set name to ${valuePill(event.name)}
@@ -287,6 +292,11 @@ export const renderContactURNsChanged = (
   event: URNsChangedEvent
 ): TemplateResult => {
   const actor = actorPill(event);
+  if (!event.urns || event.urns.length === 0) {
+    return actor
+      ? html`<div style=${eventLineStyle}>${actor} cleared URNs</div>`
+      : html`<div style=${eventLineStyle}>Cleared URNs</div>`;
+  }
   const urns = oxfordFn(event.urns, (urn: string) =>
     valuePill(urn.split(':')[1].split('?')[0])
   );
@@ -415,6 +425,11 @@ export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): TemplateResult => {
   const actor = actorPill(event);
+  if (!event.language) {
+    return actor
+      ? html`<div style=${eventLineStyle}>${actor} cleared language</div>`
+      : html`<div style=${eventLineStyle}>Cleared language</div>`;
+  }
   return actor
     ? html`<div style=${eventLineStyle}>
         ${actor} set language to ${valuePill(event.language)}
@@ -428,6 +443,11 @@ export const renderContactStatusChangedEvent = (
   event: ContactStatusChangedEvent
 ): TemplateResult => {
   const actor = actorPill(event);
+  if (!event.status) {
+    return actor
+      ? html`<div style=${eventLineStyle}>${actor} cleared status</div>`
+      : html`<div style=${eventLineStyle}>Cleared status</div>`;
+  }
   return actor
     ? html`<div style=${eventLineStyle}>
         ${actor} set status to ${valuePill(event.status)}
