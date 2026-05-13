@@ -39,8 +39,6 @@ export class ContentMenu extends RapidElement {
         z-index: 5000;
       }
       .container {
-        --button-y: 0.4em;
-        --button-x: 1em;
         display: flex;
         align-items: center;
       }
@@ -52,6 +50,7 @@ export class ContentMenu extends RapidElement {
 
       temba-button {
         margin-right: 0.5rem;
+        align-self: center;
       }
       .toggle {
         --icon-color: rgb(102, 102, 102);

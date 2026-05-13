@@ -242,8 +242,6 @@ export class ContactFieldEditor extends RapidElement {
         min-height: 22px !important;
         max-height: 22px !important;
         margin: 5px 6px;
-        --button-y: 0;
-        --button-x: 10px;
         font-size: 12px;
       }
 

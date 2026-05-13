@@ -9,8 +9,9 @@ import { css } from 'lit';
  * flow/utils.ts.
  *
  * Variant theming:
- *   - .pill-contact / .pill-group: full ramp derived from --accent
- *     via `color-mix(in oklab, …)`. Override --accent to re-theme.
+ *   - .pill-contact / .pill-group: derived from --recipient (a fixed
+ *     blue), NOT the accent ramp. This keeps recipient pills stable
+ *     across brand re-theming via --primary-rgb.
  *   - .pill-flow, .pill-channel: bg/border derived from --flow /
  *     --channel via color-mix; text + icon use the anchor directly.
  *   - .pill-field: bg/border are fixed at the Tailwind yellow ramp
@@ -40,7 +41,8 @@ export const PILL_TYPES: ReadonlySet<string> = new Set([
   'field',
   'label',
   'keyword',
-  'channel'
+  'channel',
+  'topic'
 ]);
 
 /** Default icon name for each pill variant. Used when a consumer
@@ -52,7 +54,8 @@ export const PILL_TYPE_ICONS: Readonly<Record<string, string>> = {
   contact: 'contact',
   field: 'fields',
   flow: 'flow',
-  label: 'label'
+  label: 'label',
+  topic: 'topic'
 };
 
 /** Inverse mapping: icon name (alias or resolved SVG id) → pill type.
@@ -88,24 +91,32 @@ export const pillVariants = css`
     --icon-color: var(--text-2);
   }
   .pill-flow {
-    background: color-mix(in oklab, var(--flow) 12%, white);
+    background: color-mix(in srgb, var(--flow) 12%, white);
     color: var(--flow);
-    border-color: color-mix(in oklab, var(--flow) 25%, white);
+    border-color: color-mix(in srgb, var(--flow) 25%, white);
     --icon-color: var(--flow);
   }
-  /* Recipient color — shared by contacts and groups. */
+  /* Recipient color — shared by contacts and groups. Anchored to
+     --recipient (fixed blue), NOT the accent ramp, so pills keep their
+     identity even when the host page re-themes via --primary-rgb. */
   .pill-contact,
   .pill-group {
-    background: var(--accent-100);
-    color: var(--accent-700);
-    border-color: var(--accent-200);
-    --icon-color: var(--accent-700);
+    background: color-mix(in srgb, var(--recipient) 12%, white);
+    color: var(--recipient);
+    border-color: color-mix(in srgb, var(--recipient) 25%, white);
+    --icon-color: var(--recipient);
   }
   .pill-channel {
-    background: color-mix(in oklab, var(--channel) 12%, white);
+    background: color-mix(in srgb, var(--channel) 12%, white);
     color: var(--channel);
-    border-color: color-mix(in oklab, var(--channel) 25%, white);
+    border-color: color-mix(in srgb, var(--channel) 25%, white);
     --icon-color: var(--channel);
+  }
+  .pill-topic {
+    background: color-mix(in srgb, var(--topic) 12%, white);
+    color: var(--topic);
+    border-color: color-mix(in srgb, var(--topic) 25%, white);
+    --icon-color: var(--topic);
   }
   .pill-field {
     /* Yellow has very low contrast against white, so the color-mix

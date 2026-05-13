@@ -21,7 +21,6 @@ export class TembaUser extends RapidElement {
   public static styles = css`
     :host {
       display: flex;
-      transform: scale(var(--temba-scale, 1));
       box-sizing: border-box;
     }
 
@@ -30,6 +29,10 @@ export class TembaUser extends RapidElement {
       flex-direction: row;
       align-items: center;
       flex-grow: 1;
+    }
+
+    .avatar-circle {
+      transform-origin: left center;
     }
 
     .name {
@@ -115,7 +118,7 @@ export class TembaUser extends RapidElement {
       <div
         class="avatar-circle"
         style="
-              transform:scale(${this.scale || 1});
+              transform:scale(calc(var(--temba-scale, 1) * ${this.scale || 1}));
               display: flex;
               min-height: 26px;
               min-width: 26px;
@@ -126,7 +129,10 @@ export class TembaUser extends RapidElement {
               font-weight: 400;
               overflow: hidden;
               font-size: 0.8em;
-              margin-right: 0.75em;
+              margin-right: max(
+                0px,
+                calc(0.75em - (1 - var(--temba-scale, 1)) * 26px)
+              );
               box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
               background:${this.bgimage || this.bgcolor};"
       >

@@ -106,17 +106,46 @@ const flowPill = (flow: any) =>
 
 const fieldPill = (field: any) => renderEntityPill('field', field.name);
 
+const topicPill = (topic: any) =>
+  renderEntityPill('topic', topic.name, {
+    href: `/ticket/${topic.uuid}/open/`
+  });
+
 /**
- * Renders a generic value as a neutral pill (white bg, gray border).
- * Used for "after" values in update/change events — visually paired
- * with the type pill on the left side of the line, without claiming
- * a domain hue.
+ * Renders a user as a plain text link to the "All" ticket folder
+ * filtered by that assignee. Used for actor attribution in the
+ * chat history (ticket assigned / opened / closed events).
+ *
+ * The richer avatar-chip variant is parked in git history (see
+ * userPill) — we'll bring it back if denser surfaces need it.
  */
-const valuePill = (value: string | number) =>
-  html`<span
-    style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; margin: 1px 2px; border-radius: 999px; border: 1px solid var(--border-strong, #d2d6dc); background: #fff; color: var(--text-1, #1a1f26); font-size: 11.5px; font-weight: 400; line-height: 1; vertical-align: middle;"
-    >${value}</span
+const userLink = (user: any): TemplateResult => {
+  const name =
+    user.name || [user.first_name, user.last_name].filter(Boolean).join(' ');
+  return html`<a
+    href="/ticket/all/open/?assignee=${user.uuid}"
+    onclick="goto(event, this)"
+    title=${name}
+    >${name}</a
   >`;
+};
+
+/**
+ * Renders a contact-data value (field text, name, URN, language,
+ * status, amount, etc.) as bold inline text, truncated with an
+ * ellipsis past a reasonable width. Pills are reserved for system-
+ * level objects (group, flow, field, topic, …) — these are just
+ * values, so the chip chrome would over-state them. The full value
+ * is exposed via `title` for hover inspection.
+ */
+const valueText = (value: string | number) => {
+  const str = String(value);
+  return html`<span
+    title=${str}
+    style="display: inline-block; max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; font-weight: 600;"
+    >${str}</span
+  >`;
+};
 
 /**
  * Inline-flex wrapper style that text + pills share. Without it,
@@ -124,8 +153,13 @@ const valuePill = (value: string | number) =>
  * pills sit slightly above and the text appears to "float". flex
  * centering keeps the row of words and pills on one cross-axis.
  */
+// min-height keeps the row a consistent height across renderers
+// whether or not they contain a pill (which is ~22px tall) — without
+// it, plain-text events like "Cleared language" sit a few pixels
+// shorter than "Removed from <group pill>" and the chat history
+// looks unevenly spaced.
 const eventLineStyle =
-  'display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 2px 4px;';
+  'display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 2px 4px; min-height: 24px;';
 
 const renderInfoList = (
   singular: string,
@@ -180,9 +214,13 @@ export const renderChatStartedEvent = (
 };
 
 export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
-  return event.value
+  // Treat both a missing value object and an empty-string text as a
+  // cleared field — backfill / reset payloads sometimes arrive as
+  // `value: { text: '' }`, which would otherwise render with an
+  // empty value pill.
+  return event.value && event.value.text
     ? html`<div style=${eventLineStyle}>
-        Updated ${fieldPill(event.field)} to ${valuePill(event.value.text)}
+        Updated ${fieldPill(event.field)} to ${valueText(event.value.text)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Cleared ${fieldPill(event.field)}
@@ -190,18 +228,24 @@ export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
 };
 
 export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
+  if (!event.name) {
+    return html`<div style=${eventLineStyle}>Cleared name</div>`;
+  }
   return html`<div style=${eventLineStyle}>
-    Updated name to ${valuePill(event.name)}
+    Updated name to ${valueText(event.name)}
   </div>`;
 };
 
 export const renderContactURNsChanged = (
   event: URNsChangedEvent
 ): TemplateResult => {
+  if (!event.urns || event.urns.length === 0) {
+    return html`<div style=${eventLineStyle}>Cleared URNs</div>`;
+  }
   return html`<div style=${eventLineStyle}>
     Updated URNs to
     ${oxfordFn(event.urns, (urn: string) =>
-      valuePill(urn.split(':')[1].split('?')[0])
+      valueText(urn.split(':')[1].split('?')[0])
     )}
   </div>`;
 };
@@ -212,83 +256,110 @@ export const renderTicketAction = (
 ): TemplateResult => {
   const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
 
-  const actionNote = event.note
-    ? html`<div
-        style="width:85%; background: #fffac3; padding: 1em;margin-bottom: 1em;margin-top:1em; border: 1px solid #ffe97f;border-radius: var(--curvature);line-height: 1.2em; word-break: break-word;"
-      >
-        <div style="color: #8e830fff; font-size: 1em;margin-bottom:0.25em; ">
-          <strong>${event._user ? event._user.name : 'Someone'}</strong> added a
-          note
-          <temba-date
-            value=${event.created_on.toISOString()}
-            display="relative"
-          ></temba-date>
-        </div>
-        <div style="white-space: pre-wrap;">${event.note}</div>
-      </div>`
-    : null;
-
+  // Notes in the real chat history now go through Chat.ts#renderNote
+  // (see ContactChat.ts: ticket_note_added bypasses prerender). This
+  // path only runs for non-chat consumers (e.g. the flow Simulator).
+  // Render notes as a simple inline italic line — the chat-bubble
+  // styling lives in Chat.ts so the two can't drift.
   if (action === 'noted') {
-    return html`${actionNote}`;
+    return event.note
+      ? html`<div style="white-space: pre-wrap; font-style: italic;">
+          ${event.note}
+        </div>`
+      : null;
   }
 
-  const description = event._user
-    ? html`<div>
-        <strong>${event._user.name}</strong> ${action} a
-        <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
+  // closed → ticket is in the closed folder now; reopened → it's
+  // back in open. Linking the word "ticket" lets a reader jump to
+  // wherever the ticket actually lives.
+  const folder = action === 'closed' ? 'closed' : 'open';
+  const href = `/ticket/all/${folder}/${ticketUUID}/`;
+  return event._user
+    ? html`<div style=${eventLineStyle}>
+        ${userLink(event._user)} ${action} a <a href=${href}>ticket</a>
       </div>`
-    : html`<div>
-        A
-        <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
-        was <strong>${action}</strong>
+    : html`<div style=${eventLineStyle}>
+        A <a href=${href}>ticket</a> was ${action}
       </div>`;
-
-  return html`<div style="${actionNote ? 'margin-bottom: 1em;' : ''}">
-      ${description}
-    </div>
-    ${actionNote}`;
 };
 
 export const renderTicketAssigneeChanged = (
   event: TicketEvent
 ): TemplateResult => {
+  const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
+  // Link the word "ticket" in assignee events too, so the noun is
+  // consistently interactive across open / close / reopen / assigned
+  // rows (the contact-history page can show events from any of the
+  // contact's tickets, so the jump-to-ticket affordance is useful).
+  const ticketLink = html`<a href="/ticket/all/open/${ticketUUID}/"
+    >ticket</a
+  >`;
+  const ticketLinkCapitalized = html`<a href="/ticket/all/open/${ticketUUID}/"
+    >This ticket</a
+  >`;
   if (event._user) {
     if (event.assignee) {
-      return html`<div>
-        <strong>${event._user.name}</strong> assigned this ticket to
-        <strong>${event.assignee.name}</strong>
+      // Self-assignment ("took the ticket") reads naturally as one
+      // user link + verb, rather than "<user> assigned to <same user>".
+      // Match on uuid when present, falling back to email — depending
+      // on the API surface a user payload may carry one or the other.
+      const sameUser =
+        (event._user.uuid && event._user.uuid === event.assignee.uuid) ||
+        (event._user.email && event._user.email === event.assignee.email);
+      if (sameUser) {
+        return html`<div style=${eventLineStyle}>
+          ${userLink(event._user)} took this ${ticketLink}
+        </div>`;
+      }
+      return html`<div style=${eventLineStyle}>
+        ${userLink(event._user)} assigned this ${ticketLink} to
+        ${userLink(event.assignee)}
       </div>`;
     } else {
-      return html`<div>
-        <strong>${event._user.name}</strong> unassigned this ticket
+      return html`<div style=${eventLineStyle}>
+        ${userLink(event._user)} unassigned this ${ticketLink}
       </div>`;
     }
   } else {
     if (event.assignee) {
-      return html`<div>
-        This ticket was assigned to <strong>${event.assignee.name}</strong>
+      return html`<div style=${eventLineStyle}>
+        ${ticketLinkCapitalized} was assigned to ${userLink(event.assignee)}
       </div>`;
     } else {
-      return html`<div>This ticket was unassigned</div>`;
+      return html`<div style=${eventLineStyle}>
+        ${ticketLinkCapitalized} was unassigned
+      </div>`;
     }
   }
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  return html`<div>${event.ticket.topic.name} ticket was opened</div>`;
+  const ticketUUID = event.ticket.uuid;
+  const href = `/ticket/all/open/${ticketUUID}/`;
+  // ticket.topic is optional in events.ts — guard so a payload
+  // without one degrades to "A ticket was opened" rather than
+  // throwing inside topicPill.
+  const topic = event.ticket.topic;
+  const tail = topic ? html` in ${topicPill(topic)}` : null;
+  return event._user
+    ? html`<div style=${eventLineStyle}>
+        ${userLink(event._user)} opened a <a href=${href}>ticket</a>${tail}
+      </div>`
+    : html`<div style=${eventLineStyle}>
+        A <a href=${href}>ticket</a> was opened${tail}
+      </div>`;
 };
 
 export const renderContactGroupsEvent = (
   event: ContactGroupsEvent
 ): TemplateResult => {
-  const groupsEvent = event as ContactGroupsEvent;
-  if (groupsEvent.groups_added) {
-    return renderInfoList('Added to', 'Added to', groupsEvent.groups_added);
-  } else if (groupsEvent.groups_removed) {
+  if (event.groups_added) {
+    return renderInfoList('Added to', 'Added to', event.groups_added);
+  } else if (event.groups_removed) {
     return renderInfoList(
       'Removed from',
       'Removed from',
-      groupsEvent.groups_removed
+      event.groups_removed
     );
   }
 };
@@ -299,23 +370,31 @@ export const renderAirtimeTransferredEvent = (
   if (parseFloat(event.amount) === 0) {
     return html`<div>Airtime transfer failed</div>`;
   }
-  return html`<div>
-    Transferred <strong>${event.amount}</strong> ${event.currency} of airtime
+  return html`<div style=${eventLineStyle}>
+    Transferred ${valueText(event.amount)} ${event.currency} of airtime
   </div>`;
 };
 
 export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): TemplateResult => {
-  return html`<div>
-    Language updated to <strong>${event.language}</strong>
+  if (!event.language) {
+    return html`<div style=${eventLineStyle}>Cleared language</div>`;
+  }
+  return html`<div style=${eventLineStyle}>
+    Language updated to ${valueText(event.language)}
   </div>`;
 };
 
 export const renderContactStatusChangedEvent = (
   event: ContactStatusChangedEvent
 ): TemplateResult => {
-  return html`<div>Status updated to <strong>${event.status}</strong></div>`;
+  if (!event.status) {
+    return html`<div style=${eventLineStyle}>Cleared status</div>`;
+  }
+  return html`<div style=${eventLineStyle}>
+    Status updated to ${valueText(event.status)}
+  </div>`;
 };
 
 export const renderCallEvent = (event: CallEvent): TemplateResult => {
@@ -561,7 +640,7 @@ export const renderEvent = (
       content = renderTicketAction(event as TicketEvent, 'closed');
       break;
     case Events.TICKET_OPENED:
-      content = renderTicketAction(event as TicketEvent, 'opened');
+      content = renderTicketOpened(event as TicketEvent);
       break;
     case Events.TICKET_NOTE_ADDED:
       content = renderTicketAction(event as TicketEvent, 'noted');
@@ -569,11 +648,17 @@ export const renderEvent = (
     case Events.TICKET_REOPENED:
       content = renderTicketAction(event as TicketEvent, 'reopened');
       break;
-    case Events.TICKET_TOPIC_CHANGED:
-      content = html`<div>
-        Topic changed to <strong>${(event as TicketEvent).topic.name}</strong>
-      </div>`;
+    case Events.TICKET_TOPIC_CHANGED: {
+      // event.topic is optional — guard so a payload without one
+      // degrades cleanly instead of throwing inside topicPill.
+      const newTopic = (event as TicketEvent).topic;
+      content = newTopic
+        ? html`<div style=${eventLineStyle}>
+            Topic changed to ${topicPill(newTopic)}
+          </div>`
+        : null;
       break;
+    }
     default:
       return null;
   }

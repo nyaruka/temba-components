@@ -8,6 +8,7 @@ import { Dropdown } from '../display/Dropdown';
 import { NotificationList } from './NotificationList';
 import { ResizeElement } from '../ResizeElement';
 import { Store } from '../store/Store';
+import { designTokens } from '../styles/designTokens';
 
 export interface MenuItem {
   id?: string;
@@ -61,11 +62,17 @@ const findItem = (
 export class TembaMenu extends ResizeElement {
   static get styles() {
     return css`
+      ${designTokens}
+
       :host {
         width: 100%;
         display: block;
+        font-family: var(--font);
+        color: var(--text-1);
         --color-widget-bg-focused: transparent;
         --options-block-shadow: none;
+        --menu-rail: var(--accent-400);
+        --menu-rail-selected: rgba(0, 0, 0, 0.15);
       }
 
       .bubble {
@@ -92,9 +99,9 @@ export class TembaMenu extends ResizeElement {
       }
 
       .section {
-        font-size: 1.5em;
-        margin-bottom: 0.2em;
-        color: var(--color-text-dark);
+        font-size: 15px;
+        font-weight: var(--w-medium);
+        color: var(--text-1);
       }
 
       .collapse-toggle {
@@ -107,7 +114,7 @@ export class TembaMenu extends ResizeElement {
       }
 
       .collapse-toggle:hover {
-        background: rgb(100, 100, 100, 0.05);
+        background: rgba(0, 0, 0, 0.04);
       }
 
       .item {
@@ -115,14 +122,29 @@ export class TembaMenu extends ResizeElement {
         user-select: none;
         -webkit-user-select: none;
         display: flex;
-        --icon-color: var(--color-text-dark);
+        align-items: center;
+        gap: 10px;
+        color: var(--text-2);
+        font-weight: var(--w-regular);
+        --icon-color: var(--text-2);
+        transition:
+          background-color 120ms ease,
+          color 120ms ease;
+      }
+
+      .item:hover {
+        background: var(--sunken);
+        color: var(--text-1);
+        --icon-color: var(--text-1);
       }
 
       .item.selected,
-      .item.pressed {
-        background: var(--color-selection);
-        color: var(--color-primary-dark);
-        --icon-color: var(--color-primary-dark);
+      .item.pressed,
+      .item.selected:hover,
+      .item.pressed:hover {
+        background: var(--focus-50);
+        color: var(--focus-700);
+        --icon-color: var(--focus-600);
       }
 
       .root {
@@ -140,40 +162,40 @@ export class TembaMenu extends ResizeElement {
         display: none;
       }
 
-      .popup {
-        --icon-color: rgba(255, 255, 255, 0.7);
-      }
-
       .level-0 > .item,
-      .level-0 > temba-dropdown > div[slot='toggle'] > .avatar {
+      .level-0 > temba-dropdown > div[slot='toggle'] > .avatar,
+      .level-0 > temba-dropdown > div[slot='toggle'] > .item {
         padding: 0px;
-        --icon-color: rgba(255, 255, 255, 0.7);
+        color: rgba(255, 255, 255, 0.92);
+        --icon-color: rgba(255, 255, 255, 0.92);
         flex-direction: column;
-        border: 0px solid green;
-        width: 100%;
+        justify-content: center;
+        border: 0px solid transparent;
+        width: 36px;
+        height: 36px;
+        margin: 4px 8px;
+        box-sizing: border-box;
+        border-radius: var(--r);
         display: flex;
         align-items: center;
-      }
-
-      .level-0 > .item.selected::before,
-      .level-0 > .item.selected::after {
-        content: ' ';
-        height: var(--curvature);
-        background: var(--color-primary-dark);
-        display: block;
-        width: 100%;
-      }
-
-      .level-0 > .item.selected::before {
-        border-bottom-right-radius: var(--curvature);
+        position: relative;
       }
 
       .level-0 .item > temba-tip {
-        padding: 0.5em 0em;
+        padding: 0;
       }
 
-      .level-0 > .item.selected::after {
-        border-top-right-radius: var(--curvature);
+      .level-0 > .item.selected::after,
+      .level-0 > temba-dropdown > div[slot='toggle'] > .item.selected::after {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 50%;
+        width: 3px;
+        height: 22px;
+        background: #fff;
+        border-radius: 0 2px 2px 0;
+        transform: translateY(-50%);
       }
 
       .level-0 {
@@ -181,14 +203,14 @@ export class TembaMenu extends ResizeElement {
       }
 
       .level-0 > .empty {
-        background: var(--color-primary-dark);
+        background: var(--menu-rail);
         align-self: stretch;
         flex-grow: 1;
       }
 
       .level-0 > .bottom {
         height: 1em;
-        background: var(--color-primary-dark);
+        background: var(--menu-rail);
       }
 
       .level-0 > temba-dropdown.open > div[slot='toggle'] > .avatar {
@@ -196,11 +218,17 @@ export class TembaMenu extends ResizeElement {
       }
 
       .level-0 {
-        background: var(--color-primary-dark);
+        background: var(--menu-rail);
       }
 
       temba-dropdown {
         margin: 0 0.25em;
+      }
+
+      .level-0 > temba-dropdown {
+        margin: 0;
+        display: block;
+        width: 100%;
       }
 
       temba-dropdown > div[slot='dropdown'] {
@@ -237,17 +265,21 @@ export class TembaMenu extends ResizeElement {
         background: inherit;
       }
 
-      .level-0 > .item.selected {
-        background: white;
-        --icon-color: var(--color-primary-dark);
+      .level-0 > .item.selected,
+      .level-0 > temba-dropdown > div[slot='toggle'] > .item.selected {
+        background: var(--menu-rail-selected);
+        color: #fff;
+        --icon-color: #fff;
       }
 
       .level {
-        padding: var(--menu-padding);
+        padding: 8px;
+        gap: 1px;
       }
 
       .level-0 {
         padding: 0px;
+        gap: 0;
       }
 
       .top {
@@ -257,16 +289,14 @@ export class TembaMenu extends ResizeElement {
       }
 
       .item {
-        padding: 0.2em 0.75em;
-        margin-top: 0.1em;
-        border-radius: var(--curvature);
+        padding: 0 8px;
+        height: 28px;
+        flex-shrink: 0;
+        border-radius: var(--r-sm);
         display: flex;
         min-width: 12em;
         position: relative;
-      }
-
-      .item > temba-icon {
-        margin-right: 0.5em;
+        font-size: 13.5px;
       }
 
       .item > .details > .name {
@@ -277,19 +307,16 @@ export class TembaMenu extends ResizeElement {
         width: 0;
       }
 
-      .level-0 .item {
+      .level-0 > .item,
+      .level-0 > temba-dropdown > div[slot='toggle'] > .item {
         margin-top: 0em;
-        border-radius: 0px;
         min-width: inherit;
         max-width: inherit;
+        color: rgba(255, 255, 255, 0.92);
       }
 
-      .popup:hover {
+      .level-0 > temba-dropdown > div[slot='toggle'] > .item.popup:hover {
         --icon-color: #fff;
-      }
-
-      .level-0 > .item > temba-icon {
-        margin-right: 0px;
       }
 
       .level-0 > .item > .name {
@@ -298,37 +325,44 @@ export class TembaMenu extends ResizeElement {
 
       .count {
         align-self: center;
-        margin-left: 1em;
-        font-size: 0.8em;
-        font-weight: 400;
+        margin-left: 10px;
+        font-size: 11.5px;
+        font-weight: var(--w-regular);
+        color: var(--text-3);
+        background: var(--sunken);
+        padding: 1px 6px;
+        border-radius: 999px;
+        font-variant-numeric: tabular-nums;
       }
 
-      .level-0 > .item-top {
-        background: var(--color-primary-dark);
-        min-height: var(--curvature);
+      .count:empty {
+        display: none;
       }
 
+      .item.selected .count,
+      .item.pressed .count {
+        background: var(--focus-200);
+        color: var(--focus-700);
+      }
+
+      .level-0 > .item-top,
       .level-0 > .item-bottom {
-        background: var(--color-primary-dark);
-        min-height: var(--curvature);
+        background: var(--menu-rail);
+        min-height: var(--r);
       }
 
-      .level-0 > .item-bottom.selected {
-        border-top-right-radius: var(--curvature);
-      }
-
-      .level-0 > .item-top.selected {
-        border-bottom-right-radius: var(--curvature);
-      }
-
-      .level-0 > .item:hover {
-        background: rgba(255, 255, 255, 0.15);
+      .level-0 > .item:hover,
+      .level-0 > temba-dropdown > div[slot='toggle'] > .item:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
         --icon-color: #fff;
       }
 
-      .level-0 > .item.selected:hover {
-        background: white;
-        --icon-color: var(--color-primary-dark);
+      .level-0 > .item.selected:hover,
+      .level-0 > temba-dropdown > div[slot='toggle'] > .item.selected:hover {
+        background: var(--menu-rail-selected);
+        color: #fff;
+        --icon-color: #fff;
         cursor: default;
       }
 
@@ -338,14 +372,16 @@ export class TembaMenu extends ResizeElement {
 
       .level-1,
       .level-2 {
-        border-right: 1px solid rgba(0 0 0 / 8%);
-        box-shadow: rgb(0 0 0 / 6%) 4px 0px 6px 1px;
+        border-right: 1px solid var(--border);
+        box-shadow: var(--shadow-2);
       }
 
       .level-1 {
         transition:
           opacity 100ms linear,
-          margin 200ms linear;
+          width 200ms linear,
+          min-width 200ms linear,
+          max-width 200ms linear;
         overflow-y: scroll;
       }
 
@@ -444,8 +480,12 @@ export class TembaMenu extends ResizeElement {
         transform: none;
       }
 
+      .level-1 {
+        background: var(--surface);
+      }
+
       .level-2 {
-        background: #fbfbfb;
+        background: var(--bg);
         overflow-y: auto;
       }
 
@@ -454,16 +494,14 @@ export class TembaMenu extends ResizeElement {
       }
 
       .level-2 .item {
-        min-width: 12em;
-        max-width: 12em;
+        min-width: 16em;
+        max-width: 16em;
       }
 
       .level-1 .item {
         overflow: hidden;
-        max-width: 12em;
-        min-width: 12em;
-        min-height: 1.5em;
-        max-height: 1.5em;
+        max-width: 16em;
+        min-width: 16em;
         transition: min-width var(--transition-speed) !important;
       }
 
@@ -499,7 +537,7 @@ export class TembaMenu extends ResizeElement {
       }
 
       .section {
-        max-width: 12em;
+        max-width: 16em;
       }
 
       .collapsed .section {
@@ -511,10 +549,15 @@ export class TembaMenu extends ResizeElement {
       .collapsed.level-1 {
         overflow: hidden;
         padding: 0.5em;
-        --icon-color: #999;
+        --icon-color: var(--text-3);
+      }
+
+      .item .right {
+        display: none;
       }
 
       .collapsed .item .right {
+        display: block;
         flex-grow: 1;
       }
 
@@ -523,7 +566,7 @@ export class TembaMenu extends ResizeElement {
       }
 
       .collapsed .collapse-icon {
-        --icon-color: #ccc;
+        --icon-color: var(--text-4);
         display: block;
       }
 
@@ -536,9 +579,10 @@ export class TembaMenu extends ResizeElement {
 
       .divider {
         height: 1px;
-        background: #f3f3f3;
-        margin: 0.5em 0.75em;
+        background: var(--border);
+        margin: 0.5em var(--pad);
         min-height: 1px;
+        flex-shrink: 0;
       }
 
       .space {
@@ -553,26 +597,24 @@ export class TembaMenu extends ResizeElement {
       }
 
       .sub-section {
-        font-size: 0.9rem;
-        color: #888;
-        margin-top: 1rem;
-        margin-left: 0.3rem;
+        font-size: 11px;
+        font-weight: var(--w-semibold);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-3);
+        padding: 14px 10px 4px;
+        flex-shrink: 0;
       }
 
       .fully-collapsed .level-1 {
-        margin-left: -208px;
+        width: 0;
+        min-width: 0;
+        max-width: 0;
+        padding: 0;
         pointer-events: none;
         border: none;
+        box-shadow: none;
         overflow: hidden;
-      }
-
-      .fully-collapsed .level-1 > * {
-        opacity: 0;
-      }
-
-      .fully-collapsed .level-1 .item,
-      .fully-collapsed .level-1 .divider {
-        opacity: 0;
       }
 
       .fully-collapsed .level-2,
@@ -585,11 +627,12 @@ export class TembaMenu extends ResizeElement {
         margin-bottom: 0.2em;
         margin-left: 0.75em;
         margin-right: 0.75em;
+        --button-justify: flex-start;
       }
 
       .expand-icon {
         transform: rotate(180deg);
-        --icon-color: rgba(255, 255, 255, 0.5);
+        --icon-color: rgba(255, 255, 255, 0.6);
         cursor: pointer;
         max-height: 0px;
         overflow: hidden;
@@ -610,6 +653,10 @@ export class TembaMenu extends ResizeElement {
       .section-header {
         display: flex;
         align-items: center;
+        flex-shrink: 0;
+        margin: -8px -8px 8px;
+        padding: 8px 8px 8px 16px;
+        border-bottom: 1px solid var(--border);
       }
 
       .section-header .section {
@@ -617,19 +664,19 @@ export class TembaMenu extends ResizeElement {
       }
 
       .section-header temba-icon {
-        --icon-color: #ddd;
+        --icon-color: var(--border-strong);
         cursor: pointer;
-        padding-bottom: 0.5em;
-        padding-right: 0.5em;
+        padding: 4px;
+        transition: --icon-color 120ms ease;
       }
 
       .section-header temba-icon:hover {
-        --icon-color: var(--color-link-primary);
+        --icon-color: var(--accent);
       }
 
       a {
         text-decoration: none;
-        color: var(--color-text-dark);
+        color: inherit;
       }
 
       slot[name='header'] {
@@ -642,7 +689,6 @@ export class TembaMenu extends ResizeElement {
 
       .icon-wrapper {
         position: relative;
-        padding: 0.2em 0.4em 0.2em 0em;
       }
 
       .level-0 .icon-wrapper {
@@ -1126,7 +1172,7 @@ export class TembaMenu extends ResizeElement {
     let icon = menuItem.icon
       ? html`<div class="icon-wrapper">
           <temba-icon
-            size="${menuItem.level === 0 ? '1.5' : '1'}"
+            size="${menuItem.level === 0 ? '1.35' : '1'}"
             name="${menuItem.icon}"
           ></temba-icon
           >${menuItem.bubble && !menuItem.count
@@ -1140,7 +1186,7 @@ export class TembaMenu extends ResizeElement {
 
     const collapsedIcon = menuItem.collapsed_icon
       ? html`<temba-icon
-          size="${menuItem.level === 0 ? '1.5' : '1'}"
+          size="${menuItem.level === 0 ? '1.35' : '1'}"
           name="${menuItem.collapsed_icon}"
           class="collapse-icon"
         ></temba-icon>`
@@ -1341,7 +1387,7 @@ export class TembaMenu extends ResizeElement {
                     ${index == 0 && !this.collapsed
                       ? html`<temba-icon
                           name=${collapseIcon}
-                          size="1.5"
+                          size="1"
                           @click=${this.handleCollapse}
                         ></temba-icon>`
                       : null}

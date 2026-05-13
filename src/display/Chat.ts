@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
+import { TicketEvent } from '../events';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
@@ -314,11 +315,18 @@ export class Chat extends RapidElement {
 
       .note .bubble {
         background: #fffac3;
-        color: rgba(0, 0, 0, 0.7);
+        border: 1px solid #e8d169;
+        color: #5d4e1e;
       }
 
       .note .bubble .name {
-        color: rgba(0, 0, 0, 0.5);
+        color: rgba(93, 78, 30, 0.65);
+      }
+
+      .note-time {
+        margin-top: 0.35em;
+        font-size: 0.9em;
+        color: rgba(93, 78, 30, 0.65);
       }
 
       .warning .bubble {
@@ -630,6 +638,10 @@ export class Chat extends RapidElement {
       .event p {
         margin: 0;
         padding: 0;
+      }
+
+      .event strong {
+        font-weight: 500;
       }
 
       .collapse {
@@ -953,15 +965,19 @@ export class Chat extends RapidElement {
       return { same: true };
     }
 
-    // for type equivalence, treat all non-message types as the same
+    // for type equivalence, treat all non-message types as the same.
+    // Notes are treated like messages so they group with other notes
+    // only when type + author match (and split from non-note events).
     const isMsg1 =
       msg1.type === 'msg_created' ||
       msg1.type === 'msg_received' ||
-      msg1.type === 'ivr_created';
+      msg1.type === 'ivr_created' ||
+      msg1.type === 'ticket_note_added';
     const isMsg2 =
       msg2.type === 'msg_created' ||
       msg2.type === 'msg_received' ||
-      msg2.type === 'ivr_created';
+      msg2.type === 'ivr_created' ||
+      msg2.type === 'ticket_note_added';
     const typeMatch =
       isMsg1 && isMsg2 ? msg1.type === msg2.type : isMsg1 === isMsg2;
 
@@ -1192,7 +1208,8 @@ export class Chat extends RapidElement {
     const isMessageType =
       currentMsg.type === 'msg_received' ||
       currentMsg.type === 'msg_created' ||
-      currentMsg.type === 'ivr_created';
+      currentMsg.type === 'ivr_created' ||
+      currentMsg.type === 'ticket_note_added';
     const showAvatar =
       this.avatars && ((isMessageType && this.agent) || !incoming);
 
@@ -1258,13 +1275,18 @@ export class Chat extends RapidElement {
               const deletedClass = msgEvent._deleted ? 'deleted' : '';
               const latestClass = index === msgIds.length - 1 ? 'latest' : '';
               const eventClass = msg._rendered ? 'is-event' : '';
+              const noteClass = msg.type === 'ticket_note_added' ? 'note' : '';
               const matchClass =
                 this.highlightMessageUuid === msg.uuid ? 'search-match' : '';
               return html`<div
-                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass} ${matchClass}"
+                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass} ${noteClass} ${matchClass}"
                 data-uuid=${msg.uuid || nothing}
               >
-                ${this.renderMessage(msg, index == 0 ? name : null)}
+                ${this.renderMessage(
+                  msg,
+                  index == 0 ? name : null,
+                  index === msgIds.length - 1
+                )}
               </div>`;
             }
           )}
@@ -1292,9 +1314,38 @@ export class Chat extends RapidElement {
     return { html: resultHtml, timestamp: newLastShownTimestamp };
   }
 
-  private renderMessage(event: ContactEvent, name = null): TemplateResult {
+  private renderNote(
+    event: TicketEvent,
+    name: string | null,
+    isLast: boolean
+  ): TemplateResult {
+    return html`<div class="bubble-wrap">
+      <div class="bubble">
+        ${name ? html`<div class="name">${name}</div>` : null}
+        <div style="white-space: pre-wrap;">${event.note}</div>
+      </div>
+      ${isLast
+        ? html`<div class="note-time">
+            <temba-date
+              value=${event.created_on.toISOString()}
+              display="relative"
+            ></temba-date>
+          </div>`
+        : null}
+    </div>`;
+  }
+
+  private renderMessage(
+    event: ContactEvent,
+    name = null,
+    isLast = false
+  ): TemplateResult {
     if (event._rendered) {
       return html`<div class="event">${event._rendered.html}</div>`;
+    }
+
+    if (event.type === 'ticket_note_added') {
+      return this.renderNote(event as TicketEvent, name, isLast);
     }
 
     const message = event as MsgEvent;

@@ -290,9 +290,7 @@ export default class Label extends LitElement {
                 <temba-icon name="x" size="0.85"></temba-icon>
               </button>`
             : null}
-          ${resolvedIcon
-            ? html`<temba-icon name=${resolvedIcon} />`
-            : null}
+          ${resolvedIcon ? html`<temba-icon name=${resolvedIcon} />` : null}
           <slot></slot>
         </div>
       </div>

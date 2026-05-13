@@ -116,4 +116,17 @@ describe('temba-dialog', () => {
     element.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape' }));
     expect(dialog.open).to.equal(false);
   });
+
+  it('only shows submitting state on the primary button', async () => {
+    const dialog: Dialog = await fixture(getDialogHTML());
+    await open(dialog);
+
+    dialog.submitting = true;
+    await dialog.updateComplete;
+
+    const primary = dialog.getPrimaryButton();
+    const cancel = dialog.getCancelButton();
+    expect(primary.submitting).to.equal(true);
+    expect(cancel.submitting).to.equal(false);
+  });
 });

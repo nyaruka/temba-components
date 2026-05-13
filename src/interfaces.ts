@@ -59,6 +59,7 @@ export interface NamedUser extends User {
 
 export interface User {
   id?: number;
+  uuid?: string;
   first_name?: string;
   last_name?: string;
   name?: string;

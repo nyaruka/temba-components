@@ -11,18 +11,21 @@
        component. Legacy tokens below are aliased to these — keep both in
        sync if the design system evolves. */
 
-    /* accent ramp — derived from a single anchor via OKLab mixing */
-    --accent:      #2A6FB5;
-    --accent-50:   color-mix(in oklab, var(--accent) 6%,  white);
-    --accent-100:  color-mix(in oklab, var(--accent) 12%, white);
-    --accent-200:  color-mix(in oklab, var(--accent) 25%, white);
-    --accent-300:  color-mix(in oklab, var(--accent) 45%, white);
-    --accent-400:  color-mix(in oklab, var(--accent) 75%, white);
-    --accent-500:  var(--accent);
-    --accent-600:  color-mix(in oklab, var(--accent) 88%, black);
-    --accent-700:  color-mix(in oklab, var(--accent) 75%, black);
-    --accent-800:  color-mix(in oklab, var(--accent) 60%, black);
-    --accent-900:  color-mix(in oklab, var(--accent) 45%, black);
+    /* accent ramp — the primary color sits at 400 and the ramp is
+       derived from it in both directions via sRGB mixing.
+       The anchor reads from --primary-rgb so host pages can re-theme
+       the entire ramp by setting e.g. --primary-rgb: 112, 0, 132. */
+    --accent:      rgb(var(--primary-rgb, 98, 147, 201));
+    --accent-50:   color-mix(in srgb, var(--accent) 6%,  white);
+    --accent-100:  color-mix(in srgb, var(--accent) 16%, white);
+    --accent-200:  color-mix(in srgb, var(--accent) 32%, white);
+    --accent-300:  color-mix(in srgb, var(--accent) 60%, white);
+    --accent-400:  var(--accent);
+    --accent-500:  color-mix(in srgb, var(--accent) 90%, black);
+    --accent-600:  color-mix(in srgb, var(--accent) 80%, black);
+    --accent-700:  color-mix(in srgb, var(--accent) 65%, black);
+    --accent-800:  color-mix(in srgb, var(--accent) 50%, black);
+    --accent-900:  color-mix(in srgb, var(--accent) 35%, black);
 
     /* neutrals */
     --bg:            #F6F7F9;
@@ -58,7 +61,7 @@
     --w-regular:   400;
     --w-medium:    500;
     --w-semibold:  600;
-    --w-bold:      700;
+    --w-bold:      600;
 
     /* shape */
     --r:      8px;
@@ -80,11 +83,11 @@
     /* ─── legacy aliases — point at the DS tokens above ────────────────── */
 
     --font-family: var(--font);
-    --primary-rgb: 35, 135, 202;
+    --primary-rgb: 58, 102, 150;
     --secondary-rgb: 140, 51, 140;
     --tertiary-rgb: 135, 202, 35;
 
-    --focus-rgb: 82, 168, 236;
+    --focus-rgb: 91, 156, 229;
     --error-rgb: 255, 99, 71;
     --success-rgb: 102, 186, 104;
 
@@ -94,51 +97,66 @@
     --select-input-height: inherit;
 
     --disabled-opacity: 0.6;
-    --curvature: var(--r-sm);
-    --curvature-widget: var(--r-sm);
-    --focus: #5b9ce5;
-    --focus-muted: color-mix(in oklab, var(--focus) 60%, white);
+    --curvature: 6px;
+    --curvature-widget: 6px;
+    --focus: rgb(var(--focus-rgb, 91, 156, 229));
+    --focus-50: color-mix(in srgb, var(--focus) 12%, white);
+    --focus-100: color-mix(in srgb, var(--focus) 24%, white);
+    --focus-200: color-mix(in srgb, var(--focus) 40%, white);
+    --focus-300: color-mix(in srgb, var(--focus) 60%, white);
+    --focus-600: color-mix(in srgb, var(--focus) 60%, black);
+    --focus-700: color-mix(in srgb, var(--focus) 45%, black);
+    --focus-muted: color-mix(in srgb, var(--focus) 60%, white);
     --focus-halo: 0 0 0 3px
-      color-mix(in oklab, var(--focus) 30%, transparent);
-    --color-focus: var(--focus-muted);
-    --color-widget-bg: var(--surface);
-    --color-widget-bg-focused: var(--surface);
-    --color-widget-border: var(--border-strong);
+      color-mix(in srgb, var(--focus) 30%, transparent);
+    --color-focus: #a4cafe;
+    --color-widget-bg: #fff;
+    --color-widget-bg-focused: #fff;
+    --color-widget-border: rgb(225, 225, 225);
 
     --color-options-bg: var(--surface);
 
-    /* primary colors, should be dark */
-    --color-selection: var(--accent-50);
-    --color-success: var(--success);
+    /* primary colors */
+    --color-selection: #f0f6ff;
+    --color-success: #3ca96a;
+    --color-row-hover: rgba(var(--selection-light-rgb), 0.4);
+    --color-message: #3c92dd;
+    --color-available: #00f100;
 
-    --widget-box-shadow: none;
-    --widget-box-shadow-focused: var(--focus-halo);
+    --widget-box-shadow: rgba(-1, -1, 0, 0.1) 0px 1px 7px 0px,
+      rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    --widget-box-shadow-focused: 0 0 0 3px rgba(164, 202, 254, 0.45),
+      rgba(0, 0, 0, 0.05) 0px 3px 7px 0px,
+      rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
     --widget-box-shadow-focused-error: 0 0 0 3px rgba(var(--error-rgb), 0.3);
 
-    --shadow: var(--shadow-1);
-    --shadow-widget: var(--shadow-1);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-widget: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
+      0 1px 2px 0 rgba(0, 0, 0, 0.02);
 
     /* page text, borders, widgets */
-    --color-text: var(--text-1);
-    --color-widget-text: var(--text-1);
-    --color-borders: var(--border);
-    --color-placeholder: var(--text-3);
+    --color-text: #555;
+    --color-widget-text: #555;
+    --color-borders: rgba(0, 0, 0, 0.07);
+    --color-placeholder: #ccc;
 
     /* light colors, panel backgrounds, selection, etc */
-    --color-primary-light: var(--sunken);
-    --color-secondary-light: #ccc;
+    --color-primary-light: #eee;
+    --color-secondary-light: rgba(var(--secondary-rgb), 0.3);
 
     --color-label: var(--text-1);
 
-    /* dark colors, nav bar, buttons, etc */
-    --color-primary-dark: rgb(var(--primary-rgb));
+    /* dark colors, nav bar, buttons, etc — default to a ramp step
+       so they auto-theme when --primary-rgb changes. Hosts can still
+       override the legacy variable directly to break out of the ramp. */
+    --color-primary-dark: var(--accent-500);
     --color-secondary-dark: rgb(var(--secondary-rgb));
 
     /* light text goes over dark, dark over lights */
     --color-text-light: rgba(255, 255, 255, 1);
-    --color-text-dark: rgba(0, 0, 0, 0.8);
+    --color-text-dark: #555;
     --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
-    --color-text-help: var(--text-3);
+    --color-text-help: rgb(120, 120, 120);
     --color-tertiary: rgb(var(--tertiary-rgb));
 
     --help-text-size: 0.85em;
@@ -150,12 +168,13 @@
     --color-overlay-light: rgba(0, 0, 0, 0.05);
     --color-overlay-light-text: rgba(0, 0, 0, 0.6);
 
-    /* links, buttons, and label badges */
-    --color-link-primary: rgba(var(--primary-rgb), 0.8);
-    --color-link-primary-hover: rgba(var(--primary-rgb), 0.9);
+    /* links, buttons, and label badges — default to ramp steps so
+       they auto-theme; overridable via direct variable setting. */
+    --color-link-primary: var(--accent-500);
+    --color-link-primary-hover: var(--accent-600);
     --color-link-secondary: rgba(var(--secondary-rgb), 0.8);
     --color-link-secondary-hover: rgba(var(--secondary-rgb), 0.9);
-    --color-button-primary: var(--color-primary-dark);
+    --color-button-primary: var(--accent-500);
     --color-button-primary-text: var(--color-text-light);
     --color-button-light: rgb(246, 248, 250);
     --color-button-light-text: rgb(36, 41, 47);
@@ -165,9 +184,16 @@
     --color-button-destructive: rgb(var(--error-rgb));
     --color-button-destructive-text: var(--color-text-light);
 
-    --color-button-attention: #2ecc71;
+    --color-button-attention: #3ca96a;
 
     --color-connectors: #95cbef;
+
+    --color-label-primary: var(--color-primary-dark);
+    --color-label-primary-text: var(--color-text-light);
+    --color-label-secondary: var(--color-secondary-dark);
+    --color-label-secondary-text: var(--color-text-light);
+    --color-label-tertiary: var(--color-tertiary);
+    --color-label-tertiary-text: var(--color-text-light);
 
     --color-nav-unselected: #fff;
     --color-nav-selected-bg: #fff;
@@ -207,19 +233,20 @@
     --temba-textinput-font-size: 13.5px;
     --temba-textinput-min-height: var(--input-h);
 
-    --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-    --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --dropdown-shadow: rgb(0 0 0 / 30%) 0px 0px 60px, rgb(0 0 0 / 12%) 0px 6px 12px;
+    --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+      0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --dropdown-shadow: rgb(0 0 0 / 15%) 0px 0px 30px,
+      rgb(0 0 0 / 12%) 0px 2px 6px;
 
     --label-size: 14px;
+    --control-margin-bottom: 15px;
 
     --menu-padding: 1em;
 
     font-size: var(--font-size);
     font-family: var(--font-family);
-
-    --button-y: 6px;
-    --button-x: 14px;
 
     --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
@@ -234,14 +261,14 @@
   }
 
   temba-button {
-    --button-bg: var(--color-primary-dark);
+    --button-bg: var(--accent-500);
     --button-text: var(--color-text-light);
     --button-border: none;
     --button-shadow: var(--widget-box-shadow);
   }
 
   temba-button:hover {
-    --button-bg-img: linear-gradient(to bottom, rgba(var(--primary-rgb), .1), transparent, transparent);
+    --button-bg-img: linear-gradient(to bottom, rgba(255, 255, 255, .1), transparent, transparent);
   }
 
   temba-button.active {

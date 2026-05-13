@@ -396,6 +396,18 @@ export class ContactChat extends ContactStoreElement {
         background: rgba(0, 0, 0, 0.03);
       }
 
+      /* Keep the assignment + topic controls the same height as the
+         Close button so the row reads as one strip. Shrink the user
+         avatars (--temba-scale) so they fit in the smaller box. */
+      .in-ticket temba-user-select,
+      .in-ticket temba-select {
+        --temba-select-min-height: 28px;
+      }
+
+      .in-ticket temba-user-select {
+        --temba-scale: 0.75;
+      }
+
       temba-user {
         border: 1px solid #ddd;
         padding: 0.2em 0.5em;
@@ -1010,8 +1022,11 @@ export class ContactChat extends ContactStoreElement {
         if (
           event.type === 'msg_created' ||
           event.type === 'msg_received' ||
-          event.type === 'ivr_created'
+          event.type === 'ivr_created' ||
+          event.type === 'ticket_note_added'
         ) {
+          // Notes render as chat-style bubbles (see Chat.ts), so push them
+          // through directly rather than prerendering into an inline event.
           messages.push(event);
         } else {
           this.prerender(event);
