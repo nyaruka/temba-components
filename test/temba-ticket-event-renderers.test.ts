@@ -2,11 +2,16 @@ import { expect, fixture, html } from '@open-wc/testing';
 import { renderTicketAssigneeChanged } from '../src/events/eventRenderers';
 import { TicketEvent } from '../src/events';
 
-// Build a TicketEvent fixture. Each branch passes partial user objects
-// matching the runtime shape the renderer reads (`name`, `email`,
-// `uuid`); cast as TicketEvent so the test isn't tied to type variance
-// between Chat.ts's User and interfaces.ts's User.
-const makeEvent = (overrides: any = {}): TicketEvent => {
+// Build a TicketEvent fixture. The user variance (Chat.ts User
+// requires uuid; interfaces.ts User declares it optional) lives
+// only on the _user / assignee slots — keep the rest of the
+// overrides strictly typed so typos still fail the build.
+const makeEvent = (
+  overrides: Partial<Omit<TicketEvent, '_user' | 'assignee'>> & {
+    _user?: any;
+    assignee?: any;
+  } = {}
+): TicketEvent => {
   return {
     type: 'ticket_assignee_changed',
     uuid: 'evt-1',
@@ -26,6 +31,18 @@ describe('renderTicketAssigneeChanged', () => {
     );
     expect(el.textContent).to.contain('took this ticket');
     expect(el.textContent).to.not.contain('assigned this ticket to');
+  });
+
+  it('renders "took this ticket" when actor and assignee share the same uuid (no email on payload)', async () => {
+    const event = makeEvent({
+      _user: { uuid: 'u-adam', name: 'Adam' },
+      assignee: { uuid: 'u-adam', name: 'Adam' }
+    });
+
+    const el = await fixture(
+      html`<div>${renderTicketAssigneeChanged(event)}</div>`
+    );
+    expect(el.textContent).to.contain('took this ticket');
   });
 
   it('renders "<actor> assigned this ticket to <assignee>" for cross-user assignment', async () => {
@@ -86,5 +103,21 @@ describe('renderTicketAssigneeChanged', () => {
       html`<div>${renderTicketAssigneeChanged(event)}</div>`
     );
     expect(el.textContent).to.contain('This ticket was unassigned');
+  });
+
+  it('links the assignee pill to /ticket/all/open/?assignee=<uuid>', async () => {
+    const event = makeEvent({
+      _user: { uuid: 'u-adam', name: 'Adam', email: 'adam@example.com' },
+      assignee: { uuid: 'u-sally', name: 'Sally', email: 'sally@example.com' }
+    });
+
+    const el: HTMLElement = await fixture(
+      html`<div>${renderTicketAssigneeChanged(event)}</div>`
+    );
+    const links = Array.from(el.querySelectorAll('a'));
+    const assigneeHref = links
+      .map((a) => a.getAttribute('href'))
+      .find((href) => href && href.includes('u-sally'));
+    expect(assigneeHref).to.equal('/ticket/all/open/?assignee=u-sally');
   });
 });

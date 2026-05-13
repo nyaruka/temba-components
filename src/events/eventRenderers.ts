@@ -296,14 +296,16 @@ export const renderTicketAssigneeChanged = (
     if (event.assignee) {
       // Self-assignment ("took the ticket") reads naturally as one
       // user pill + verb, rather than "<user> assigned to <same user>".
-      // The User type carries identity as `email` (not uuid); compare
-      // on email when both sides have one.
-      if (
-        event._user.email &&
-        event._user.email === event.assignee.email
-      ) {
+      // Match on uuid when present, falling back to email — depending
+      // on the API surface a user payload may carry one or the other.
+      const actor = event._user as any;
+      const assignee = event.assignee as any;
+      const sameUser =
+        (actor.uuid && actor.uuid === assignee.uuid) ||
+        (actor.email && actor.email === assignee.email);
+      if (sameUser) {
         return html`<div style=${eventLineStyle}>
-          ${userPill(event._user, { expanded: true })} took this ticket
+          ${userPill(actor, { expanded: true })} took this ticket
         </div>`;
       }
       return html`<div style=${eventLineStyle}>
