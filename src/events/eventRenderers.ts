@@ -256,7 +256,7 @@ export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
   if (event.value) {
     return actor
       ? html`<div style=${eventLineStyle}>
-          ${actor} set ${fieldPill(event.field)} to
+          ${actor} set their ${fieldPill(event.field)} to
           ${valuePill(event.value.text)}
         </div>`
       : html`<div style=${eventLineStyle}>
@@ -265,7 +265,7 @@ export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
   }
   return actor
     ? html`<div style=${eventLineStyle}>
-        ${actor} cleared ${fieldPill(event.field)}
+        ${actor} cleared their ${fieldPill(event.field)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Cleared ${fieldPill(event.field)}
@@ -276,12 +276,12 @@ export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
   const actor = actorPill(event);
   if (!event.name) {
     return actor
-      ? html`<div style=${eventLineStyle}>${actor} cleared name</div>`
+      ? html`<div style=${eventLineStyle}>${actor} cleared their name</div>`
       : html`<div style=${eventLineStyle}>Cleared name</div>`;
   }
   return actor
     ? html`<div style=${eventLineStyle}>
-        ${actor} set name to ${valuePill(event.name)}
+        ${actor} set their name to ${valuePill(event.name)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Updated name to ${valuePill(event.name)}
@@ -294,14 +294,16 @@ export const renderContactURNsChanged = (
   const actor = actorPill(event);
   if (!event.urns || event.urns.length === 0) {
     return actor
-      ? html`<div style=${eventLineStyle}>${actor} cleared URNs</div>`
+      ? html`<div style=${eventLineStyle}>${actor} cleared their URNs</div>`
       : html`<div style=${eventLineStyle}>Cleared URNs</div>`;
   }
   const urns = oxfordFn(event.urns, (urn: string) =>
     valuePill(urn.split(':')[1].split('?')[0])
   );
   return actor
-    ? html`<div style=${eventLineStyle}>${actor} set URNs to ${urns}</div>`
+    ? html`<div style=${eventLineStyle}>
+        ${actor} set their URNs to ${urns}
+      </div>`
     : html`<div style=${eventLineStyle}>Updated URNs to ${urns}</div>`;
 };
 
@@ -432,12 +434,14 @@ export const renderContactLanguageChangedEvent = (
   const actor = actorPill(event);
   if (!event.language) {
     return actor
-      ? html`<div style=${eventLineStyle}>${actor} cleared language</div>`
+      ? html`<div style=${eventLineStyle}>
+          ${actor} cleared their language
+        </div>`
       : html`<div style=${eventLineStyle}>Cleared language</div>`;
   }
   return actor
     ? html`<div style=${eventLineStyle}>
-        ${actor} set language to ${valuePill(event.language)}
+        ${actor} set their language to ${valuePill(event.language)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Language updated to ${valuePill(event.language)}
@@ -450,12 +454,12 @@ export const renderContactStatusChangedEvent = (
   const actor = actorPill(event);
   if (!event.status) {
     return actor
-      ? html`<div style=${eventLineStyle}>${actor} cleared status</div>`
+      ? html`<div style=${eventLineStyle}>${actor} cleared their status</div>`
       : html`<div style=${eventLineStyle}>Cleared status</div>`;
   }
   return actor
     ? html`<div style=${eventLineStyle}>
-        ${actor} set status to ${valuePill(event.status)}
+        ${actor} set their status to ${valuePill(event.status)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Status updated to ${valuePill(event.status)}
