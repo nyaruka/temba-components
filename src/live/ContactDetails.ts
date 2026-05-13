@@ -2,6 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Icon } from '../Icons';
 import { capitalize } from '../utils';
+import { getLanguageName } from '../languages';
 
 const STATUS = {
   active: 'Active',
@@ -62,7 +63,7 @@ export class ContactDetails extends ContactStoreElement {
       return;
     }
 
-    const lang = this.store.getLanguageName(this.data.language);
+    const lang = getLanguageName(this.data.language);
 
     return html`
       <div class="wrapper">

@@ -6,7 +6,7 @@ import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { FlowDefinition } from '../store/flow-definition';
 import { TranslationEntry, buildTranslationBundles } from './flow-translations';
-import { getLanguageDisplayName } from './utils';
+import { getLanguageName } from '../languages';
 import { LLMModel, hasLLMRole } from './flow-utils';
 
 interface TranslationModel {
@@ -701,7 +701,7 @@ export class AutoTranslate extends RapidElement {
     }
 
     const selected = this.selectedModel ? [this.selectedModel] : [];
-    const languageName = getLanguageDisplayName(this.languageCode);
+    const languageName = getLanguageName(this.languageCode);
     const aiClause = this.brand
       ? html`${this.brand} uses AI for automatic translation, which can make
         mistakes,`

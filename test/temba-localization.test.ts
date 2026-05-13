@@ -10,12 +10,6 @@ describe('Localization Editing', () => {
   let editor: Editor;
   let storeElement: HTMLElement;
 
-  const languageNames: Record<string, string> = {
-    eng: 'English',
-    fra: 'French',
-    spa: 'Spanish'
-  };
-
   const setupWorkspace = () => {
     zustand.setState({
       workspace: {
@@ -107,8 +101,6 @@ describe('Localization Editing', () => {
 
   before(() => {
     storeElement = document.createElement('temba-store');
-    (storeElement as any).getLanguageName = (code: string) =>
-      languageNames[code];
     document.body.appendChild(storeElement);
   });
 
