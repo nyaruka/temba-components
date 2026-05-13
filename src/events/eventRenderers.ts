@@ -286,6 +286,17 @@ export const renderTicketAction = (
 export const renderTicketAssigneeChanged = (
   event: TicketEvent
 ): TemplateResult => {
+  const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
+  // Link the word "ticket" in assignee events too, so the noun is
+  // consistently interactive across open / close / reopen / assigned
+  // rows (the contact-history page can show events from any of the
+  // contact's tickets, so the jump-to-ticket affordance is useful).
+  const ticketLink = html`<a href="/ticket/all/open/${ticketUUID}/"
+    >ticket</a
+  >`;
+  const ticketLinkCapitalized = html`<a href="/ticket/all/open/${ticketUUID}/"
+    >This ticket</a
+  >`;
   if (event._user) {
     if (event.assignee) {
       // Self-assignment ("took the ticket") reads naturally as one
@@ -297,40 +308,45 @@ export const renderTicketAssigneeChanged = (
         (event._user.email && event._user.email === event.assignee.email);
       if (sameUser) {
         return html`<div style=${eventLineStyle}>
-          ${userLink(event._user)} took this ticket
+          ${userLink(event._user)} took this ${ticketLink}
         </div>`;
       }
       return html`<div style=${eventLineStyle}>
-        ${userLink(event._user)} assigned this ticket to
+        ${userLink(event._user)} assigned this ${ticketLink} to
         ${userLink(event.assignee)}
       </div>`;
     } else {
       return html`<div style=${eventLineStyle}>
-        ${userLink(event._user)} unassigned this ticket
+        ${userLink(event._user)} unassigned this ${ticketLink}
       </div>`;
     }
   } else {
     if (event.assignee) {
       return html`<div style=${eventLineStyle}>
-        This ticket was assigned to ${userLink(event.assignee)}
+        ${ticketLinkCapitalized} was assigned to ${userLink(event.assignee)}
       </div>`;
     } else {
-      return html`<div>This ticket was unassigned</div>`;
+      return html`<div style=${eventLineStyle}>
+        ${ticketLinkCapitalized} was unassigned
+      </div>`;
     }
   }
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
+  const ticketUUID = event.ticket.uuid;
   const href = `/ticket/all/open/${ticketUUID}/`;
+  // ticket.topic is optional in events.ts — guard so a payload
+  // without one degrades to "A ticket was opened" rather than
+  // throwing inside topicPill.
+  const topic = event.ticket.topic;
+  const tail = topic ? html` in ${topicPill(topic)}` : null;
   return event._user
     ? html`<div style=${eventLineStyle}>
-        ${userLink(event._user)} opened a <a href=${href}>ticket</a> in
-        ${topicPill(event.ticket.topic)}
+        ${userLink(event._user)} opened a <a href=${href}>ticket</a>${tail}
       </div>`
     : html`<div style=${eventLineStyle}>
-        A <a href=${href}>ticket</a> was opened in
-        ${topicPill(event.ticket.topic)}
+        A <a href=${href}>ticket</a> was opened${tail}
       </div>`;
 };
 
@@ -632,11 +648,17 @@ export const renderEvent = (
     case Events.TICKET_REOPENED:
       content = renderTicketAction(event as TicketEvent, 'reopened');
       break;
-    case Events.TICKET_TOPIC_CHANGED:
-      content = html`<div style=${eventLineStyle}>
-        Topic changed to ${topicPill((event as TicketEvent).topic)}
-      </div>`;
+    case Events.TICKET_TOPIC_CHANGED: {
+      // event.topic is optional — guard so a payload without one
+      // degrades cleanly instead of throwing inside topicPill.
+      const newTopic = (event as TicketEvent).topic;
+      content = newTopic
+        ? html`<div style=${eventLineStyle}>
+            Topic changed to ${topicPill(newTopic)}
+          </div>`
+        : null;
       break;
+    }
     default:
       return null;
   }
