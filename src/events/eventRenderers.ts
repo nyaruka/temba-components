@@ -1,5 +1,4 @@
 import { html, TemplateResult } from 'lit';
-import { ContactEvent } from '../display/Chat';
 import {
   AirtimeTransferredEvent,
   CallEvent,
@@ -180,31 +179,19 @@ const valuePill = (value: string | number) =>
 const eventLineStyle =
   'display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 2px 4px;';
 
-/**
- * Returns a user pill for the event actor when one is present, or
- * null. Events carry `_user` only when the action was taken by a
- * real user (UI / API); system / flow-driven changes leave it
- * unset and fall through to passive-voice rendering.
- */
-const actorPill = (event: ContactEvent): TemplateResult | null => {
-  const user = (event as any)._user;
-  return user ? userPill(user, { expanded: true }) : null;
-};
-
 const renderInfoList = (
-  passiveVerb: string,
-  activeVerb: string,
-  items: any[],
-  actor: TemplateResult | null
+  singular: string,
+  plural: string,
+  items: any[]
 ): TemplateResult => {
-  // With an actor: "Adam added <pill>"; without: "Added to <pill>".
-  const lead = actor ? html`${actor} ${activeVerb}` : passiveVerb;
   if (items.length === 1) {
-    return html`<div style=${eventLineStyle}>${lead} ${groupPill(items[0])}</div>`;
+    return html`<div style=${eventLineStyle}>
+      ${singular} ${groupPill(items[0])}
+    </div>`;
   }
   if (items.length === 2) {
     return html`<div style=${eventLineStyle}>
-      ${lead} ${groupPill(items[0])} and ${groupPill(items[1])}
+      ${plural} ${groupPill(items[0])} and ${groupPill(items[1])}
     </div>`;
   }
   // No commas between pills — the flex `gap` on eventLineStyle
@@ -213,32 +200,25 @@ const renderInfoList = (
   const middle = items.slice(0, -1).map((item) => groupPill(item));
   const last = items[items.length - 1];
   return html`<div style=${eventLineStyle}>
-    ${lead} ${middle} and ${groupPill(last)}
+    ${plural} ${middle} and ${groupPill(last)}
   </div>`;
 };
 
 export const renderRunEvent = (event: RunEvent): TemplateResult => {
-  const actor = actorPill(event);
-  let passive = 'Started';
-  let active = 'started';
+  let verb = 'Started';
   if (event.type === Events.RUN_ENDED) {
     if (event.status === 'completed') {
-      passive = 'Completed';
-      active = 'completed';
+      verb = 'Completed';
     } else if (event.status === 'expired') {
-      passive = 'Expired from';
-      active = 'expired from';
+      verb = 'Expired from';
     } else {
-      passive = 'Interrupted';
-      active = 'interrupted';
+      verb = 'Interrupted';
     }
   }
 
-  return actor
-    ? html`<div style=${eventLineStyle}>
-        ${actor} ${active} ${flowPill(event.flow)}
-      </div>`
-    : html`<div style=${eventLineStyle}>${passive} ${flowPill(event.flow)}</div>`;
+  return html`<div style=${eventLineStyle}>
+    ${verb} ${flowPill(event.flow)}
+  </div>`;
 };
 
 export const renderChatStartedEvent = (
@@ -252,20 +232,9 @@ export const renderChatStartedEvent = (
 };
 
 export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
-  const actor = actorPill(event);
-  if (event.value) {
-    return actor
-      ? html`<div style=${eventLineStyle}>
-          ${actor} set their ${fieldPill(event.field)} to
-          ${valuePill(event.value.text)}
-        </div>`
-      : html`<div style=${eventLineStyle}>
-          Updated ${fieldPill(event.field)} to ${valuePill(event.value.text)}
-        </div>`;
-  }
-  return actor
+  return event.value
     ? html`<div style=${eventLineStyle}>
-        ${actor} cleared their ${fieldPill(event.field)}
+        Updated ${fieldPill(event.field)} to ${valuePill(event.value.text)}
       </div>`
     : html`<div style=${eventLineStyle}>
         Cleared ${fieldPill(event.field)}
@@ -273,38 +242,26 @@ export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
 };
 
 export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
-  const actor = actorPill(event);
   if (!event.name) {
-    return actor
-      ? html`<div style=${eventLineStyle}>${actor} cleared their name</div>`
-      : html`<div style=${eventLineStyle}>Cleared name</div>`;
+    return html`<div style=${eventLineStyle}>Cleared name</div>`;
   }
-  return actor
-    ? html`<div style=${eventLineStyle}>
-        ${actor} set their name to ${valuePill(event.name)}
-      </div>`
-    : html`<div style=${eventLineStyle}>
-        Updated name to ${valuePill(event.name)}
-      </div>`;
+  return html`<div style=${eventLineStyle}>
+    Updated name to ${valuePill(event.name)}
+  </div>`;
 };
 
 export const renderContactURNsChanged = (
   event: URNsChangedEvent
 ): TemplateResult => {
-  const actor = actorPill(event);
   if (!event.urns || event.urns.length === 0) {
-    return actor
-      ? html`<div style=${eventLineStyle}>${actor} cleared their URNs</div>`
-      : html`<div style=${eventLineStyle}>Cleared URNs</div>`;
+    return html`<div style=${eventLineStyle}>Cleared URNs</div>`;
   }
-  const urns = oxfordFn(event.urns, (urn: string) =>
-    valuePill(urn.split(':')[1].split('?')[0])
-  );
-  return actor
-    ? html`<div style=${eventLineStyle}>
-        ${actor} set their URNs to ${urns}
-      </div>`
-    : html`<div style=${eventLineStyle}>Updated URNs to ${urns}</div>`;
+  return html`<div style=${eventLineStyle}>
+    Updated URNs to
+    ${oxfordFn(event.urns, (urn: string) =>
+      valuePill(urn.split(':')[1].split('?')[0])
+    )}
+  </div>`;
 };
 
 export const renderTicketAction = (
@@ -326,17 +283,10 @@ export const renderTicketAction = (
       : null;
   }
 
-  const actor = actorPill(event);
-  return actor
-    ? html`<div style=${eventLineStyle}>
-        ${actor} ${action} a
-        <a href="/ticket/all/closed/${ticketUUID}/">ticket</a>
-      </div>`
-    : html`<div>
-        A
-        <a href="/ticket/all/closed/${ticketUUID}/">ticket</a>
-        was <strong>${action}</strong>
-      </div>`;
+  return html`<div style=${eventLineStyle}>
+    Ticket was
+    <a href="/ticket/all/closed/${ticketUUID}/">${action}</a>
+  </div>`;
 };
 
 export const renderTicketAssigneeChanged = (
@@ -380,33 +330,21 @@ export const renderTicketAssigneeChanged = (
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  const actor = actorPill(event);
-  return actor
-    ? html`<div style=${eventLineStyle}>
-        ${actor} opened ticket in ${topicPill(event.ticket.topic)}
-      </div>`
-    : html`<div style=${eventLineStyle}>
-        Opened ticket in ${topicPill(event.ticket.topic)}
-      </div>`;
+  return html`<div style=${eventLineStyle}>
+    Opened ticket in ${topicPill(event.ticket.topic)}
+  </div>`;
 };
 
 export const renderContactGroupsEvent = (
   event: ContactGroupsEvent
 ): TemplateResult => {
-  const actor = actorPill(event);
   if (event.groups_added) {
-    return renderInfoList(
-      'Added to',
-      'added them to',
-      event.groups_added,
-      actor
-    );
+    return renderInfoList('Added to', 'Added to', event.groups_added);
   } else if (event.groups_removed) {
     return renderInfoList(
       'Removed from',
-      'removed them from',
-      event.groups_removed,
-      actor
+      'Removed from',
+      event.groups_removed
     );
   }
 };
@@ -417,53 +355,31 @@ export const renderAirtimeTransferredEvent = (
   if (parseFloat(event.amount) === 0) {
     return html`<div>Airtime transfer failed</div>`;
   }
-  const actor = actorPill(event);
-  return actor
-    ? html`<div style=${eventLineStyle}>
-        ${actor} transferred ${valuePill(event.amount)} ${event.currency} of
-        airtime
-      </div>`
-    : html`<div style=${eventLineStyle}>
-        Transferred ${valuePill(event.amount)} ${event.currency} of airtime
-      </div>`;
+  return html`<div style=${eventLineStyle}>
+    Transferred ${valuePill(event.amount)} ${event.currency} of airtime
+  </div>`;
 };
 
 export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): TemplateResult => {
-  const actor = actorPill(event);
   if (!event.language) {
-    return actor
-      ? html`<div style=${eventLineStyle}>
-          ${actor} cleared their language
-        </div>`
-      : html`<div style=${eventLineStyle}>Cleared language</div>`;
+    return html`<div style=${eventLineStyle}>Cleared language</div>`;
   }
-  return actor
-    ? html`<div style=${eventLineStyle}>
-        ${actor} set their language to ${valuePill(event.language)}
-      </div>`
-    : html`<div style=${eventLineStyle}>
-        Language updated to ${valuePill(event.language)}
-      </div>`;
+  return html`<div style=${eventLineStyle}>
+    Language updated to ${valuePill(event.language)}
+  </div>`;
 };
 
 export const renderContactStatusChangedEvent = (
   event: ContactStatusChangedEvent
 ): TemplateResult => {
-  const actor = actorPill(event);
   if (!event.status) {
-    return actor
-      ? html`<div style=${eventLineStyle}>${actor} cleared their status</div>`
-      : html`<div style=${eventLineStyle}>Cleared status</div>`;
+    return html`<div style=${eventLineStyle}>Cleared status</div>`;
   }
-  return actor
-    ? html`<div style=${eventLineStyle}>
-        ${actor} set their status to ${valuePill(event.status)}
-      </div>`
-    : html`<div style=${eventLineStyle}>
-        Status updated to ${valuePill(event.status)}
-      </div>`;
+  return html`<div style=${eventLineStyle}>
+    Status updated to ${valuePill(event.status)}
+  </div>`;
 };
 
 export const renderCallEvent = (event: CallEvent): TemplateResult => {
