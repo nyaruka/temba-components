@@ -314,11 +314,18 @@ export class Chat extends RapidElement {
 
       .note .bubble {
         background: #fffac3;
-        color: rgba(0, 0, 0, 0.7);
+        border: 1px solid #e8d169;
+        color: #5d4e1e;
       }
 
       .note .bubble .name {
-        color: rgba(0, 0, 0, 0.5);
+        color: rgba(93, 78, 30, 0.65);
+      }
+
+      .note-time {
+        margin-top: 0.35em;
+        font-size: 0.9em;
+        color: rgba(93, 78, 30, 0.65);
       }
 
       .warning .bubble {
@@ -630,6 +637,106 @@ export class Chat extends RapidElement {
       .event p {
         margin: 0;
         padding: 0;
+      }
+
+      .event strong {
+        font-weight: 500;
+      }
+
+      /* User pills (inline-rendered in event html). Default state is
+         just the avatar — no border, no bg, no name. On hover the
+         pill expands: the name slides in via max-width, and the
+         border + bg fade in. The avatar circle keeps its own
+         color via the inline style on .pill-user-avatar. */
+      .event .pill-user-link {
+        display: inline-flex;
+        vertical-align: middle;
+        text-decoration: none;
+        margin: 1px 2px;
+      }
+      .event .pill-user {
+        display: inline-flex;
+        align-items: center;
+        padding: 1px 1px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-1, #1a1f26);
+        font-size: 11.5px;
+        line-height: 1;
+        transition:
+          background 180ms ease,
+          border-color 180ms ease,
+          padding-right 180ms ease;
+      }
+      .event .pill-user-avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 8.5px;
+        font-weight: 500;
+        box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+      .event .pill-user-name {
+        display: inline-block;
+        max-width: 0;
+        margin-left: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        opacity: 0;
+        transition:
+          max-width 180ms ease,
+          margin-left 180ms ease,
+          opacity 180ms ease;
+      }
+      .event .pill-user-link {
+        cursor: pointer;
+      }
+
+      /* Collapsed → expanded transition on hover. End state matches
+         the expanded variant's hover (sunken bg + darkened border) so
+         the two variants resolve to the same look on hover. */
+      .event .pill-user-link:hover .pill-user {
+        background: var(--sunken, #f1f3f5);
+        border-color: color-mix(
+          in srgb,
+          var(--border-strong, #d2d6dc) 60%,
+          var(--text-2, #4d5664)
+        );
+        padding-right: 8px;
+      }
+      .event .pill-user-link:hover .pill-user-name {
+        max-width: 200px;
+        margin-left: 5px;
+        opacity: 1;
+      }
+
+      /* Expanded variant — name always visible, chip border + bg
+         drawn in. Hover darkens the bg + border (rather than
+         expanding, since it's already expanded). */
+      .event .pill-user.expanded {
+        background: #fff;
+        border-color: var(--border-strong, #d2d6dc);
+        padding-right: 8px;
+      }
+      .event .pill-user.expanded .pill-user-name {
+        max-width: 200px;
+        margin-left: 5px;
+        opacity: 1;
+      }
+      .event .pill-user-link.expanded:hover .pill-user.expanded {
+        background: var(--sunken, #f1f3f5);
+        border-color: color-mix(
+          in srgb,
+          var(--border-strong, #d2d6dc) 60%,
+          var(--text-2, #4d5664)
+        );
       }
 
       .collapse {
@@ -953,15 +1060,19 @@ export class Chat extends RapidElement {
       return { same: true };
     }
 
-    // for type equivalence, treat all non-message types as the same
+    // for type equivalence, treat all non-message types as the same.
+    // Notes are treated like messages so they group with other notes
+    // only when type + author match (and split from non-note events).
     const isMsg1 =
       msg1.type === 'msg_created' ||
       msg1.type === 'msg_received' ||
-      msg1.type === 'ivr_created';
+      msg1.type === 'ivr_created' ||
+      msg1.type === 'ticket_note_added';
     const isMsg2 =
       msg2.type === 'msg_created' ||
       msg2.type === 'msg_received' ||
-      msg2.type === 'ivr_created';
+      msg2.type === 'ivr_created' ||
+      msg2.type === 'ticket_note_added';
     const typeMatch =
       isMsg1 && isMsg2 ? msg1.type === msg2.type : isMsg1 === isMsg2;
 
@@ -1192,7 +1303,8 @@ export class Chat extends RapidElement {
     const isMessageType =
       currentMsg.type === 'msg_received' ||
       currentMsg.type === 'msg_created' ||
-      currentMsg.type === 'ivr_created';
+      currentMsg.type === 'ivr_created' ||
+      currentMsg.type === 'ticket_note_added';
     const showAvatar =
       this.avatars && ((isMessageType && this.agent) || !incoming);
 
@@ -1258,13 +1370,18 @@ export class Chat extends RapidElement {
               const deletedClass = msgEvent._deleted ? 'deleted' : '';
               const latestClass = index === msgIds.length - 1 ? 'latest' : '';
               const eventClass = msg._rendered ? 'is-event' : '';
+              const noteClass = msg.type === 'ticket_note_added' ? 'note' : '';
               const matchClass =
                 this.highlightMessageUuid === msg.uuid ? 'search-match' : '';
               return html`<div
-                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass} ${matchClass}"
+                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass} ${noteClass} ${matchClass}"
                 data-uuid=${msg.uuid || nothing}
               >
-                ${this.renderMessage(msg, index == 0 ? name : null)}
+                ${this.renderMessage(
+                  msg,
+                  index == 0 ? name : null,
+                  index === msgIds.length - 1
+                )}
               </div>`;
             }
           )}
@@ -1292,9 +1409,38 @@ export class Chat extends RapidElement {
     return { html: resultHtml, timestamp: newLastShownTimestamp };
   }
 
-  private renderMessage(event: ContactEvent, name = null): TemplateResult {
+  private renderNote(
+    event: any,
+    name: string | null,
+    isLast: boolean
+  ): TemplateResult {
+    return html`<div class="bubble-wrap">
+      <div class="bubble">
+        ${name ? html`<div class="name">${name}</div>` : null}
+        <div style="white-space: pre-wrap;">${event.note}</div>
+      </div>
+      ${isLast
+        ? html`<div class="note-time">
+            <temba-date
+              value=${event.created_on.toISOString()}
+              display="relative"
+            ></temba-date>
+          </div>`
+        : null}
+    </div>`;
+  }
+
+  private renderMessage(
+    event: ContactEvent,
+    name = null,
+    isLast = false
+  ): TemplateResult {
     if (event._rendered) {
       return html`<div class="event">${event._rendered.html}</div>`;
+    }
+
+    if (event.type === 'ticket_note_added') {
+      return this.renderNote(event as any, name, isLast);
     }
 
     const message = event as MsgEvent;

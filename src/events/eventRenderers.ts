@@ -13,7 +13,7 @@ import {
   UpdateFieldEvent,
   URNsChangedEvent
 } from '../events';
-import { oxfordFn } from '../utils';
+import { colorHash, extractInitials, oxfordFn } from '../utils';
 
 export enum Events {
   AIRTIME_TRANSFERRED = 'airtime_transferred',
@@ -105,6 +105,48 @@ const flowPill = (flow: any) =>
   });
 
 const fieldPill = (field: any) => renderEntityPill('field', field.name);
+
+const topicPill = (topic: any) =>
+  renderEntityPill('topic', topic.name, {
+    href: `/ticket/${topic.uuid}/open/`
+  });
+
+/**
+ * User pill — avatar + full name in a clickable chip. Links to the
+ * "All" ticket folder filtered by this assignee. Used in ticket
+ * assignment events in the chat history.
+ *
+ * Two variants:
+ *   - Collapsed (default): just the avatar, hovering expands to
+ *     show the name + chip border.
+ *   - Expanded (`opts.expanded`): name + chip border always visible;
+ *     hover darkens the bg.
+ */
+const userPill = (user: any, opts: { expanded?: boolean } = {}) => {
+  const url = `/ticket/all/open/?assignee=${user.uuid}`;
+  const name = user.name || '';
+  const initials = extractInitials(name);
+  const seed = user.email || name;
+  const avatarBg = user.avatar
+    ? `center / cover no-repeat url('${user.avatar}')`
+    : seed
+      ? colorHash.hex(seed)
+      : '#9aa0a6';
+  return html`<a
+    href=${url}
+    onclick="goto(event, this)"
+    class="pill-user-link ${opts.expanded ? 'expanded' : ''}"
+  >
+    <span class="pill-user ${opts.expanded ? 'expanded' : ''}">
+      <span
+        class="pill-user-avatar"
+        style="background: ${avatarBg};"
+        >${user.avatar ? '' : initials}</span
+      >
+      <span class="pill-user-name">${name}</span>
+    </span>
+  </a>`;
+};
 
 /**
  * Renders a generic value as a neutral pill (white bg, gray border).
@@ -212,19 +254,38 @@ export const renderTicketAction = (
 ): TemplateResult => {
   const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
 
+  const noteUser = event._user;
   const actionNote = event.note
     ? html`<div
-        style="width:85%; background: #fffac3; padding: 1em;margin-bottom: 1em;margin-top:1em; border: 1px solid #ffe97f;border-radius: var(--curvature);line-height: 1.2em; word-break: break-word;"
+        style="width: 100%; display: flex; flex-direction: column; align-items: flex-end;"
       >
-        <div style="color: #8e830fff; font-size: 1em;margin-bottom:0.25em; ">
-          <strong>${event._user ? event._user.name : 'Someone'}</strong> added a
-          note
+        <div
+          style="max-width: 70%; background: #fffac3; padding: 10px 14px; border-radius: 18px; border-bottom-right-radius: 4px; line-height: 1.3em; word-break: break-word; color: rgba(0, 0, 0, 0.75); text-align: left;"
+        >
+          <div
+            style="color: rgba(0, 0, 0, 0.5); font-size: 0.95em; margin-bottom: 0.25em;"
+          >
+            ${noteUser ? noteUser.name : 'Someone'}
+          </div>
+          <div style="white-space: pre-wrap;">${event.note}</div>
+        </div>
+        <div
+          style="display: flex; align-items: center; gap: 0.4em; margin-top: 0.35em; color: rgba(0, 0, 0, 0.5); font-size: 0.95em;"
+        >
           <temba-date
             value=${event.created_on.toISOString()}
             display="relative"
           ></temba-date>
+          ${noteUser
+            ? html`<temba-user
+                uuid=${noteUser.uuid || ''}
+                name=${noteUser.name || ''}
+                first_name=${noteUser.first_name || ''}
+                last_name=${noteUser.last_name || ''}
+                avatar=${noteUser.avatar || ''}
+              ></temba-user>`
+            : null}
         </div>
-        <div style="white-space: pre-wrap;">${event.note}</div>
       </div>`
     : null;
 
@@ -254,19 +315,20 @@ export const renderTicketAssigneeChanged = (
 ): TemplateResult => {
   if (event._user) {
     if (event.assignee) {
-      return html`<div>
-        <strong>${event._user.name}</strong> assigned this ticket to
-        <strong>${event.assignee.name}</strong>
+      return html`<div style=${eventLineStyle}>
+        ${userPill(event._user)} assigned this ticket to
+        ${userPill(event.assignee, { expanded: true })}
       </div>`;
     } else {
-      return html`<div>
-        <strong>${event._user.name}</strong> unassigned this ticket
+      return html`<div style=${eventLineStyle}>
+        ${userPill(event._user)} unassigned this ticket
       </div>`;
     }
   } else {
     if (event.assignee) {
-      return html`<div>
-        This ticket was assigned to <strong>${event.assignee.name}</strong>
+      return html`<div style=${eventLineStyle}>
+        This ticket was assigned to
+        ${userPill(event.assignee, { expanded: true })}
       </div>`;
     } else {
       return html`<div>This ticket was unassigned</div>`;
@@ -275,7 +337,9 @@ export const renderTicketAssigneeChanged = (
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  return html`<div>${event.ticket.topic.name} ticket was opened</div>`;
+  return html`<div style=${eventLineStyle}>
+    Opened ticket in ${topicPill(event.ticket.topic)}
+  </div>`;
 };
 
 export const renderContactGroupsEvent = (
@@ -570,8 +634,8 @@ export const renderEvent = (
       content = renderTicketAction(event as TicketEvent, 'reopened');
       break;
     case Events.TICKET_TOPIC_CHANGED:
-      content = html`<div>
-        Topic changed to <strong>${(event as TicketEvent).topic.name}</strong>
+      content = html`<div style=${eventLineStyle}>
+        Topic changed to ${topicPill((event as TicketEvent).topic)}
       </div>`;
       break;
     default:

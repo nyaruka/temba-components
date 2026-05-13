@@ -65,6 +65,7 @@ export const designTokens = css`
     --recipient: #2a6fb5;
     --flow: #16a34a;
     --channel: #6b21a8;
+    --topic: #d97706;
     /* Field stays slightly darker than the bright yellow-500 anchor
        used for flow/channel — yellow-500 has too little contrast
        against white to read as a foreground / icon hue on its own.

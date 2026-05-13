@@ -41,7 +41,9 @@ export const PILL_TYPES: ReadonlySet<string> = new Set([
   'field',
   'label',
   'keyword',
-  'channel'
+  'channel',
+  'topic',
+  'user'
 ]);
 
 /** Default icon name for each pill variant. Used when a consumer
@@ -53,7 +55,8 @@ export const PILL_TYPE_ICONS: Readonly<Record<string, string>> = {
   contact: 'contact',
   field: 'fields',
   flow: 'flow',
-  label: 'label'
+  label: 'label',
+  topic: 'topic'
 };
 
 /** Inverse mapping: icon name (alias or resolved SVG id) → pill type.
@@ -109,6 +112,21 @@ export const pillVariants = css`
     color: var(--channel);
     border-color: color-mix(in srgb, var(--channel) 25%, white);
     --icon-color: var(--channel);
+  }
+  .pill-topic {
+    background: color-mix(in srgb, var(--topic) 12%, white);
+    color: var(--topic);
+    border-color: color-mix(in srgb, var(--topic) 25%, white);
+    --icon-color: var(--topic);
+  }
+  /* User pills carry an avatar instead of a tinted icon, so the chip
+     chrome stays neutral and lets the avatar circle provide the
+     identity color. */
+  .pill-user {
+    background: var(--surface);
+    color: var(--text-1);
+    border-color: var(--border-strong);
+    --icon-color: var(--text-2);
   }
   .pill-field {
     /* Yellow has very low contrast against white, so the color-mix

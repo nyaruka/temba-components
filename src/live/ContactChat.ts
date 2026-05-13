@@ -1022,8 +1022,11 @@ export class ContactChat extends ContactStoreElement {
         if (
           event.type === 'msg_created' ||
           event.type === 'msg_received' ||
-          event.type === 'ivr_created'
+          event.type === 'ivr_created' ||
+          event.type === 'ticket_note_added'
         ) {
+          // Notes render as chat-style bubbles (see Chat.ts), so push them
+          // through directly rather than prerendering into an inline event.
           messages.push(event);
         } else {
           this.prerender(event);

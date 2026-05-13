@@ -74,7 +74,8 @@ const ENDPOINT_PILL_TYPES: { pattern: RegExp; type: string }[] = [
   { pattern: /\/contacts(\.json|\/|\?|$)/, type: 'contact' },
   { pattern: /\/labels(\.json|\/|\?|$)/, type: 'label' },
   { pattern: /\/flows(\.json|\/|\?|$)/, type: 'flow' },
-  { pattern: /\/fields(\.json|\/|\?|$)/, type: 'field' }
+  { pattern: /\/fields(\.json|\/|\?|$)/, type: 'field' },
+  { pattern: /\/topics(\.json|\/|\?|$)/, type: 'topic' }
 ];
 
 export class Select<T extends SelectOption> extends FieldElement {
