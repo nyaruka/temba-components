@@ -1,6 +1,6 @@
 import { expect, fixture, html } from '@open-wc/testing';
 import { CanvasNode } from '../src/flow/CanvasNode';
-import { SendMsg, Node } from '../src/store/flow-definition';
+import { AddToGroup, SendMsg, Node } from '../src/store/flow-definition';
 import { CustomEventType } from '../src/interfaces';
 import '../temba-modules';
 
@@ -236,5 +236,61 @@ describe('Action Editing Integration', () => {
       testNode.actions[0]
     );
     expect(editRequestedEvent!.detail.nodeUuid).to.equal('test-node');
+  });
+
+  it('clicking a linked pill navigates without opening the action editor', async () => {
+    // Action that renders groups as clickable pills (.linked-pill).
+    const testNode: Node = {
+      uuid: 'test-node',
+      actions: [
+        {
+          type: 'add_contact_groups',
+          uuid: 'test-action',
+          groups: [{ uuid: 'group-1', name: 'Customers' }]
+        } as AddToGroup
+      ],
+      exits: []
+    };
+
+    const editorNode: CanvasNode = await fixture(html`
+      <temba-flow-node
+        .node=${testNode}
+        .ui=${{ position: { left: 0, top: 0 } }}
+      ></temba-flow-node>
+    `);
+
+    await editorNode.updateComplete;
+
+    let editRequestedEvent: CustomEvent | null = null;
+    editorNode.addEventListener(
+      CustomEventType.ActionEditRequested,
+      (event: CustomEvent) => {
+        editRequestedEvent = event;
+      }
+    );
+
+    const pill = editorNode.querySelector('.linked-pill') as HTMLElement;
+    expect(pill, 'pill should be rendered for add_contact_groups action').to
+      .exist;
+
+    // Real click on the pill: mousedown then mouseup at the same position,
+    // bubbling up through the action element. The action's mousedown/mouseup
+    // handlers must bail out so they don't queue an ActionEditRequested —
+    // otherwise a pill click would both navigate AND open the action editor.
+    pill.dispatchEvent(
+      new MouseEvent('mousedown', {
+        clientX: 100,
+        clientY: 100,
+        bubbles: true
+      })
+    );
+    pill.dispatchEvent(
+      new MouseEvent('mouseup', { clientX: 100, clientY: 100, bubbles: true })
+    );
+
+    expect(
+      editRequestedEvent,
+      'ActionEditRequested must not fire for pill clicks'
+    ).to.be.null;
   });
 });

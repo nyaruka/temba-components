@@ -386,6 +386,7 @@ const renderLinkedObject = (
 
   const pillType = iconToPillType(icon);
   return html`<temba-label
+    class="linked-pill"
     icon=${icon || ''}
     type=${pillType || 'neutral'}
     clickable

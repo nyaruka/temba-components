@@ -1116,6 +1116,7 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-pill') ||
       this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
@@ -1144,6 +1145,7 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-pill') ||
       this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
@@ -1192,6 +1194,7 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-pill') ||
       this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
@@ -1218,6 +1221,7 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-pill') ||
       this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
@@ -1318,6 +1322,7 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-pill') ||
       this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
@@ -1345,6 +1350,7 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-pill') ||
       this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
@@ -1406,6 +1412,7 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-pill') ||
       this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
@@ -1431,6 +1438,7 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-pill') ||
       this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
