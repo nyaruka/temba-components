@@ -93,51 +93,34 @@ export class ContactFieldEditor extends RapidElement {
         --color-widget-border: rgb(235, 235, 235);
       }
 
-      .prefix {
-        border-top-left-radius: var(--curvature-widget);
-        border-bottom-left-radius: var(--curvature-widget);
-        cursor: pointer !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: flex;
-        /* Pin to the top-left of the host (temba-select :host is
-           position: relative). Using top rather than margin-top keeps
-           the absolute element out of the flex flow of .left-side so
-           it doesn't push the selected value down. */
-        position: absolute;
-        top: -0.6em;
-        left: 0.5em;
-        pointer-events: none;
-        background: #fff;
-        border-radius: var(--curvature);
-      }
-
-      temba-select .prefix {
-        top: -0.7em;
-      }
-
       .wrapper {
         margin-bottom: 0.5em;
       }
 
-      .prefix .name,
-      .label .name {
-        padding: 0em 0.4em;
-        color: rgba(100, 100, 100, 0.7);
+      .field-label {
+        display: block;
+        font-size: 12px;
+        font-weight: var(--w-medium);
+        color: var(--text-2);
+        margin: 0 0 4px 2px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 0.8em;
+      }
+
+      .label .name {
+        color: var(--text-2);
+        font-size: 12px;
+        font-weight: var(--w-medium);
       }
 
       .disabled .name {
-        margin-top: 1em;
-        margin-left: 0.75em;
+        margin-top: 0.25em;
+        margin-left: 0.25em;
       }
 
       .disabled .value {
-        margin-left: 0.9em;
+        margin-left: 0.25em;
         margin-top: 0.1em;
         min-height: 1.75em;
       }
@@ -426,26 +409,27 @@ export class ContactFieldEditor extends RapidElement {
   }
 
   private renderDateField(state: TemplateResult) {
-    return html` <temba-datepicker
-      timezone=${this.timezone}
-      value="${this.value ? this.value : ''}"
-      @change=${this.handleDateChange}
-      ?disabled=${this.disabled}
-      time
-    >
-      <div class="prefix" slot="prefix">
-        <div class="name">${this.name}</div>
-      </div>
-      <div class="postfix" slot="postfix">
-        <div class="popper ${this.status}  ${this.dirty ? 'dirty' : ''}">
-          ${state}
+    return html`
+      <label class="field-label">${this.name}</label>
+      <temba-datepicker
+        timezone=${this.timezone}
+        value="${this.value ? this.value : ''}"
+        @change=${this.handleDateChange}
+        ?disabled=${this.disabled}
+        time
+      >
+        <div class="postfix" slot="postfix">
+          <div class="popper ${this.status}  ${this.dirty ? 'dirty' : ''}">
+            ${state}
+          </div>
         </div>
-      </div>
-    </temba-datepicker>`;
+      </temba-datepicker>
+    `;
   }
 
   private renderTextField(state: TemplateResult) {
     return html`
+      <label class="field-label">${this.name}</label>
       <temba-textinput
         class="${this.status} ${this.dirty ? 'dirty' : ''}"
         value="${this.value ? this.value : ''}"
@@ -454,10 +438,6 @@ export class ContactFieldEditor extends RapidElement {
         type=${this.getInputType(this.type)}
         ?disabled=${this.disabled}
       >
-        <div class="prefix" slot="prefix">
-          <div class="name">${this.name}</div>
-        </div>
-
         <div class="postfix">
           <div
             class="popper ${this.iconClass} ${this.status}  ${this.dirty
@@ -506,6 +486,7 @@ export class ContactFieldEditor extends RapidElement {
 
   public renderLocationField(level: string = 'state') {
     return html`
+      <label class="field-label">${this.name}</label>
       <temba-select
         endpoint="/api/internal/locations.json?level=${level}"
         nameKey="path"
@@ -516,14 +497,10 @@ export class ContactFieldEditor extends RapidElement {
         queryParam="query"
         searchable
         clearable
-        inpsutStyle=${JSON.stringify({ 'margin-top': '1.1em !important;' })}
         values=${this.value
           ? JSON.stringify([{ path: this.value, osm_id: this.value }])
           : '[]'}
       >
-        <div class="prefix" slot="prefix">
-          <div class="name">${this.name}</div>
-        </div>
       </temba-select>
     `;
   }

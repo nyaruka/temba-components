@@ -184,7 +184,6 @@ export const mockAPI = () => {
       { uuid: 'chan-4', name: 'Facebook Messenger' }
     ]
   });
-
 };
 
 export const mockGET = (

@@ -17,6 +17,7 @@ export class ContactNotepad extends ContactStoreElement {
       :host {
         height: 100%;
         display: flex;
+        margin-top: var(--gap);
       }
 
       .wrapper {
@@ -24,9 +25,13 @@ export class ContactNotepad extends ContactStoreElement {
         --color-widget-bg: transparent;
         --color-widget-bg-focused: transparent;
         outline: none;
-        border-radius: var(--curvature);
         display: flex;
         flex-direction: column;
+        background: #fff9c2;
+        border: 1px solid #ebdf6f;
+        border-radius: var(--r-sm);
+        box-shadow: var(--shadow-2);
+        overflow: hidden;
       }
 
       .notepad {

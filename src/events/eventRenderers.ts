@@ -291,9 +291,7 @@ export const renderTicketAssigneeChanged = (
   // consistently interactive across open / close / reopen / assigned
   // rows (the contact-history page can show events from any of the
   // contact's tickets, so the jump-to-ticket affordance is useful).
-  const ticketLink = html`<a href="/ticket/all/open/${ticketUUID}/"
-    >ticket</a
-  >`;
+  const ticketLink = html`<a href="/ticket/all/open/${ticketUUID}/">ticket</a>`;
   const ticketLinkCapitalized = html`<a href="/ticket/all/open/${ticketUUID}/"
     >This ticket</a
   >`;
@@ -356,11 +354,7 @@ export const renderContactGroupsEvent = (
   if (event.groups_added) {
     return renderInfoList('Added to', 'Added to', event.groups_added);
   } else if (event.groups_removed) {
-    return renderInfoList(
-      'Removed from',
-      'Removed from',
-      event.groups_removed
-    );
+    return renderInfoList('Removed from', 'Removed from', event.groups_removed);
   }
 };
 

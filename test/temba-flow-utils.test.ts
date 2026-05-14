@@ -59,4 +59,3 @@ describe('hasLLMRole', () => {
     expect(hasLLMRole({ roles: [] }, 'engine')).to.be.false;
   });
 });
-

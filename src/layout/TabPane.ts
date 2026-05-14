@@ -18,43 +18,48 @@ export class TabPane extends RapidElement {
       .options {
         display: flex;
         align-items: stretch;
-        padding: var(--temba-tabs-options-padding, 0);
-        border-bottom: none;
+        gap: 4px;
+        border-bottom: 1px solid var(--border);
       }
 
       .option {
         user-select: none;
-        padding: 0.5em 0.7em;
-        margin: 0em 0em;
-        cursor: pointer;
         display: flex;
-        font-size: 1.1em;
         align-items: center;
-        border: 1px inset transparent;
-        border-bottom: 0px;
-        border-radius: var(--curvature);
-        border-bottom-right-radius: 0px;
-        border-bottom-left-radius: 0px;
-
-        color: var(--color-text-dark);
-        --icon-color: var(--color-text-dark);
+        cursor: pointer;
+        padding: 8px 14px 10px;
+        margin-bottom: -1px;
+        background: transparent;
+        color: var(--text-2);
+        --icon-color: var(--text-2);
+        font-size: 13px;
+        font-weight: var(--w-medium);
+        border-bottom: 2px solid transparent;
         white-space: nowrap;
-        transition: all 100ms linear;
+        transition:
+          color 100ms linear,
+          border-color 100ms linear;
       }
 
-      .focusedname .option .name {
-        transition: all 0s linear !important;
+      .option:hover {
+        color: var(--text-1);
+        --icon-color: var(--text-1);
       }
 
-      .focusedname .option.selected .name {
-        transition: all 200ms linear !important;
+      .option.selected,
+      .option.selected:hover {
+        cursor: default;
+        color: var(--accent-700);
+        --icon-color: var(--accent-700);
+        border-bottom-color: var(--accent-600);
+      }
+
+      .unselect .option.selected {
+        cursor: pointer;
       }
 
       .option.hidden {
         display: none;
-      }
-
-      .option temba-icon {
       }
 
       .option .name {
@@ -70,6 +75,9 @@ export class TabPane extends RapidElement {
 
       .option .badge {
         margin-left: 0.4em;
+        margin-right: -6px;
+        display: inline-flex;
+        align-items: center;
       }
 
       @media (max-width: 900px) {
@@ -85,9 +93,6 @@ export class TabPane extends RapidElement {
         }
       }
 
-      .focusedname .option.selected {
-      }
-
       .focusedname .option .name {
         max-width: 0px;
         margin: 0;
@@ -101,130 +106,77 @@ export class TabPane extends RapidElement {
         max-width: 200px;
       }
 
-      .option {
-        transform: scale(0.9) translateY(0em);
-        --icon-color: rgba(0, 0, 0, 0.5);
-        color: rgba(0, 0, 0, 0.5);
+      .focusedname .option .name {
+        transition: all 0s linear !important;
       }
 
-      .option.selected {
-      }
-
-      .option.selected,
-      .option.selected:hover {
-        cursor: default;
-        box-shadow: 0px -3px 3px 1px rgba(0, 0, 0, 0.02);
-
-        background: var(--focused-tab-color, #fff);
-        transform: scale(1) translateY(1px);
-        --icon-color: #666;
-        color: #666;
-        border: 1px inset rgba(0, 0, 0, 0.15);
-        border-bottom: 0px;
-      }
-
-      .option.selected .dot {
-        display: none;
-      }
-
-      .unselect .option.selected {
-        cursor: pointer;
-      }
-
-      .unselect .option.selected:hover {
-        background: var(--unselect-tab-color, #eee);
-      }
-
-      .option:hover {
-        --icon-color: #666;
-        color: #666;
-        background: rgba(0, 0, 0, 0.02);
+      .focusedname .option.selected .name {
+        transition: all 200ms linear !important;
       }
 
       .option.dirty {
-        font-weight: 500;
+        font-weight: var(--w-semibold);
+      }
+
+      .option.alert {
+        color: var(--danger);
+        --icon-color: var(--danger);
       }
 
       .pane {
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        background: var(--focused-tab-color, #fff);
-        border-bottom-left-radius: var(--curvature);
-        border-bottom-right-radius: var(--curvature);
-        overflow: hidden;
-
-        box-shadow: var(
-          --tabs-shadow,
-          rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
-          rgba(0, 0, 0, 0.03) 0px 1px 2px 0px
-        );
         min-height: 0;
-      }
-
-      .pane.first {
-        border-top-left-radius: 0px;
         overflow: hidden;
       }
 
       .count {
-        border-radius: 99px;
-        background: rgba(0, 0, 0, 0.1);
-        color: rgba(0, 0, 0, 0.5);
-        font-size: 0.7em;
-        font-weight: 500;
-        min-width: 1.5em;
-        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 16px;
+        padding: 0 2px;
+        color: inherit;
+        opacity: 0.6;
+        font-size: 11px;
+        font-weight: var(--w-medium);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .option.selected .count {
+        min-width: 16px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: var(--accent-100);
+        color: var(--accent-700);
+        font-weight: var(--w-semibold);
+        opacity: 1;
+      }
+
+      .option.alert .count {
+        min-width: 16px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: var(--danger-bg);
+        color: var(--danger);
+        opacity: 1;
       }
 
       .dot {
         height: 0.5em;
         width: 0.5em;
         margin-left: 0.2em;
-        background: var(--color-primary-dark);
+        background: var(--accent-600);
         border-radius: 99px;
       }
 
-      .notify .count {
-        background: var(--color-alert);
-        color: #fff;
-      }
-
-      .alert {
-        color: var(--color-alert);
-        --icon-color: var(--color-alert);
-      }
-
-      .embedded.pane {
-        box-shadow: none;
-        margin: 0;
-        border-left: none !important;
-        border-right: none !important;
-        border-bottom: none !important;
-      }
-
-      .embedded .option {
-        border-bottom: none !important;
-        border-radius: 0em;
-        border-top: none !important;
-      }
-
-      .embedded .option.first {
-        margin-left: 0em;
-        border-top: none !important;
-        border-left: none;
-      }
-
-      .embedded.options .option.selected {
-        box-shadow: none !important;
+      .option.selected .dot {
+        display: none;
       }
 
       .check {
         margin-left: 0.4em;
-      }
-
-      .pane {
-        display: flex;
       }
     `;
   }
@@ -367,13 +319,11 @@ export class TabPane extends RapidElement {
   }
 
   public render(): TemplateResult {
-    const activeTab = this.options[this.index];
     return html`
       <div
         class="${getClasses({
           options: true,
           collapses: this.collapses,
-          embedded: this.embedded,
           focusedname: this.focusedName,
           unselect: this.unselect
         })}"
@@ -392,11 +342,6 @@ export class TabPane extends RapidElement {
                 alert: tab.alert,
                 dirty: tab.dirty
               })}"
-              style="${tab.selectionColor && index == this.index
-                ? `color:${tab.selectionColor};--icon-color:${tab.selectionColor};`
-                : ''} ${tab.selectionBackground && index == this.index
-                ? `background-color:${tab.selectionBackground};`
-                : ''}"
             >
               ${tab.icon ? html`<temba-icon name=${tab.icon} />` : null}
               <div class="name">${tab.name} ${tab.dirty ? ` *` : ``}</div>
@@ -405,14 +350,11 @@ export class TabPane extends RapidElement {
                     <div class="badge">
                       ${tab.count > 0 && !tab.activity
                         ? html`<div class="count">
-                            ${tab.activity ? '' : tab.count.toLocaleString()}
+                            ${tab.count.toLocaleString()}
                           </div>`
                         : null}
                       ${tab.activity && tab.count > 0 && !tab.dirty
-                        ? html`<div
-                            class="dot"
-                            style="background:${tab.activityColor}"
-                          ></div>`
+                        ? html`<div class="dot"></div>`
                         : null}
                     </div>
                   `
@@ -429,35 +371,7 @@ export class TabPane extends RapidElement {
           <slot name="tab-right"></slot>
         </div>
       </div>
-      <div
-        @temba-details-changed=${this.handleTabDetailsChanged}
-        style="${activeTab?.borderColor
-          ? `
-            border-top: var(--temba-tabs-border-top, 1px solid ${
-              activeTab?.borderColor || 'var(--color-widget-border)'
-            });
-
-            border-left: var(--temba-tabs-border-left, 1px solid ${
-              activeTab?.borderColor || 'var(--color-widget-border)'
-            });
-
-            border-bottom: var(--temba-tabs-border-bottom, 1px solid ${
-              activeTab?.borderColor || 'var(--color-widget-border)'
-            });
-
-            border-right: var(--temba-tabs-border-right, 1px solid ${
-              activeTab?.borderColor || 'var(--color-widget-border)'
-            });
-
-            `
-          : ''} ${activeTab?.selectionBackground
-          ? `background:${activeTab?.selectionBackground};`
-          : ``}"
-        class="pane ${getClasses({
-          first: this.index == 0,
-          embedded: this.embedded
-        })}"
-      >
+      <div @temba-details-changed=${this.handleTabDetailsChanged} class="pane">
         <slot></slot>
         <slot name="pane-bottom"></slot>
       </div>
