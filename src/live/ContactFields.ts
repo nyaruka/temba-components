@@ -66,9 +66,8 @@ export class ContactFields extends ContactStoreElement {
 
       .toggle {
         display: flex;
-        background: #fff;
         align-items: center;
-        margin-bottom: 0.5em;
+        margin-top: 0.5em;
       }
 
       .disabled .toggle {

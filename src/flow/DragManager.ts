@@ -127,7 +127,8 @@ export class DragManager {
     if (
       target.classList.contains('exit') ||
       target.closest('.exit') ||
-      target.closest('.linked-name')
+      target.closest('.linked-name') ||
+      target.closest('.linked-pill')
     ) {
       return;
     }
@@ -186,7 +187,8 @@ export class DragManager {
     if (
       target.classList.contains('exit') ||
       target.closest('.exit') ||
-      target.closest('.linked-name')
+      target.closest('.linked-name') ||
+      target.closest('.linked-pill')
     ) {
       return;
     }

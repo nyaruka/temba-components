@@ -21,36 +21,39 @@ const SCHEMES = {
 export class ContactDetails extends ContactStoreElement {
   static get styles() {
     return css`
-      .urn {
-        display: flex;
-        padding: 0.4em 1em 0.8em 1em;
-        border-bottom: 1px solid #e6e6e6;
-        margin-bottom: 0.5em;
-      }
-
-      .urn .path {
-        margin-left: 0.2em;
-      }
-
       .wrapper {
         padding-top: 0em;
       }
 
-      .groups {
-        padding: 0.4em 0.5em 0.6em 0.5em;
-        border-bottom: 1px solid #e6e6e6;
-        margin-bottom: 0.4em;
-      }
-      .group {
-        margin-right: 0.7em;
-        margin-bottom: 0.7em;
+      /* Mirrors the disabled <temba-contact-field> row so the Groups
+         entry reads as just another field — same label color/size,
+         same horizontal inset, same bottom separator. Margin matches
+         the combined .wrapper + :host margins of contact-field
+         (0.5em + 1em) so spacing between rows stays uniform. */
+      .row {
+        padding-bottom: 0.6em;
+        border-bottom: 1px solid #ececec;
+        margin-bottom: 1.5em;
       }
 
-      .label {
-        font-size: 0.8em;
-        color: rgb(136, 136, 136);
-        margin-left: 0.5em;
-        margin-bottom: 0.4em;
+      .row .label {
+        color: var(--text-2);
+        font-size: 12px;
+        font-weight: var(--w-medium);
+        margin-top: 0.25em;
+        margin-left: 0.25em;
+      }
+
+      .row .value {
+        margin-left: 0.25em;
+        margin-top: 0.1em;
+        min-height: 1.75em;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4em;
+      }
+
+      .group {
       }
     `;
   }
@@ -68,20 +71,22 @@ export class ContactDetails extends ContactStoreElement {
     return html`
       <div class="wrapper">
         ${this.data.groups.length > 0
-          ? html` <div class="groups">
+          ? html` <div class="row">
               <div class="label">Groups</div>
-              ${this.data.groups.map((group) => {
-                return html`<temba-label
-                  class="group"
-                  onclick="goto(event)"
-                  href="/contact/group/${group.uuid}/"
-                  icon=${group.is_dynamic ? Icon.group_smart : Icon.group}
-                  type="group"
-                  clickable
-                >
-                  ${group.name}
-                </temba-label>`;
-              })}
+              <div class="value">
+                ${this.data.groups.map((group) => {
+                  return html`<temba-label
+                    class="group"
+                    onclick="goto(event)"
+                    href="/contact/group/${group.uuid}/"
+                    icon=${group.is_dynamic ? Icon.group_smart : Icon.group}
+                    type="group"
+                    clickable
+                  >
+                    ${group.name}
+                  </temba-label>`;
+                })}
+              </div>
             </div>`
           : null}
         ${this.data.urns.map((urn) => {

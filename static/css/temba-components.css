@@ -30,9 +30,11 @@
     /* neutrals */
     --bg:            #F6F7F9;
     --surface:       #FFFFFF;
+    --surface-note:  #FFF9C2;
     --sunken:        #F1F3F5;
     --border:        #E6E8EC;
     --border-strong: #D2D6DC;
+    --border-note:   #EBDF6F;
     --text-1:        #1A1F26;
     --text-2:        #4D5664;
     --text-3:        #7B8593;

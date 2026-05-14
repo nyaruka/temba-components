@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { ContactStoreElement } from './ContactStoreElement';
 import { getDisplayName } from './ContactChat';
 import { ContactNote, CustomEventType } from '../interfaces';
+import { designTokens } from '../styles/designTokens';
 
 export class ContactNotepad extends ContactStoreElement {
   @property({ type: Object, attribute: false })
@@ -14,9 +15,12 @@ export class ContactNotepad extends ContactStoreElement {
 
   static get styles() {
     return css`
+      ${designTokens}
+
       :host {
         height: 100%;
         display: flex;
+        margin-top: var(--gap);
       }
 
       .wrapper {
@@ -24,9 +28,13 @@ export class ContactNotepad extends ContactStoreElement {
         --color-widget-bg: transparent;
         --color-widget-bg-focused: transparent;
         outline: none;
-        border-radius: var(--curvature);
         display: flex;
         flex-direction: column;
+        background: var(--surface-note);
+        border: 1px solid var(--border-note);
+        border-radius: var(--r-sm);
+        box-shadow: var(--shadow-2);
+        overflow: hidden;
       }
 
       .notepad {

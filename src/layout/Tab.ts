@@ -27,23 +27,8 @@ export class Tab extends RapidElement {
   @property({ type: String })
   icon: string;
 
-  @property({ type: String })
-  selectionColor: string;
-
-  @property({ type: String })
-  selectionBackground: string;
-
-  @property({ type: String })
-  borderColor: string = 'var(--color-widget-border)';
-
-  @property({ type: String })
-  activityColor: string = `var(--color-link-primary)`;
-
   @property({ type: Boolean })
   selected = false;
-
-  @property({ type: Boolean })
-  notify = false;
 
   @property({ type: Boolean })
   alert = false;
