@@ -226,7 +226,9 @@ export class TabPane extends RapidElement {
       }
     }
     this.options = tabs;
-    this.index = 0;
+    if (this.index < 0 || this.index >= tabs.length) {
+      this.index = 0;
+    }
   }
 
   public firstUpdated(
