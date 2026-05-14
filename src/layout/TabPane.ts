@@ -144,23 +144,23 @@ export class TabPane extends RapidElement {
         font-variant-numeric: tabular-nums;
       }
 
-      .option.selected .count {
-        min-width: 16px;
-        padding: 0 4px;
-        border-radius: 999px;
-        background: var(--accent-100);
-        color: var(--accent-700);
-        font-weight: var(--w-semibold);
-        opacity: 1;
-      }
-
+      .option.selected .count,
       .option.alert .count {
         min-width: 16px;
         padding: 0 4px;
         border-radius: 999px;
+        opacity: 1;
+      }
+
+      .option.selected .count {
+        background: var(--accent-100);
+        color: var(--accent-700);
+        font-weight: var(--w-semibold);
+      }
+
+      .option.alert .count {
         background: var(--danger-bg);
         color: var(--danger);
-        opacity: 1;
       }
 
       .dot {
@@ -180,9 +180,6 @@ export class TabPane extends RapidElement {
       }
     `;
   }
-
-  @property({ type: Boolean })
-  embedded = false;
 
   @property({ type: Boolean })
   collapses = false;
@@ -338,7 +335,6 @@ export class TabPane extends RapidElement {
                 first: index == 0,
                 selected: index == this.index,
                 hidden: tab.hidden,
-                notify: tab.notify,
                 alert: tab.alert,
                 dirty: tab.dirty
               })}"

@@ -410,8 +410,9 @@ export class ContactFieldEditor extends RapidElement {
 
   private renderDateField(state: TemplateResult) {
     return html`
-      <label class="field-label">${this.name}</label>
+      <label id="field-label" class="field-label">${this.name}</label>
       <temba-datepicker
+        aria-labelledby="field-label"
         timezone=${this.timezone}
         value="${this.value ? this.value : ''}"
         @change=${this.handleDateChange}
@@ -429,8 +430,9 @@ export class ContactFieldEditor extends RapidElement {
 
   private renderTextField(state: TemplateResult) {
     return html`
-      <label class="field-label">${this.name}</label>
+      <label id="field-label" class="field-label">${this.name}</label>
       <temba-textinput
+        aria-labelledby="field-label"
         class="${this.status} ${this.dirty ? 'dirty' : ''}"
         value="${this.value ? this.value : ''}"
         @keyup=${this.handleInput}
@@ -486,8 +488,9 @@ export class ContactFieldEditor extends RapidElement {
 
   public renderLocationField(level: string = 'state') {
     return html`
-      <label class="field-label">${this.name}</label>
+      <label id="field-label" class="field-label">${this.name}</label>
       <temba-select
+        aria-labelledby="field-label"
         endpoint="/api/internal/locations.json?level=${level}"
         nameKey="path"
         valueKey="path"

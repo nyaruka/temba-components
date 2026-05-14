@@ -27,8 +27,8 @@ export class ContactNotepad extends ContactStoreElement {
         outline: none;
         display: flex;
         flex-direction: column;
-        background: #fff9c2;
-        border: 1px solid #ebdf6f;
+        background: var(--surface-note);
+        border: 1px solid var(--border-note);
         border-radius: var(--r-sm);
         box-shadow: var(--shadow-2);
         overflow: hidden;

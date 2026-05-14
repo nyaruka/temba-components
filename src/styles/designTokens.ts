@@ -32,9 +32,11 @@ export const designTokens = css`
     /* neutrals */
     --bg: #f6f7f9;
     --surface: #ffffff;
+    --surface-note: #fff9c2;
     --sunken: #f1f3f5;
     --border: #e6e8ec;
     --border-strong: #d2d6dc;
+    --border-note: #ebdf6f;
     --text-1: #1a1f26;
     --text-2: #4d5664;
     --text-3: #7b8593;
