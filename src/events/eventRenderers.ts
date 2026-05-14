@@ -13,6 +13,7 @@ import {
   UpdateFieldEvent,
   URNsChangedEvent
 } from '../events';
+import { getLanguageName } from '../languages';
 import { oxfordFn } from '../utils';
 
 export enum Events {
@@ -291,9 +292,7 @@ export const renderTicketAssigneeChanged = (
   // consistently interactive across open / close / reopen / assigned
   // rows (the contact-history page can show events from any of the
   // contact's tickets, so the jump-to-ticket affordance is useful).
-  const ticketLink = html`<a href="/ticket/all/open/${ticketUUID}/"
-    >ticket</a
-  >`;
+  const ticketLink = html`<a href="/ticket/all/open/${ticketUUID}/">ticket</a>`;
   const ticketLinkCapitalized = html`<a href="/ticket/all/open/${ticketUUID}/"
     >This ticket</a
   >`;
@@ -356,11 +355,7 @@ export const renderContactGroupsEvent = (
   if (event.groups_added) {
     return renderInfoList('Added to', 'Added to', event.groups_added);
   } else if (event.groups_removed) {
-    return renderInfoList(
-      'Removed from',
-      'Removed from',
-      event.groups_removed
-    );
+    return renderInfoList('Removed from', 'Removed from', event.groups_removed);
   }
 };
 
@@ -382,7 +377,7 @@ export const renderContactLanguageChangedEvent = (
     return html`<div style=${eventLineStyle}>Cleared language</div>`;
   }
   return html`<div style=${eventLineStyle}>
-    Language updated to ${valueText(event.language)}
+    Language updated to ${valueText(getLanguageName(event.language))}
   </div>`;
 };
 
