@@ -93,9 +93,7 @@ export class ContactList extends ContentList {
       const all = response.json?.results || [];
       this.featuredFields = all
         .filter((f: any) => f.featured)
-        .sort(
-          (a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0)
-        );
+        .sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0));
       this.columns = this.buildColumns();
     } catch (err) {
       // eslint-disable-next-line no-console

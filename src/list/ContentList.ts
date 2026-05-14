@@ -152,7 +152,8 @@ export class ContentList extends RapidElement {
       }
       .bulk-action temba-icon {
         --icon-color: currentColor;
-      }      .bulk-count {
+      }
+      .bulk-count {
         font-weight: var(--w-medium);
         color: var(--accent-800);
         margin-right: 4px;
@@ -870,10 +871,7 @@ export class ContentList extends RapidElement {
             : html`
                 ${this.searchable && !this.searchOpen
                   ? html`
-                      <span
-                        class="action"
-                        @click=${() => this.toggleSearch()}
-                      >
+                      <span class="action" @click=${() => this.toggleSearch()}>
                         <temba-icon
                           name=${Icon.search}
                           size="0.95"
@@ -898,10 +896,7 @@ export class ContentList extends RapidElement {
                 autofocus
               />
               ${this.search
-                ? html`<span
-                    class="clear"
-                    @click=${() => this.clearSearch()}
-                  >
+                ? html`<span class="clear" @click=${() => this.clearSearch()}>
                     <temba-icon name=${Icon.close} size="0.85"></temba-icon>
                   </span>`
                 : null}
@@ -1094,10 +1089,7 @@ export class ContentList extends RapidElement {
    * `kind` keys match the `.status-{kind}` classes defined in
    * ContentList styles (active / pending / stopped / archived /
    * warning / neutral / error). */
-  protected renderStatusPill(
-    kind: string,
-    label: string
-  ): TemplateResult {
+  protected renderStatusPill(kind: string, label: string): TemplateResult {
     return html`<span class="status-pill status-${kind}">${label}</span>`;
   }
 

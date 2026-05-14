@@ -18,11 +18,9 @@ const getList = async (attrs: any = {}) => {
   const list = (await getComponent(TAG, attrs, '', 700)) as ContentList;
   if (!list.endpoint) return list;
   return new Promise<ContentList>((resolve) => {
-    list.addEventListener(
-      CustomEventType.FetchComplete,
-      () => resolve(list),
-      { once: true }
-    );
+    list.addEventListener(CustomEventType.FetchComplete, () => resolve(list), {
+      once: true
+    });
   });
 };
 
@@ -98,11 +96,9 @@ describe('temba-content-list', () => {
       1100
     )) as MsgList;
     await new Promise<void>((resolve) => {
-      list.addEventListener(
-        CustomEventType.FetchComplete,
-        () => resolve(),
-        { once: true }
-      );
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
     });
     await list.updateComplete;
     await assertScreenshot('content-list/messages', getClip(list));
@@ -117,11 +113,9 @@ describe('temba-content-list', () => {
       1100
     )) as ContactList;
     await new Promise<void>((resolve) => {
-      list.addEventListener(
-        CustomEventType.FetchComplete,
-        () => resolve(),
-        { once: true }
-      );
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
     });
     await list.updateComplete;
     await assertScreenshot('content-list/contacts', getClip(list));
@@ -136,11 +130,9 @@ describe('temba-content-list', () => {
       1100
     )) as FlowList;
     await new Promise<void>((resolve) => {
-      list.addEventListener(
-        CustomEventType.FetchComplete,
-        () => resolve(),
-        { once: true }
-      );
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
     });
     await list.updateComplete;
     await assertScreenshot('content-list/flows', getClip(list));

@@ -170,11 +170,10 @@ export class FlowList extends ContentList {
           ${labels.length > 0
             ? html`<span class="flow-labels">
                 ${labels.map(
-                  (l: any) => html`<temba-label
-                    type="label"
-                    icon=${Icon.label}
-                    >${l.name}</temba-label
-                  >`
+                  (l: any) =>
+                    html`<temba-label type="label" icon=${Icon.label}
+                      >${l.name}</temba-label
+                    >`
                 )}
               </span>`
             : null}
