@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { Group } from '../interfaces';
 import { debounce, getClasses } from '../utils';
 import { Icon } from '../Icons';
+import { getLanguageName } from '../languages';
 import { ContactStoreElement } from './ContactStoreElement';
 
 const STATUS = {
@@ -166,7 +167,7 @@ export class ContactBadges extends ContactStoreElement {
                     primary
                     shadow
                   >
-                    ${this.store.getLanguageName(this.data.language)}
+                    ${getLanguageName(this.data.language)}
                   </temba-label>
                 `
               : null}

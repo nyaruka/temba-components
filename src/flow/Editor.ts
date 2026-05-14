@@ -22,12 +22,12 @@ import {
 } from '../utils';
 import { TEMBA_COMPONENTS_VERSION } from '../version';
 import {
-  getLanguageDisplayName,
   getNodeBounds,
   calculateReflowPositions,
   NodeBounds,
   snapToGrid
 } from './utils';
+import { getLanguageName } from '../languages';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { PRIMARY_LANGUAGE_OPTION_VALUE } from './EditorToolbar';
 import {
@@ -1711,7 +1711,7 @@ export class Editor extends RapidElement {
     // Use languages from workspace if available
     if (this.workspace?.languages && this.workspace.languages.length > 0) {
       return this.workspace.languages
-        .map((code) => ({ code, name: getLanguageDisplayName(code) }))
+        .map((code) => ({ code, name: getLanguageName(code) }))
         .filter((lang) => lang.code && lang.name);
     }
 
@@ -1722,7 +1722,7 @@ export class Editor extends RapidElement {
     ) {
       return this.definition._ui.languages.map((lang: any) => {
         const code = typeof lang === 'string' ? lang : lang.iso || lang.code;
-        return { code, name: getLanguageDisplayName(code) };
+        return { code, name: getLanguageName(code) };
       });
     }
 
@@ -3644,7 +3644,7 @@ export class Editor extends RapidElement {
     const baseLanguage = this.definition?.language;
     const baseLanguageName =
       availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
-      (baseLanguage ? getLanguageDisplayName(baseLanguage) : '') ||
+      (baseLanguage ? getLanguageName(baseLanguage) : '') ||
       'Primary language';
     const isBaseSelected =
       !this.languageCode ||

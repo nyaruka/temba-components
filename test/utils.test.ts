@@ -185,15 +185,6 @@ export const mockAPI = () => {
     ]
   });
 
-  mockGET(/\/api\/v2\/languages\.json/, {
-    results: [
-      { iso: 'eng', name: 'English' },
-      { iso: 'spa', name: 'Spanish' },
-      { iso: 'fra', name: 'French' },
-      { iso: 'por', name: 'Portuguese' },
-      { iso: 'deu', name: 'German' }
-    ]
-  });
 };
 
 export const mockGET = (
@@ -336,10 +327,9 @@ export const getHTML = (tag: string, attrs: any = {}) => {
 
 export const loadStore = async () => {
   const store: Store = await fixture(
-    `<temba-store 
+    `<temba-store
       completion='/test-assets/store/editor.json'
       groups='/test-assets/store/groups.json'
-      languages='/test-assets/store/languages.json'
       fields='/test-assets/store/fields.json'
       users='/test-assets/store/users.json'
       workspace='/test-assets/store/workspace.json'

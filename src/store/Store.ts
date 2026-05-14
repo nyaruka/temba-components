@@ -30,7 +30,6 @@ import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { getFullName } from '../display/TembaUser';
 import { AppState, zustand } from './AppState';
 import { StoreApi } from 'zustand/vanilla';
-import { getLanguageDisplayName } from '../flow/utils';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -84,9 +83,6 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'globals' })
   globalsEndpoint: string;
 
-  @property({ type: String, attribute: 'languages' })
-  languagesEndpoint: string;
-
   @property({ type: String, attribute: 'workspace' })
   workspaceEndpoint: string;
 
@@ -110,7 +106,6 @@ export class Store extends RapidElement {
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: ContactGroup } = {};
   private shortcuts: Shortcut[] = [];
-  private languages: any = {};
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
 
@@ -192,22 +187,6 @@ export class Store extends RapidElement {
       fetches.push(
         getAssets(this.globalsEndpoint).then((assets: Asset[]) => {
           this.keyedAssets['globals'] = assets.map((asset: Asset) => asset.key);
-        })
-      );
-    }
-
-    if (this.languagesEndpoint) {
-      appState.fetchAllLanguages(this.languagesEndpoint);
-      fetches.push(
-        getAssets(this.languagesEndpoint).then((results: any[]) => {
-          // convert array of objects to lookup
-          this.languages = results.reduce(function (
-            languages: any,
-            result: any
-          ) {
-            languages[result.value] = result.name;
-            return languages;
-          }, {});
         })
       );
     }
@@ -381,14 +360,6 @@ export class Store extends RapidElement {
 
   public getFeaturedFields(): ContactField[] {
     return this.featuredFields;
-  }
-
-  public getLanguageName(iso: string) {
-    const name = this.languages[iso];
-    if (!name || name === 'und' || iso === 'und') {
-      return getLanguageDisplayName(iso);
-    }
-    return name;
   }
 
   public isDynamicGroup(uuid: string): boolean {
