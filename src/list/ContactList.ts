@@ -2,6 +2,7 @@ import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
+import { Contact } from '../interfaces';
 import { getUrl } from '../utils';
 
 const FIELD_PREFIX = 'field:';
@@ -17,7 +18,7 @@ const FIELD_PREFIX = 'field:';
  * {@link ContactList.fieldsEndpoint} on connect; cells read each
  * contact's value out of `item.fields[<key>]`.
  */
-export class ContactList extends ContentList {
+export class ContactList extends ContentList<Contact> {
   static get styles() {
     return css`
       ${ContentList.styles}
@@ -60,6 +61,8 @@ export class ContactList extends ContentList {
   @state()
   private featuredFields: any[] = [];
 
+  private pendingFieldsController?: AbortController;
+
   constructor() {
     super();
     this.valueKey = 'uuid';
@@ -79,6 +82,14 @@ export class ContactList extends ContentList {
     this.loadFields();
   }
 
+  public disconnectedCallback(): void {
+    if (this.pendingFieldsController) {
+      this.pendingFieldsController.abort();
+      this.pendingFieldsController = undefined;
+    }
+    super.disconnectedCallback();
+  }
+
   protected updated(changes: PropertyValues): void {
     super.updated(changes);
     if (changes.has('fieldsEndpoint') && this.fieldsEndpoint) {
@@ -88,16 +99,33 @@ export class ContactList extends ContentList {
 
   private async loadFields(): Promise<void> {
     if (!this.fieldsEndpoint) return;
+    // Abort any in-flight fields request so a stale response can't
+    // overwrite featuredFields/columns after a new endpoint is set
+    // or the component has disconnected.
+    if (this.pendingFieldsController) {
+      this.pendingFieldsController.abort();
+    }
+    const controller = new AbortController();
+    this.pendingFieldsController = controller;
     try {
-      const response = await getUrl(this.fieldsEndpoint);
+      const response = await getUrl(this.fieldsEndpoint, controller);
+      // If the controller has been swapped or cleared, the response
+      // is from a stale request — drop it on the floor.
+      if (this.pendingFieldsController !== controller) return;
       const all = response.json?.results || [];
       this.featuredFields = all
         .filter((f: any) => f.featured)
         .sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0));
       this.columns = this.buildColumns();
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('failed to fetch contact fields', err);
+      if ((err as DOMException)?.name !== 'AbortError') {
+        // eslint-disable-next-line no-console
+        console.error('failed to fetch contact fields', err);
+      }
+    } finally {
+      if (this.pendingFieldsController === controller) {
+        this.pendingFieldsController = undefined;
+      }
     }
   }
 
@@ -127,16 +155,16 @@ export class ContactList extends ContentList {
     ];
   }
 
-  protected getRowIcon(_item: any): string | null {
+  protected getRowIcon(_item: Contact): string | null {
     return Icon.contact;
   }
 
-  protected getRowHref(item: any): string | null {
+  protected getRowHref(item: Contact): string | null {
     return item?.uuid ? `/contact/read/${item.uuid}/` : null;
   }
 
   protected renderCell(
-    item: any,
+    item: Contact,
     column: ContentListColumn
   ): TemplateResult | string {
     if (column.key.startsWith(FIELD_PREFIX)) {
@@ -170,16 +198,17 @@ export class ContactList extends ContentList {
     }
   }
 
-  private primaryUrn(item: any): string {
-    if (item.urn) return item.urn;
-    if (Array.isArray(item.urns) && item.urns.length > 0) {
-      const u = item.urns[0];
+  private primaryUrn(item: Contact): string {
+    const i = item as any;
+    if (i.urn) return i.urn;
+    if (Array.isArray(i.urns) && i.urns.length > 0) {
+      const u = i.urns[0];
       return typeof u === 'string' ? u.split(':')[1] || u : u?.display || '';
     }
     return '';
   }
 
-  private renderGroups(item: any): TemplateResult {
+  private renderGroups(item: Contact): TemplateResult {
     const groups = item.groups || [];
     if (groups.length === 0) return html``;
     return html`

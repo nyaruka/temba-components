@@ -8,7 +8,7 @@ import { Icon } from '../Icons';
  * contact name, message text + attachments + labels + active-flow
  * pill, and a duration timestamp.
  */
-export class MsgList extends ContentList {
+export class MsgList extends ContentList<any> {
   static get styles() {
     return css`
       ${ContentList.styles}

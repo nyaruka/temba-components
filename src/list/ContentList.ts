@@ -40,8 +40,8 @@ export interface ContentListBulkAction {
   labelsEndpoint?: string;
 }
 
-interface FetchResponse {
-  results: any[];
+interface FetchResponse<T = any> {
+  results: T[];
   count?: number;
   next?: string;
   previous?: string;
@@ -60,7 +60,7 @@ interface FetchResponse {
  * No polling — list refresh is explicit (`refresh()` method or
  * `refresh-key` attribute change). CRUDL pages should not auto-poll.
  */
-export class ContentList extends RapidElement {
+export class ContentList<T = any> extends RapidElement {
   static get styles() {
     return css`
       ${designTokens}
@@ -369,7 +369,16 @@ export class ContentList extends RapidElement {
         display: flex;
         align-items: center;
         font-size: 13.5px;
+        cursor: pointer;
         --icon-color: var(--text-3);
+      }
+      /* The inner temba-checkbox is purely a visual indicator —
+         the cell-level @click is the single source of truth for
+         toggling selection. Disabling pointer events on the
+         checkbox prevents its internal click handler from firing
+         a second toggle on the same user click. */
+      .check-cell temba-checkbox {
+        pointer-events: none;
       }
       .row.selected .check-cell {
         --icon-color: var(--accent-700);
@@ -579,7 +588,7 @@ export class ContentList extends RapidElement {
   actionEndpoint = '';
 
   @state()
-  protected items: any[] = [];
+  protected items: T[] = [];
 
   @state()
   protected total = 0;
@@ -651,13 +660,12 @@ export class ContentList extends RapidElement {
 
   protected updated(changes: PropertyValues): void {
     super.updated(changes);
-    if (
-      (changes.has('endpoint') ||
-        changes.has('sort') ||
-        changes.has('page') ||
-        changes.has('refreshKey')) &&
-      this.endpoint
-    ) {
+    // Only watch endpoint and refreshKey here — both are typically
+    // set externally and have no other handler that already fires a
+    // fetch. Sort/page/search are mutated by internal handlers that
+    // call fetchPage (directly or via debouncedFetch) themselves, so
+    // tracking them here would double-fire the request.
+    if ((changes.has('endpoint') || changes.has('refreshKey')) && this.endpoint) {
       this.fetchPage();
     }
   }
@@ -718,7 +726,7 @@ export class ContentList extends RapidElement {
     this.loading = true;
     try {
       const response = await getUrl(this.buildRequestUrl(), controller);
-      const data = (response.json || {}) as FetchResponse;
+      const data = (response.json || {}) as FetchResponse<T>;
       this.items = data.results || [];
       this.total = data.count ?? this.items.length;
       // drop any selected ids that aren't visible anymore — selection
@@ -754,25 +762,25 @@ export class ContentList extends RapidElement {
 
   /** Identity helper — uses the `valueKey` to pull a stable id from
    * the row, falling back to JSON.stringify for objects without one. */
-  protected rowId(item: any): string {
-    const v = item?.[this.valueKey];
+  protected rowId(item: T): string {
+    const v = (item as any)?.[this.valueKey];
     return v != null ? String(v) : JSON.stringify(item);
   }
 
   /** Override in subclasses to customize per-column rendering. The
    * default reads `item[column.key]` and renders as text. */
   protected renderCell(
-    item: any,
+    item: T,
     column: ContentListColumn
   ): TemplateResult | string {
-    const value = item?.[column.key];
+    const value = (item as any)?.[column.key];
     if (value == null) return '';
     return String(value);
   }
 
   /** Override in subclasses to make rows navigate on click. Return
    * a URL to navigate, or null to leave the click as event-only. */
-  protected getRowHref(_item: any): string | null {
+  protected getRowHref(_item: T): string | null {
     return null;
   }
 
@@ -794,9 +802,10 @@ export class ContentList extends RapidElement {
     }
     this.page = 1;
     this.writeUrlState();
+    this.fetchPage();
   }
 
-  private handleRowClick(item: any, event: MouseEvent): void {
+  private handleRowClick(item: T, event: MouseEvent): void {
     // Ignore clicks originating from the checkbox cell so toggling
     // selection doesn't double as navigation.
     const path = event.composedPath();
@@ -805,12 +814,31 @@ export class ContentList extends RapidElement {
     }
     this.fireCustomEvent(CustomEventType.RowClick, { item });
     const href = this.getRowHref(item);
-    if (href) {
+    if (href && this.isSafeHref(href)) {
       window.location.href = href;
     }
   }
 
-  private handleRowToggle(item: any): void {
+  /** Guard against open-redirect: row hrefs come from JSON-driven
+   * subclasses and could contain externally-influenced values. Only
+   * permit same-origin navigation — absolute URLs must match the
+   * current origin, relative URLs must be path-only (starting with
+   * `/` and not `//`, which would be protocol-relative). */
+  private isSafeHref(href: string): boolean {
+    if (typeof href !== 'string' || href.length === 0) return false;
+    // Reject protocol-relative URLs ("//evil.com/...") and any
+    // scheme-prefixed URL that isn't same-origin.
+    if (href.startsWith('//')) return false;
+    if (href.startsWith('/')) return true;
+    try {
+      const url = new URL(href, window.location.origin);
+      return url.origin === window.location.origin;
+    } catch {
+      return false;
+    }
+  }
+
+  private handleRowToggle(item: T): void {
     const id = this.rowId(item);
     const next = new Set(this.selectedIds);
     if (next.has(id)) next.delete(id);
@@ -844,6 +872,7 @@ export class ContentList extends RapidElement {
     if (next !== this.page) {
       this.page = next;
       this.writeUrlState();
+      this.fetchPage();
     }
   }
 
@@ -1002,7 +1031,7 @@ export class ContentList extends RapidElement {
     );
     if (selected.length === 0) return 'none';
     const withLabel = selected.filter((item) =>
-      (item.labels || []).some((l: any) => l.uuid === labelUuid)
+      ((item as any).labels || []).some((l: any) => l.uuid === labelUuid)
     );
     if (withLabel.length === 0) return 'none';
     if (withLabel.length === selected.length) return 'all';
@@ -1096,7 +1125,7 @@ export class ContentList extends RapidElement {
   /** Optional leading icon name for each row (e.g. the campaign
    * clock-refresh in the styleguide). Override in subclasses;
    * return `null` to skip the leading-icon column entirely. */
-  protected getRowIcon(_item: any): string | null {
+  protected getRowIcon(_item: T): string | null {
     return null;
   }
 
@@ -1135,25 +1164,29 @@ export class ContentList extends RapidElement {
     const style = this.columnStyle(column);
     const active = this.sort === column.key || this.sort === '-' + column.key;
     const desc = this.sort === '-' + column.key;
+    // Only sortable columns get a click handler, the `sortable`
+    // class (which paints the cursor + hover state), and the
+    // direction icon. Non-sortable headers render as plain text.
+    if (column.sortable) {
+      return html`
+        <div
+          class="head-cell ${column.align || ''} sortable ${active
+            ? 'active'
+            : ''}"
+          style=${style}
+          @click=${() => this.handleSortClick(column)}
+        >
+          <span>${column.label ?? column.key}</span>
+          <temba-icon
+            name=${active ? (desc ? Icon.sort_down : Icon.sort_up) : Icon.sort}
+            size="0.85"
+          ></temba-icon>
+        </div>
+      `;
+    }
     return html`
-      <div
-        class="head-cell ${column.align || ''} ${column.sortable
-          ? 'sortable'
-          : ''} ${active ? 'active' : ''}"
-        style=${style}
-        @click=${() => this.handleSortClick(column)}
-      >
+      <div class="head-cell ${column.align || ''}" style=${style}>
         <span>${column.label ?? column.key}</span>
-        ${column.sortable
-          ? html`<temba-icon
-              name=${active
-                ? desc
-                  ? Icon.sort_down
-                  : Icon.sort_up
-                : Icon.sort}
-              size="0.85"
-            ></temba-icon>`
-          : null}
       </div>
     `;
   }
@@ -1168,7 +1201,7 @@ export class ContentList extends RapidElement {
     return parts.join('; ');
   }
 
-  private renderRow(item: any): TemplateResult {
+  private renderRow(item: T): TemplateResult {
     const id = this.rowId(item);
     const selected = this.selectedIds.has(id);
     const href = this.getRowHref(item);
@@ -1183,6 +1216,10 @@ export class ContentList extends RapidElement {
               <div
                 class="check-cell"
                 @click=${(e: MouseEvent) => {
+                  // Cell-level click is the single source of truth
+                  // for selection. The inner checkbox has
+                  // pointer-events: none so it can't fire a second
+                  // toggle on the same click.
                   e.stopPropagation();
                   this.handleRowToggle(item);
                 }}

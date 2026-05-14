@@ -8,7 +8,7 @@ import { Icon } from '../Icons';
  * the flow type (messaging / voice / background / surveyor).
  * Columns: name, runs, ongoing, completion bar, status, modified.
  */
-export class FlowList extends ContentList {
+export class FlowList extends ContentList<any> {
   static get styles() {
     return css`
       ${ContentList.styles}
