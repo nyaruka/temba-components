@@ -42,5 +42,4 @@ describe('temba-store', () => {
     const response = await store.postUrl('/no-endpoint');
     assert.equal(response.status, 404);
   });
-
 });

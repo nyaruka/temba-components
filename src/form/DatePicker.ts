@@ -19,6 +19,7 @@ export class DatePicker extends FieldElement {
       .container {
         border-radius: var(--curvature);
         border: 1px solid var(--color-widget-border);
+        background: var(--color-widget-bg);
         display: flex;
         cursor: pointer;
         box-shadow: var(--widget-box-shadow);
@@ -59,7 +60,7 @@ export class DatePicker extends FieldElement {
       }
 
       .tz-wrapper {
-        background: #efefef;
+        background: var(--sunken);
         display: flex;
         flex-direction: row;
         align-items: center;

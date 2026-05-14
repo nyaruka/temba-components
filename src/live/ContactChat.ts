@@ -64,11 +64,11 @@ export class ContactChat extends ContactStoreElement {
         display: flex;
         flex-direction: row;
         min-height: 0;
+        margin-top: var(--gap);
         --compose-shadow: none;
         --compose-border: none;
         --compose-padding: 3px;
         --compose-curvature: none;
-        border-top: 1px inset rgba(0, 0, 0, 0.05);
       }
 
       .chat-wrapper {
@@ -76,7 +76,11 @@ export class ContactChat extends ContactStoreElement {
         flex-grow: 1;
         flex-direction: column;
         min-height: 0;
-        background: #fff;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--r-sm);
+        box-shadow: var(--shadow-2);
+        overflow: hidden;
       }
 
       temba-contact-history {

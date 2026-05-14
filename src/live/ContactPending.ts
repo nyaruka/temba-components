@@ -92,6 +92,7 @@ export class ContactPending extends EndpointMonitorElement {
         display: flex;
         flex-direction: row;
         align-items: center;
+        background: var(--surface);
         box-shadow:
           0 0 8px 1px rgba(0, 0, 0, 0.055),
           0 0 0px 1px rgba(0, 0, 0, 0.02);
