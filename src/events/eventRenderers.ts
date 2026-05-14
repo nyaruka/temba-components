@@ -13,6 +13,7 @@ import {
   UpdateFieldEvent,
   URNsChangedEvent
 } from '../events';
+import { getLanguageName } from '../languages';
 import { oxfordFn } from '../utils';
 
 export enum Events {
@@ -376,7 +377,7 @@ export const renderContactLanguageChangedEvent = (
     return html`<div style=${eventLineStyle}>Cleared language</div>`;
   }
   return html`<div style=${eventLineStyle}>
-    Language updated to ${valueText(event.language)}
+    Language updated to ${valueText(getLanguageName(event.language))}
   </div>`;
 };
 
