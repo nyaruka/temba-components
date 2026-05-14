@@ -1,0 +1,251 @@
+import { css, html, TemplateResult } from 'lit';
+import { ContentList, ContentListColumn } from './ContentList';
+import { Icon } from '../Icons';
+
+/**
+ * Flow CRUDL list — drop-in replacement for the rapidpro
+ * `flows/flow_list.html` table. Each row's leading icon reflects
+ * the flow type (messaging / voice / background / surveyor).
+ * Columns: name, runs, ongoing, completion bar, status, modified.
+ */
+export class FlowList extends ContentList<any> {
+  static get styles() {
+    return css`
+      ${ContentList.styles}
+      .flow-name {
+        color: inherit;
+        font-weight: var(--w-medium);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .flow-labels {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 4px;
+      }
+      .issue-icon {
+        --icon-color: var(--warning);
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+        color: inherit;
+      }
+      .completion-bar {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .completion-bar .bar {
+        width: 50px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--sunken);
+        overflow: hidden;
+      }
+      .completion-bar .fill {
+        height: 100%;
+        background: var(--success);
+        border-radius: 999px;
+      }
+      .completion-bar .pct {
+        font-variant-numeric: tabular-nums;
+        color: var(--text-2);
+        min-width: 36px;
+        text-align: right;
+      }
+      .sparkline {
+        display: inline-block;
+        vertical-align: middle;
+      }
+      .sparkline .line {
+        fill: none;
+        stroke: var(--accent-600);
+        stroke-width: 1.25;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+      }
+      .sparkline .area {
+        fill: var(--accent-100);
+        opacity: 0.7;
+      }
+    `;
+  }
+
+  constructor() {
+    super();
+    this.valueKey = 'uuid';
+    this.emptyMessage = 'No flows';
+    this.searchPlaceholder = 'Search flows';
+    this.columns = [
+      { key: 'name', label: 'Name', sortable: true, grow: 3 },
+      {
+        key: 'status',
+        label: 'Status',
+        width: '110px',
+        grow: 0
+      },
+      {
+        key: 'runs',
+        label: 'Runs',
+        sortable: true,
+        width: '80px',
+        grow: 0,
+        align: 'right'
+      },
+      {
+        key: 'ongoing',
+        label: 'Ongoing',
+        sortable: true,
+        width: '80px',
+        grow: 0,
+        align: 'right'
+      },
+      {
+        key: 'completion',
+        label: 'Completion',
+        width: '120px',
+        grow: 0,
+        align: 'right'
+      },
+      {
+        key: 'activity',
+        label: 'Activity',
+        width: '120px',
+        grow: 0,
+        align: 'right'
+      }
+    ];
+    this.bulkActions = [
+      {
+        key: 'label',
+        label: 'Label',
+        icon: Icon.label,
+        labelsEndpoint: '/api/v2/flow-labels.json'
+      },
+      { key: 'export', label: 'Export results', icon: Icon.export },
+      { key: 'archive', label: 'Archive', icon: Icon.archive }
+    ];
+  }
+
+  protected getRowIcon(item: any): string | null {
+    switch (item?.type) {
+      case 'voice':
+      case 'ivr':
+        return Icon.flow_ivr;
+      case 'background':
+        return Icon.flow_background;
+      case 'survey':
+        return Icon.flow_surveyor;
+      default:
+        return Icon.flow_message;
+    }
+  }
+
+  protected getRowHref(item: any): string | null {
+    return item?.uuid ? `/flow/editor/${item.uuid}/` : null;
+  }
+
+  protected renderCell(
+    item: any,
+    column: ContentListColumn
+  ): TemplateResult | string {
+    switch (column.key) {
+      case 'name': {
+        const labels = item.labels || [];
+        return html`<span class="flow-name"
+          >${item.name || ''}
+          ${item.has_issues
+            ? html`<temba-icon
+                class="issue-icon"
+                name=${Icon.issue}
+                size="0.9"
+              ></temba-icon>`
+            : null}
+          ${labels.length > 0
+            ? html`<span class="flow-labels">
+                ${labels.map(
+                  (l: any) =>
+                    html`<temba-label type="label" icon=${Icon.label}
+                      >${l.name}</temba-label
+                    >`
+                )}
+              </span>`
+            : null}
+        </span>`;
+      }
+      case 'runs':
+        return html`<span class="num"
+          >${(item.runs ?? 0).toLocaleString()}</span
+        >`;
+      case 'ongoing':
+        return html`<span class="num">${item.ongoing ?? 0}</span>`;
+      case 'completion':
+        return this.renderCompletion(item);
+      case 'activity':
+        return this.renderSparkline(item.activity || []);
+      case 'status':
+        return this.renderFlowStatus(item);
+      default:
+        return super.renderCell(item, column);
+    }
+  }
+
+  private renderCompletion(item: any): TemplateResult {
+    const value = typeof item.completion === 'number' ? item.completion : 0;
+    const pct = Math.round(value * 100);
+    return html`
+      <div class="completion-bar">
+        <div class="bar">
+          <div class="fill" style="width: ${pct}%"></div>
+        </div>
+        <span class="pct">${pct}%</span>
+      </div>
+    `;
+  }
+
+  /** Render a tiny line+area sparkline from a numeric array.
+   * Values are normalized to the column's pixel viewBox; absolute
+   * magnitude isn't preserved — the goal is shape, not scale. */
+  private renderSparkline(values: number[]): TemplateResult {
+    if (!values || values.length < 2) return html``;
+    const w = 90;
+    const h = 22;
+    const max = Math.max(...values, 1);
+    const step = w / (values.length - 1);
+    const pts = values.map((v, i) => {
+      const x = i * step;
+      const y = h - (v / max) * (h - 2) - 1;
+      return [x.toFixed(1), y.toFixed(1)] as const;
+    });
+    const line = pts.map(([x, y]) => `${x},${y}`).join(' ');
+    const areaCmds = pts
+      .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`)
+      .join(' ');
+    const area = `${areaCmds} L${w},${h} L0,${h} Z`;
+    return html`
+      <svg
+        class="sparkline"
+        width=${w}
+        height=${h}
+        viewBox="0 0 ${w} ${h}"
+        preserveAspectRatio="none"
+      >
+        <path class="area" d=${area}></path>
+        <polyline class="line" points=${line}></polyline>
+      </svg>
+    `;
+  }
+
+  private renderFlowStatus(item: any): TemplateResult {
+    const status = (item.status || 'active').toString().toLowerCase();
+    const kind = status === 'archived' ? 'archived' : 'active';
+    const label = status === 'archived' ? 'Archived' : 'Active';
+    return this.renderStatusPill(kind, label);
+  }
+}

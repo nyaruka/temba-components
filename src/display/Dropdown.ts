@@ -205,13 +205,22 @@ export class Dropdown extends RapidElement {
         return;
       }
 
+      // Anchor the dropdown to the toggle's viewport coordinates.
+      // The dropdown is `position: fixed`, so viewport coords are
+      // the right reference frame. Without an explicit anchor the
+      // browser resolves `top: auto; left: auto` from the element's
+      // in-flow position, which mis-places the dropdown when the
+      // page is scrolled. Always setting top/left from
+      // getBoundingClientRect makes positioning scroll-invariant.
       const dropdownStyle = {
         border: '1px solid rgba(0,0,0,0.1)',
-        marginTop: '0.5em'
+        marginTop: '0.5em',
+        top: toggleBounds.bottom + 'px',
+        left: toggleBounds.left + 'px'
       };
 
       // if off the the right, bump it left
-      if (dropdownBounds.right > window.innerWidth) {
+      if (toggleBounds.left + dropdownBounds.width > window.innerWidth) {
         dropdownStyle['left'] =
           toggleBounds.right - dropdownBounds.width + 'px';
         delete dropdownStyle['right'];
@@ -219,7 +228,7 @@ export class Dropdown extends RapidElement {
       }
 
       // if off to the bottom, bump it up
-      if (dropdownBounds.bottom > window.innerHeight) {
+      if (toggleBounds.bottom + dropdownBounds.height > window.innerHeight) {
         dropdownStyle['top'] = toggleBounds.top - dropdownBounds.height + 'px';
         dropdownStyle['marginTop'] = '-0.5em';
         bumpedUp = true;
@@ -237,9 +246,12 @@ export class Dropdown extends RapidElement {
       // anchored to far-left toggles (e.g. rail items) don't rub against
       // the window edge. Shift the dropdown right and slide the arrow
       // back the same amount so it still points at the toggle.
+      // Check against the intended `left` (toggleBounds.left) rather
+      // than the dropdown's currently-rendered bounds, since the new
+      // left is what we're about to set.
       const MIN_LEFT = 8;
-      if (dropdownBounds.left < MIN_LEFT && !bumpedLeft) {
-        const shift = MIN_LEFT - dropdownBounds.left;
+      if (toggleBounds.left < MIN_LEFT && !bumpedLeft) {
+        const shift = MIN_LEFT - toggleBounds.left;
         dropdownStyle['left'] = MIN_LEFT + 'px';
         arrowLeft -= shift;
       }

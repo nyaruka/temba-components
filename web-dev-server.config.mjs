@@ -223,6 +223,72 @@ function generateFlowMetadata(flowDefinition) {
   return generateFlowInfo(flowDefinition);
 }
 
+// In-memory state for the content-list demo so the labeling flow
+// (label, refresh, recheck) is exercisable end-to-end. The first
+// GET / POST loads from the on-disk fixture; subsequent ops mutate
+// the in-memory copy. The on-disk fixture is never written — state
+// resets on dev-server restart, which is the right default for a
+// throwaway demo.
+const demoState = {
+  messages: null,
+  flows: null,
+  labels: null,
+  flowLabels: null
+};
+
+function loadDemoJson(stateKey, filePath) {
+  if (demoState[stateKey] === null) {
+    demoState[stateKey] = JSON.parse(
+      fs.readFileSync(path.resolve(filePath), 'utf-8')
+    );
+  }
+  return demoState[stateKey];
+}
+
+/** Filter the in-memory demo items for a content-list endpoint.
+ *
+ * Supports `?label=<uuid>` (only items carrying that label) so the
+ * demo can exercise the filtered-view → label-removed → row-drops-
+ * out → recheck-selection lifecycle. */
+function getFilteredDemoItems(data, url) {
+  const labelFilter = url.searchParams.get('label');
+  let results = data.results;
+  if (labelFilter) {
+    results = results.filter((item) =>
+      (item.labels || []).some((l) => l.uuid === labelFilter)
+    );
+  }
+  return { ...data, count: results.length, results };
+}
+
+/** Apply a label-toggle to a list of in-memory items, mirroring
+ * smartmin's BulkActionMixin behavior. Body is x-www-form-urlencoded
+ * (params: action, objects[], label, add). The `idKey` is what each
+ * item is matched against (messages use numeric `id`, flows use
+ * string `uuid`). */
+function applyDemoListAction(body, items, labels, idKey) {
+  const params = new URLSearchParams(body);
+  const action = params.get('action');
+  if (action !== 'label') return;
+  const labelUuid = params.get('label');
+  const add = params.get('add') !== 'false';
+  const objectIds = params.getAll('objects');
+  const label = (labels.results || []).find((l) => l.uuid === labelUuid);
+  if (!label) return;
+  objectIds.forEach((idStr) => {
+    const lookup = idKey === 'id' ? parseInt(idStr, 10) : idStr;
+    const item = items.results.find((i) => i[idKey] === lookup);
+    if (!item) return;
+    item.labels = item.labels || [];
+    const idx = item.labels.findIndex((l) => l.uuid === labelUuid);
+    if (add && idx < 0) {
+      item.labels.push({ uuid: label.uuid, name: label.name });
+    } else if (!add && idx >= 0) {
+      item.labels.splice(idx, 1);
+    }
+  });
+}
+
 export default {
   nodeResolve: true,
   plugins: [
@@ -244,6 +310,7 @@ export default {
           const apiMappings = {
             '/api/v2/groups.json': 'groups.json',
             '/api/v2/labels.json': 'labels.json',
+            '/api/v2/flow-labels.json': 'flow-labels.json',
             '/api/v2/fields.json': 'fields.json', 
             '/api/v2/globals.json': 'globals.json',
             '/api/v2/resthooks.json': 'resthooks.json',
@@ -361,6 +428,95 @@ export default {
           context.contentType = 'application/json';
           context.body = JSON.stringify({ results: [] });
           return;
+        }
+
+        // Serve the content-list demo messages from in-memory state
+        // so a labeling POST is reflected on the next refresh. Honors
+        // an optional `?label=<uuid>` filter for testing the filtered-
+        // view drop-out lifecycle.
+        if (
+          context.request.method === 'GET' &&
+          context.path === '/demo/components/content-list/data/messages.json'
+        ) {
+          const reqUrl = new URL(context.request.url, 'http://localhost');
+          const data = loadDemoJson(
+            'messages',
+            './demo/components/content-list/data/messages.json'
+          );
+          context.contentType = 'application/json';
+          context.body = JSON.stringify(getFilteredDemoItems(data, reqUrl));
+          return;
+        }
+
+        // Same lifecycle for the flows list — labels carried on
+        // each flow live in flows.json; the labels themselves come
+        // from /api/v2/flow-labels.json.
+        if (
+          context.request.method === 'GET' &&
+          context.path === '/demo/components/content-list/data/flows.json'
+        ) {
+          const reqUrl = new URL(context.request.url, 'http://localhost');
+          const data = loadDemoJson(
+            'flows',
+            './demo/components/content-list/data/flows.json'
+          );
+          context.contentType = 'application/json';
+          context.body = JSON.stringify(getFilteredDemoItems(data, reqUrl));
+          return;
+        }
+
+        // Bulk-action POSTs for the content-list demo: mutate the
+        // in-memory items so the subsequent refresh actually shows
+        // the labeling change. Body is form-urlencoded as sent by
+        // ContentList.toggleLabel().
+        if (
+          context.request.method === 'POST' &&
+          context.path === '/demo/components/content-list/list-action'
+        ) {
+          return new Promise((resolve) => {
+            let body = '';
+            context.req.on('data', (chunk) => { body += chunk.toString(); });
+            context.req.on('end', () => {
+              const messages = loadDemoJson(
+                'messages',
+                './demo/components/content-list/data/messages.json'
+              );
+              const labels = loadDemoJson(
+                'labels',
+                './static/api/labels.json'
+              );
+              applyDemoListAction(body, messages, labels, 'id');
+              context.contentType = 'application/json';
+              context.status = 200;
+              context.body = JSON.stringify({ status: 'success' });
+              resolve();
+            });
+          });
+        }
+
+        if (
+          context.request.method === 'POST' &&
+          context.path === '/demo/components/content-list/flow-list-action'
+        ) {
+          return new Promise((resolve) => {
+            let body = '';
+            context.req.on('data', (chunk) => { body += chunk.toString(); });
+            context.req.on('end', () => {
+              const flows = loadDemoJson(
+                'flows',
+                './demo/components/content-list/data/flows.json'
+              );
+              const labels = loadDemoJson(
+                'flowLabels',
+                './static/api/flow-labels.json'
+              );
+              applyDemoListAction(body, flows, labels, 'uuid');
+              context.contentType = 'application/json';
+              context.status = 200;
+              context.body = JSON.stringify({ status: 'success' });
+              resolve();
+            });
+          });
         }
 
         // Handle contact chat POST (send message) - return a mock event
