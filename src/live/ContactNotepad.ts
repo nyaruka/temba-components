@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { ContactStoreElement } from './ContactStoreElement';
 import { getDisplayName } from './ContactChat';
 import { ContactNote, CustomEventType } from '../interfaces';
+import { designTokens } from '../styles/designTokens';
 
 export class ContactNotepad extends ContactStoreElement {
   @property({ type: Object, attribute: false })
@@ -14,6 +15,8 @@ export class ContactNotepad extends ContactStoreElement {
 
   static get styles() {
     return css`
+      ${designTokens}
+
       :host {
         height: 100%;
         display: flex;
