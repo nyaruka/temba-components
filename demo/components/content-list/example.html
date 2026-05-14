@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <title>Content List Examples</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link href="/demo/static/css/styles.css" rel="stylesheet" type="text/css" />
+    <style>
+      body {
+        max-width: 1200px;
+      }
+      /* Demo wrapper for each list — no card chrome, just vertical
+         rhythm. The component renders its own panel; anything
+         outside the <temba-*-list> is demo-only prose. */
+      .demo {
+        margin: 40px 0;
+      }
+      .demo h3 {
+        margin: 0 0 4px 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #4d5664;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .demo .description {
+        margin: 0 0 16px 0;
+        color: #7b8593;
+        font-size: 13px;
+      }
+      .demo .events {
+        margin-top: 12px;
+        padding: 8px 12px;
+        background: #f8f9fb;
+        border: 1px solid #e6e8ec;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: #4d5664;
+        min-height: 1.6em;
+        white-space: pre-wrap;
+      }
+      .demo .events .label {
+        color: #a2abb8;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 10px;
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Content List Examples</h1>
+    <p><a href="/demo/index.html">&larr; Back to main demo</a></p>
+
+    <p>
+      JSON-driven CRUDL list. Subclasses (<code>temba-msg-list</code>,
+      <code>temba-contact-list</code>, <code>temba-flow-list</code>) define
+      columns and per-cell rendering; the base
+      <code>temba-content-list</code> handles search, sort, multi-select,
+      pagination, and bulk-action events.
+    </p>
+
+    <div class="demo">
+      <h3>Messages</h3>
+      <p class="description">
+        Reverse-chronological message list with attachment, label, flow, and
+        opt-in cell types.
+      </p>
+      <temba-msg-list
+        id="msgs"
+        list-title="Messages"
+        subtitle="Recent messages."
+        endpoint="/demo/components/content-list/data/messages.json"
+        action-endpoint="/demo/components/content-list/list-action"
+      ></temba-msg-list>
+      <div class="events" id="msgs-events">
+        <div class="label">Events</div>
+        (waiting)
+      </div>
+    </div>
+
+    <div class="demo">
+      <h3>Contacts</h3>
+      <p class="description">
+        Sortable contact list with group pills and a leading silhouette icon.
+      </p>
+      <temba-contact-list
+        id="contacts"
+        list-title="Contacts"
+        subtitle="People who messaged your workspace."
+        endpoint="/demo/components/content-list/data/contacts.json"
+      ></temba-contact-list>
+      <div class="events" id="contacts-events">
+        <div class="label">Events</div>
+        (waiting)
+      </div>
+    </div>
+
+    <div class="demo">
+      <h3>Flows</h3>
+      <p class="description">
+        Flow list with leading type icons, issue indicators, a completion bar,
+        activity sparkline, and status pills.
+      </p>
+      <temba-flow-list
+        id="flows"
+        list-title="Flows"
+        subtitle="The standard CRUDL table."
+        endpoint="/demo/components/content-list/data/flows.json"
+        action-endpoint="/demo/components/content-list/flow-list-action"
+      ></temba-flow-list>
+      <div class="events" id="flows-events">
+        <div class="label">Events</div>
+        (waiting)
+      </div>
+    </div>
+
+    <script type="module">
+      import '/out-tsc/temba-modules.js';
+
+      const wire = (listId, logId) => {
+        const list = document.getElementById(listId);
+        const log = document.getElementById(logId);
+        const label = '<div class="label">Events</div>';
+        let lines = [];
+        const append = (msg) => {
+          lines.unshift(msg);
+          lines = lines.slice(0, 6);
+          log.innerHTML = label + lines.join('\n');
+        };
+        list.addEventListener('temba-row-click', (e) =>
+          append('row-click ' + JSON.stringify(e.detail.item).slice(0, 80))
+        );
+        list.addEventListener('temba-selection-change', (e) =>
+          append('selection-change ids=' + JSON.stringify(e.detail.ids))
+        );
+        list.addEventListener('temba-bulk-action', (e) =>
+          append(
+            'bulk-action ' + e.detail.action + ' ' + JSON.stringify(e.detail.ids)
+          )
+        );
+      };
+
+      wire('msgs', 'msgs-events');
+      wire('contacts', 'contacts-events');
+      wire('flows', 'flows-events');
+
+      // Block real navigation so contact-row hrefs don't take you away
+      document.addEventListener('click', (e) => {
+        const path = e.composedPath();
+        if (path.some((n) => n?.tagName === 'TEMBA-CONTACT-LIST')) {
+          e.preventDefault();
+        }
+      });
+    </script>
+  </body>
+</html>

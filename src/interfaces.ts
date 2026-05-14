@@ -323,5 +323,8 @@ export enum CustomEventType {
   RevisionViewed = 'temba-revision-viewed',
   RevisionCancelled = 'temba-revision-cancelled',
   RevisionReverted = 'temba-revision-reverted',
-  RevisionsClosed = 'temba-revisions-closed'
+  RevisionsClosed = 'temba-revisions-closed',
+  RowClick = 'temba-row-click',
+  SelectionChange = 'temba-selection-change',
+  BulkAction = 'temba-bulk-action'
 }
