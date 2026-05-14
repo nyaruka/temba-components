@@ -219,11 +219,16 @@ export class CanvasNode extends RapidElement {
         background: repeating-linear-gradient(120deg, tomato, tomato 6px, #ff7056 0, #ff7056 18px) !important;
       }
 
-      /* Disable links on actions/nodes with issues */
+      /* Disable links on actions/nodes with issues so clicks fall through
+         to open the editor instead of navigating. */
       .action-content.has-issues .linked-name div,
       .node.has-issues > .router .linked-name div {
         text-decoration: none !important;
         cursor: default !important;
+        pointer-events: none;
+      }
+      .action-content.has-issues .linked-pill,
+      .node.has-issues > .router .linked-pill {
         pointer-events: none;
       }
 
@@ -1094,13 +1099,16 @@ export class CanvasNode extends RapidElement {
   }
 
   /**
-   * Returns true if the click target is inside a `.linked-name` that is
-   * still active (i.e. the containing action/node has no issues).
-   * When an action/node has issues, links are visually disabled and clicks
-   * should fall through to open the editor instead.
+   * Returns true if the click target is inside a `.linked-name` or
+   * `.linked-pill` whose containing action/node has no issues. Active
+   * links handle their own navigation, so click-vs-drag and node-edit
+   * handlers bail out on them. When the action/node has issues, links are
+   * visually disabled (see CSS) and clicks fall through to open the
+   * editor instead.
    */
   private isActiveLink(target: HTMLElement, action?: Action): boolean {
-    if (!target.closest('.linked-name')) return false;
+    if (!target.closest('.linked-name') && !target.closest('.linked-pill'))
+      return false;
     if (action) return !this.issuesByAction?.has(action.uuid);
     return !(
       this.issuesByNode?.has(this.node.uuid) ||
@@ -1116,7 +1124,6 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-pill') ||
       this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
@@ -1145,7 +1152,6 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-pill') ||
       this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
@@ -1194,7 +1200,6 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-pill') ||
       this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
@@ -1221,7 +1226,6 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-pill') ||
       this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
@@ -1322,7 +1326,6 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-pill') ||
       this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
@@ -1350,7 +1353,6 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-pill') ||
       this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
@@ -1412,7 +1414,6 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-pill') ||
       this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
@@ -1438,7 +1439,6 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-pill') ||
       this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
