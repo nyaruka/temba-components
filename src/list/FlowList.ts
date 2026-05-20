@@ -1,6 +1,7 @@
 import { css, html, TemplateResult } from 'lit';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
+import { Flow, ObjectReference } from '../interfaces';
 
 /**
  * Flow CRUDL list — drop-in replacement for the rapidpro
@@ -8,7 +9,7 @@ import { Icon } from '../Icons';
  * the flow type (messaging / voice / background / surveyor).
  * Columns: name, runs, ongoing, completion bar, status, modified.
  */
-export class FlowList extends ContentList<any> {
+export class FlowList extends ContentList<Flow> {
   static get styles() {
     return css`
       ${ContentList.styles}
@@ -83,43 +84,35 @@ export class FlowList extends ContentList<any> {
     this.emptyMessage = 'No flows';
     this.searchPlaceholder = 'Search flows';
     this.columns = [
-      { key: 'name', label: 'Name', sortable: true, grow: 3 },
       {
-        key: 'status',
-        label: 'Status',
-        width: '110px',
-        grow: 0
+        key: 'name',
+        label: 'Name',
+        sortable: true,
+        width: '280px',
+        pinned: true
       },
+      { key: 'status', label: 'Status', width: '110px' },
       {
         key: 'runs',
         label: 'Runs',
         sortable: true,
-        width: '80px',
-        grow: 0,
+        width: '90px',
         align: 'right'
       },
       {
         key: 'ongoing',
         label: 'Ongoing',
         sortable: true,
-        width: '80px',
-        grow: 0,
+        width: '90px',
         align: 'right'
       },
       {
         key: 'completion',
         label: 'Completion',
-        width: '120px',
-        grow: 0,
+        width: '130px',
         align: 'right'
       },
-      {
-        key: 'activity',
-        label: 'Activity',
-        width: '120px',
-        grow: 0,
-        align: 'right'
-      }
+      { key: 'activity', label: 'Activity', width: '120px', align: 'right' }
     ];
     this.bulkActions = [
       {
@@ -133,7 +126,7 @@ export class FlowList extends ContentList<any> {
     ];
   }
 
-  protected getRowIcon(item: any): string | null {
+  protected getRowIcon(item: Flow): string | null {
     switch (item?.type) {
       case 'voice':
       case 'ivr':
@@ -147,12 +140,12 @@ export class FlowList extends ContentList<any> {
     }
   }
 
-  protected getRowHref(item: any): string | null {
+  protected getRowHref(item: Flow): string | null {
     return item?.uuid ? `/flow/editor/${item.uuid}/` : null;
   }
 
   protected renderCell(
-    item: any,
+    item: Flow,
     column: ContentListColumn
   ): TemplateResult | string {
     switch (column.key) {
@@ -170,7 +163,7 @@ export class FlowList extends ContentList<any> {
           ${labels.length > 0
             ? html`<span class="flow-labels">
                 ${labels.map(
-                  (l: any) =>
+                  (l: ObjectReference) =>
                     html`<temba-label type="label" icon=${Icon.label}
                       >${l.name}</temba-label
                     >`
@@ -196,7 +189,7 @@ export class FlowList extends ContentList<any> {
     }
   }
 
-  private renderCompletion(item: any): TemplateResult {
+  private renderCompletion(item: Flow): TemplateResult {
     const value = typeof item.completion === 'number' ? item.completion : 0;
     const pct = Math.round(value * 100);
     return html`
@@ -242,7 +235,7 @@ export class FlowList extends ContentList<any> {
     `;
   }
 
-  private renderFlowStatus(item: any): TemplateResult {
+  private renderFlowStatus(item: Flow): TemplateResult {
     const status = (item.status || 'active').toString().toLowerCase();
     const kind = status === 'archived' ? 'archived' : 'active';
     const label = status === 'archived' ? 'Archived' : 'Active';

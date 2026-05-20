@@ -428,7 +428,7 @@ export class Thumbnail extends RapidElement {
                       alt="Location preview"
                     />`
                   : html`<div
-                      style="padding:1em; background:rgba(0,0,0,.05);border-radius:var(--curvature);"
+                      style="padding:var(--thumb-icon-padding, 1em); background:rgba(0,0,0,.05);border-radius:var(--curvature);"
                     >
                       <temba-icon
                         size="1.5"

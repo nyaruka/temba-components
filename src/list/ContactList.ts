@@ -10,18 +10,23 @@ const FIELD_PREFIX = 'field:';
 /**
  * Contact CRUDL list — drop-in replacement for the rapidpro
  * `contacts/contact_list.html` table. Each row carries a contact
- * silhouette as the leading icon, name + URN, group pills, and a
- * last-seen duration. Name + Last-seen are sortable.
+ * silhouette as the leading icon, then the system columns (name,
+ * URN, last-seen) followed by the workspace's featured fields.
+ * Name + Last-seen are sortable.
  *
- * Featured contact fields from the workspace render as extra
- * columns between URN and Groups. The component fetches them from
+ * Featured contact fields render as extra columns after the system
+ * columns. The component fetches them from
  * {@link ContactList.fieldsEndpoint} on connect; cells read each
- * contact's value out of `item.fields[<key>]`.
+ * contact's value out of `item.fields[<key>]`. Date/time fields
+ * render as a relative duration, matching the Last-seen column.
  */
 export class ContactList extends ContentList<Contact> {
   static get styles() {
     return css`
       ${ContentList.styles}
+      /* The contact name is the one cell that carries a slightly
+         heavier weight — every other cell stays at the regular
+         table weight so values don't read as emphasised. */
       .contact-name {
         color: inherit;
         font-weight: var(--w-medium);
@@ -32,23 +37,6 @@ export class ContactList extends ContentList<Contact> {
       .contact-urn {
         color: var(--text-3);
         font-size: 12.5px;
-      }
-      /* Featured-field values are concrete data (someone's age,
-         their state, etc.) — bold text, not a pill. Truncated
-         with a title tooltip so long entries don't blow up the
-         row width. */
-      .field-value {
-        font-weight: var(--w-semibold);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        display: block;
-      }
-      .group-list {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex-wrap: wrap;
       }
     `;
   }
@@ -129,28 +117,59 @@ export class ContactList extends ContentList<Contact> {
     }
   }
 
-  /** Columns: name, urn, <featured fields>, groups, last seen. */
+  /** Columns: name, urn, the featured fields, then last seen.
+   *
+   * Name + URN lead and Last-seen trails, with the workspace's
+   * custom fields filling the middle. Every column sizes to its
+   * content between min/max bounds — none are hard-fixed — so the
+   * table stays compact and overflows into a horizontal scroll only
+   * when the field set is genuinely wide. Name + URN are pinned to
+   * the left edge and Last-seen to the right, so identity and
+   * recency stay anchored while the fields scroll between them.
+   *
+   * There is deliberately no group-membership column — contacts
+   * routinely belong to dozens of groups, so a groups cell is
+   * noise rather than signal in a list view. */
   private buildColumns(): ContentListColumn[] {
+    // Custom-field columns are all left-aligned for simplicity, and
+    // set no minWidth — their natural floor is the column header
+    // label, which the table's auto layout already honours; maxWidth
+    // just caps a runaway value.
     const fieldColumns: ContentListColumn[] = (this.featuredFields || []).map(
       (f: any) => ({
         key: FIELD_PREFIX + f.key,
         label: f.name || f.label || f.key,
-        width: '110px',
-        grow: 0
+        sortable: true,
+        maxWidth: '200px'
       })
     );
+    // Name + URN are the pinned identity columns and are not
+    // sortable — every other column (last-seen and the custom
+    // fields) is.
     return [
-      { key: 'name', label: 'Name', sortable: true, grow: 2 },
-      { key: 'urn', label: 'URN', width: '150px', grow: 0 },
+      {
+        key: 'name',
+        label: 'Name',
+        minWidth: '150px',
+        maxWidth: '260px',
+        pinned: true
+      },
+      {
+        key: 'urn',
+        label: 'URN',
+        minWidth: '120px',
+        maxWidth: '190px',
+        pinned: true
+      },
       ...fieldColumns,
-      { key: 'groups', label: 'Groups', grow: 1 },
       {
         key: 'last_seen_on',
         label: 'Last seen',
         sortable: true,
-        width: '110px',
-        grow: 0,
-        align: 'right'
+        minWidth: '96px',
+        maxWidth: '150px',
+        align: 'right',
+        pinned: 'right'
       }
     ];
   }
@@ -170,10 +189,14 @@ export class ContactList extends ContentList<Contact> {
     if (column.key.startsWith(FIELD_PREFIX)) {
       const fieldKey = column.key.substring(FIELD_PREFIX.length);
       const raw = item.fields?.[fieldKey];
-      const value = raw == null || raw === '' ? '' : String(raw);
-      return value
-        ? html`<span class="field-value" title=${value}>${value}</span>`
-        : '';
+      if (raw == null || raw === '') return '';
+      // Date/time fields render as a relative duration, matching the
+      // Last-seen column — never a raw timestamp string.
+      if (this.isDateField(fieldKey)) {
+        return html`<temba-date value=${raw} display="duration"></temba-date>`;
+      }
+      const value = String(raw);
+      return html`<span title=${value}>${value}</span>`;
     }
     switch (column.key) {
       case 'name':
@@ -184,8 +207,6 @@ export class ContactList extends ContentList<Contact> {
         return html`<span class="contact-urn"
           >${this.primaryUrn(item) || ''}</span
         >`;
-      case 'groups':
-        return this.renderGroups(item);
       case 'last_seen_on':
         return item.last_seen_on
           ? html`<temba-date
@@ -198,6 +219,16 @@ export class ContactList extends ContentList<Contact> {
     }
   }
 
+  /** True when a featured field stores a date/time value — those
+   * cells render via temba-date instead of as plain text. */
+  private isDateField(fieldKey: string): boolean {
+    const field = (this.featuredFields || []).find(
+      (f: any) => f.key === fieldKey
+    );
+    const type = field?.value_type;
+    return type === 'datetime' || type === 'date';
+  }
+
   private primaryUrn(item: Contact): string {
     const i = item as any;
     if (i.urn) return i.urn;
@@ -206,20 +237,5 @@ export class ContactList extends ContentList<Contact> {
       return typeof u === 'string' ? u.split(':')[1] || u : u?.display || '';
     }
     return '';
-  }
-
-  private renderGroups(item: Contact): TemplateResult {
-    const groups = item.groups || [];
-    if (groups.length === 0) return html``;
-    return html`
-      <div class="group-list">
-        ${groups.map(
-          (g: any) =>
-            html`<temba-label type="group" icon=${Icon.group}
-              >${g.name}</temba-label
-            >`
-        )}
-      </div>
-    `;
   }
 }

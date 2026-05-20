@@ -84,10 +84,15 @@ export const iconToPillType = (icon?: string): string | undefined => {
 };
 
 export const pillVariants = css`
+  /* The grey variants border off --pill-border, falling back to
+     --border. The indirection lets a host context (e.g. a selected
+     list row) retint the border without redefining --border, which
+     each component re-declares in its own shadow DOM via the design
+     tokens and so can't be overridden from outside. */
   .pill-neutral {
     background: var(--sunken);
     color: var(--text-1);
-    border-color: var(--border);
+    border-color: var(--pill-border, var(--border));
     --icon-color: var(--text-2);
   }
   .pill-flow {
@@ -133,7 +138,7 @@ export const pillVariants = css`
   .pill-keyword {
     background: var(--sunken);
     color: var(--text-1);
-    border-color: var(--border);
+    border-color: var(--pill-border, var(--border));
     --icon-color: var(--text-2);
     font-family: var(--font-mono);
     font-size: 11.5px;
@@ -141,7 +146,7 @@ export const pillVariants = css`
   .pill-label {
     background: var(--sunken);
     color: var(--text-2);
-    border-color: var(--border);
+    border-color: var(--pill-border, var(--border));
     --icon-color: var(--text-2);
   }
 `;
