@@ -1632,6 +1632,7 @@ export class ContentList<T = any> extends RapidElement {
     const bulkVisible = selectionCount > 0 && this.bulkActions.length > 0;
     const hasSubtitle =
       this.subtitle || this.querySelector('[slot="subtitle"]');
+    const resultCount = `${this.total} ${this.total === 1 ? 'result' : 'results'}`;
     // The header — title + content menu — is temba-page-header. The
     // list forwards its own title/subtitle slots into it and slots
     // its search / bulk-action controls into the header's actions
@@ -1687,11 +1688,7 @@ export class ContentList<T = any> extends RapidElement {
                 @keydown=${this.handleSearchKey}
               />
               ${this.search && this.hasCount && !this.loading
-                ? html`<span class="result-count"
-                    >${this.total} ${this.total === 1
-                      ? 'result'
-                      : 'results'}</span
-                  >`
+                ? html`<span class="result-count">${resultCount}</span>`
                 : null}
               <span
                 class="clear"
