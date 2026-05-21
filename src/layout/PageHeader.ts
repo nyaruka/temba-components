@@ -235,6 +235,11 @@ export class PageHeader extends RapidElement {
         controller,
         MENU_HEADERS
       );
+      // Staleness guard — if another fetch superseded this one
+      // between the request firing and the response arriving, drop
+      // the result so the newer fetch wins (mirrors the pattern in
+      // ContactList.loadFields).
+      if (this.pendingMenu !== controller) return;
       const menu = (response.json?.items as ContentMenuItem[]) || [];
       this.buttons = menu.filter((item) => item.as_button);
       this.items = menu.filter((item) => !item.as_button);

@@ -1200,10 +1200,16 @@ export class ContentList<T = any> extends RapidElement {
     const pageParam = parseInt(params.get(k('page')) || '1', 10);
     this.page = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
     // Reveal the search input when the URL carries an active query —
-    // see readHistoryState for the equivalent treatment.
+    // see readHistoryState for the equivalent treatment. On the
+    // empty branch close the searchbar too, so popstate from a
+    // searched view back to a non-searched one doesn't leave the
+    // input stranded.
     if (this.search) {
       this.searchOpen = true;
       this.searchDraft = this.search;
+    } else {
+      this.searchOpen = false;
+      this.searchDraft = '';
     }
   }
 
@@ -1254,10 +1260,14 @@ export class ContentList<T = any> extends RapidElement {
     // A restored search needs visible affordance — open the search
     // bar and seed the draft so the user sees the active query and
     // can edit or clear it without having to click the search
-    // toggle and discover the term was retained.
+    // toggle and discover the term was retained. The symmetric
+    // close-on-empty handles popstate back to a non-searched view.
     if (this.search) {
       this.searchOpen = true;
       this.searchDraft = this.search;
+    } else {
+      this.searchOpen = false;
+      this.searchDraft = '';
     }
   }
 
@@ -1570,16 +1580,25 @@ export class ContentList<T = any> extends RapidElement {
         // Drop selection for any ids the server filtered out of the
         // refreshed view; survivors stay selected.
         this.recheckSelection(ids);
+        // Only fire after the server confirms — a failed POST
+        // shouldn't trigger consumers to refresh based on a
+        // non-event.
+        this.fireCustomEvent(CustomEventType.BulkAction, {
+          action: action.key,
+          ids
+        });
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error('bulk action POST failed', err);
       }
+    } else {
+      // No server round-trip — leave the action entirely up to the
+      // host and let it know.
+      this.fireCustomEvent(CustomEventType.BulkAction, {
+        action: action.key,
+        ids
+      });
     }
-
-    this.fireCustomEvent(CustomEventType.BulkAction, {
-      action: action.key,
-      ids
-    });
   }
 
   private handlePage(delta: number): void {
@@ -1818,8 +1837,11 @@ export class ContentList<T = any> extends RapidElement {
     // Close just the dropdown for the action that fired — other
     // label dropdowns in the toolbar (e.g. a separate "labels"
     // grouping) stay in whatever state the user left them.
+    // `actionKey` is a consumer-supplied public-API field, so
+    // CSS.escape() keeps a key containing `"` or `\` from throwing
+    // SyntaxError (and leaving the dropdown stuck open).
     const dropdown = this.shadowRoot?.querySelector(
-      `.label-dropdown[data-action-key="${actionKey}"]`
+      `.label-dropdown[data-action-key="${CSS.escape(actionKey)}"]`
     ) as Dropdown | null;
     if (dropdown) dropdown.open = false;
 
@@ -1845,20 +1867,31 @@ export class ContentList<T = any> extends RapidElement {
         // from `this.items` and won't be re-selected. Mirrors
         // rapidpro's `recheckIds()` after a `spaPost`.
         this.recheckSelection(originalSelectedIds);
+        // Only fire after the server confirms — a failed POST
+        // shouldn't tell consumers (e.g. a sidebar refreshing
+        // counts) that the label actually changed.
+        this.fireCustomEvent(CustomEventType.BulkAction, {
+          action: 'label',
+          ids: originalSelectedIds,
+          label: label.uuid,
+          add
+        });
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error('label toggle POST failed', err);
       }
+    } else {
+      // No server round-trip — the host is fully responsible for the
+      // action, so fire so it can react.
+      this.fireCustomEvent(CustomEventType.BulkAction, {
+        action: 'label',
+        ids: originalSelectedIds,
+        label: label.uuid,
+        add
+      });
     }
 
     this.pendingLabel = null;
-
-    this.fireCustomEvent(CustomEventType.BulkAction, {
-      action: 'label',
-      ids: originalSelectedIds,
-      label: label.uuid,
-      add
-    });
   }
 
   /** Re-apply a selection set against the current `items`. Used
@@ -1898,10 +1931,11 @@ export class ContentList<T = any> extends RapidElement {
     if (!this.search) return;
     this.search = '';
     this.page = 1;
-    // Reset the "Searching…" flag explicitly: if clearSearch fires
-    // mid-fetch, the aborted controller's finally won't clear it
-    // (the pending pointer has already moved on to the new fetch),
-    // so the indicator would outlive the searchbar.
+    // fetchPage's `finally` will clear this once the kicked-off
+    // request settles, but doing it synchronously here is a UX
+    // optimization: "Searching…" disappears the instant the user
+    // clears, rather than flickering until the in-flight request
+    // resolves.
     this.searching = false;
     // fetchPage first so currentUrl reflects the cleared search before
     // the state bubbles — see commitSearch for the full reasoning.
