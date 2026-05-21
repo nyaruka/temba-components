@@ -174,7 +174,7 @@ export class MsgList extends ContentList<Msg> {
     return html`
       <div class="sent-cell">
         <temba-date value=${item.created_on} display="duration"></temba-date>
-        ${item.logs_url
+        ${item.logs_url && this.isSafeHref(item.logs_url)
           ? html`
               <a
                 class="msg-log"

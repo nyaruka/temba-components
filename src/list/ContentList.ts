@@ -1195,19 +1195,21 @@ export class ContentList<T = any> extends RapidElement {
     const params = new URLSearchParams(window.location.search);
     const k = (name: string) =>
       this.urlParamPrefix ? `${this.urlParamPrefix}_${name}` : name;
+    const previousSearch = this.search;
     this.search = params.get(k('search')) || '';
     this.sort = params.get(k('sort')) || '';
     const pageParam = parseInt(params.get(k('page')) || '1', 10);
     this.page = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
     // Reveal the search input when the URL carries an active query —
-    // see readHistoryState for the equivalent treatment. On the
-    // empty branch close the searchbar too, so popstate from a
-    // searched view back to a non-searched one doesn't leave the
-    // input stranded.
+    // see readHistoryState for the equivalent treatment. The
+    // close-on-empty branch only fires when the navigation actually
+    // cleared a prior search; an unrelated popstate that arrives
+    // while the user has the searchbar open and is mid-typing must
+    // not slam their draft.
     if (this.search) {
       this.searchOpen = true;
       this.searchDraft = this.search;
-    } else {
+    } else if (previousSearch) {
       this.searchOpen = false;
       this.searchDraft = '';
     }
@@ -1252,6 +1254,7 @@ export class ContentList<T = any> extends RapidElement {
     const key = this.historyStateKey;
     if (!key) return;
     const stash = (window.history.state || {})[key] || {};
+    const previousSearch = this.search;
     this.search = typeof stash.search === 'string' ? stash.search : '';
     this.sort = typeof stash.sort === 'string' ? stash.sort : '';
     const p = parseInt(stash.page, 10);
@@ -1260,12 +1263,14 @@ export class ContentList<T = any> extends RapidElement {
     // A restored search needs visible affordance — open the search
     // bar and seed the draft so the user sees the active query and
     // can edit or clear it without having to click the search
-    // toggle and discover the term was retained. The symmetric
-    // close-on-empty handles popstate back to a non-searched view.
+    // toggle and discover the term was retained. Only auto-close on
+    // empty when the navigation actually cleared a prior search, so
+    // an unrelated popstate that arrives while the user is mid-
+    // typing doesn't slam their draft.
     if (this.search) {
       this.searchOpen = true;
       this.searchDraft = this.search;
-    } else {
+    } else if (previousSearch) {
       this.searchOpen = false;
       this.searchDraft = '';
     }
@@ -1517,7 +1522,7 @@ export class ContentList<T = any> extends RapidElement {
    * permit same-origin navigation — absolute URLs must match the
    * current origin, relative URLs must be path-only (starting with
    * `/` and not `//`, which would be protocol-relative). */
-  private isSafeHref(href: string): boolean {
+  protected isSafeHref(href: string): boolean {
     if (typeof href !== 'string' || href.length === 0) return false;
     // Reject protocol-relative URLs ("//evil.com/...") and any
     // scheme-prefixed URL that isn't same-origin.
@@ -1831,65 +1836,69 @@ export class ContentList<T = any> extends RapidElement {
     const add = state !== 'all';
     const originalSelectedIds = Array.from(this.selectedIds);
     this.pendingLabel = label.uuid;
+    try {
+      // Close just the dropdown for the action that fired — other
+      // label dropdowns in the toolbar (e.g. a separate "labels"
+      // grouping) stay in whatever state the user left them.
+      // `actionKey` is a consumer-supplied public-API field, so
+      // CSS.escape() keeps a key containing `"` or `\` from throwing
+      // SyntaxError (and leaving the dropdown stuck open).
+      const dropdown = this.shadowRoot?.querySelector(
+        `.label-dropdown[data-action-key="${CSS.escape(actionKey)}"]`
+      ) as Dropdown | null;
+      if (dropdown) dropdown.open = false;
 
-    // Close just the dropdown for the action that fired — other
-    // label dropdowns in the toolbar (e.g. a separate "labels"
-    // grouping) stay in whatever state the user left them.
-    // `actionKey` is a consumer-supplied public-API field, so
-    // CSS.escape() keeps a key containing `"` or `\` from throwing
-    // SyntaxError (and leaving the dropdown stuck open).
-    const dropdown = this.shadowRoot?.querySelector(
-      `.label-dropdown[data-action-key="${CSS.escape(actionKey)}"]`
-    ) as Dropdown | null;
-    if (dropdown) dropdown.open = false;
-
-    if (this.actionEndpoint) {
-      // application/x-www-form-urlencoded matches what Django's
-      // smartmin `BulkActionMixin` reads from `request.POST`, and
-      // is trivial to parse server-side (URLSearchParams) without
-      // pulling in a multipart parser for the demo mock.
-      const params = new URLSearchParams();
-      params.append('action', 'label');
-      params.append('label', label.uuid);
-      if (!add) params.append('add', 'false');
-      originalSelectedIds.forEach((id) => params.append('objects', id));
-      try {
-        await postUrl(this.actionEndpoint, params);
-        // Re-fetch the current page so a filtered view (e.g. a
-        // label-filter) drops rows that no longer match — staying on
-        // the page being acted on rather than resetting to the first.
-        await this.fetchPage(this.currentUrl || undefined);
-        // Re-check the ids we were operating on. Items that survived
-        // the refresh stay selected; items the server filtered out
-        // (label removed → no longer matches the view) are absent
-        // from `this.items` and won't be re-selected. Mirrors
-        // rapidpro's `recheckIds()` after a `spaPost`.
-        this.recheckSelection(originalSelectedIds);
-        // Only fire after the server confirms — a failed POST
-        // shouldn't tell consumers (e.g. a sidebar refreshing
-        // counts) that the label actually changed.
+      if (this.actionEndpoint) {
+        // application/x-www-form-urlencoded matches what Django's
+        // smartmin `BulkActionMixin` reads from `request.POST`, and
+        // is trivial to parse server-side (URLSearchParams) without
+        // pulling in a multipart parser for the demo mock.
+        const params = new URLSearchParams();
+        params.append('action', 'label');
+        params.append('label', label.uuid);
+        if (!add) params.append('add', 'false');
+        originalSelectedIds.forEach((id) => params.append('objects', id));
+        try {
+          await postUrl(this.actionEndpoint, params);
+          // Re-fetch the current page so a filtered view (e.g. a
+          // label-filter) drops rows that no longer match — staying on
+          // the page being acted on rather than resetting to the first.
+          await this.fetchPage(this.currentUrl || undefined);
+          // Re-check the ids we were operating on. Items that survived
+          // the refresh stay selected; items the server filtered out
+          // (label removed → no longer matches the view) are absent
+          // from `this.items` and won't be re-selected. Mirrors
+          // rapidpro's `recheckIds()` after a `spaPost`.
+          this.recheckSelection(originalSelectedIds);
+          // Only fire after the server confirms — a failed POST
+          // shouldn't tell consumers (e.g. a sidebar refreshing
+          // counts) that the label actually changed.
+          this.fireCustomEvent(CustomEventType.BulkAction, {
+            action: 'label',
+            ids: originalSelectedIds,
+            label: label.uuid,
+            add
+          });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('label toggle POST failed', err);
+        }
+      } else {
+        // No server round-trip — the host is fully responsible for the
+        // action, so fire so it can react.
         this.fireCustomEvent(CustomEventType.BulkAction, {
           action: 'label',
           ids: originalSelectedIds,
           label: label.uuid,
           add
         });
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('label toggle POST failed', err);
       }
-    } else {
-      // No server round-trip — the host is fully responsible for the
-      // action, so fire so it can react.
-      this.fireCustomEvent(CustomEventType.BulkAction, {
-        action: 'label',
-        ids: originalSelectedIds,
-        label: label.uuid,
-        add
-      });
+    } finally {
+      // Always release the toggle gate, even if an early return or a
+      // throw from a future edit short-circuits the round-trip — the
+      // dropdown's other rows must never get permanently wedged.
+      this.pendingLabel = null;
     }
-
-    this.pendingLabel = null;
   }
 
   /** Re-apply a selection set against the current `items`. Used

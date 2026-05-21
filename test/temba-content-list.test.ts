@@ -120,10 +120,17 @@ describe('temba-content-list', () => {
     // ContactList loads featured fields via a separate async fetch
     // that's not gated on FetchComplete. Wait for the columns to
     // include at least one custom field so the pinned-column layout
-    // is settled before snapshotting.
-    while ((list as any).featuredFields?.length === 0) {
+    // is settled before snapshotting. Cap at 2s so a fixture change
+    // that produces no featured fields fails fast with a clear
+    // assertion instead of hanging until the mocha timeout.
+    for (
+      let i = 0;
+      i < 200 && (list as any).featuredFields?.length === 0;
+      i++
+    ) {
       await new Promise((r) => setTimeout(r, 10));
     }
+    expect((list as any).featuredFields?.length).to.be.greaterThan(0);
     await list.updateComplete;
     await assertScreenshot('content-list/contacts', getClip(list));
   });
