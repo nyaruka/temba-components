@@ -7,7 +7,8 @@ import { Flow, ObjectReference } from '../interfaces';
  * Flow CRUDL list — drop-in replacement for the rapidpro
  * `flows/flow_list.html` table. Each row's leading icon reflects
  * the flow type (messaging / voice / background / surveyor).
- * Columns: name, runs, ongoing, completion bar, status, modified.
+ * Columns: name, status, runs, ongoing, completion bar, activity
+ * sparkline.
  */
 export class FlowList extends ContentList<Flow> {
   static get styles() {

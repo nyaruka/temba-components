@@ -5,6 +5,7 @@ import { Icon } from '../Icons';
 import { CustomEventType } from '../interfaces';
 import { getUrl, postUrl } from '../utils';
 import { designTokens } from '../styles/designTokens';
+import { Dropdown } from '../display/Dropdown';
 
 /** A single column in the list. Subclasses typically define a static
  * set via {@link ContentList.columns}; consumers may also set it as
@@ -1131,12 +1132,6 @@ export class ContentList<T = any> extends RapidElement {
       };
       window.addEventListener('popstate', this.popstateHandler);
     }
-    // eslint-disable-next-line no-console
-    console.log('[ContentList] connectedCallback', {
-      historyStateKey: this.historyStateKey,
-      urlState: this.urlState,
-      historyState: window.history.state
-    });
     // A viewport resize changes whether the table overflows, so the
     // right-edge scroll affordance has to be re-evaluated.
     this.resizeHandler = () => this.syncScrollAffordance();
@@ -1160,7 +1155,13 @@ export class ContentList<T = any> extends RapidElement {
       window.removeEventListener('resize', this.resizeHandler);
     }
     if (this.pending) {
-      this.pending.abort();
+      // Null the pending pointer before aborting so fetchPage's
+      // finally block — which gates cleanup on `this.pending ===
+      // controller` — skips firing FetchComplete on a disconnected
+      // component.
+      const controller = this.pending;
+      this.pending = null;
+      controller.abort();
     }
     super.disconnectedCallback();
   }
@@ -1181,14 +1182,6 @@ export class ContentList<T = any> extends RapidElement {
       // Clear it so subsequent fetches use the live state.
       const restore = this.restoreUrl;
       this.restoreUrl = '';
-      // eslint-disable-next-line no-console
-      console.log('[ContentList] initial fetch', {
-        endpoint: this.endpoint,
-        restoreUrl: restore,
-        page: this.page,
-        sort: this.sort,
-        search: this.search
-      });
       this.fetchPage(restore || undefined);
     }
     // Pinned-column offsets and the scroll affordances both depend
@@ -1266,16 +1259,6 @@ export class ContentList<T = any> extends RapidElement {
       this.searchOpen = true;
       this.searchDraft = this.search;
     }
-    // eslint-disable-next-line no-console
-    console.log('[ContentList] readHistoryState', {
-      key,
-      historyState: window.history.state,
-      stash,
-      page: this.page,
-      sort: this.sort,
-      search: this.search,
-      restoreUrl: this.restoreUrl
-    });
   }
 
   /** Bubble the current page/sort/search/url up to the host so it
@@ -1305,13 +1288,6 @@ export class ContentList<T = any> extends RapidElement {
     if (this.cursorMode && this.currentUrl) {
       state.url = this.currentUrl;
     }
-    // eslint-disable-next-line no-console
-    console.log('[ContentList] bubbleHistoryState', {
-      key: this.historyStateKey,
-      state,
-      cursorMode: this.cursorMode,
-      replace
-    });
     this.fireCustomEvent(CustomEventType.HistoryChange, {
       key: this.historyStateKey,
       state,
@@ -1378,14 +1354,6 @@ export class ContentList<T = any> extends RapidElement {
     this.loading = true;
     const requestUrl = url || this.buildRequestUrl();
     this.currentUrl = requestUrl;
-    // eslint-disable-next-line no-console
-    console.log('[ContentList] fetchPage', {
-      explicitUrl: url || null,
-      requestUrl,
-      page: this.page,
-      sort: this.sort,
-      search: this.search
-    });
     try {
       const response = await getUrl(requestUrl, controller);
       const data = (response.json || {}) as FetchResponse<T>;
@@ -1687,6 +1655,7 @@ export class ContentList<T = any> extends RapidElement {
               <span
                 class="submit"
                 title="Search"
+                aria-label="Search"
                 @click=${() => this.commitSearch()}
               >
                 <temba-icon name=${Icon.search} size="0.95"></temba-icon>
@@ -1697,7 +1666,6 @@ export class ContentList<T = any> extends RapidElement {
                 .value=${this.searchDraft}
                 @input=${this.handleSearchInput}
                 @keydown=${this.handleSearchKey}
-                autofocus
               />
               ${this.search && this.hasCount && !this.loading
                 ? html`<span class="result-count"
@@ -1705,7 +1673,12 @@ export class ContentList<T = any> extends RapidElement {
                     ${this.total === 1 ? 'result' : 'results'}</span
                   >`
                 : null}
-              <span class="clear" @click=${() => this.toggleSearch()}>
+              <span
+                class="clear"
+                title="Close search"
+                aria-label="Close search"
+                @click=${() => this.toggleSearch()}
+              >
                 <temba-icon name=${Icon.close} size="0.85"></temba-icon>
               </span>
             </div>
@@ -1736,6 +1709,7 @@ export class ContentList<T = any> extends RapidElement {
     return html`
       <temba-dropdown
         class="label-dropdown"
+        data-action-key=${action.key}
         @temba-opened=${() => this.handleLabelDropdownOpened(action)}
       >
         <span
@@ -1750,13 +1724,16 @@ export class ContentList<T = any> extends RapidElement {
         <div slot="dropdown" class="label-menu">
           ${labels.length === 0
             ? html`<div class="label-menu-empty">Loading&hellip;</div>`
-            : labels.map((label) => this.renderLabelOption(label))}
+            : labels.map((label) => this.renderLabelOption(label, action))}
         </div>
       </temba-dropdown>
     `;
   }
 
-  private renderLabelOption(label: any): TemplateResult {
+  private renderLabelOption(
+    label: any,
+    action: ContentListBulkAction
+  ): TemplateResult {
     const state = this.computeLabelState(label.uuid);
     const isPending = this.pendingLabel === label.uuid;
     const isBlocked = this.pendingLabel !== null && !isPending;
@@ -1768,7 +1745,7 @@ export class ContentList<T = any> extends RapidElement {
         @click=${(e: MouseEvent) => {
           e.stopPropagation();
           if (this.pendingLabel !== null) return;
-          this.toggleLabel(label, state);
+          this.toggleLabel(label, state, action.key);
         }}
       >
         <temba-checkbox
@@ -1828,15 +1805,23 @@ export class ContentList<T = any> extends RapidElement {
    * filtered result decide which rows stay. We POST first, then
    * refresh once the server confirms. The `pendingLabel` state
    * blocks further toggles until the round-trip completes. */
-  private async toggleLabel(label: any, state: string): Promise<void> {
+  private async toggleLabel(
+    label: any,
+    state: string,
+    actionKey: string
+  ): Promise<void> {
     if (this.pendingLabel !== null) return;
     const add = state !== 'all';
     const originalSelectedIds = Array.from(this.selectedIds);
     this.pendingLabel = label.uuid;
 
-    this.shadowRoot
-      ?.querySelectorAll('.label-dropdown')
-      .forEach((d) => ((d as any).open = false));
+    // Close just the dropdown for the action that fired — other
+    // label dropdowns in the toolbar (e.g. a separate "labels"
+    // grouping) stay in whatever state the user left them.
+    const dropdown = this.shadowRoot?.querySelector(
+      `.label-dropdown[data-action-key="${actionKey}"]`
+    ) as Dropdown | null;
+    if (dropdown) dropdown.open = false;
 
     if (this.actionEndpoint) {
       // application/x-www-form-urlencoded matches what Django's
@@ -1913,6 +1898,11 @@ export class ContentList<T = any> extends RapidElement {
     if (!this.search) return;
     this.search = '';
     this.page = 1;
+    // Reset the "Searching…" flag explicitly: if clearSearch fires
+    // mid-fetch, the aborted controller's finally won't clear it
+    // (the pending pointer has already moved on to the new fetch),
+    // so the indicator would outlive the searchbar.
+    this.searching = false;
     // fetchPage first so currentUrl reflects the cleared search before
     // the state bubbles — see commitSearch for the full reasoning.
     // Pushes a new entry so the cleared-search view is its own back

@@ -151,8 +151,7 @@ describe('temba-content-list', () => {
     expect((list as any).items[0].name).to.equal('Alpha');
 
     // the footer drops the running total in cursor mode
-    const status = list.shadowRoot!.querySelector('.footer .status');
-    expect(status!.textContent!.trim()).to.equal('');
+    expect(list.shadowRoot!.querySelector('.pager-status')).to.equal(null);
 
     // previous is disabled on the first page, next is enabled
     const [prev, next] = list.shadowRoot!.querySelectorAll('.page-btn');
