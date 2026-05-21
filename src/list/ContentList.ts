@@ -1688,8 +1688,9 @@ export class ContentList<T = any> extends RapidElement {
               />
               ${this.search && this.hasCount && !this.loading
                 ? html`<span class="result-count"
-                    >${this.total}
-                    ${this.total === 1 ? 'result' : 'results'}</span
+                    >${this.total} ${this.total === 1
+                      ? 'result'
+                      : 'results'}</span
                   >`
                 : null}
               <span

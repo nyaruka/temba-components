@@ -117,6 +117,13 @@ describe('temba-content-list', () => {
         once: true
       });
     });
+    // ContactList loads featured fields via a separate async fetch
+    // that's not gated on FetchComplete. Wait for the columns to
+    // include at least one custom field so the pinned-column layout
+    // is settled before snapshotting.
+    while ((list as any).featuredFields?.length === 0) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
     await list.updateComplete;
     await assertScreenshot('content-list/contacts', getClip(list));
   });
