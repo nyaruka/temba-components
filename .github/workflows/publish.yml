@@ -15,16 +15,10 @@ jobs:
     steps:
       - name: Checkout (GitHub)
         uses: actions/checkout@v5
-      - run: docker network create --driver bridge textit_default
-      - name: Set environment variables
-        run: |
-          echo "NYARUKA_HOME=$(dirname ${{ github.workspace }})" >> $GITHUB_ENV
-          echo "CONDUCTOR_HOME=/tmp/conductor" >> $GITHUB_ENV
-          echo "WORKTREES=/tmp/worktrees" >> $GITHUB_ENV
-          mkdir -p /tmp/conductor/workspaces /tmp/worktrees
       - name: Build in dev container
         uses: devcontainers/ci@v0.3
         with:
+          configFile: .github/devcontainer/devcontainer.json
           runCmd: pnpm install --frozen-lockfile && pnpm run build
           push: never
           env: |

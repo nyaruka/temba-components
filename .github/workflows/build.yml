@@ -19,17 +19,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      - run: docker network create --driver bridge textit_default
-      - name: Set environment variables
-        run: |
-          echo "NYARUKA_HOME=$(dirname ${{ github.workspace }})" >> $GITHUB_ENV
-          echo "CONDUCTOR_HOME=/tmp/conductor" >> $GITHUB_ENV
-          echo "WORKTREES=/tmp/worktrees" >> $GITHUB_ENV
-          mkdir -p /tmp/conductor/workspaces /tmp/worktrees
       - name: Build and run dev container task
         id: validate
         uses: devcontainers/ci@v0.3
         with:
+          configFile: .github/devcontainer/devcontainer.json
           runCmd: |
             pnpm install --frozen-lockfile && pnpm validate 2>&1 | tee validate_output.log
             exit ${PIPESTATUS[0]}
