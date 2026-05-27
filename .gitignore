@@ -1,5 +1,4 @@
-## editors
-/.idea
+.devcontainer
 /.vscode
 
 ## system files
