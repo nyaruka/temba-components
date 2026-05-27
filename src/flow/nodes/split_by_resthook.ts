@@ -87,10 +87,10 @@ export const split_by_resthook: NodeConfig = {
     const existingCases = originalNode.router?.cases || [];
 
     const { router, exits } = createSuccessFailureRouter(
-      '@webhook.json.status',
+      '@webhook.status',
       {
-        type: 'has_text',
-        arguments: []
+        type: 'has_number_between',
+        arguments: ['200', '299']
       },
       existingCategories,
       existingExits,

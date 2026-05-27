@@ -18,8 +18,8 @@ describe('temba-split-by-resthook', () => {
         cases: [
           {
             uuid: 'case-1',
-            type: 'has_text',
-            arguments: [],
+            type: 'has_number_between',
+            arguments: ['200', '299'],
             category_uuid: 'cat-success'
           }
         ],
@@ -28,7 +28,7 @@ describe('temba-split-by-resthook', () => {
           { uuid: 'cat-failure', name: 'Failure', exit_uuid: 'exit-failure' }
         ],
         default_category_uuid: 'cat-failure',
-        operand: '@webhook.json.status'
+        operand: '@webhook.status'
       },
       exits: [
         { uuid: 'exit-success', destination_uuid: null },
@@ -61,8 +61,8 @@ describe('temba-split-by-resthook', () => {
         cases: [
           {
             uuid: 'case-1',
-            type: 'has_text',
-            arguments: [],
+            type: 'has_number_between',
+            arguments: ['200', '299'],
             category_uuid: 'cat-success'
           }
         ],
@@ -72,7 +72,7 @@ describe('temba-split-by-resthook', () => {
         ],
         result_name: 'payment_status',
         default_category_uuid: 'cat-failure',
-        operand: '@webhook.json.status'
+        operand: '@webhook.status'
       },
       exits: [
         { uuid: 'exit-success', destination_uuid: null },
@@ -110,7 +110,7 @@ describe('temba-split-by-resthook', () => {
     expect(action.type).to.equal('call_resthook');
 
     expect(resultNode.router!.type).to.equal('switch');
-    expect(resultNode.router!.operand).to.equal('@webhook.json.status');
+    expect(resultNode.router!.operand).to.equal('@webhook.status');
     expect(resultNode.router!.categories).to.have.lengthOf(2); // Success + Failure
     expect(resultNode.exits).to.have.lengthOf(2); // Success + Failure
 
@@ -172,8 +172,8 @@ describe('temba-split-by-resthook', () => {
         cases: [
           {
             uuid: 'existing-case-uuid',
-            type: 'has_text',
-            arguments: [],
+            type: 'has_number_between',
+            arguments: ['200', '299'],
             category_uuid: 'existing-success-uuid'
           }
         ],
@@ -190,7 +190,7 @@ describe('temba-split-by-resthook', () => {
           }
         ],
         default_category_uuid: 'existing-failure-uuid',
-        operand: '@webhook.json.status'
+        operand: '@webhook.status'
       },
       exits: [
         {
@@ -241,8 +241,8 @@ describe('temba-split-by-resthook', () => {
         cases: [
           {
             uuid: 'existing-case-uuid',
-            type: 'has_text',
-            arguments: [],
+            type: 'has_number_between',
+            arguments: ['200', '299'],
             category_uuid: 'existing-success-uuid'
           }
         ],
@@ -259,7 +259,7 @@ describe('temba-split-by-resthook', () => {
           }
         ],
         default_category_uuid: 'existing-failure-uuid',
-        operand: '@webhook.json.status'
+        operand: '@webhook.status'
       },
       exits: [
         {
