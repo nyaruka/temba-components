@@ -432,10 +432,9 @@ export class ContactEvents extends EndpointMonitorElement {
       }
       this.data = response.json;
     } catch {
-      if (this.contact !== requestedContact) {
-        return;
-      }
-      this.data = null;
+      // on failure leave the prior data in place so a transient blip doesn't
+      // wipe the timeline; data is only cleared when the contact changes
+      // (handled in updated()) or when there's no contact at all
     }
   }
 
@@ -452,6 +451,9 @@ export class ContactEvents extends EndpointMonitorElement {
       // colors are assigned per-uuid in order of first appearance, so a switch
       // to a new contact must drop the previous assignments to avoid drift
       this.campaignColors = {};
+      // blank the timeline immediately on a contact switch so the previous
+      // contact's events aren't briefly visible while the new fetch is in flight
+      this.data = null;
       this.loadEvents();
     }
 
@@ -462,15 +464,20 @@ export class ContactEvents extends EndpointMonitorElement {
       this.nextBefore = this.data ? (this.data.next_before ?? null) : null;
       this.nextAfter = this.data ? (this.data.next_after ?? null) : null;
 
-      // the badge reflects the total count of upcoming events, not just what's
-      // currently visible on this page
-      const count =
-        this.data && typeof this.data.future_count === 'number'
-          ? this.data.future_count
-          : Array.isArray(this.data?.future)
-            ? this.data.future.length
-            : 0;
-      this.fireCustomEvent(CustomEventType.DetailsChanged, { count });
+      // only notify consumers when we actually have data - skip the null state
+      // between contact switch and first response (and any transient errors)
+      // so listeners don't see a spurious count:0
+      if (this.data !== null && this.data !== undefined) {
+        // the badge reflects the total count of upcoming events, not just
+        // what's currently visible on this page
+        const count =
+          typeof this.data.future_count === 'number'
+            ? this.data.future_count
+            : Array.isArray(this.data.future)
+              ? this.data.future.length
+              : 0;
+        this.fireCustomEvent(CustomEventType.DetailsChanged, { count });
+      }
     }
   }
 
@@ -533,20 +540,31 @@ export class ContactEvents extends EndpointMonitorElement {
     }
 
     this.loadingMore = true;
+    // capture the contact at request time so a paged response that returns
+    // after the user has switched contacts can't append onto the new timeline
+    const requestedContact = this.contact;
     const url = `/contact/events/${this.contact}/?before=${encodeURIComponent(
       this.nextBefore
     )}`;
 
     try {
       const response = await this.store.getUrl(url, { force: true });
+      if (this.contact !== requestedContact) {
+        return;
+      }
       const page = response.json as EventsResponse;
       this.olderEvents = [...this.olderEvents, ...(page.past || [])];
       this.nextBefore = page.next_before ?? null;
     } catch {
+      if (this.contact !== requestedContact) {
+        return;
+      }
       // on failure leave the accumulated events in place but stop offering
       // the same failing page - clearing the cursor hides the pager
       this.nextBefore = null;
     } finally {
+      // safe to clear unconditionally - if the contact changed, the new
+      // contact's pager state is independent of this flag
       this.loadingMore = false;
     }
   }
@@ -557,16 +575,23 @@ export class ContactEvents extends EndpointMonitorElement {
     }
 
     this.loadingMoreFuture = true;
+    const requestedContact = this.contact;
     const url = `/contact/events/${this.contact}/?after=${encodeURIComponent(
       this.nextAfter
     )}`;
 
     try {
       const response = await this.store.getUrl(url, { force: true });
+      if (this.contact !== requestedContact) {
+        return;
+      }
       const page = response.json as EventsResponse;
       this.newerEvents = [...this.newerEvents, ...(page.future || [])];
       this.nextAfter = page.next_after ?? null;
     } catch {
+      if (this.contact !== requestedContact) {
+        return;
+      }
       this.nextAfter = null;
     } finally {
       this.loadingMoreFuture = false;
