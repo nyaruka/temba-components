@@ -18,8 +18,8 @@ describe('temba-split-by-resthook', () => {
         cases: [
           {
             uuid: 'case-1',
-            type: 'has_text',
-            arguments: [],
+            type: 'has_number_between',
+            arguments: ['200', '299'],
             category_uuid: 'cat-success'
           }
         ],
@@ -28,7 +28,7 @@ describe('temba-split-by-resthook', () => {
           { uuid: 'cat-failure', name: 'Failure', exit_uuid: 'exit-failure' }
         ],
         default_category_uuid: 'cat-failure',
-        operand: '@webhook.json.status'
+        operand: '@webhook.status'
       },
       exits: [
         { uuid: 'exit-success', destination_uuid: null },
@@ -61,8 +61,8 @@ describe('temba-split-by-resthook', () => {
         cases: [
           {
             uuid: 'case-1',
-            type: 'has_text',
-            arguments: [],
+            type: 'has_number_between',
+            arguments: ['200', '299'],
             category_uuid: 'cat-success'
           }
         ],
@@ -72,7 +72,7 @@ describe('temba-split-by-resthook', () => {
         ],
         result_name: 'payment_status',
         default_category_uuid: 'cat-failure',
-        operand: '@webhook.json.status'
+        operand: '@webhook.status'
       },
       exits: [
         { uuid: 'exit-success', destination_uuid: null },
@@ -110,7 +110,7 @@ describe('temba-split-by-resthook', () => {
     expect(action.type).to.equal('call_resthook');
 
     expect(resultNode.router!.type).to.equal('switch');
-    expect(resultNode.router!.operand).to.equal('@webhook.json.status');
+    expect(resultNode.router!.operand).to.equal('@webhook.status');
     expect(resultNode.router!.categories).to.have.lengthOf(2); // Success + Failure
     expect(resultNode.exits).to.have.lengthOf(2); // Success + Failure
 
@@ -172,8 +172,8 @@ describe('temba-split-by-resthook', () => {
         cases: [
           {
             uuid: 'existing-case-uuid',
-            type: 'has_text',
-            arguments: [],
+            type: 'has_number_between',
+            arguments: ['200', '299'],
             category_uuid: 'existing-success-uuid'
           }
         ],
@@ -190,7 +190,7 @@ describe('temba-split-by-resthook', () => {
           }
         ],
         default_category_uuid: 'existing-failure-uuid',
-        operand: '@webhook.json.status'
+        operand: '@webhook.status'
       },
       exits: [
         {
@@ -226,7 +226,7 @@ describe('temba-split-by-resthook', () => {
     expect(resultNode.exits![1].destination_uuid).to.equal('another-node-uuid');
   });
 
-  it('should handle changing resthook while preserving structure', () => {
+  it('should normalise legacy @webhook.json.status nodes on re-save', () => {
     const originalNode: Node = {
       uuid: 'test-node-uuid',
       actions: [
@@ -260,6 +260,78 @@ describe('temba-split-by-resthook', () => {
         ],
         default_category_uuid: 'existing-failure-uuid',
         operand: '@webhook.json.status'
+      },
+      exits: [
+        { uuid: 'existing-success-exit-uuid', destination_uuid: null },
+        { uuid: 'existing-failure-exit-uuid', destination_uuid: null }
+      ]
+    };
+
+    const formData = {
+      uuid: 'test-node-uuid',
+      resthook: [{ resthook: 'new-registration' }],
+      result_name: ''
+    };
+
+    const resultNode = split_by_resthook.fromFormData!(formData, originalNode);
+
+    // operand and case should be normalised to the canonical shape
+    expect(resultNode.router!.operand).to.equal('@webhook.status');
+    expect(resultNode.router!.cases).to.have.lengthOf(1);
+    expect(resultNode.router!.cases![0].type).to.equal('has_number_between');
+    expect(resultNode.router!.cases![0].arguments).to.deep.equal(['200', '299']);
+
+    // case, category, and exit UUIDs should be preserved across the rewrite
+    expect(resultNode.router!.cases![0].uuid).to.equal('existing-case-uuid');
+    expect(resultNode.router!.cases![0].category_uuid).to.equal(
+      'existing-success-uuid'
+    );
+    const successCategory = resultNode.router!.categories!.find(
+      (cat) => cat.name === 'Success'
+    );
+    const failureCategory = resultNode.router!.categories!.find(
+      (cat) => cat.name === 'Failure'
+    );
+    expect(successCategory!.uuid).to.equal('existing-success-uuid');
+    expect(successCategory!.exit_uuid).to.equal('existing-success-exit-uuid');
+    expect(failureCategory!.uuid).to.equal('existing-failure-uuid');
+    expect(failureCategory!.exit_uuid).to.equal('existing-failure-exit-uuid');
+  });
+
+  it('should handle changing resthook while preserving structure', () => {
+    const originalNode: Node = {
+      uuid: 'test-node-uuid',
+      actions: [
+        {
+          type: 'call_resthook',
+          uuid: 'existing-action-uuid',
+          resthook: 'new-registration'
+        } as CallResthook
+      ],
+      router: {
+        type: 'switch',
+        cases: [
+          {
+            uuid: 'existing-case-uuid',
+            type: 'has_number_between',
+            arguments: ['200', '299'],
+            category_uuid: 'existing-success-uuid'
+          }
+        ],
+        categories: [
+          {
+            uuid: 'existing-success-uuid',
+            name: 'Success',
+            exit_uuid: 'existing-success-exit-uuid'
+          },
+          {
+            uuid: 'existing-failure-uuid',
+            name: 'Failure',
+            exit_uuid: 'existing-failure-exit-uuid'
+          }
+        ],
+        default_category_uuid: 'existing-failure-uuid',
+        operand: '@webhook.status'
       },
       exits: [
         {
