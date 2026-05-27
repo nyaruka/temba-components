@@ -42,7 +42,8 @@ export const PILL_TYPES: ReadonlySet<string> = new Set([
   'label',
   'keyword',
   'channel',
-  'topic'
+  'topic',
+  'campaign'
 ]);
 
 /** Default icon name for each pill variant. Used when a consumer
@@ -55,7 +56,8 @@ export const PILL_TYPE_ICONS: Readonly<Record<string, string>> = {
   field: 'fields',
   flow: 'flow',
   label: 'label',
-  topic: 'topic'
+  topic: 'topic',
+  campaign: 'campaign'
 };
 
 /** Inverse mapping: icon name (alias or resolved SVG id) → pill type.
@@ -68,11 +70,13 @@ const ICON_TO_PILL_TYPE: Readonly<Record<string, string>> = {
   field: 'field',
   fields: 'field',
   label: 'label',
+  campaign: 'campaign',
   // resolved Icon enum SVG ids
   'users-01': 'group',
   'atom-01': 'group',
   'user-01': 'contact',
-  'tag-01': 'label'
+  'tag-01': 'label',
+  'clock-refresh': 'campaign'
 };
 
 export const iconToPillType = (icon?: string): string | undefined => {
@@ -117,6 +121,12 @@ export const pillVariants = css`
     color: var(--topic);
     border-color: color-mix(in srgb, var(--topic) 25%, white);
     --icon-color: var(--topic);
+  }
+  .pill-campaign {
+    background: color-mix(in srgb, var(--campaign) 12%, white);
+    color: var(--campaign);
+    border-color: color-mix(in srgb, var(--campaign) 25%, white);
+    --icon-color: var(--campaign);
   }
   .pill-field {
     /* Yellow has very low contrast against white, so the color-mix

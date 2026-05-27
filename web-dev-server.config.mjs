@@ -291,6 +291,15 @@ function applyDemoListAction(body, items, labels, idKey) {
 
 export default {
   nodeResolve: true,
+  middleware: [
+    // Permissive CORS so this dev server can be loaded as a cross-origin
+    // module source by a rapidpro instance running on a different localhost
+    // port (e.g. Nautilus/run-pair.sh launching rapidpro:8001 + components:3011).
+    (ctx, next) => {
+      ctx.set('Access-Control-Allow-Origin', '*');
+      return next();
+    },
+  ],
   plugins: [
     replacePlugin({
       preventAssignment: true,
