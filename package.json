@@ -14,7 +14,6 @@
     "build": "rimraf dist && pnpm svg && tsc && rollup -c rollup.components.mjs ",
     "build-wc": "rollup -c rollup.webchat.mjs",
     "dev": "pnpm build && cp -R ./dist/* ../temba/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
-    "postversion": "git push --tags && git push origin main",
     "pre-commit": "pnpm locale:extract && pnpm locale:build && pnpm svg && git add ./src/Icons.ts ./static/svg/index.svg ./xliff ./src/locales && lint-staged",
     "format:eslint": "eslint --ext .ts . --fix --ignore-path .gitignore --ignore-pattern \"src/locales/\"",
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" \"!src/locales/**\" --config .prettierrc --write --ignore-path .gitignore",
