@@ -1,6 +1,7 @@
 import { assert, expect } from '@open-wc/testing';
 import { ContactEvents } from '../src/live/ContactEvents';
 import {
+  clearMockGets,
   getComponent,
   loadStore,
   mockGET,
@@ -8,6 +9,10 @@ import {
 } from './utils.test';
 
 const TAG = 'temba-contact-events';
+
+// the older-events pager dot exposes the localized show-older label, which we
+// use as a stable hook rather than coupling tests to internal class names
+const SHOW_OLDER_LABEL = 'Show older events';
 
 const FIRST_PAGE = {
   now: '2024-06-01T12:00:00+00:00',
@@ -79,6 +84,13 @@ const getEvents = async (data: any = FIRST_PAGE): Promise<ContactEvents> => {
 };
 
 describe(TAG, () => {
+  beforeEach(() => {
+    // mockGET appends to a module-level list that getResponse scans first-match;
+    // clearing between tests prevents a prior payload from leaking into a later
+    // test that mocks the same URL pattern (e.g. the empty-state test)
+    clearMockGets();
+  });
+
   it('renders a timeline of past and future events', async () => {
     await loadStore();
     const events = await getEvents();
@@ -113,17 +125,38 @@ describe(TAG, () => {
     const events = await getEvents();
 
     // the pager is shown while there are older events to load
-    const pager = events.shadowRoot.querySelector('.show-older') as HTMLElement;
+    const pager = events.shadowRoot.querySelector(
+      `button[aria-label="${SHOW_OLDER_LABEL}"]`
+    ) as HTMLElement;
     expect(pager).to.not.equal(null);
 
     pager.click();
     await waitForCondition(
-      () => events.shadowRoot.querySelector('.show-older') === null
+      () =>
+        events.shadowRoot.querySelector(
+          `button[aria-label="${SHOW_OLDER_LABEL}"]`
+        ) === null
     );
     await events.updateComplete;
 
     // the older page is appended and the pager is gone
     expect(events.shadowRoot.querySelectorAll('.dot.past').length).to.equal(3);
+  });
+
+  it('hides the older-events pager when the cursor is null', async () => {
+    await loadStore();
+    const events = await getEvents({
+      now: '2024-06-01T12:00:00+00:00',
+      future: FIRST_PAGE.future,
+      past: FIRST_PAGE.past,
+      next_before: null
+    });
+
+    expect(
+      events.shadowRoot.querySelector(
+        `button[aria-label="${SHOW_OLDER_LABEL}"]`
+      )
+    ).to.equal(null);
   });
 
   it('fires a selection event when an event is clicked', async () => {
@@ -141,5 +174,26 @@ describe(TAG, () => {
     entry.click();
 
     expect(selected).to.not.equal(null);
+  });
+
+  it('fires details-changed with the upcoming event count', async () => {
+    await loadStore();
+
+    let detail: any = null;
+    const handler = (e: CustomEvent) => {
+      detail = e.detail;
+    };
+    document.addEventListener('temba-details-changed', handler);
+
+    try {
+      await getEvents({
+        ...FIRST_PAGE,
+        future_count: 7
+      });
+      expect(detail).to.not.equal(null);
+      expect(detail.count).to.equal(7);
+    } finally {
+      document.removeEventListener('temba-details-changed', handler);
+    }
   });
 });

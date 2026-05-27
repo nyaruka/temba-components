@@ -64,9 +64,6 @@ export class ContactEvents extends EndpointMonitorElement {
   lang_campaigns_label = 'Campaigns';
 
   @property({ type: String })
-  lang_loading = 'Loading...';
-
-  @property({ type: String })
   lang_empty = 'No events for this contact yet.';
 
   @property({ type: String })
@@ -413,14 +410,6 @@ export class ContactEvents extends EndpointMonitorElement {
     `;
   }
 
-  constructor() {
-    super();
-    this.handleEventClicked = this.handleEventClicked.bind(this);
-    this.handlePillClicked = this.handlePillClicked.bind(this);
-    this.handleShowOlder = this.handleShowOlder.bind(this);
-    this.handleShowMore = this.handleShowMore.bind(this);
-  }
-
   // the endpoint returns a custom {future, past, next_before} payload rather than
   // the paginated {results: [...]} shape that the store's fetch machinery expects,
   // so we fetch and assign data ourselves instead of relying on a monitored url
@@ -430,11 +419,24 @@ export class ContactEvents extends EndpointMonitorElement {
       return;
     }
 
-    const response = await this.store.getUrl(
-      `/contact/events/${this.contact}/`,
-      { force: true }
-    );
-    this.data = response.json;
+    // capture the contact at request time so a slower in-flight response for a
+    // previous contact can't overwrite data for the contact we're now showing
+    const requestedContact = this.contact;
+    try {
+      const response = await this.store.getUrl(
+        `/contact/events/${this.contact}/`,
+        { force: true }
+      );
+      if (this.contact !== requestedContact) {
+        return;
+      }
+      this.data = response.json;
+    } catch {
+      if (this.contact !== requestedContact) {
+        return;
+      }
+      this.data = null;
+    }
   }
 
   public refresh(): void {
@@ -447,6 +449,9 @@ export class ContactEvents extends EndpointMonitorElement {
     super.updated(changes);
 
     if (changes.has('contact')) {
+      // colors are assigned per-uuid in order of first appearance, so a switch
+      // to a new contact must drop the previous assignments to avoid drift
+      this.campaignColors = {};
       this.loadEvents();
     }
 
@@ -454,8 +459,8 @@ export class ContactEvents extends EndpointMonitorElement {
       // a fresh first page resets any paged-in events in both directions
       this.olderEvents = [];
       this.newerEvents = [];
-      this.nextBefore = this.data ? this.data.next_before || null : null;
-      this.nextAfter = this.data ? this.data.next_after || null : null;
+      this.nextBefore = this.data ? (this.data.next_before ?? null) : null;
+      this.nextAfter = this.data ? (this.data.next_after ?? null) : null;
 
       // the badge reflects the total count of upcoming events, not just what's
       // currently visible on this page
@@ -513,6 +518,15 @@ export class ContactEvents extends EndpointMonitorElement {
     this.fireCustomEvent(CustomEventType.Selection, ref);
   }
 
+  // activate a non-button row on Enter/Space (matches native button behavior)
+  // so keyboard users can reach clickable timeline rows and pager labels
+  private handleActivationKey(e: KeyboardEvent, action: () => void) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      action();
+    }
+  }
+
   public async handleShowOlder() {
     if (this.loadingMore || !this.nextBefore) {
       return;
@@ -527,7 +541,11 @@ export class ContactEvents extends EndpointMonitorElement {
       const response = await this.store.getUrl(url, { force: true });
       const page = response.json as EventsResponse;
       this.olderEvents = [...this.olderEvents, ...(page.past || [])];
-      this.nextBefore = page.next_before;
+      this.nextBefore = page.next_before ?? null;
+    } catch {
+      // on failure leave the accumulated events in place but stop offering
+      // the same failing page - clearing the cursor hides the pager
+      this.nextBefore = null;
     } finally {
       this.loadingMore = false;
     }
@@ -547,7 +565,9 @@ export class ContactEvents extends EndpointMonitorElement {
       const response = await this.store.getUrl(url, { force: true });
       const page = response.json as EventsResponse;
       this.newerEvents = [...this.newerEvents, ...(page.future || [])];
-      this.nextAfter = page.next_after;
+      this.nextAfter = page.next_after ?? null;
+    } catch {
+      this.nextAfter = null;
     } finally {
       this.loadingMoreFuture = false;
     }
@@ -581,7 +601,13 @@ export class ContactEvents extends EndpointMonitorElement {
     return html`
       <div
         class="event ${clickable ? 'clickable' : ''}"
+        role=${clickable ? 'button' : 'presentation'}
+        tabindex=${clickable ? '0' : '-1'}
         @click=${clickable ? () => this.handleEventClicked(event) : null}
+        @keydown=${clickable
+          ? (e: KeyboardEvent) =>
+              this.handleActivationKey(e, () => this.handleEventClicked(event))
+          : null}
       >
         <div class="title">${body}</div>
       </div>
@@ -717,7 +743,12 @@ export class ContactEvents extends EndpointMonitorElement {
                 </div>
                 <div
                   class="pager-label"
+                  role="button"
+                  tabindex="0"
+                  aria-label=${this.lang_show_older}
                   @click=${this.handleShowOlder}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this.handleActivationKey(e, () => this.handleShowOlder())}
                   title=${this.lang_show_older}
                 >
                   ${this.lang_more}
@@ -746,7 +777,12 @@ export class ContactEvents extends EndpointMonitorElement {
                 </div>
                 <div
                   class="pager-label"
+                  role="button"
+                  tabindex="0"
+                  aria-label=${this.lang_show_more}
                   @click=${this.handleShowMore}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this.handleActivationKey(e, () => this.handleShowMore())}
                   title=${this.lang_show_more}
                 >
                   ${this.lang_more}
@@ -772,7 +808,7 @@ export class ContactEvents extends EndpointMonitorElement {
           );
         })}
       </div>
-      ${campaigns.length > 0
+      ${future.length > 0
         ? html`<div class="projection-note">${this.lang_projected_info}</div>`
         : null}
     `;

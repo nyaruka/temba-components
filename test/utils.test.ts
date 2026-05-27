@@ -43,7 +43,7 @@ export interface CodeMock {
   status: string;
 }
 
-const gets: CodeMock[] = [];
+let gets: CodeMock[] = [];
 let posts: CodeMock[] = [];
 let normalFetch;
 
@@ -206,6 +206,10 @@ export const mockPOST = (
 
 export const clearMockPosts = () => {
   posts = [];
+};
+
+export const clearMockGets = () => {
+  gets = [];
 };
 
 export const checkTimers = (clock: any) => {
