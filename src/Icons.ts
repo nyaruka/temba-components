@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use pnpm svg to update
-export const SVG_FINGERPRINT = '07fb603bff2d16af992a047dd03ab268';
+export const SVG_FINGERPRINT = 'ed78045b1cf74b0b9242822c54badf99';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -58,6 +58,7 @@ export enum Icon {
   delete = 'trash-03',
   delete_small = 'x',
   down = 'chevron-down',
+  down_double = 'chevron-down-double',
   download = 'download-01',
   drag = 'dots-grid',
   edit = 'edit-02',
@@ -194,6 +195,7 @@ export enum Icon {
   triggers = 'signal-01',
   updated = 'edit-02',
   up = 'chevron-up',
+  up_double = 'chevron-up-double',
   upload = 'upload-cloud-01',
   upload_image = 'camera-01',
   usages = 'link-04',

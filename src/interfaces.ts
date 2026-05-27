@@ -36,7 +36,8 @@ export enum DateStyle {
 export enum ScheduledEventType {
   CampaignEvent = 'campaign_event',
   ScheduledBroadcast = 'scheduled_broadcast',
-  ScheduledTrigger = 'scheduled_trigger'
+  ScheduledTrigger = 'scheduled_trigger',
+  SentBroadcast = 'sent_broadcast'
 }
 
 export enum TicketStatus {
