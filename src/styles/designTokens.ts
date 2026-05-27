@@ -16,8 +16,10 @@ export const designTokens = css`
     /* accent ramp — the primary color sits at 400 and the ramp is
        derived from it in both directions via sRGB mixing.
        The anchor reads from --primary-rgb so host pages can re-theme
-       the entire ramp by setting e.g. --primary-rgb: 112, 0, 132. */
-    --accent: rgb(var(--primary-rgb, 98, 147, 201));
+       the entire ramp by setting e.g. --primary-rgb: 112, 0, 132.
+       Fallback matches the design-system.css default so component-
+       only test harnesses pick up the same brand colour. */
+    --accent: rgb(var(--primary-rgb, 73, 127, 206));
     --accent-50: color-mix(in srgb, var(--accent) 6%, white);
     --accent-100: color-mix(in srgb, var(--accent) 16%, white);
     --accent-200: color-mix(in srgb, var(--accent) 32%, white);

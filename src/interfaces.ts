@@ -100,15 +100,53 @@ export interface FlowDetails {
   };
 }
 
+/** A single row in the flow CRUDL list (`flows/flow_list.html`).
+ * Distinct from {@link FlowDetails}, which is the per-flow editor
+ * payload — this is the lighter list-row shape. */
+export interface Flow {
+  uuid: string;
+  name: string;
+  /** Flow type — drives the leading row icon. */
+  type: 'messaging' | 'voice' | 'ivr' | 'background' | 'survey' | string;
+  runs: number;
+  ongoing: number;
+  /** Completion ratio in the range 0–1. */
+  completion: number;
+  has_issues: boolean;
+  status: 'active' | 'archived' | string;
+  labels: ObjectReference[];
+  /** Recent run counts, oldest to newest — rendered as a sparkline. */
+  activity: number[];
+}
+
 export interface Msg {
+  /** Numeric id — present on persisted messages (the CRUDL list
+   * keys rows off it); absent on outbound drafts. */
+  id?: number;
   text: string;
   status: string;
   channel: ObjectReference;
   quick_replies: string[];
   urn: string;
+  /** The message's contact — populated by the messages CRUDL
+   * endpoint. Carries whichever of name/urn the endpoint exposes. */
+  contact?: { uuid?: string; name?: string; urn?: string };
   direction: string;
   type: string;
+  /** Message type as exposed by the messages CRUDL endpoint
+   * (`text` / `optin` / …); mirrors `type` for that surface. */
+  msg_type?: string;
   attachments: string[];
+  /** Labels applied to the message. */
+  labels?: ObjectReference[];
+  /** The flow the message was sent from, when there is one. */
+  flow?: ObjectReference;
+  /** When the message was created. */
+  created_on?: string;
+  /** Permission- and retention-gated URL to this message's channel
+   * log. Present on the CRUDL list when the viewer can read logs and
+   * the message is within the retention window; absent otherwise. */
+  logs_url?: string;
   unsendable_reason?:
     | 'no_route'
     | 'contact_blocked'
@@ -326,5 +364,10 @@ export enum CustomEventType {
   RevisionsClosed = 'temba-revisions-closed',
   RowClick = 'temba-row-click',
   SelectionChange = 'temba-selection-change',
-  BulkAction = 'temba-bulk-action'
+  BulkAction = 'temba-bulk-action',
+  /** A restorable piece of component state changed (page, sort, …).
+   * Fired by lists so the host SPA can persist the state into the
+   * browser's history entry (typically via `history.replaceState`).
+   * Detail: `{ key: string, state: object }`. */
+  HistoryChange = 'temba-history-change'
 }

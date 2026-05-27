@@ -10,6 +10,13 @@ export class Button extends LitElement {
         display: inline-flex;
         align-self: stretch;
         font-family: var(--font);
+        /* Match the styleguide's .ds Inter rendering — the stylistic
+           sets (ss01/cv11) and the "tnum 0" off-switch — so glyph
+           shapes line up with the design-system buttons. */
+        font-feature-settings:
+          'ss01',
+          'cv11',
+          'tnum' 0;
       }
 
       /* DS .btn-sm — sizing, type, transition, shape */
@@ -58,34 +65,38 @@ export class Button extends LitElement {
         font-size: 12px;
       }
 
-      /* DS .btn-primary — solid accent fill with a slightly darker
-         1px border so the visible box matches the secondary's
-         1px-bordered box. */
+      /* DS .btn-primary — solid accent fill with a faint top
+         highlight and a ground shadow so it sits a touch above the
+         surface. The base 1px transparent border stays in the box
+         model so the primary's footprint matches the secondary's. */
       .primary-button {
         background: var(--accent-600);
-        border-color: var(--accent-700);
         color: #fff;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+          0 1px 1px rgba(15, 22, 36, 0.1);
       }
       .primary-button:hover {
         background: var(--accent-700);
       }
 
-      /* DS .btn-secondary — surface bg with a 1px gray outline. */
+      /* Ghost-style secondary — transparent fill so it blends into
+         any surface (the dialog gutter's grey, a white card, etc.),
+         no border, with a semi-transparent wash on hover that shows
+         up regardless of the underlying colour. */
       .secondary-button {
-        background: var(--surface);
-        border-color: var(--border-strong);
+        background: transparent;
         color: var(--text-1);
       }
       .secondary-button:hover {
-        background: var(--sunken);
+        background: rgba(0, 0, 0, 0.05);
       }
 
-      /* affirmative + attention share DS .btn-primary chrome but tint
-         green; treat them as solid CTAs. */
+      /* Flat success fill — mirrors the DS .btn-danger chrome (no
+         lift), tinted green for go-ahead CTAs. */
       .attention-button,
       .affirmative {
         background: var(--success, #16a34a);
-        border-color: color-mix(in srgb, var(--success, #16a34a) 80%, black);
         color: #fff;
       }
       .attention-button:hover,
@@ -93,10 +104,9 @@ export class Button extends LitElement {
         background: color-mix(in srgb, var(--success, #16a34a) 88%, black);
       }
 
-      /* DS .btn-danger */
+      /* DS .btn-danger — flat danger fill (no lift). */
       .destructive-button {
         background: var(--danger, #d03f3f);
-        border-color: color-mix(in srgb, var(--danger, #d03f3f) 80%, black);
         color: #fff;
       }
       .destructive-button:hover {
@@ -136,7 +146,7 @@ export class Button extends LitElement {
         box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
       }
       .secondary-button.active-button {
-        background: var(--sunken);
+        background: rgba(0, 0, 0, 0.08);
       }
 
       /* disabled */

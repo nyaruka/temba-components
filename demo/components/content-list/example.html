@@ -14,8 +14,10 @@
     />
     <link href="/demo/static/css/styles.css" rel="stylesheet" type="text/css" />
     <style>
+      /* The lists span the full window width — no max-width cap —
+         so the horizontal-scroll behaviour can be exercised. */
       body {
-        max-width: 1200px;
+        max-width: none;
       }
       /* Demo wrapper for each list — no card chrome, just vertical
          rhythm. The component renders its own panel; anything
@@ -58,6 +60,10 @@
     </style>
   </head>
   <body>
+    <!-- temba-date (last-seen / joined-on / sent durations) reads
+         locale + relative-time formatting off the store, so the
+         page needs one present for those cells to render. -->
+    <temba-store></temba-store>
     <h1>Content List Examples</h1>
     <p><a href="/demo/index.html">&larr; Back to main demo</a></p>
 
@@ -67,6 +73,11 @@
       columns and per-cell rendering; the base
       <code>temba-content-list</code> handles search, sort, multi-select,
       pagination, and bulk-action events.
+    </p>
+    <p>
+      <a href="/demo/components/content-list/inbox.html"
+        >Inbox &mdash; full-window list (internal table scroll) &rarr;</a
+      >
     </p>
 
     <div class="demo">
@@ -81,6 +92,7 @@
         subtitle="Recent messages."
         endpoint="/demo/components/content-list/data/messages.json"
         action-endpoint="/demo/components/content-list/list-action"
+        content-menu-endpoint="/demo/components/content-list/data/messages-menu.json"
       ></temba-msg-list>
       <div class="events" id="msgs-events">
         <div class="label">Events</div>
@@ -92,14 +104,63 @@
       <h3>Contacts</h3>
       <p class="description">
         Sortable contact list with group pills and a leading silhouette icon.
+        Featured contact fields render as content-sized columns; Name and URN
+        stay pinned while the table scrolls horizontally.
       </p>
       <temba-contact-list
         id="contacts"
         list-title="Contacts"
         subtitle="People who messaged your workspace."
         endpoint="/demo/components/content-list/data/contacts.json"
+        fields-endpoint="/demo/components/content-list/data/fields.json"
+        content-menu-endpoint="/demo/components/content-list/data/contacts-menu.json"
       ></temba-contact-list>
       <div class="events" id="contacts-events">
+        <div class="label">Events</div>
+        (waiting)
+      </div>
+    </div>
+
+    <div class="demo">
+      <h3>Contacts &mdash; Known Fields</h3>
+      <p class="description">
+        The same contact list scoped to a small, fixed set of featured
+        fields (State, Age, Gender). With fewer columns the table fits
+        without horizontal scroll &mdash; useful for judging the layout of
+        the left-pinned Name/URN and right-pinned Last seen columns when
+        nothing is actually scrolling between them.
+      </p>
+      <temba-contact-list
+        id="contacts-basic"
+        list-title="Contacts"
+        subtitle="People who messaged your workspace."
+        endpoint="/demo/components/content-list/data/contacts.json"
+        fields-endpoint="/demo/components/content-list/data/fields-basic.json"
+        content-menu-endpoint="/demo/components/content-list/data/contacts-menu.json"
+      ></temba-contact-list>
+      <div class="events" id="contacts-basic-events">
+        <div class="label">Events</div>
+        (waiting)
+      </div>
+    </div>
+
+    <div class="demo">
+      <h3>Contacts &mdash; System Fields Only</h3>
+      <p class="description">
+        The contact list with no featured custom fields at all &mdash; just
+        the system columns Name, URN, and Last seen. Shows how the table
+        reads when the left-pinned identity columns sit directly beside the
+        right-pinned Last seen column with nothing in between.
+      </p>
+      <temba-contact-list
+        id="contacts-system"
+        list-title="Contacts"
+        subtitle="People who messaged your workspace."
+        endpoint="/demo/components/content-list/data/contacts.json"
+        fields-endpoint="/demo/components/content-list/data/fields-none.json"
+        content-menu-endpoint="/demo/components/content-list/data/contacts-menu.json"
+      ></temba-contact-list>
+      <div class="events" id="contacts-system-events">
         <div class="label">Events</div>
         (waiting)
       </div>
@@ -117,6 +178,7 @@
         subtitle="The standard CRUDL table."
         endpoint="/demo/components/content-list/data/flows.json"
         action-endpoint="/demo/components/content-list/flow-list-action"
+        content-menu-endpoint="/demo/components/content-list/data/flows-menu.json"
       ></temba-flow-list>
       <div class="events" id="flows-events">
         <div class="label">Events</div>
@@ -148,10 +210,15 @@
             'bulk-action ' + e.detail.action + ' ' + JSON.stringify(e.detail.ids)
           )
         );
+        list.addEventListener('temba-selection', (e) =>
+          append('content-menu ' + (e.detail.item && e.detail.item.label))
+        );
       };
 
       wire('msgs', 'msgs-events');
       wire('contacts', 'contacts-events');
+      wire('contacts-basic', 'contacts-basic-events');
+      wire('contacts-system', 'contacts-system-events');
       wire('flows', 'flows-events');
 
       // Block real navigation so contact-row hrefs don't take you away

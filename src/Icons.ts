@@ -135,6 +135,11 @@ export enum Icon {
   reset = 'flip-backward',
   resthooks = 'share-07',
   restore = 'play',
+  /** Restoring archived messages — moves them back to the inbox, so
+   * the inbox tray reads better here than the generic `restore`
+   * (which is `play` because flows/triggers/campaigns use it to mean
+   * "reactivate"). */
+  restore_messages = 'inbox-01',
   results_export = 'download-cloud-01',
   retry = 'refresh-cw-05',
   revisions = 'clock-rewind',
