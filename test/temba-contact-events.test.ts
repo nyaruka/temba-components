@@ -13,6 +13,7 @@ const TAG = 'temba-contact-events';
 // the older-events pager dot exposes the localized show-older label, which we
 // use as a stable hook rather than coupling tests to internal class names
 const SHOW_OLDER_LABEL = 'Show older events';
+const SHOW_MORE_LABEL = 'Show more upcoming events';
 
 const FIRST_PAGE = {
   now: '2024-06-01T12:00:00+00:00',
@@ -49,7 +50,8 @@ const FIRST_PAGE = {
       message: 'Day 1 tip'
     }
   ],
-  next_before: '2024-05-10T12:00:00+00:00'
+  next_before: '2024-05-10T12:00:00+00:00',
+  next_after: '2024-06-10T12:00:00+00:00'
 };
 
 const OLDER_PAGE = {
@@ -66,9 +68,24 @@ const OLDER_PAGE = {
   next_before: null
 };
 
+const NEWER_PAGE = {
+  now: '2024-06-01T12:00:00+00:00',
+  future: [
+    {
+      type: 'campaign_event',
+      scheduled: '2024-06-20T12:00:00+00:00',
+      campaign: { uuid: 'camp-3', name: 'Reactivation' },
+      message: 'A newer projected event'
+    }
+  ],
+  past: [],
+  next_after: null
+};
+
 const getEvents = async (data: any = FIRST_PAGE): Promise<ContactEvents> => {
-  // a paged request (?before=) takes precedence over the first-page mock
+  // paged requests (?before= / ?after=) take precedence over the first-page mock
   mockGET(/contact\/events\/.*before=/, OLDER_PAGE);
+  mockGET(/contact\/events\/.*after=/, NEWER_PAGE);
   mockGET(/contact\/events\//, data);
 
   const events = (await getComponent(
@@ -176,6 +193,99 @@ describe(TAG, () => {
     expect(selected).to.not.equal(null);
   });
 
+  it('pages forward through newer upcoming events', async () => {
+    await loadStore();
+    const events = await getEvents();
+
+    const pager = events.shadowRoot.querySelector(
+      `button[aria-label="${SHOW_MORE_LABEL}"]`
+    ) as HTMLElement;
+    expect(pager).to.not.equal(null);
+
+    pager.click();
+    await waitForCondition(
+      () =>
+        events.shadowRoot.querySelector(
+          `button[aria-label="${SHOW_MORE_LABEL}"]`
+        ) === null
+    );
+    await events.updateComplete;
+
+    // 3 originals + 1 newer-page event
+    expect(events.shadowRoot.querySelectorAll('.dot.future').length).to.equal(
+      4
+    );
+  });
+
+  it('hides the newer-events pager when the cursor is null', async () => {
+    await loadStore();
+    const events = await getEvents({
+      ...FIRST_PAGE,
+      next_after: null
+    });
+
+    expect(
+      events.shadowRoot.querySelector(`button[aria-label="${SHOW_MORE_LABEL}"]`)
+    ).to.equal(null);
+  });
+
+  it('hides the pager and preserves data when a pager request fails', async () => {
+    await loadStore();
+    // override the default 200 mock for older pages with a 500
+    clearMockGets();
+    mockGET(/contact\/events\/.*before=/, {}, {}, '500');
+    mockGET(/contact\/events\//, FIRST_PAGE);
+
+    const events = (await getComponent(
+      TAG,
+      { contact: 'contact-dave-active' },
+      '',
+      600
+    )) as ContactEvents;
+    await waitForCondition(() => !!events.data);
+    await events.updateComplete;
+
+    const initialPast = events.shadowRoot.querySelectorAll('.dot.past').length;
+    expect(initialPast).to.equal(2);
+
+    const pager = events.shadowRoot.querySelector(
+      `button[aria-label="${SHOW_OLDER_LABEL}"]`
+    ) as HTMLElement;
+    pager.click();
+    await waitForCondition(
+      () =>
+        events.shadowRoot.querySelector(
+          `button[aria-label="${SHOW_OLDER_LABEL}"]`
+        ) === null
+    );
+    await events.updateComplete;
+
+    // prior data is intact, pager is gone
+    expect(events.shadowRoot.querySelectorAll('.dot.past').length).to.equal(
+      initialPast
+    );
+    expect(events.data).to.not.equal(null);
+  });
+
+  it('activates a clickable event row via the Enter key', async () => {
+    await loadStore();
+    const events = await getEvents();
+
+    let selected: any = null;
+    events.addEventListener('temba-selection', (e: CustomEvent) => {
+      selected = e.detail;
+    });
+
+    const entry = events.shadowRoot.querySelector(
+      '.event.clickable'
+    ) as HTMLElement;
+    entry.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+    );
+
+    expect(selected).to.not.equal(null);
+  });
+
   it('fires details-changed with the upcoming event count', async () => {
     await loadStore();
 
@@ -192,6 +302,36 @@ describe(TAG, () => {
       });
       expect(detail).to.not.equal(null);
       expect(detail.count).to.equal(7);
+    } finally {
+      document.removeEventListener('temba-details-changed', handler);
+    }
+  });
+
+  it('does not fire details-changed during the contact-switch null gap', async () => {
+    await loadStore();
+    const events = await getEvents({
+      ...FIRST_PAGE,
+      future_count: 4
+    });
+
+    const dispatches: any[] = [];
+    const handler = (e: CustomEvent) => {
+      dispatches.push(e.detail);
+    };
+    document.addEventListener('temba-details-changed', handler);
+
+    try {
+      // mock a slow response so we can observe the null gap: re-setting
+      // `contact` triggers updated() which nulls `data` before the new fetch
+      // resolves. The null pass through updated('data') must NOT dispatch.
+      events.contact = 'contact-other';
+      await events.updateComplete;
+
+      // any dispatch during the null window would carry count:0 - assert none
+      // of the observed details have count:0
+      for (const detail of dispatches) {
+        expect(detail.count).to.not.equal(0);
+      }
     } finally {
       document.removeEventListener('temba-details-changed', handler);
     }

@@ -424,7 +424,7 @@ export class ContactEvents extends EndpointMonitorElement {
     const requestedContact = this.contact;
     try {
       const response = await this.store.getUrl(
-        `/contact/events/${this.contact}/`,
+        `/contact/events/${encodeURIComponent(this.contact)}/`,
         { force: true }
       );
       if (this.contact !== requestedContact) {
@@ -469,6 +469,16 @@ export class ContactEvents extends EndpointMonitorElement {
       this.nextBefore = this.data ? (this.data.next_before ?? null) : null;
       this.nextAfter = this.data ? (this.data.next_after ?? null) : null;
 
+      // eagerly assign campaign colors for everything in the first page so
+      // render() can be a pure read of the map. Pager handlers extend the map
+      // when later pages introduce campaigns not in the first page.
+      if (this.data) {
+        this.assignCampaignColors([
+          ...(this.data.past || []),
+          ...(this.data.future || [])
+        ]);
+      }
+
       // only notify consumers when we actually have data - skip the null state
       // between contact switch and first response (and any transient errors)
       // so listeners don't see a spurious count:0
@@ -486,13 +496,25 @@ export class ContactEvents extends EndpointMonitorElement {
     }
   }
 
-  private getCampaignColor(uuid: string): string {
-    if (!this.campaignColors[uuid]) {
-      const used = Object.keys(this.campaignColors).length;
-      this.campaignColors[uuid] =
-        CAMPAIGN_COLORS[used % CAMPAIGN_COLORS.length];
+  // assign stable per-uuid colors for any campaigns seen in `events` that
+  // aren't already in the map. Called from updated() on data change and from
+  // pager handlers after a page is appended, so render() never mutates state.
+  private assignCampaignColors(events: ScheduledEvent[]): void {
+    for (const event of events) {
+      if (event.type !== ScheduledEventType.CampaignEvent || !event.campaign) {
+        continue;
+      }
+      const uuid = event.campaign.uuid;
+      if (!this.campaignColors[uuid]) {
+        const used = Object.keys(this.campaignColors).length;
+        this.campaignColors[uuid] =
+          CAMPAIGN_COLORS[used % CAMPAIGN_COLORS.length];
+      }
     }
-    return this.campaignColors[uuid];
+  }
+
+  private getCampaignColor(uuid: string): string {
+    return this.campaignColors[uuid] || CAMPAIGN_COLORS[0];
   }
 
   private getColor(event: ScheduledEvent): string {
@@ -548,9 +570,9 @@ export class ContactEvents extends EndpointMonitorElement {
     // capture the contact at request time so a paged response that returns
     // after the user has switched contacts can't append onto the new timeline
     const requestedContact = this.contact;
-    const url = `/contact/events/${this.contact}/?before=${encodeURIComponent(
-      this.nextBefore
-    )}`;
+    const url = `/contact/events/${encodeURIComponent(
+      this.contact
+    )}/?before=${encodeURIComponent(this.nextBefore)}`;
 
     try {
       const response = await this.store.getUrl(url, { force: true });
@@ -558,7 +580,9 @@ export class ContactEvents extends EndpointMonitorElement {
         return;
       }
       const page = response.json as EventsResponse;
-      this.olderEvents = [...this.olderEvents, ...(page.past || [])];
+      const newPast = page.past || [];
+      this.assignCampaignColors(newPast);
+      this.olderEvents = [...this.olderEvents, ...newPast];
       this.nextBefore = page.next_before ?? null;
     } catch {
       if (this.contact !== requestedContact) {
@@ -568,9 +592,13 @@ export class ContactEvents extends EndpointMonitorElement {
       // the same failing page - clearing the cursor hides the pager
       this.nextBefore = null;
     } finally {
-      // safe to clear unconditionally - if the contact changed, the new
-      // contact's pager state is independent of this flag
-      this.loadingMore = false;
+      // only clear the flag if we're still on the original contact - the
+      // contact-change handler in updated() already cleared it, and clearing
+      // again here would unblock the new contact's in-flight pager request
+      // and allow a duplicate fetch of the same cursor
+      if (this.contact === requestedContact) {
+        this.loadingMore = false;
+      }
     }
   }
 
@@ -581,9 +609,9 @@ export class ContactEvents extends EndpointMonitorElement {
 
     this.loadingMoreFuture = true;
     const requestedContact = this.contact;
-    const url = `/contact/events/${this.contact}/?after=${encodeURIComponent(
-      this.nextAfter
-    )}`;
+    const url = `/contact/events/${encodeURIComponent(
+      this.contact
+    )}/?after=${encodeURIComponent(this.nextAfter)}`;
 
     try {
       const response = await this.store.getUrl(url, { force: true });
@@ -591,7 +619,9 @@ export class ContactEvents extends EndpointMonitorElement {
         return;
       }
       const page = response.json as EventsResponse;
-      this.newerEvents = [...this.newerEvents, ...(page.future || [])];
+      const newFuture = page.future || [];
+      this.assignCampaignColors(newFuture);
+      this.newerEvents = [...this.newerEvents, ...newFuture];
       this.nextAfter = page.next_after ?? null;
     } catch {
       if (this.contact !== requestedContact) {
@@ -599,14 +629,18 @@ export class ContactEvents extends EndpointMonitorElement {
       }
       this.nextAfter = null;
     } finally {
-      this.loadingMoreFuture = false;
+      if (this.contact === requestedContact) {
+        this.loadingMoreFuture = false;
+      }
     }
   }
 
   private renderTime(event: ScheduledEvent): TemplateResult {
+    // anchor durations to the server's "now" so they stay tolerant of clock
+    // skew and don't silently drift when the page is left open
     return html`
       <temba-tip text=${this.store.formatDate(event.scheduled)} position="top">
-        ${this.store.getShortDurationFromIso(event.scheduled)}
+        ${this.store.getShortDurationFromIso(event.scheduled, this.data?.now)}
       </temba-tip>
     `;
   }
