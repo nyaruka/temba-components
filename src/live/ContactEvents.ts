@@ -454,6 +454,11 @@ export class ContactEvents extends EndpointMonitorElement {
       // blank the timeline immediately on a contact switch so the previous
       // contact's events aren't briefly visible while the new fetch is in flight
       this.data = null;
+      // in-flight pager requests for the prior contact will bail on stale
+      // contact, so reset the loading flags so the new contact's pagers aren't
+      // blocked by the previous contact's still-resolving request
+      this.loadingMore = false;
+      this.loadingMoreFuture = false;
       this.loadEvents();
     }
 
