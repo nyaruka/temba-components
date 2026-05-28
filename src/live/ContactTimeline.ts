@@ -731,7 +731,7 @@ export class ContactTimeline extends EndpointMonitorElement {
               @click=${(e: Event) => this.handlePillClicked(e, campaign)}
               @keydown=${(e: KeyboardEvent) =>
                 this.handleActivationKey(e, () =>
-                  this.fireCustomEvent(CustomEventType.Selection, campaign)
+                  this.handlePillClicked(e, campaign)
                 )}
             >
               <span class="campaign-dot"></span>${campaign.name}
