@@ -379,10 +379,11 @@ export const renderAirtimeCreatedEvent = (
   const amount = html`${valueText(event.amount)} ${event.currency}`;
 
   switch (status) {
+    case 'reversed':
+      return html`<div>Airtime transfer reversed</div>`;
     case 'rejected':
     case 'cancelled':
     case 'declined':
-    case 'reversed':
       return html`<div>Airtime transfer failed</div>`;
     case 'completed':
       return html`<div style=${eventLineStyle}>

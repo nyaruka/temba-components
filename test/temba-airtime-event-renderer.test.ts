@@ -44,17 +44,20 @@ describe('renderAirtimeCreatedEvent', () => {
   });
 
   it('renders "Airtime transfer failed" for terminal failure statuses', async () => {
-    for (const status of [
-      'rejected',
-      'cancelled',
-      'declined',
-      'reversed'
-    ] as const) {
+    for (const status of ['rejected', 'cancelled', 'declined'] as const) {
       const el = await fixture(
         html`<div>${renderAirtimeCreatedEvent(withStatus(status))}</div>`
       );
       expect(el.textContent, status).to.contain('Airtime transfer failed');
     }
+  });
+
+  it('renders "Airtime transfer reversed" for reversed (a previously completed transfer clawed back)', async () => {
+    const el = await fixture(
+      html`<div>${renderAirtimeCreatedEvent(withStatus('reversed'))}</div>`
+    );
+    expect(el.textContent).to.contain('Airtime transfer reversed');
+    expect(el.textContent).to.not.contain('failed');
   });
 
   it('defaults to "Sending" when _status is missing', async () => {
