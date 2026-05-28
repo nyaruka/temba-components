@@ -128,7 +128,8 @@ export class ContactTimeline extends EndpointMonitorElement {
       }
 
       /* each pill is colored with its campaign's hue - background, border
-         and text all derived from --pill-hue. read-only badges, not links */
+         and text all derived from --pill-hue. clickable links to the
+         campaign's read page */
       .campaign-pill {
         display: inline-flex;
         align-items: center;
@@ -146,6 +147,21 @@ export class ContactTimeline extends EndpointMonitorElement {
         border: 1px solid
           color-mix(in srgb, var(--pill-hue) 25%, var(--color-widget-bg, #fff));
         color: var(--pill-hue);
+        cursor: pointer;
+        transition: background 100ms ease-in-out;
+      }
+
+      .campaign-pill:hover {
+        background: color-mix(
+          in srgb,
+          var(--pill-hue) 22%,
+          var(--color-widget-bg, #fff)
+        );
+      }
+
+      .campaign-pill:focus-visible {
+        outline: 2px solid var(--pill-hue);
+        outline-offset: 1px;
       }
 
       /* status-badge dot leading each campaign pill, in the same hue */
@@ -710,6 +726,13 @@ export class ContactTimeline extends EndpointMonitorElement {
             html`<div
               class="campaign-pill"
               style="--pill-hue:${this.getCampaignColor(campaign.uuid)}"
+              role="button"
+              tabindex="0"
+              @click=${(e: Event) => this.handlePillClicked(e, campaign)}
+              @keydown=${(e: KeyboardEvent) =>
+                this.handleActivationKey(e, () =>
+                  this.fireCustomEvent(CustomEventType.Selection, campaign)
+                )}
             >
               <span class="campaign-dot"></span>${campaign.name}
             </div>`

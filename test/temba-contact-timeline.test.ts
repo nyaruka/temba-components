@@ -17,6 +17,9 @@ const SHOW_MORE_LABEL = 'Show more upcoming events';
 
 const FIRST_PAGE = {
   now: '2024-06-01T12:00:00+00:00',
+  campaigns: [
+    { uuid: 'camp-1', name: 'Onboarding', url: '/campaign/read/camp-1/' }
+  ],
   future: [
     {
       type: 'scheduled_broadcast',
@@ -191,6 +194,26 @@ describe(TAG, () => {
     entry.click();
 
     expect(selected).to.not.equal(null);
+  });
+
+  it('fires selection with the campaign url when a campaign pill is clicked', async () => {
+    await loadStore();
+    const events = await getEvents();
+
+    let selected: any = null;
+    events.addEventListener('temba-selection', (e: CustomEvent) => {
+      selected = e.detail;
+    });
+
+    const pill = events.shadowRoot.querySelector(
+      '.campaign-pill'
+    ) as HTMLElement;
+    expect(pill).to.not.equal(null);
+    pill.click();
+
+    expect(selected).to.not.equal(null);
+    expect(selected.uuid).to.equal('camp-1');
+    expect(selected.url).to.equal('/campaign/read/camp-1/');
   });
 
   it('pages forward through newer upcoming events', async () => {
