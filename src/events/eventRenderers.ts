@@ -1,5 +1,6 @@
 import { html, TemplateResult } from 'lit';
 import {
+  AirtimeCreatedEvent,
   AirtimeTransferredEvent,
   CallEvent,
   ChatStartedEvent,
@@ -17,6 +18,7 @@ import { getLanguageName } from '../languages';
 import { oxfordFn } from '../utils';
 
 export enum Events {
+  AIRTIME_CREATED = 'airtime_created',
   AIRTIME_TRANSFERRED = 'airtime_transferred',
   BROADCAST_CREATED = 'broadcast_created',
   CALL_CREATED = 'call_created',
@@ -370,6 +372,29 @@ export const renderAirtimeTransferredEvent = (
   </div>`;
 };
 
+export const renderAirtimeCreatedEvent = (
+  event: AirtimeCreatedEvent
+): TemplateResult => {
+  const status = event._status?.status ?? 'created';
+  const amount = html`${valueText(event.amount)} ${event.currency}`;
+
+  switch (status) {
+    case 'rejected':
+    case 'cancelled':
+    case 'declined':
+    case 'reversed':
+      return html`<div>Airtime transfer failed</div>`;
+    case 'completed':
+      return html`<div style=${eventLineStyle}>
+        Transferred ${amount} of airtime
+      </div>`;
+    default:
+      return html`<div style=${eventLineStyle}>
+        Sending ${amount} of airtime
+      </div>`;
+  }
+};
+
 export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): TemplateResult => {
@@ -559,6 +584,9 @@ export const renderEvent = (
     case Events.FAILURE:
     case Events.WARNING:
       content = renderDiagnosticEvent(event, isSimulation);
+      break;
+    case Events.AIRTIME_CREATED:
+      content = renderAirtimeCreatedEvent(event as AirtimeCreatedEvent);
       break;
     case Events.AIRTIME_TRANSFERRED:
       content = renderAirtimeTransferredEvent(event as AirtimeTransferredEvent);

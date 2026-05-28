@@ -90,6 +90,28 @@ export interface AirtimeTransferredEvent extends ContactEvent {
   amount: string;
 }
 
+export type AirtimeStatus =
+  | 'created'
+  | 'confirmed'
+  | 'rejected'
+  | 'cancelled'
+  | 'submitted'
+  | 'completed'
+  | 'reversed'
+  | 'declined';
+
+export interface AirtimeCreatedEvent extends ContactEvent {
+  sender: string;
+  recipient: string;
+  currency: string;
+  amount: string;
+  external_id?: string;
+  _status?: {
+    created_on: string;
+    status: AirtimeStatus;
+  };
+}
+
 export type CallStartedEvent = ContactEvent;
 
 export interface ContactHistoryPage {
