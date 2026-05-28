@@ -716,9 +716,20 @@ export class ContentList<T = any> extends RapidElement {
         padding: 0 6px 0 0;
         --icon-color: var(--text-3);
       }
+      /* Reserve the icon's footprint on the wrapper itself so the
+         icon column's intrinsic width is the same whether
+         <temba-icon> has upgraded or not — without this, the column
+         briefly measures as just the cell's right-padding (6px) and
+         the downstream pinned columns end up positioned ~14px to
+         the left, which races with whatever moment we snapshot.
+         <temba-icon size="1"> renders at 1em, so we reserve 1em
+         square and let the icon paint into it. */
       .icon-inner {
         display: flex;
         align-items: center;
+        justify-content: center;
+        width: 1em;
+        height: 1em;
       }
       tr.row.selected .icon-cell {
         --icon-color: var(--accent-700);
