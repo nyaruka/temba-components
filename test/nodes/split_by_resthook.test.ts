@@ -279,7 +279,10 @@ describe('temba-split-by-resthook', () => {
     expect(resultNode.router!.operand).to.equal('@webhook.status');
     expect(resultNode.router!.cases).to.have.lengthOf(1);
     expect(resultNode.router!.cases![0].type).to.equal('has_number_between');
-    expect(resultNode.router!.cases![0].arguments).to.deep.equal(['200', '299']);
+    expect(resultNode.router!.cases![0].arguments).to.deep.equal([
+      '200',
+      '299'
+    ]);
 
     // case, category, and exit UUIDs should be preserved across the rewrite
     expect(resultNode.router!.cases![0].uuid).to.equal('existing-case-uuid');
