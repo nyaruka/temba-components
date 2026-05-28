@@ -41,7 +41,7 @@ const BROADCAST_COLOR = '#8e5ea7';
 // triggers use the same green as the flow pill
 const TRIGGER_COLOR = '#16a34a';
 
-export class ContactEvents extends EndpointMonitorElement {
+export class ContactTimeline extends EndpointMonitorElement {
   @property({ type: String })
   contact: string;
 
@@ -424,7 +424,7 @@ export class ContactEvents extends EndpointMonitorElement {
     const requestedContact = this.contact;
     try {
       const response = await this.store.getUrl(
-        `/contact/events/${encodeURIComponent(this.contact)}/`,
+        `/contact/timeline/${encodeURIComponent(this.contact)}/`,
         { force: true }
       );
       if (this.contact !== requestedContact) {
@@ -570,7 +570,7 @@ export class ContactEvents extends EndpointMonitorElement {
     // capture the contact at request time so a paged response that returns
     // after the user has switched contacts can't append onto the new timeline
     const requestedContact = this.contact;
-    const url = `/contact/events/${encodeURIComponent(
+    const url = `/contact/timeline/${encodeURIComponent(
       this.contact
     )}/?before=${encodeURIComponent(this.nextBefore)}`;
 
@@ -609,7 +609,7 @@ export class ContactEvents extends EndpointMonitorElement {
 
     this.loadingMoreFuture = true;
     const requestedContact = this.contact;
-    const url = `/contact/events/${encodeURIComponent(
+    const url = `/contact/timeline/${encodeURIComponent(
       this.contact
     )}/?after=${encodeURIComponent(this.nextAfter)}`;
 

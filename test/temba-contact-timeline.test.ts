@@ -1,5 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
-import { ContactEvents } from '../src/live/ContactEvents';
+import { ContactTimeline } from '../src/live/ContactTimeline';
 import {
   clearMockGets,
   getComponent,
@@ -8,7 +8,7 @@ import {
   waitForCondition
 } from './utils.test';
 
-const TAG = 'temba-contact-events';
+const TAG = 'temba-contact-timeline';
 
 // the older-events pager dot exposes the localized show-older label, which we
 // use as a stable hook rather than coupling tests to internal class names
@@ -82,18 +82,18 @@ const NEWER_PAGE = {
   next_after: null
 };
 
-const getEvents = async (data: any = FIRST_PAGE): Promise<ContactEvents> => {
+const getEvents = async (data: any = FIRST_PAGE): Promise<ContactTimeline> => {
   // paged requests (?before= / ?after=) take precedence over the first-page mock
-  mockGET(/contact\/events\/.*before=/, OLDER_PAGE);
-  mockGET(/contact\/events\/.*after=/, NEWER_PAGE);
-  mockGET(/contact\/events\//, data);
+  mockGET(/contact\/timeline\/.*before=/, OLDER_PAGE);
+  mockGET(/contact\/timeline\/.*after=/, NEWER_PAGE);
+  mockGET(/contact\/timeline\//, data);
 
   const events = (await getComponent(
     TAG,
     { contact: 'contact-dave-active' },
     '',
     600
-  )) as ContactEvents;
+  )) as ContactTimeline;
 
   await waitForCondition(() => !!events.data);
   await events.updateComplete;
@@ -111,7 +111,7 @@ describe(TAG, () => {
   it('renders a timeline of past and future events', async () => {
     await loadStore();
     const events = await getEvents();
-    assert.instanceOf(events, ContactEvents);
+    assert.instanceOf(events, ContactTimeline);
 
     const root = events.shadowRoot;
     expect(root.querySelector('.timeline')).to.not.equal(null);
@@ -233,15 +233,15 @@ describe(TAG, () => {
     await loadStore();
     // override the default 200 mock for older pages with a 500
     clearMockGets();
-    mockGET(/contact\/events\/.*before=/, {}, {}, '500');
-    mockGET(/contact\/events\//, FIRST_PAGE);
+    mockGET(/contact\/timeline\/.*before=/, {}, {}, '500');
+    mockGET(/contact\/timeline\//, FIRST_PAGE);
 
     const events = (await getComponent(
       TAG,
       { contact: 'contact-dave-active' },
       '',
       600
-    )) as ContactEvents;
+    )) as ContactTimeline;
     await waitForCondition(() => !!events.data);
     await events.updateComplete;
 
