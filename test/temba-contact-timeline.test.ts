@@ -238,6 +238,28 @@ describe(TAG, () => {
     expect(selected.url).to.equal('/campaign/read/camp-1/');
   });
 
+  it('fires selection with the campaign url when a campaign pill is activated via the Space key', async () => {
+    await loadStore();
+    const events = await getEvents();
+
+    let selected: any = null;
+    events.addEventListener('temba-selection', (e: CustomEvent) => {
+      selected = e.detail;
+    });
+
+    const pill = events.shadowRoot.querySelector(
+      '.campaign-pill'
+    ) as HTMLElement;
+    expect(pill).to.not.equal(null);
+    pill.dispatchEvent(
+      new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+    );
+
+    expect(selected).to.not.equal(null);
+    expect(selected.uuid).to.equal('camp-1');
+    expect(selected.url).to.equal('/campaign/read/camp-1/');
+  });
+
   it('pages forward through newer upcoming events', async () => {
     await loadStore();
     const events = await getEvents();
