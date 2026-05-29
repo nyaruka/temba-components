@@ -1,5 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
-import { ContactEvents } from '../src/live/ContactEvents';
+import { ContactTimeline } from '../src/live/ContactTimeline';
 import {
   clearMockGets,
   getComponent,
@@ -8,7 +8,7 @@ import {
   waitForCondition
 } from './utils.test';
 
-const TAG = 'temba-contact-events';
+const TAG = 'temba-contact-timeline';
 
 // the older-events pager dot exposes the localized show-older label, which we
 // use as a stable hook rather than coupling tests to internal class names
@@ -17,6 +17,9 @@ const SHOW_MORE_LABEL = 'Show more upcoming events';
 
 const FIRST_PAGE = {
   now: '2024-06-01T12:00:00+00:00',
+  campaigns: [
+    { uuid: 'camp-1', name: 'Onboarding', url: '/campaign/read/camp-1/' }
+  ],
   future: [
     {
       type: 'scheduled_broadcast',
@@ -82,18 +85,18 @@ const NEWER_PAGE = {
   next_after: null
 };
 
-const getEvents = async (data: any = FIRST_PAGE): Promise<ContactEvents> => {
+const getEvents = async (data: any = FIRST_PAGE): Promise<ContactTimeline> => {
   // paged requests (?before= / ?after=) take precedence over the first-page mock
-  mockGET(/contact\/events\/.*before=/, OLDER_PAGE);
-  mockGET(/contact\/events\/.*after=/, NEWER_PAGE);
-  mockGET(/contact\/events\//, data);
+  mockGET(/contact\/timeline\/.*before=/, OLDER_PAGE);
+  mockGET(/contact\/timeline\/.*after=/, NEWER_PAGE);
+  mockGET(/contact\/timeline\//, data);
 
   const events = (await getComponent(
     TAG,
     { contact: 'contact-dave-active' },
     '',
     600
-  )) as ContactEvents;
+  )) as ContactTimeline;
 
   await waitForCondition(() => !!events.data);
   await events.updateComplete;
@@ -111,7 +114,7 @@ describe(TAG, () => {
   it('renders a timeline of past and future events', async () => {
     await loadStore();
     const events = await getEvents();
-    assert.instanceOf(events, ContactEvents);
+    assert.instanceOf(events, ContactTimeline);
 
     const root = events.shadowRoot;
     expect(root.querySelector('.timeline')).to.not.equal(null);
@@ -133,8 +136,15 @@ describe(TAG, () => {
       next_before: null
     });
 
-    expect(events.shadowRoot.querySelector('.empty')).to.not.equal(null);
+    const empty = events.shadowRoot.querySelector('.empty');
+    expect(empty).to.not.equal(null);
     expect(events.shadowRoot.querySelector('.timeline')).to.equal(null);
+
+    // the empty state explains how events end up here and links to campaigns
+    expect(empty.querySelector('.empty-help')).to.not.equal(null);
+    const link = empty.querySelector('.empty-link') as HTMLAnchorElement;
+    expect(link).to.not.equal(null);
+    expect(link.getAttribute('href')).to.equal('/campaign/');
   });
 
   it('pages back through older events', async () => {
@@ -193,6 +203,70 @@ describe(TAG, () => {
     expect(selected).to.not.equal(null);
   });
 
+  it('fires selection with the campaign url when a campaign pill is clicked', async () => {
+    await loadStore();
+    const events = await getEvents();
+
+    let selected: any = null;
+    events.addEventListener('temba-selection', (e: CustomEvent) => {
+      selected = e.detail;
+    });
+
+    const pill = events.shadowRoot.querySelector(
+      '.campaign-pill'
+    ) as HTMLElement;
+    expect(pill).to.not.equal(null);
+    pill.click();
+
+    expect(selected).to.not.equal(null);
+    expect(selected.uuid).to.equal('camp-1');
+    expect(selected.url).to.equal('/campaign/read/camp-1/');
+  });
+
+  it('fires selection with the campaign url when a campaign pill is activated via the Enter key', async () => {
+    await loadStore();
+    const events = await getEvents();
+
+    let selected: any = null;
+    events.addEventListener('temba-selection', (e: CustomEvent) => {
+      selected = e.detail;
+    });
+
+    const pill = events.shadowRoot.querySelector(
+      '.campaign-pill'
+    ) as HTMLElement;
+    expect(pill).to.not.equal(null);
+    pill.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+    );
+
+    expect(selected).to.not.equal(null);
+    expect(selected.uuid).to.equal('camp-1');
+    expect(selected.url).to.equal('/campaign/read/camp-1/');
+  });
+
+  it('fires selection with the campaign url when a campaign pill is activated via the Space key', async () => {
+    await loadStore();
+    const events = await getEvents();
+
+    let selected: any = null;
+    events.addEventListener('temba-selection', (e: CustomEvent) => {
+      selected = e.detail;
+    });
+
+    const pill = events.shadowRoot.querySelector(
+      '.campaign-pill'
+    ) as HTMLElement;
+    expect(pill).to.not.equal(null);
+    pill.dispatchEvent(
+      new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+    );
+
+    expect(selected).to.not.equal(null);
+    expect(selected.uuid).to.equal('camp-1');
+    expect(selected.url).to.equal('/campaign/read/camp-1/');
+  });
+
   it('pages forward through newer upcoming events', async () => {
     await loadStore();
     const events = await getEvents();
@@ -233,15 +307,15 @@ describe(TAG, () => {
     await loadStore();
     // override the default 200 mock for older pages with a 500
     clearMockGets();
-    mockGET(/contact\/events\/.*before=/, {}, {}, '500');
-    mockGET(/contact\/events\//, FIRST_PAGE);
+    mockGET(/contact\/timeline\/.*before=/, {}, {}, '500');
+    mockGET(/contact\/timeline\//, FIRST_PAGE);
 
     const events = (await getComponent(
       TAG,
       { contact: 'contact-dave-active' },
       '',
       600
-    )) as ContactEvents;
+    )) as ContactTimeline;
     await waitForCondition(() => !!events.data);
     await events.updateComplete;
 

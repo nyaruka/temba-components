@@ -160,6 +160,7 @@ export interface Msg {
 export interface ObjectReference {
   uuid: string;
   name: string;
+  url?: string;
 }
 
 export interface Shortcut {

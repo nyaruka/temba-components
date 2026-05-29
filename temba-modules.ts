@@ -31,7 +31,7 @@ import { ContactFields } from './src/live/ContactFields';
 import { ContactFieldEditor } from './src/live/ContactFieldEditor';
 
 import { ContactBadges } from './src/live/ContactBadges';
-import { ContactEvents } from './src/live/ContactEvents';
+import { ContactTimeline } from './src/live/ContactTimeline';
 import { TembaSlider } from './src/form/TembaSlider';
 import { RunList } from './src/list/RunList';
 import { FlowStoreElement } from './src/store/FlowStoreElement';
@@ -149,7 +149,7 @@ addCustomElement('temba-dropdown', Dropdown);
 addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
 addCustomElement('temba-contact-badges', ContactBadges);
-addCustomElement('temba-contact-events', ContactEvents);
+addCustomElement('temba-contact-timeline', ContactTimeline);
 addCustomElement('temba-slider', TembaSlider);
 addCustomElement('temba-content-menu', ContentMenu);
 addCustomElement('temba-compose', Compose);

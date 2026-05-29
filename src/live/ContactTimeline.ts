@@ -41,7 +41,7 @@ const BROADCAST_COLOR = '#8e5ea7';
 // triggers use the same green as the flow pill
 const TRIGGER_COLOR = '#16a34a';
 
-export class ContactEvents extends EndpointMonitorElement {
+export class ContactTimeline extends EndpointMonitorElement {
   @property({ type: String })
   contact: string;
 
@@ -64,7 +64,14 @@ export class ContactEvents extends EndpointMonitorElement {
   lang_campaigns_label = 'Campaigns';
 
   @property({ type: String })
-  lang_empty = 'No events for this contact yet.';
+  lang_empty = 'No upcoming events';
+
+  @property({ type: String })
+  lang_empty_help =
+    'Events appear here when a contact joins a campaign. Scheduled flows and messages will also show up here.';
+
+  @property({ type: String })
+  lang_campaigns_link = 'View campaigns';
 
   @property({ type: String })
   lang_projected_info =
@@ -101,11 +108,44 @@ export class ContactEvents extends EndpointMonitorElement {
         display: block;
       }
 
+      /* empty state follows the list design system: centered icon, a short
+         title, muted explanatory copy, and a single call-to-action link */
       .empty {
-        padding: 4em 1em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
+        padding: 7em 1em 4em;
         color: var(--text-color);
-        opacity: 0.55;
+      }
+
+      .empty temba-icon {
+        margin-bottom: 0.75em;
+        --icon-color: var(--text-3, #7b8593);
+      }
+
+      .empty-title {
+        font-weight: 600;
+        margin-bottom: 0.4em;
+      }
+
+      .empty-help {
+        font-size: 0.875em;
+        line-height: 1.5;
+        max-width: 22em;
+        margin-bottom: 1em;
+        color: var(--text-3, #7b8593);
+      }
+
+      .empty-link {
+        font-size: 0.875em;
+        font-weight: 500;
+        color: var(--color-link-primary);
+        text-decoration: none;
+      }
+
+      .empty-link:hover {
+        text-decoration: underline;
       }
 
       /* row of campaign pills the contact is currently a member of */
@@ -128,7 +168,8 @@ export class ContactEvents extends EndpointMonitorElement {
       }
 
       /* each pill is colored with its campaign's hue - background, border
-         and text all derived from --pill-hue. read-only badges, not links */
+         and text all derived from --pill-hue. clickable links to the
+         campaign's read page */
       .campaign-pill {
         display: inline-flex;
         align-items: center;
@@ -146,6 +187,21 @@ export class ContactEvents extends EndpointMonitorElement {
         border: 1px solid
           color-mix(in srgb, var(--pill-hue) 25%, var(--color-widget-bg, #fff));
         color: var(--pill-hue);
+        cursor: pointer;
+        transition: background 100ms ease-in-out;
+      }
+
+      .campaign-pill:hover {
+        background: color-mix(
+          in srgb,
+          var(--pill-hue) 22%,
+          var(--color-widget-bg, #fff)
+        );
+      }
+
+      .campaign-pill:focus-visible {
+        outline: 2px solid var(--pill-hue);
+        outline-offset: 1px;
       }
 
       /* status-badge dot leading each campaign pill, in the same hue */
@@ -424,7 +480,7 @@ export class ContactEvents extends EndpointMonitorElement {
     const requestedContact = this.contact;
     try {
       const response = await this.store.getUrl(
-        `/contact/events/${encodeURIComponent(this.contact)}/`,
+        `/contact/timeline/${encodeURIComponent(this.contact)}/`,
         { force: true }
       );
       if (this.contact !== requestedContact) {
@@ -570,7 +626,7 @@ export class ContactEvents extends EndpointMonitorElement {
     // capture the contact at request time so a paged response that returns
     // after the user has switched contacts can't append onto the new timeline
     const requestedContact = this.contact;
-    const url = `/contact/events/${encodeURIComponent(
+    const url = `/contact/timeline/${encodeURIComponent(
       this.contact
     )}/?before=${encodeURIComponent(this.nextBefore)}`;
 
@@ -609,7 +665,7 @@ export class ContactEvents extends EndpointMonitorElement {
 
     this.loadingMoreFuture = true;
     const requestedContact = this.contact;
-    const url = `/contact/events/${encodeURIComponent(
+    const url = `/contact/timeline/${encodeURIComponent(
       this.contact
     )}/?after=${encodeURIComponent(this.nextAfter)}`;
 
@@ -710,6 +766,13 @@ export class ContactEvents extends EndpointMonitorElement {
             html`<div
               class="campaign-pill"
               style="--pill-hue:${this.getCampaignColor(campaign.uuid)}"
+              role="button"
+              tabindex="0"
+              @click=${(e: Event) => this.handlePillClicked(e, campaign)}
+              @keydown=${(e: KeyboardEvent) =>
+                this.handleActivationKey(e, () =>
+                  this.handlePillClicked(e, campaign)
+                )}
             >
               <span class="campaign-dot"></span>${campaign.name}
             </div>`
@@ -742,7 +805,14 @@ export class ContactEvents extends EndpointMonitorElement {
       pastDescending.length === 0
     ) {
       return html`<div class="empty">
-        <slot name="empty">${this.lang_empty}</slot>
+        <slot name="empty">
+          <temba-icon name=${Icon.schedule} size="2"></temba-icon>
+          <div class="empty-title">${this.lang_empty}</div>
+          <div class="empty-help">${this.lang_empty_help}</div>
+          <a class="empty-link" href="/campaign/" onclick="goto(event)"
+            >${this.lang_campaigns_link}</a
+          >
+        </slot>
       </div>`;
     }
 
