@@ -64,7 +64,14 @@ export class ContactTimeline extends EndpointMonitorElement {
   lang_campaigns_label = 'Campaigns';
 
   @property({ type: String })
-  lang_empty = 'No events for this contact yet.';
+  lang_empty = 'No upcoming events';
+
+  @property({ type: String })
+  lang_empty_help =
+    'Events appear here when a contact joins a campaign. Scheduled flows and messages will also show up here.';
+
+  @property({ type: String })
+  lang_campaigns_link = 'View campaigns';
 
   @property({ type: String })
   lang_projected_info =
@@ -101,11 +108,44 @@ export class ContactTimeline extends EndpointMonitorElement {
         display: block;
       }
 
+      /* empty state follows the list design system: centered icon, a short
+         title, muted explanatory copy, and a single call-to-action link */
       .empty {
-        padding: 4em 1em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
+        padding: 7em 1em 4em;
         color: var(--text-color);
-        opacity: 0.55;
+      }
+
+      .empty temba-icon {
+        margin-bottom: 0.75em;
+        --icon-color: var(--text-3, #7b8593);
+      }
+
+      .empty-title {
+        font-weight: 600;
+        margin-bottom: 0.4em;
+      }
+
+      .empty-help {
+        font-size: 0.875em;
+        line-height: 1.5;
+        max-width: 22em;
+        margin-bottom: 1em;
+        color: var(--text-3, #7b8593);
+      }
+
+      .empty-link {
+        font-size: 0.875em;
+        font-weight: 500;
+        color: var(--color-link-primary);
+        text-decoration: none;
+      }
+
+      .empty-link:hover {
+        text-decoration: underline;
       }
 
       /* row of campaign pills the contact is currently a member of */
@@ -765,7 +805,14 @@ export class ContactTimeline extends EndpointMonitorElement {
       pastDescending.length === 0
     ) {
       return html`<div class="empty">
-        <slot name="empty">${this.lang_empty}</slot>
+        <slot name="empty">
+          <temba-icon name=${Icon.schedule} size="2"></temba-icon>
+          <div class="empty-title">${this.lang_empty}</div>
+          <div class="empty-help">${this.lang_empty_help}</div>
+          <a class="empty-link" href="/campaign/" onclick="goto(event)"
+            >${this.lang_campaigns_link}</a
+          >
+        </slot>
       </div>`;
     }
 

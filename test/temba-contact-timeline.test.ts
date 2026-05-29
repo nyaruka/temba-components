@@ -136,8 +136,15 @@ describe(TAG, () => {
       next_before: null
     });
 
-    expect(events.shadowRoot.querySelector('.empty')).to.not.equal(null);
+    const empty = events.shadowRoot.querySelector('.empty');
+    expect(empty).to.not.equal(null);
     expect(events.shadowRoot.querySelector('.timeline')).to.equal(null);
+
+    // the empty state explains how events end up here and links to campaigns
+    expect(empty.querySelector('.empty-help')).to.not.equal(null);
+    const link = empty.querySelector('.empty-link') as HTMLAnchorElement;
+    expect(link).to.not.equal(null);
+    expect(link.getAttribute('href')).to.equal('/campaign/');
   });
 
   it('pages back through older events', async () => {
