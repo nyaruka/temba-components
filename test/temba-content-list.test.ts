@@ -1,4 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
+import { stub } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
 import { ContentList } from '../src/list/ContentList';
 import { ContactList } from '../src/list/ContactList';
@@ -85,6 +86,76 @@ describe('temba-content-list', () => {
     action.click();
 
     expect(bulkDetail).to.deep.equal({ action: 'delete', ids: ['u-1'] });
+  });
+
+  it('builds a contact-read href for message rows', async () => {
+    const list = (await getComponent('temba-msg-list', {}, '', 700)) as MsgList;
+    expect((list as any).getRowHref({ contact: { uuid: 'c-123' } })).to.equal(
+      '/contact/read/c-123/'
+    );
+    // No uuid (or no contact at all) leaves the row non-navigating.
+    expect((list as any).getRowHref({ contact: {} })).to.equal(null);
+    expect((list as any).getRowHref({})).to.equal(null);
+  });
+
+  it('fires temba-redirected on row click when the row has an href', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    list.columns = [{ key: 'name' }];
+    // Make rows navigate; this also marks them `.clickable`.
+    (list as any).getRowHref = (item: any) => `/contact/read/${item.uuid}/`;
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    let redirectUrl: string | null = null;
+    list.addEventListener(CustomEventType.Redirected, (e: Event) => {
+      redirectUrl = (e as CustomEvent).detail.url;
+    });
+
+    const row = list.shadowRoot!.querySelector(
+      'tr.row.clickable'
+    ) as HTMLElement;
+    assert.exists(row, 'first row should be clickable');
+    row.click();
+
+    // Routes through the SPA via the Redirected event rather than a
+    // full-page window.location assignment.
+    expect(redirectUrl).to.equal('/contact/read/u-1/');
+  });
+
+  it('opens a new tab on meta-click without firing temba-redirected', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    list.columns = [{ key: 'name' }];
+    (list as any).getRowHref = (item: any) => `/contact/read/${item.uuid}/`;
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    let redirected = false;
+    list.addEventListener(CustomEventType.Redirected, () => {
+      redirected = true;
+    });
+
+    const openStub = stub(window, 'open');
+    try {
+      const row = list.shadowRoot!.querySelector(
+        'tr.row.clickable'
+      ) as HTMLElement;
+      row.dispatchEvent(
+        new MouseEvent('click', {
+          bubbles: true,
+          composed: true,
+          metaKey: true
+        })
+      );
+      expect(openStub.calledOnceWithExactly('/contact/read/u-1/', '_blank')).to
+        .be.true;
+      expect(redirected).to.be.false;
+    } finally {
+      openStub.restore();
+    }
   });
 
   it('renders the messages list (screenshot)', async () => {
