@@ -809,7 +809,7 @@ export class ContactTimeline extends EndpointMonitorElement {
           <temba-icon name=${Icon.schedule} size="2"></temba-icon>
           <div class="empty-title">${this.lang_empty}</div>
           <div class="empty-help">${this.lang_empty_help}</div>
-          <a class="empty-link" href="/campaign/" onclick="goto(event)"
+          <a class="empty-link" href="/campaign/" onclick="goto(event, this)"
             >${this.lang_campaigns_link}</a
           >
         </slot>
