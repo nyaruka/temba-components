@@ -134,6 +134,14 @@ export class MsgList extends ContentList<Msg> {
     ];
   }
 
+  /** Rows navigate to the message's contact. Returning the href here
+   * also marks the row `clickable`, so it carries the pointer cursor on
+   * hover. */
+  protected getRowHref(item: Msg): string | null {
+    const uuid = item.contact?.uuid;
+    return uuid ? `/contact/read/${uuid}/` : null;
+  }
+
   protected renderCell(
     item: Msg,
     column: ContentListColumn
@@ -220,20 +228,37 @@ export class MsgList extends ContentList<Msg> {
   }
 
   /** Flow + label pills for a row, pushed to the trailing edge of
-   * the message cell, or '' when the row carries none. */
+   * the message cell, or '' when the row carries none. The flow pill
+   * opens its editor and each label pill opens that label's filtered
+   * message view — matching the rapidpro msg list. `clickable` gives
+   * the hover affordance; `goto` routes the click through the SPA and
+   * stops propagation so the row's own contact navigation doesn't also
+   * fire. */
   private renderPills(item: Msg): TemplateResult | string {
     const labels = item.labels || [];
     if (!item.flow && !labels.length) return '';
     return html`
       <div class="cell-pills">
         ${item.flow
-          ? html`<temba-label type="flow" icon=${Icon.flow}
+          ? html`<temba-label
+              type="flow"
+              icon=${Icon.flow}
+              href="/flow/editor/${item.flow.uuid}/"
+              onclick="goto(event)"
+              clickable
               >${item.flow.name}</temba-label
             >`
           : null}
         ${labels.map(
           (l) => html`
-            <temba-label type="label" icon=${Icon.label}>${l.name}</temba-label>
+            <temba-label
+              type="label"
+              icon=${Icon.label}
+              href="/msg/filter/${l.uuid}/"
+              onclick="goto(event)"
+              clickable
+              >${l.name}</temba-label
+            >
           `
         )}
       </div>

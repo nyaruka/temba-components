@@ -1524,7 +1524,16 @@ export class ContentList<T = any> extends RapidElement {
     this.fireCustomEvent(CustomEventType.RowClick, { item });
     const href = this.getRowHref(item);
     if (href && this.isSafeHref(href)) {
-      window.location.href = href;
+      // Meta/ctrl-click opens a new tab, matching ordinary links.
+      if (event.metaKey || event.ctrlKey) {
+        window.open(href, '_blank');
+        return;
+      }
+      // Fire Redirected rather than assigning window.location so the
+      // host SPA frame swaps content in place instead of doing a full
+      // page reload — the frame listens for this event on document and
+      // routes it through its in-app loader.
+      this.fireCustomEvent(CustomEventType.Redirected, { url: href });
     }
   }
 
