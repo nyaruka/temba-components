@@ -47,6 +47,7 @@ export default {
         replace({
             preventAssignment: true,
             'process.env.NODE_ENV': JSON.stringify('development'),
+            '__TEMBA_DEV_SERVER__': JSON.stringify(false),
             '__TEMBA_COMPONENTS_VERSION__': JSON.stringify(TEMBA_COMPONENTS_VERSION)
           }),
 
