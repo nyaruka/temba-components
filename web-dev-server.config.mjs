@@ -314,6 +314,7 @@ export default {
     replacePlugin({
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify('development'),
+      '__TEMBA_DEV_SERVER__': JSON.stringify(true),
       '__TEMBA_COMPONENTS_VERSION__': JSON.stringify(TEMBA_COMPONENTS_VERSION),
       'process.env.MINIO_ENDPOINT': JSON.stringify('http://minio:9000'),
       'process.env.MINIO_PUBLIC_ENDPOINT': JSON.stringify('http://localhost:9000'),

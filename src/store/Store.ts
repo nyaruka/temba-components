@@ -41,15 +41,20 @@ export const getStore = () => {
   return document.querySelector('temba-store') as Store;
 };
 
+declare const __TEMBA_DEV_SERVER__: boolean;
+
 /**
- * True when running against the temba-components dev server. The dev server
- * (and the rollup IIFE build) replace `process.env.NODE_ENV` with
- * 'development' at build time; the try/catch keeps this safe when the code is
- * loaded unbundled in a browser, where `process` is undefined.
+ * True only when running against the temba-components dev server, which
+ * replaces `__TEMBA_DEV_SERVER__` with `true` at serve time. The production
+ * rollup build and the test runner replace it with `false`; for any other
+ * consumer the token is undefined and the try/catch falls back to `false`.
+ * We deliberately do not key off `process.env.NODE_ENV` — the published IIFE
+ * bundle (rollup.components.mjs) hardcodes that to 'development', so it can't
+ * distinguish the dev server from a production consumer.
  */
 const isDevServer = (): boolean => {
   try {
-    return process.env.NODE_ENV === 'development';
+    return __TEMBA_DEV_SERVER__ === true;
   } catch {
     return false;
   }
