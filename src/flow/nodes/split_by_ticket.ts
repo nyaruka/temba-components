@@ -41,6 +41,7 @@ export const split_by_ticket: NodeConfig = {
       type: 'textarea',
       label: 'Note',
       required: false,
+      evaluated: true,
       placeholder: 'Enter a note for the ticket (optional)',
       minHeight: 100
     }
