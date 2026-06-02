@@ -81,6 +81,7 @@ export const send_msg: ActionConfig = {
       searchable: true,
       placeholder: 'Add quick replies...',
       maxItems: 10,
+      maxLength: 1000,
       evaluated: true
     },
     template: {

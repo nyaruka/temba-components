@@ -520,6 +520,95 @@ describe('temba-node-editor', () => {
     expect(shadowRoot).to.not.be.null;
   });
 
+  it('enforces goflow length limits on select/tag item values', async () => {
+    // goflow caps quick replies at 1000 chars (send_msg)
+    let el = (await fixture(html`
+      <temba-node-editor
+        .action=${{
+          uuid: 'len-1',
+          type: 'send_msg',
+          text: 'Hi',
+          quick_replies: []
+        }}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+    await el.updateComplete;
+
+    // a normal quick reply passes
+    (el as any).formData = {
+      uuid: 'len-1',
+      text: 'Hi',
+      quick_replies: [{ value: 'Yes', name: 'Yes' }]
+    };
+    expect((el as any).validateForm().valid).to.be.true;
+
+    // one longer than 1000 chars is rejected
+    const longReply = 'x'.repeat(1001);
+    (el as any).formData = {
+      uuid: 'len-1',
+      text: 'Hi',
+      quick_replies: [{ value: longReply, name: longReply }]
+    };
+    let result = (el as any).validateForm();
+    expect(result.valid).to.be.false;
+    expect(result.errors.quick_replies).to.exist;
+
+    // goflow caps result names at 64 chars (set_run_result)
+    el = (await fixture(html`
+      <temba-node-editor
+        .action=${{
+          uuid: 'len-2',
+          type: 'set_run_result',
+          name: 'Age',
+          value: '@input',
+          category: ''
+        }}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+    await el.updateComplete;
+
+    const longName = 'n'.repeat(65);
+    (el as any).formData = {
+      uuid: 'len-2',
+      name: [{ value: longName, name: longName }],
+      value: '@input',
+      category: ''
+    };
+    result = (el as any).validateForm();
+    expect(result.valid).to.be.false;
+    expect(result.errors.name).to.exist;
+  });
+
+  it('treats a whitespace-only required field as empty', async () => {
+    // a required field containing only whitespace must fail validation - otherwise
+    // it slips through and is emitted (e.g. trimmed to "") and rejected by the backend
+    const el = (await fixture(html`
+      <temba-node-editor
+        .action=${{
+          uuid: 'ws-1',
+          type: 'send_email',
+          addresses: ['help@nyaruka.com'],
+          subject: 'Hello',
+          body: 'Body'
+        }}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+    await el.updateComplete;
+
+    (el as any).formData = {
+      uuid: 'ws-1',
+      addresses: [{ value: 'help@nyaruka.com', name: 'help@nyaruka.com' }],
+      subject: '   ',
+      body: 'Body'
+    };
+    const result = (el as any).validateForm();
+    expect(result.valid).to.be.false;
+    expect(result.errors.subject).to.exist;
+  });
+
   it('displays bubble count for accordion value counts', async () => {
     const action = {
       uuid: 'test-action-uuid',

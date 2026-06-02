@@ -118,6 +118,27 @@ describe('temba-node-type-selector', () => {
     expect(titles).to.include('Split by Contact Field');
   });
 
+  it('does not offer Add Input Labels in background flows', async () => {
+    const selector = await createSelector();
+
+    const titlesFor = async (flowType: string) => {
+      selector.flowType = flowType as any;
+      await selector.updateComplete;
+      selector.show('all', { x: 100, y: 100 });
+      await selector.updateComplete;
+      return Array.from(
+        selector.shadowRoot?.querySelectorAll('.node-item-title') || []
+      ).map((item) => item.textContent?.trim());
+    };
+
+    // available in messaging flows
+    expect(await titlesFor('message')).to.include('Add Input Labels');
+
+    // not available in background flows: goflow treats add_input_labels as an
+    // interactive action that a messaging_background flow rejects
+    expect(await titlesFor('background')).to.not.include('Add Input Labels');
+  });
+
   it('shows Call AI in action categories (not a separate branching section)', async () => {
     const selector = await createSelector();
     selector.flowType = 'message';
