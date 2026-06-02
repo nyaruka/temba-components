@@ -16,6 +16,10 @@ describe('split_by_ticket node config', () => {
       expect(split_by_ticket.type).to.equal('split_by_ticket');
       expect(split_by_ticket.name).to.equal('Open Ticket');
     });
+
+    it('enables expression completion on the note field', () => {
+      expect((split_by_ticket.form!.note as any).evaluated).to.equal(true);
+    });
   });
 
   describe('round-trip transformation', () => {
