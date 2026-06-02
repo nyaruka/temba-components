@@ -6,7 +6,10 @@ import { renderNamedObjects } from '../utils';
 export const add_input_labels: ActionConfig = {
   name: 'Add Input Labels',
   group: ACTION_GROUPS.save,
-  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
+  // Not allowed in background flows: goflow treats add_input_labels as an interactive
+  // action (messaging, messaging_offline, voice only), so offering it in a
+  // messaging_background flow produces a definition the backend rejects.
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE],
   render: (_node: Node, action: AddInputLabels) => {
     return html`<div>${renderNamedObjects(action.labels, 'label')}</div>`;
   },

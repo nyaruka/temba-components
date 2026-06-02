@@ -21,6 +21,7 @@ export const set_run_result: ActionConfig = {
       label: 'Result Name',
       helpText: 'Select an existing result name or type a new one',
       required: true,
+      maxLength: 64,
       placeholder: 'Select or enter result name...',
       createArbitraryOption: (input, options) => {
         const exists = options.some(

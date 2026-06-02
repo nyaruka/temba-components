@@ -1129,11 +1129,16 @@ export class NodeEditor extends RapidElement {
             }
           }
 
-          // Check required fields (skip in localization mode since all fields are optional)
+          // Check required fields (skip in localization mode since all fields are optional).
+          // A whitespace-only string counts as empty here - otherwise it slips past this
+          // check and is emitted (e.g. trimmed to "") into the definition, which the backend
+          // then rejects (e.g. a dial wait with an empty phone).
           if (
             !this.isTranslating &&
             (fieldConfig as any).required &&
-            (!value || (Array.isArray(value) && value.length === 0))
+            (!value ||
+              (typeof value === 'string' && value.trim() === '') ||
+              (Array.isArray(value) && value.length === 0))
           ) {
             errors[fieldName] = `${
               (fieldConfig as any).label || fieldName
@@ -1151,17 +1156,32 @@ export class NodeEditor extends RapidElement {
             } must be at least ${(fieldConfig as any).minLength} characters`;
           }
 
-          // Check maxLength for text fields
-          if (
-            typeof value === 'string' &&
-            (fieldConfig as any).maxLength &&
-            value.length > (fieldConfig as any).maxLength
-          ) {
-            errors[fieldName] = `${
-              (fieldConfig as any).label || fieldName
-            } must be no more than ${
-              (fieldConfig as any).maxLength
-            } characters`;
+          // Check maxLength for text fields, as well as for the values of select/tag
+          // items (e.g. result names, quick replies) which are stored as arrays of
+          // option objects (or plain strings) rather than a single string. Without the
+          // array/object handling, an over-long value here is emitted into the definition
+          // and rejected by the backend (goflow caps result names at 64 and quick replies
+          // at 1000 chars).
+          const maxLength = (fieldConfig as any).maxLength;
+          if (maxLength) {
+            const itemLength = (item: any): number => {
+              if (typeof item === 'string') return item.length;
+              if (item && typeof item === 'object') {
+                const text = item.value ?? item.name;
+                return typeof text === 'string' ? text.length : 0;
+              }
+              return 0;
+            };
+
+            const exceedsMax = Array.isArray(value)
+              ? value.some((item) => itemLength(item) > maxLength)
+              : itemLength(value) > maxLength;
+
+            if (exceedsMax) {
+              errors[fieldName] = `${
+                (fieldConfig as any).label || fieldName
+              } must be no more than ${maxLength} characters`;
+            }
           }
         });
       }
