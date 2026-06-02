@@ -295,8 +295,18 @@ export default {
     // Permissive CORS so this dev server can be loaded as a cross-origin
     // module source by a rapidpro instance running on a different localhost
     // port (e.g. Nautilus/run-pair.sh launching rapidpro:8001 + components:3011).
+    // The Store fetches completion.json with custom headers (X-CSRFToken,
+    // X-Temba-Workspace, X-Requested-With), which makes it a non-simple
+    // cross-origin request, so we must also answer the preflight (OPTIONS)
+    // with the allowed methods/headers or the browser blocks it.
     (ctx, next) => {
       ctx.set('Access-Control-Allow-Origin', '*');
+      ctx.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      ctx.set('Access-Control-Allow-Headers', '*');
+      if (ctx.method === 'OPTIONS') {
+        ctx.status = 204;
+        return;
+      }
       return next();
     },
   ],
