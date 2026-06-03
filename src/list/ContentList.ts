@@ -223,9 +223,12 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-action temba-icon {
         --icon-color: currentColor;
       }
+      /* Quiet, muted selection tally set a little apart from the action
+         chips so it reads as a label rather than another button. */
       .bulk-count {
-        font-weight: var(--w-medium);
-        color: var(--accent-800);
+        color: var(--text-3);
+        font-size: 12.5px;
+        margin-right: 6px;
       }
 
       /* Label-toggle dropdown — temba-dropdown wraps the bulk-
