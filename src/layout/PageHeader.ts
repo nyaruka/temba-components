@@ -46,18 +46,26 @@ export class PageHeader extends RapidElement {
           'tnum' 0;
       }
 
-      /* Title on the left, actions + content menu on the right. */
+      /* Two rows: the title + actions/content-menu row on top, and a
+         full-width subtitle row beneath it. Stacking the subtitle as
+         its own row (rather than nesting it under the title) lets a
+         long sub-header flow across the whole width — using the space
+         under the page navigation and content menu — instead of being
+         capped by the title column. */
       .header {
         display: flex;
-        align-items: flex-start;
-        gap: var(--gap);
-        padding: 20px 0 16px 0;
+        flex-direction: column;
+        gap: 2px;
+        padding: 16px 0;
       }
-      .titles {
-        flex: 1 1 auto;
-        min-width: 0;
+      .header-main {
+        display: flex;
+        align-items: center;
+        gap: var(--gap);
       }
       .title {
+        flex: 1 1 auto;
+        min-width: 0;
         font-size: 15.5px;
         font-weight: var(--w-semibold);
         color: var(--text-1);
@@ -67,7 +75,6 @@ export class PageHeader extends RapidElement {
         font-size: 12.5px;
         color: var(--text-3);
         line-height: 1.3;
-        margin-top: 1px;
       }
       .actions {
         flex: 0 0 auto;
@@ -318,20 +325,20 @@ export class PageHeader extends RapidElement {
       this.subtitle || this.querySelector('[slot="subtitle"]');
     return html`
       <div class="header">
-        <div class="titles">
+        <div class="header-main">
           <div class="title">
             <slot name="title">${this.headerTitle}</slot>
           </div>
-          ${hasSubtitle
-            ? html`<div class="subtitle">
-                <slot name="subtitle">${this.subtitle}</slot>
-              </div>`
-            : null}
+          <div class="actions">
+            <slot name="actions"></slot>
+            ${this.renderContentMenu()}
+          </div>
         </div>
-        <div class="actions">
-          <slot name="actions"></slot>
-          ${this.renderContentMenu()}
-        </div>
+        ${hasSubtitle
+          ? html`<div class="subtitle">
+              <slot name="subtitle">${this.subtitle}</slot>
+            </div>`
+          : null}
       </div>
     `;
   }

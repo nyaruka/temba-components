@@ -88,6 +88,150 @@ describe('temba-content-list', () => {
     expect(bulkDetail).to.deep.equal({ action: 'delete', ids: ['u-1'] });
   });
 
+  it('does not POST a clientOnly action, only fires the event', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    // An action-endpoint is set, but a clientOnly action must still
+    // skip the POST and leave the work (e.g. opening a modal) to the host.
+    list.actionEndpoint = '/test-assets/content-list/action';
+    list.columns = [{ key: 'name' }];
+    list.bulkActions = [{ key: 'send', label: 'Send', clientOnly: true }];
+    (list as any).selectedIds = new Set(['u-1']);
+    await list.updateComplete;
+
+    const fetchStub = window.fetch as any;
+    const countPosts = () =>
+      fetchStub
+        .getCalls()
+        .filter((c: any) => (c.args[1] || {}).method === 'POST').length;
+    const postsBefore = countPosts();
+
+    let bulkDetail: any = null;
+    list.addEventListener(CustomEventType.BulkAction, (e: Event) => {
+      bulkDetail = (e as CustomEvent).detail;
+    });
+
+    const action = list.shadowRoot!.querySelector(
+      '.bulk-action'
+    ) as HTMLElement;
+    assert.exists(action, 'bulk action button should render');
+    action.click();
+    await list.updateComplete;
+
+    expect(bulkDetail).to.deep.equal({ action: 'send', ids: ['u-1'] });
+    expect(countPosts()).to.equal(postsBefore);
+  });
+
+  it('folds the committed search into the content-menu-endpoint', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json',
+      'content-menu-endpoint': '/contact/active/?'
+    })) as ContentList;
+
+    const header = () =>
+      list
+        .shadowRoot!.querySelector('temba-page-header')!
+        .getAttribute('content-menu-endpoint');
+
+    // no search → the menu endpoint is untouched
+    expect(header()).to.equal('/contact/active/?');
+
+    // a committed search is folded in so the server's build_context_menu
+    // sees it (and can surface e.g. the Create Smart Group button)
+    (list as any).search = 'age > 30';
+    await list.updateComplete;
+    expect(header()).to.contain('search=age');
+
+    // clearing the search reverts the endpoint
+    (list as any).search = '';
+    await list.updateComplete;
+    expect(header()).to.equal('/contact/active/?');
+  });
+
+  it('marks the frame scrolled-down so the header gets a scroll shadow', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    list.columns = [{ key: 'name' }];
+    await list.updateComplete;
+
+    const scroll = list.shadowRoot!.querySelector(
+      '.table-scroll'
+    ) as HTMLElement;
+    const frame = list.shadowRoot!.querySelector('.table-frame') as HTMLElement;
+
+    // not scrolled yet
+    expect(frame.classList.contains('scrolled-down')).to.be.false;
+
+    // constrain the height so the body can scroll under the sticky header
+    scroll.style.maxHeight = '40px';
+    scroll.scrollTop = 100;
+    scroll.dispatchEvent(new Event('scroll'));
+    await list.updateComplete;
+
+    expect(frame.classList.contains('scrolled-down')).to.be.true;
+  });
+
+  it('lays the subtitle out full-width under the header row', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json',
+      subtitle:
+        'A long sub-header that should be free to flow across the whole width of the header, beneath both the title and the content menu, rather than being capped by the title column.'
+    })) as ContentList;
+    await list.updateComplete;
+
+    const header = list.shadowRoot!.querySelector(
+      'temba-page-header'
+    ) as HTMLElement & { updateComplete: Promise<unknown> };
+    await header.updateComplete;
+    const sub = header.shadowRoot!.querySelector('.subtitle') as HTMLElement;
+    const main = header.shadowRoot!.querySelector(
+      '.header-main'
+    ) as HTMLElement;
+    assert.exists(sub, 'subtitle should render');
+
+    // the subtitle spans (essentially) the full header width, not just
+    // the title column to the left of the actions
+    expect(sub.getBoundingClientRect().width).to.be.greaterThan(
+      main.getBoundingClientRect().width * 0.9
+    );
+  });
+
+  it('shows the empty state over the body, not as a table cell', async () => {
+    const list = (await getList()) as ContentList;
+    list.columns = [{ key: 'name' }];
+    list.emptyMessage = 'No contacts';
+    (list as any).items = [];
+    (list as any).loading = false;
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    // rendered as a sibling overlay (centered in the container) rather
+    // than a colspan row that would scroll off with an overflowing table
+    const state = list.shadowRoot!.querySelector('.list-state') as HTMLElement;
+    assert.exists(state, 'empty state should render');
+    expect(state.textContent!.trim()).to.equal('No contacts');
+    expect(list.shadowRoot!.querySelector('tbody td')).to.not.exist;
+    expect(state.closest('.table-scroll')).to.equal(null);
+  });
+
+  it('reflects membership from labelsKey across the selected rows', async () => {
+    const list = (await getList()) as ContentList;
+    (list as any).items = [
+      { uuid: 'c1', groups: [{ uuid: 'g1' }, { uuid: 'g2' }] },
+      { uuid: 'c2', groups: [{ uuid: 'g1' }] }
+    ];
+    (list as any).selectedIds = new Set(['c1', 'c2']);
+
+    // g1 is on both selected rows → all; g2 on one → some; g3 on none
+    expect((list as any).computeLabelState('g1', 'groups')).to.equal('all');
+    expect((list as any).computeLabelState('g2', 'groups')).to.equal('some');
+    expect((list as any).computeLabelState('g3', 'groups')).to.equal('none');
+    // the default key ('labels') finds nothing on contact rows
+    expect((list as any).computeLabelState('g1')).to.equal('none');
+  });
+
   it('builds a contact-read href for message rows', async () => {
     const list = (await getComponent('temba-msg-list', {}, '', 700)) as MsgList;
     expect((list as any).getRowHref({ contact: { uuid: 'c-123' } })).to.equal(
@@ -158,6 +302,38 @@ describe('temba-content-list', () => {
     }
   });
 
+  it('truncates a long message instead of widening the table (auto layout)', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-msg-list',
+      { endpoint: '/test-assets/content-list/messages.json' },
+      '',
+      1100
+    )) as MsgList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    // the message list is auto layout (so Contact/Sent size to content)
+    expect((list as any).fixedLayout).to.be.false;
+
+    // the long first message overflows (ellipsizes) within its cell
+    const msgText = list.shadowRoot!.querySelector(
+      'tr.row td.grow .msg-text'
+    ) as HTMLElement;
+    assert.exists(msgText, 'message text should render');
+    expect(msgText.scrollWidth).to.be.greaterThan(msgText.clientWidth);
+
+    // ...rather than stretching the table past its scroll frame
+    const scroll = list.shadowRoot!.querySelector(
+      '.table-scroll'
+    ) as HTMLElement;
+    expect(scroll.scrollWidth).to.be.at.most(scroll.clientWidth + 1);
+  });
+
   it('renders the messages list (screenshot)', async () => {
     await loadStore();
     const list = (await getComponent(
@@ -204,6 +380,58 @@ describe('temba-content-list', () => {
     expect((list as any).featuredFields?.length).to.be.greaterThan(0);
     await list.updateComplete;
     await assertScreenshot('content-list/contacts', getClip(list));
+  });
+
+  it('shows the location leaf, a created-on column, and actual dates', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      { endpoint: '/test-assets/content-list/contacts.json' },
+      '',
+      1100
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    for (
+      let i = 0;
+      i < 200 && (list as any).featuredFields?.length === 0;
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    await list.updateComplete;
+
+    // a created-on column is rendered alongside last-seen
+    const colKeys = (list as any).columns.map((c: any) => c.key);
+    expect(colKeys).to.include('created_on');
+    expect(colKeys).to.include('last_seen_on');
+
+    // location (ward) values show only the leaf, not the full hierarchy
+    expect(
+      (list as any).locationLeaf('Nigeria > Yobe > Nguru > Dabule')
+    ).to.equal('Dabule');
+    const text = list.shadowRoot!.textContent || '';
+    expect(text).to.contain('Oakland');
+    expect(text).to.not.contain('USA > California');
+
+    // every date cell renders via the timedate format
+    const displays = Array.from(
+      list.shadowRoot!.querySelectorAll('temba-date')
+    ).map((d) => d.getAttribute('display'));
+    expect(displays.length).to.be.greaterThan(0);
+    expect(displays.every((d) => d === 'timedate')).to.be.true;
+
+    // empty field values render as the -- placeholder (one contact has no gender)
+    expect(text).to.contain('--');
+
+    // last-seen is no longer a pinned column
+    const lastSeen = (list as any).columns.find(
+      (c: any) => c.key === 'last_seen_on'
+    );
+    expect(lastSeen.pinned).to.be.undefined;
   });
 
   it('renders the flows list (screenshot)', async () => {
@@ -290,6 +518,34 @@ describe('temba-content-list', () => {
     const count = list.shadowRoot!.querySelector('.searchbar .result-count');
     expect(count).to.not.equal(null);
     expect(count!.textContent!.trim()).to.equal('3 results');
+  });
+
+  it('shows the count in the pager in cursor mode', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    // Cursor list that also carries a count (e.g. the message list's
+    // cheap folder count) — the pager should still show "N–M of Total".
+    Object.assign(list as any, {
+      cursorMode: true,
+      hasCount: true,
+      total: 42,
+      pageSize: 10,
+      page: 2,
+      prevCursor: '/x?cursor=a',
+      nextCursor: '/x?cursor=b'
+    });
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    const status = list.shadowRoot!.querySelector(
+      '.pager-status'
+    ) as HTMLElement;
+    assert.exists(status, 'pager status should render in counted cursor mode');
+    const text = status.textContent!.replace(/\s+/g, ' ').trim();
+    expect(text).to.contain('11');
+    expect(text).to.contain('20');
+    expect(text).to.contain('of 42');
   });
 
   it('stays in cursor mode when a count is returned alongside cursor URLs', async () => {
