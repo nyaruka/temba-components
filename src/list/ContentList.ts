@@ -1899,7 +1899,6 @@ export class ContentList<T = any> extends RapidElement {
     return html`
       <temba-dropdown
         class="label-dropdown"
-        data-action-key=${action.key}
         @temba-opened=${() => this.handleLabelDropdownOpened(action)}
       >
         <span
@@ -2507,7 +2506,10 @@ export class ContentList<T = any> extends RapidElement {
   private renderPager(): TemplateResult {
     const lastPage = Math.max(1, Math.ceil(this.total / this.pageSize));
     const first = this.total === 0 ? 0 : (this.page - 1) * this.pageSize + 1;
-    const last = Math.min(this.total, this.page * this.pageSize);
+    // Derive `last` from the rows actually shown rather than page*pageSize,
+    // so a short slice (a partial cursor page, or the final page) reports
+    // the true position instead of overshooting the total.
+    const last = first === 0 ? 0 : first + this.items.length - 1;
     const atStart = this.cursorMode ? !this.prevCursor : this.page <= 1;
     const atEnd = this.cursorMode ? !this.nextCursor : this.page >= lastPage;
     // Nothing to show: an empty counted list (the .list-state covers it),

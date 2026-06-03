@@ -526,12 +526,14 @@ describe('temba-content-list', () => {
     })) as ContentList;
     // Cursor list that also carries a count (e.g. the message list's
     // cheap folder count) — the pager should still show "N–M of Total".
+    // `last` is derived from the rows shown, so seed a full page of items.
     Object.assign(list as any, {
       cursorMode: true,
       hasCount: true,
       total: 42,
       pageSize: 10,
       page: 2,
+      items: Array.from({ length: 10 }, (_, i) => ({ uuid: `u-${i}` })),
       prevCursor: '/x?cursor=a',
       nextCursor: '/x?cursor=b'
     });
