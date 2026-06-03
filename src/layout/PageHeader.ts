@@ -98,7 +98,7 @@ export class PageHeader extends RapidElement {
            same way .ds * does in the styleguide — otherwise the
            border adds 2px and the button computes 2px taller. */
         box-sizing: border-box;
-        height: 28px;
+        height: 26px;
         padding: 0 10px;
         border: 1px solid var(--border-strong);
         border-radius: var(--r-sm);
@@ -140,9 +140,12 @@ export class PageHeader extends RapidElement {
       .menu-toggle {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         cursor: pointer;
         user-select: none;
-        padding: 6px;
+        height: 26px;
+        box-sizing: border-box;
+        padding: 0 5px;
         border-radius: var(--r-sm);
         color: var(--text-2);
         --icon-color: currentColor;

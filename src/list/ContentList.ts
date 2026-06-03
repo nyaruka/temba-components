@@ -171,7 +171,9 @@ export class ContentList<T = any> extends RapidElement {
         gap: 6px;
         cursor: pointer;
         user-select: none;
-        padding: 6px 8px;
+        height: 26px;
+        box-sizing: border-box;
+        padding: 0 8px;
         border-radius: var(--r-sm);
         color: var(--text-2);
       }
@@ -195,7 +197,12 @@ export class ContentList<T = any> extends RapidElement {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        padding: 4px 8px;
+        /* Fixed height shared with the content-menu buttons (.menu-button)
+           and the Search action so the header is the same height whether
+           the bulk-action chips or the paging/menu are showing. */
+        height: 26px;
+        box-sizing: border-box;
+        padding: 0 8px;
         border-radius: var(--r-sm);
         background: var(--accent-100);
         color: var(--accent-800);
