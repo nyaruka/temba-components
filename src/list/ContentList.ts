@@ -183,11 +183,19 @@ export class ContentList<T = any> extends RapidElement {
         --icon-color: currentColor;
       }
 
+      /* The bulk-action buttons get their own tight cluster so the
+         contacts case (many actions) stays compact, without pulling in
+         the wider 14px spacing the normal toolbar uses. */
+      .bulk-actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
       .bulk-action {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
+        gap: 5px;
+        padding: 4px 8px;
         border-radius: var(--r-sm);
         background: var(--accent-100);
         color: var(--accent-800);
@@ -211,7 +219,6 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-count {
         font-weight: var(--w-medium);
         color: var(--accent-800);
-        margin-right: 4px;
       }
 
       /* Label-toggle dropdown — temba-dropdown wraps the bulk-
@@ -1822,8 +1829,10 @@ export class ContentList<T = any> extends RapidElement {
         <div slot="actions" class="header-actions">
           ${bulkVisible
             ? html`
-                <span class="bulk-count">${selectionCount} selected</span>
-                ${this.bulkActions.map((a) => this.renderBulkAction(a))}
+                <div class="bulk-actions">
+                  <span class="bulk-count">${selectionCount} selected</span>
+                  ${this.bulkActions.map((a) => this.renderBulkAction(a))}
+                </div>
               `
             : html`
                 ${this.renderPager()}
