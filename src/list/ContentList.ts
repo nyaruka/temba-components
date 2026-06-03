@@ -185,13 +185,24 @@ export class ContentList<T = any> extends RapidElement {
         --icon-color: currentColor;
       }
 
-      /* The bulk-action buttons get their own tight cluster so the
-         contacts case (many actions) stays compact, without pulling in
-         the wider 14px spacing the normal toolbar uses. */
-      .bulk-actions {
+      /* When rows are selected, the bulk actions overlay the column-
+         header row (covering the column labels) starting just right of
+         the select-all checkbox — rather than replacing the page header.
+         Positioned in the table-frame (not the scrolling table) so it
+         stays put horizontally, with an opaque header-tint background to
+         hide the labels underneath, above the sticky header (z 2/3). */
+      .bulk-bar {
+        position: absolute;
+        top: 0;
+        left: var(--cl-check-width, 44px);
+        right: var(--cl-scrollbar-w, 0px);
+        height: var(--cl-header-height, 36px);
+        z-index: 4;
         display: flex;
         align-items: center;
         gap: 5px;
+        padding: 0 8px;
+        background: var(--cl-pin-bg);
       }
       .bulk-action {
         display: inline-flex;
@@ -1818,47 +1829,34 @@ export class ContentList<T = any> extends RapidElement {
   }
 
   private renderTitlebar(): TemplateResult {
-    const selectionCount = this.selectedIds.size;
-    const bulkVisible = selectionCount > 0 && this.bulkActions.length > 0;
     const hasSubtitle =
       this.subtitle || this.querySelector('[slot="subtitle"]');
     const resultCount = `${this.total} ${this.total === 1 ? 'result' : 'results'}`;
     // The header — title + content menu — is temba-page-header. The
-    // list forwards its own title/subtitle slots into it and slots
-    // its search / bulk-action controls into the header's actions
-    // area, so the list and a plain page share one header.
+    // list forwards its own title/subtitle slots into it and slots its
+    // pager / search into the header's actions area. The bulk actions
+    // are NOT here — when rows are selected they overlay the column-
+    // header row instead (see renderBulkBar), so the page header stays
+    // put rather than swapping its contents.
     return html`
       <temba-page-header
         content-menu-endpoint=${this.contentMenuEndpointWithSearch()}
-        ?hide-menu=${bulkVisible}
       >
         <slot name="title" slot="title">${this.listTitle}</slot>
         ${hasSubtitle
           ? html`<slot name="subtitle" slot="subtitle">${this.subtitle}</slot>`
           : null}
         <div slot="actions" class="header-actions">
-          ${bulkVisible
+          ${this.renderPager()}
+          ${this.searchable && !this.searchOpen
             ? html`
-                <div class="bulk-actions">
-                  <span class="bulk-count">${selectionCount} selected</span>
-                  ${this.bulkActions.map((a) => this.renderBulkAction(a))}
-                </div>
+                <span class="action" @click=${() => this.toggleSearch()}>
+                  <temba-icon name=${Icon.search} size="0.95"></temba-icon>
+                  Search
+                </span>
               `
-            : html`
-                ${this.renderPager()}
-                ${this.searchable && !this.searchOpen
-                  ? html`
-                      <span class="action" @click=${() => this.toggleSearch()}>
-                        <temba-icon
-                          name=${Icon.search}
-                          size="0.95"
-                        ></temba-icon>
-                        Search
-                      </span>
-                    `
-                  : null}
-                <slot name="actions"></slot>
-              `}
+            : null}
+          <slot name="actions"></slot>
         </div>
       </temba-page-header>
       ${this.searchable && this.searchOpen
@@ -1893,6 +1891,24 @@ export class ContentList<T = any> extends RapidElement {
             </div>
           `
         : null}
+    `;
+  }
+
+  /** True when there's a selection and actions to run on it. */
+  private get bulkVisible(): boolean {
+    return this.selectedIds.size > 0 && this.bulkActions.length > 0;
+  }
+
+  /** The bulk-action bar — overlaid on the column-header row (just
+   * right of the select-all checkbox) when rows are selected, rather
+   * than replacing the page header. Positioned absolutely in the
+   * table-frame so it doesn't scroll horizontally with the columns. */
+  private renderBulkBar(): TemplateResult {
+    return html`
+      <div class="bulk-bar">
+        <span class="bulk-count">${this.selectedIds.size} selected</span>
+        ${this.bulkActions.map((a) => this.renderBulkAction(a))}
+      </div>
     `;
   }
 
@@ -2354,6 +2370,15 @@ export class ContentList<T = any> extends RapidElement {
         `${headerRow.offsetHeight}px`
       );
     }
+    // Width of the select-all checkbox cell — the bulk-action bar starts
+    // just to its right so the checkbox stays uncovered.
+    const checkCell = scroller.querySelector(
+      'tr.header th.check-cell'
+    ) as HTMLElement | null;
+    this.style.setProperty(
+      '--cl-check-width',
+      `${checkCell ? checkCell.offsetWidth : 0}px`
+    );
   }
 
   private renderHeader(): TemplateResult {
@@ -2608,6 +2633,7 @@ export class ContentList<T = any> extends RapidElement {
           ${stateMessage
             ? html`<div class="list-state">${stateMessage}</div>`
             : null}
+          ${this.bulkVisible ? this.renderBulkBar() : null}
           <div class="header-shadow"></div>
           <div class="scroll-shadow"></div>
         </div>

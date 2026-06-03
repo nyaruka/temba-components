@@ -382,6 +382,44 @@ describe('temba-content-list', () => {
     await assertScreenshot('content-list/contacts', getClip(list));
   });
 
+  it('overlays the bulk action bar on the column header when rows are selected (screenshot)', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      { endpoint: '/test-assets/content-list/contacts.json' },
+      '',
+      1100
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    for (
+      let i = 0;
+      i < 200 && (list as any).featuredFields?.length === 0;
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    // select every row so the bulk bar shows over the column headers,
+    // just right of the (now all-checked) select-all checkbox
+    (list as any).selectedIds = new Set(
+      (list as any).items.map((i: any) => i.uuid)
+    );
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    const bar = list.shadowRoot!.querySelector('.bulk-bar') as HTMLElement;
+    assert.exists(bar, 'bulk bar should render when rows are selected');
+    // the page header (search/menu) is NOT replaced
+    assert.exists(
+      list.shadowRoot!.querySelector('temba-page-header'),
+      'page header stays put'
+    );
+    await assertScreenshot('content-list/contacts-bulk', getClip(list));
+  });
+
   it('shows the location leaf, a created-on column, and actual dates', async () => {
     await loadStore();
     const list = (await getComponent(
