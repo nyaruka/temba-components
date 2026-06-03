@@ -2499,10 +2499,12 @@ export class ContentList<T = any> extends RapidElement {
   }
 
   /** The pager — a compact "‹ 1–N of Total ›" stepper for the
-   * header's actions cluster. A cursor list has no total, so it
-   * shows chevrons only, gated on whether the last response handed
-   * back a cursor for that direction. Returns nothing when there is
-   * neither a page to move to nor a count worth showing. */
+   * header's actions cluster. The "N–M of Total" status shows whenever
+   * the response carried a count (`hasCount`) — in cursor mode too,
+   * using the synthetic page for the range; an uncounted cursor list
+   * falls back to chevrons only, gated on whether the last response
+   * handed back a cursor for that direction. Returns nothing when there
+   * is neither a page to move to nor a count worth showing. */
   private renderPager(): TemplateResult {
     const lastPage = Math.max(1, Math.ceil(this.total / this.pageSize));
     const first = this.total === 0 ? 0 : (this.page - 1) * this.pageSize + 1;

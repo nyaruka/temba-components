@@ -130,15 +130,16 @@ export class ContactList extends ContentList<Contact> {
     }
   }
 
-  /** Columns: name, urn, the featured fields, then last seen.
+  /** Columns: name, urn, the featured fields, then last seen and
+   * created on.
    *
-   * Name + URN lead and Last-seen trails, with the workspace's
-   * custom fields filling the middle. Every column sizes to its
-   * content between min/max bounds — none are hard-fixed — so the
+   * Name leads, with URN, the workspace's custom fields, and the
+   * last-seen / created-on dates trailing it. Every column sizes to
+   * its content between min/max bounds — none are hard-fixed — so the
    * table stays compact and overflows into a horizontal scroll only
-   * when the field set is genuinely wide. Name + URN are pinned to
-   * the left edge and Last-seen to the right, so identity and
-   * recency stay anchored while the fields scroll between them.
+   * when the field set is genuinely wide. Only Name is pinned to the
+   * left edge, so identity stays anchored while everything else
+   * scrolls.
    *
    * There is deliberately no group-membership column — contacts
    * routinely belong to dozens of groups, so a groups cell is
