@@ -35,7 +35,7 @@ describe('temba-chat contact avatars', () => {
 
     const user = await getAvatar(chat);
     assert.instanceOf(user, TembaUser);
-    assert.isFalse(user.system);
+    assert.isNotOk(user.system);
     assert.equal(user.name, 'Jane Doe');
     assert.equal(user.initials, 'JD');
     assert.isNull(user.bgimage);
@@ -47,7 +47,7 @@ describe('temba-chat contact avatars', () => {
 
     const user = await getAvatar(chat);
     assert.instanceOf(user, TembaUser);
-    assert.isFalse(user.system);
+    assert.isNotOk(user.system);
     assert.equal(user.initials, '');
     assert.isNull(user.bgimage);
     assert.isNotNull(user.shadowRoot.querySelector('temba-icon'));
