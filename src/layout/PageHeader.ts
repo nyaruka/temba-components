@@ -46,35 +46,44 @@ export class PageHeader extends RapidElement {
           'tnum' 0;
       }
 
-      /* Two rows: the title + actions/content-menu row on top, and a
-         full-width subtitle row beneath it. Stacking the subtitle as
-         its own row (rather than nesting it under the title) lets a
-         long sub-header flow across the whole width — using the space
-         under the page navigation and content menu — instead of being
-         capped by the title column. */
+      /* One row: the title/subtitle block on the left and the
+         actions/content-menu on the right, vertically centered against
+         each other. The title block is the flexing column so the
+         actions hold their size. The vertical padding matches the
+         horizontal inset the host supplies (the list panel's 20px) so
+         the whole header is wrapped in even, consistent padding. */
       .header {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        padding: 16px 0;
-      }
-      .header-main {
         display: flex;
         align-items: center;
         gap: var(--gap);
+        padding: 12px 0;
       }
-      .title {
+      /* Title + subtitle stacked tight, sharing the left column. It
+         flexes and clips so a long subtitle truncates against the
+         actions rather than pushing them off the row. */
+      .title-block {
         flex: 1 1 auto;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+      .title {
         font-size: 15.5px;
         font-weight: var(--w-semibold);
         color: var(--text-1);
-        line-height: 1.3;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .subtitle {
         font-size: 12.5px;
         color: var(--text-3);
-        line-height: 1.3;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .actions {
         flex: 0 0 auto;
@@ -324,24 +333,27 @@ export class PageHeader extends RapidElement {
   }
 
   public render(): TemplateResult {
-    const hasSubtitle =
-      this.subtitle || this.querySelector('[slot="subtitle"]');
+    const slotted = this.querySelector('[slot="subtitle"]');
+    const hasSubtitle = this.subtitle || slotted;
+    // Full subtitle text for the hover tooltip — the bar truncates a
+    // long subtitle, so the native title surfaces the rest on hover.
+    const subtitleText = (this.subtitle || slotted?.textContent || '').trim();
     return html`
       <div class="header">
-        <div class="header-main">
+        <div class="title-block">
           <div class="title">
             <slot name="title">${this.headerTitle}</slot>
           </div>
-          <div class="actions">
-            <slot name="actions"></slot>
-            ${this.renderContentMenu()}
-          </div>
+          ${hasSubtitle
+            ? html`<div class="subtitle" title=${subtitleText}>
+                <slot name="subtitle">${this.subtitle}</slot>
+              </div>`
+            : null}
         </div>
-        ${hasSubtitle
-          ? html`<div class="subtitle">
-              <slot name="subtitle">${this.subtitle}</slot>
-            </div>`
-          : null}
+        <div class="actions">
+          <slot name="actions"></slot>
+          ${this.renderContentMenu()}
+        </div>
       </div>
     `;
   }

@@ -7,9 +7,11 @@ import { FlowList } from '../src/list/FlowList';
 import { MsgList } from '../src/list/MsgList';
 import {
   assertScreenshot,
+  clearMockGets,
   getClip,
   getComponent,
   loadStore,
+  mockGET,
   mockNow
 } from './utils.test';
 
@@ -173,11 +175,12 @@ describe('temba-content-list', () => {
     expect(frame.classList.contains('scrolled-down')).to.be.true;
   });
 
-  it('lays the subtitle out full-width under the header row', async () => {
+  it('stacks the subtitle tight under the title and truncates it', async () => {
+    const longSubtitle =
+      'A long sub-header that should stay on the title side of the header and truncate with an ellipsis when it runs into the pagination and content menu on the right, rather than flowing full width.';
     const list = (await getList({
       endpoint: '/test-assets/content-list/items.json',
-      subtitle:
-        'A long sub-header that should be free to flow across the whole width of the header, beneath both the title and the content menu, rather than being capped by the title column.'
+      subtitle: longSubtitle
     })) as ContentList;
     await list.updateComplete;
 
@@ -186,16 +189,27 @@ describe('temba-content-list', () => {
     ) as HTMLElement & { updateComplete: Promise<unknown> };
     await header.updateComplete;
     const sub = header.shadowRoot!.querySelector('.subtitle') as HTMLElement;
-    const main = header.shadowRoot!.querySelector(
-      '.header-main'
+    const titleBlock = header.shadowRoot!.querySelector(
+      '.title-block'
     ) as HTMLElement;
+    const actions = header.shadowRoot!.querySelector('.actions') as HTMLElement;
     assert.exists(sub, 'subtitle should render');
+    assert.exists(titleBlock, 'title block should render');
 
-    // the subtitle spans (essentially) the full header width, not just
-    // the title column to the left of the actions
-    expect(sub.getBoundingClientRect().width).to.be.greaterThan(
-      main.getBoundingClientRect().width * 0.9
+    // the subtitle lives in the left title block, not full width — it
+    // stays left of the actions (pagination + content menu)
+    expect(sub.getBoundingClientRect().right).to.be.at.most(
+      actions.getBoundingClientRect().left + 1
     );
+
+    // and it truncates rather than wrapping when it runs out of room
+    const style = getComputedStyle(sub);
+    expect(style.whiteSpace).to.equal('nowrap');
+    expect(style.textOverflow).to.equal('ellipsis');
+    expect(sub.scrollWidth).to.be.greaterThan(sub.clientWidth);
+
+    // since it truncates, the full text is offered as a hover tooltip
+    expect(sub.getAttribute('title')).to.equal(longSubtitle);
   });
 
   it('shows the empty state over the body, not as a table cell', async () => {
@@ -214,6 +228,34 @@ describe('temba-content-list', () => {
     expect(state.textContent!.trim()).to.equal('No contacts');
     expect(list.shadowRoot!.querySelector('tbody td')).to.not.exist;
     expect(state.closest('.table-scroll')).to.equal(null);
+  });
+
+  it('suppresses the horizontal scroll when there are no rows', async () => {
+    const list = (await getList()) as ContentList;
+    list.columns = [{ key: 'name' }];
+    list.minTableWidth = '1400px';
+    (list as any).items = [];
+    (list as any).loading = false;
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    const scroll = list.shadowRoot!.querySelector(
+      '.table-scroll'
+    ) as HTMLElement;
+    const table = list.shadowRoot!.querySelector('table.table') as HTMLElement;
+
+    // no rows → the scroller hides overflow-x and the forced min-width is
+    // dropped, so a wide column set can't arm a horizontal scrollbar
+    expect(scroll.classList.contains('no-rows')).to.be.true;
+    expect(getComputedStyle(scroll).overflowX).to.equal('hidden');
+    expect(table.style.minWidth).to.equal('');
+
+    // once rows are present the scroll is armed again (min-width restored)
+    (list as any).items = [{ uuid: 'u-1', name: 'Alpha' }];
+    (list as any).requestUpdate();
+    await list.updateComplete;
+    expect(scroll.classList.contains('no-rows')).to.be.false;
+    expect(table.style.minWidth).to.equal('1400px');
   });
 
   it('reflects membership from labelsKey across the selected rows', async () => {
@@ -456,7 +498,7 @@ describe('temba-content-list', () => {
     // message list, where it aligns with the leading text
     const chip = bar.querySelector('.bulk-action') as HTMLElement;
     const lead = list.shadowRoot!.querySelector(
-      'tr.row td.icon-cell .icon-inner'
+      'tr.row td.lead-cell .lead-icon'
     ) as HTMLElement;
     expect(
       Math.abs(
@@ -619,23 +661,38 @@ describe('temba-content-list', () => {
     expect(next2.hasAttribute('disabled')).to.equal(true);
   });
 
-  it('shows a result count in the search bar when search is active', async () => {
+  it('shows the run-search icon and its hint only while a pending draft is uncommitted', async () => {
     const list = (await getList({
       endpoint: '/test-assets/content-list/items.json'
     })) as ContentList;
     list.columns = [{ key: 'name', label: 'Name' }];
     await list.updateComplete;
 
-    // No search yet — the count is hidden even though the response
-    // carried `count`, because there is no active query to qualify it.
+    // Open search with no draft — nothing to run, so neither the run
+    // icon nor the "↵ to search" hint is rendered.
     (list as any).searchOpen = true;
     await list.updateComplete;
-    expect(list.shadowRoot!.querySelector('.searchbar .result-count')).to.equal(
+    expect(list.shadowRoot!.querySelector('.searchbar .search-go')).to.equal(
+      null
+    );
+    expect(list.shadowRoot!.querySelector('.searchbar .search-hint')).to.equal(
       null
     );
 
-    // Run a search; the same fixture comes back with count=3.
+    // A draft that differs from the committed search is pending — the
+    // icon and the hint appear (the click/Enter equivalent).
     (list as any).searchDraft = 'a';
+    (list as any).requestUpdate();
+    await list.updateComplete;
+    expect(
+      list.shadowRoot!.querySelector('.searchbar .search-go')
+    ).to.not.equal(null);
+    expect(
+      list.shadowRoot!.querySelector('.searchbar .search-hint')
+    ).to.not.equal(null);
+
+    // Committing the draft clears the pending state, so the icon and the
+    // hint go away again.
     const onFetch = new Promise<void>((resolve) => {
       list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
         once: true
@@ -644,10 +701,217 @@ describe('temba-content-list', () => {
     (list as any).commitSearch();
     await onFetch;
     await list.updateComplete;
+    expect(list.shadowRoot!.querySelector('.searchbar .search-go')).to.equal(
+      null
+    );
+    expect(list.shadowRoot!.querySelector('.searchbar .search-hint')).to.equal(
+      null
+    );
 
-    const count = list.shadowRoot!.querySelector('.searchbar .result-count');
-    expect(count).to.not.equal(null);
-    expect(count!.textContent!.trim()).to.equal('3 results');
+    // The result count is no longer in the search bar — it rides with
+    // the pagination controls instead.
+    expect(list.shadowRoot!.querySelector('.searchbar .result-count')).to.equal(
+      null
+    );
+  });
+
+  it('toggles the header Search button against the open search bar and cancels out', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    list.columns = [{ key: 'name', label: 'Name' }];
+    await list.updateComplete;
+
+    // Closed: the header Search action is the way in, the bar is absent.
+    expect(
+      list.shadowRoot!.querySelector('.header-actions .action')
+    ).to.not.equal(null);
+    expect(list.shadowRoot!.querySelector('.searchbar')).to.equal(null);
+
+    // Opening hides the header Search action (it became the bar) and
+    // surfaces the always-present Cancel control as the way out.
+    (list as any).toggleSearch();
+    await list.updateComplete;
+    expect(list.shadowRoot!.querySelector('.header-actions .action')).to.equal(
+      null
+    );
+    const cancel = list.shadowRoot!.querySelector(
+      '.searchbar .search-cancel'
+    ) as HTMLElement;
+    expect(cancel).to.not.equal(null);
+
+    // Cancel closes the bar and restores the header Search action.
+    cancel.click();
+    await list.updateComplete;
+    expect((list as any).searchOpen).to.equal(false);
+    expect(list.shadowRoot!.querySelector('.searchbar')).to.equal(null);
+    expect(
+      list.shadowRoot!.querySelector('.header-actions .action')
+    ).to.not.equal(null);
+  });
+
+  it('shows the run-search icon whenever the draft varies from the results query, including when emptied', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    list.columns = [{ key: 'name', label: 'Name' }];
+
+    // Results are based on a committed query and the box matches it —
+    // nothing to run, so the icon isn't rendered.
+    (list as any).searchOpen = true;
+    (list as any).search = 'age > 30';
+    (list as any).searchDraft = 'age > 30';
+    (list as any).requestUpdate();
+    await list.updateComplete;
+    expect(list.shadowRoot!.querySelector('.searchbar .search-go')).to.equal(
+      null
+    );
+
+    // Emptying the box while the results still reflect the old query is
+    // a variance too — the icon appears so the user can run the now
+    // empty (cleared) search.
+    (list as any).searchDraft = '';
+    (list as any).requestUpdate();
+    await list.updateComplete;
+    expect(
+      list.shadowRoot!.querySelector('.searchbar .search-go')
+    ).to.not.equal(null);
+  });
+
+  it('disables the search input while a search is in flight', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    list.columns = [{ key: 'name', label: 'Name' }];
+    (list as any).searchOpen = true;
+    await list.updateComplete;
+
+    const input = () =>
+      list.shadowRoot!.querySelector('.searchbar input') as HTMLInputElement;
+    expect(input().disabled).to.equal(false);
+
+    (list as any).searching = true;
+    (list as any).requestUpdate();
+    await list.updateComplete;
+    expect(input().disabled).to.equal(true);
+    // the run icon isn't rendered against the disabled box mid-search
+    expect(list.shadowRoot!.querySelector('.searchbar .search-go')).to.equal(
+      null
+    );
+
+    (list as any).searching = false;
+    (list as any).requestUpdate();
+    await list.updateComplete;
+    expect(input().disabled).to.equal(false);
+  });
+
+  it('adopts a server-adjusted query, mirrors it into the box, and parks the cursor at the end', async () => {
+    // The search response echoes a normalized query ("age>30" → "age > 30").
+    mockGET(/items\.json\?.*search=/, {
+      results: [{ uuid: 'u-1', name: 'Alpha' }],
+      count: 1,
+      query: 'age > 30'
+    });
+    try {
+      const list = (await getList({
+        endpoint: '/test-assets/content-list/items.json'
+      })) as ContentList;
+      list.columns = [{ key: 'name', label: 'Name' }];
+      (list as any).searchOpen = true;
+      await list.updateComplete;
+
+      // Type an un-normalized query and run it.
+      (list as any).searchDraft = 'age>30';
+      const onFetch = new Promise<void>((resolve) => {
+        list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+          once: true
+        });
+      });
+      (list as any).commitSearch();
+      await onFetch;
+      await list.updateComplete;
+      // let the post-fetch focus/caret microtask run
+      await new Promise((r) => setTimeout(r, 0));
+
+      // The box now shows the adjusted query, which is also the basis of
+      // the results — so the Search button is hidden again.
+      expect((list as any).searchDraft).to.equal('age > 30');
+      expect((list as any).search).to.equal('age > 30');
+      const input = list.shadowRoot!.querySelector(
+        '.searchbar input'
+      ) as HTMLInputElement;
+      expect(input.value).to.equal('age > 30');
+      expect(input.disabled).to.equal(false);
+      expect(list.shadowRoot!.querySelector('.searchbar .search-go')).to.equal(
+        null
+      );
+
+      // Caret parked at the end of the (adjusted) value.
+      expect(input.selectionStart).to.equal('age > 30'.length);
+      expect(input.selectionEnd).to.equal('age > 30'.length);
+    } finally {
+      clearMockGets();
+    }
+  });
+
+  it('surfaces a query-validation error over the empty table, then clears it on a good search', async () => {
+    // A bad query comes back list-shaped (empty) with an `error` message.
+    mockGET(/items\.json\?.*search=/, {
+      results: [],
+      count: 0,
+      error: "mismatched input '<EOF>'"
+    });
+    try {
+      const list = (await getList({
+        endpoint: '/test-assets/content-list/items.json'
+      })) as ContentList;
+      list.columns = [{ key: 'name', label: 'Name' }];
+      (list as any).searchOpen = true;
+      await list.updateComplete;
+
+      (list as any).searchDraft = 'age >';
+      let onFetch = new Promise<void>((resolve) => {
+        list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+          once: true
+        });
+      });
+      (list as any).commitSearch();
+      await onFetch;
+      await list.updateComplete;
+
+      // The error takes over the empty-table slot (with error styling),
+      // not the plain "nothing to show" copy.
+      expect((list as any).searchError).to.equal("mismatched input '<EOF>'");
+      const state = list.shadowRoot!.querySelector(
+        '.list-state.error .state-error'
+      ) as HTMLElement;
+      assert.exists(state, 'error state should render');
+      expect(state.textContent!.trim()).to.contain("mismatched input '<EOF>'");
+      expect(list.shadowRoot!.querySelectorAll('tbody tr').length).to.equal(0);
+
+      // A subsequent good search clears the error.
+      clearMockGets();
+      mockGET(/items\.json\?.*search=/, {
+        results: [{ uuid: 'u-1', name: 'Alpha' }],
+        count: 1
+      });
+      (list as any).searchDraft = 'age > 30';
+      onFetch = new Promise<void>((resolve) => {
+        list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+          once: true
+        });
+      });
+      (list as any).commitSearch();
+      await onFetch;
+      await list.updateComplete;
+
+      expect((list as any).searchError).to.equal('');
+      expect(list.shadowRoot!.querySelector('.list-state.error')).to.equal(
+        null
+      );
+    } finally {
+      clearMockGets();
+    }
   });
 
   it('shows the count in the pager in cursor mode', async () => {
