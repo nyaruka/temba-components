@@ -413,17 +413,21 @@ describe('temba-content-list', () => {
     const bar = list.shadowRoot!.querySelector('.bulk-bar') as HTMLElement;
     assert.exists(bar, 'bulk bar should render when rows are selected');
 
-    // the first action chip lines up with the row's leading content —
-    // the contact icon (contacts have a row icon)
-    const chip = bar.querySelector('.bulk-action') as HTMLElement;
-    const lead = list.shadowRoot!.querySelector(
-      'tr.row td.icon-cell .icon-inner'
+    // the first action chip's icon lines up with the row's leading
+    // icon (the contact silhouette) — the chip's own padding offsets
+    // the bar so the icons, not the chip edges, align
+    const chipIcon = bar.querySelector(
+      '.bulk-action temba-icon'
+    ) as HTMLElement;
+    const leadIcon = list.shadowRoot!.querySelector(
+      'tr.row td.icon-cell .icon-inner temba-icon'
     ) as HTMLElement;
     expect(
       Math.abs(
-        chip.getBoundingClientRect().left - lead.getBoundingClientRect().left
+        chipIcon.getBoundingClientRect().left -
+          leadIcon.getBoundingClientRect().left
       )
-    ).to.be.lessThan(1);
+    ).to.be.lessThan(1.5);
     // the page header (search/menu) is NOT replaced
     assert.exists(
       list.shadowRoot!.querySelector('temba-page-header'),

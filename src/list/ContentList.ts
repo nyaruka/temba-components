@@ -194,15 +194,17 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-bar {
         position: absolute;
         top: 0;
-        left: var(--cl-firstcol-left, 44px);
+        /* Pull the bar 8px left of --cl-firstcol-left (the row's leading
+           icon) so the first chip's own 8px left padding lands its icon
+           exactly on the row icon — the chip's *icon* aligns with the
+           row icon, not the chip's edge. */
+        left: calc(var(--cl-firstcol-left, 44px) - 8px);
         right: var(--cl-scrollbar-w, 0px);
         height: var(--cl-header-height, 36px);
         z-index: 4;
         display: flex;
         align-items: center;
         gap: 5px;
-        /* no left padding: the first chip's edge sits at --cl-firstcol-left
-           so it lines up with the first column's text */
         padding: 0 8px 0 0;
         background: var(--cl-pin-bg);
         /* keep the header's bottom rule visible — the bar sits on top of
@@ -271,6 +273,10 @@ export class ContentList<T = any> extends RapidElement {
         font-size: 12.5px;
         margin-left: auto;
         padding-left: 12px;
+        /* keep the tally on one line — it must never wrap even when the
+           bar is tight (the chips collapse to make room instead) */
+        white-space: nowrap;
+        flex-shrink: 0;
       }
 
       /* Label-toggle dropdown — temba-dropdown wraps the bulk-
