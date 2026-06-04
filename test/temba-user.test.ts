@@ -38,6 +38,22 @@ describe('temba-user', () => {
     assert.include(user.bgimage, 'url(');
   });
 
+  it('renders the contact icon when there is no name or avatar', async () => {
+    const user = await createUser('<temba-user></temba-user>');
+    await user.updateComplete;
+    assert.equal(user.initials, '');
+    assert.isNull(user.bgimage);
+    const icon = user.shadowRoot.querySelector('temba-icon');
+    assert.isNotNull(icon);
+    assert.equal(icon.getAttribute('name'), 'user-01');
+  });
+
+  it('does not render the contact icon when initials are present', async () => {
+    const user = await createUser('<temba-user name="Jane Doe"></temba-user>');
+    await user.updateComplete;
+    assert.isNull(user.shadowRoot.querySelector('temba-icon'));
+  });
+
   it('renders name when showName set', async () => {
     const user = await createUser(
       '<temba-user name="Jane Doe" showname scale="1"></temba-user>'

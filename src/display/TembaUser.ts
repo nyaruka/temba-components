@@ -4,6 +4,7 @@ import { property } from 'lit/decorators.js';
 import { colorHash, extractInitials } from '../utils';
 
 import { DEFAULT_AVATAR } from '../webchat/assets';
+import { Icon } from '../Icons';
 import { RapidElement } from '../RapidElement';
 
 export const getFullName = (user: {
@@ -136,13 +137,18 @@ export class TembaUser extends RapidElement {
               box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
               background:${this.bgimage || this.bgcolor};"
       >
-        ${this.initials && !this.bgimage
-          ? html` <div
-              style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
-            >
-              <div style="border:0px solid blue;">${this.initials}</div>
-            </div>`
-          : null}
+        ${this.bgimage
+          ? null
+          : this.initials
+            ? html` <div
+                style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
+              >
+                <div style="border:0px solid blue;">${this.initials}</div>
+              </div>`
+            : html`<temba-icon
+                name="${Icon.contact}"
+                style="display:flex;flex-grow:1;justify-content:center;color:rgba(0,0,0,0.35)"
+              ></temba-icon>`}
       </div>
       ${this.showName
         ? html`<div

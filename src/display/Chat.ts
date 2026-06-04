@@ -802,6 +802,15 @@ export class Chat extends RapidElement {
   @property({ type: Boolean })
   avatars = false;
 
+  // identity of the contact this chat belongs to, used to render a
+  // name-based avatar for the contact's own incoming messages (which the
+  // backend does not attach a `_user` to)
+  @property({ type: String })
+  contactName: string;
+
+  @property({ type: String })
+  contactUuid: string;
+
   @property({ type: Boolean, attribute: false })
   endOfHistory = false;
 
@@ -1213,7 +1222,18 @@ export class Chat extends RapidElement {
     const showAvatar =
       this.avatars && ((isMessageType && this.agent) || !incoming);
 
-    const isSystem = !currentMsg._user?.uuid;
+    // resolve the identity shown in the avatar: prefer the user attached to
+    // the event (an agent or flow author), otherwise fall back to the contact
+    // for their own incoming messages, which carry no `_user`
+    const fromContact = currentMsg.type === 'msg_received';
+    const avatarName =
+      currentMsg._user?.name ?? (fromContact ? this.contactName : undefined);
+    const avatarUuid =
+      currentMsg._user?.uuid ?? (fromContact ? this.contactUuid : undefined);
+
+    // a system avatar (the generic default) is only used when we have no
+    // identity at all; a contact with a name still gets a dynamic avatar
+    const isSystem = !avatarUuid && !avatarName;
 
     const reasonLabel = this.getReasonLabel(group.reason);
     const showReason = false; // reasonLabel && idx > 0;
@@ -1294,11 +1314,11 @@ export class Chat extends RapidElement {
         ${showAvatar
           ? html`<div class="avatar" style="align-self:flex-end">
               <temba-user
-                uuid=${currentMsg._user?.uuid}
-                name=${name}
-                first_name=${currentMsg._user?.first_name}
-                last_name=${currentMsg._user?.last_name}
-                avatar=${currentMsg._user?.avatar}
+                uuid=${avatarUuid ?? nothing}
+                name=${avatarName ?? nothing}
+                first_name=${currentMsg._user?.first_name ?? nothing}
+                last_name=${currentMsg._user?.last_name ?? nothing}
+                avatar=${currentMsg._user?.avatar ?? nothing}
                 ?system=${isSystem}
               >
               </temba-user>

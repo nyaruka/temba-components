@@ -2,6 +2,7 @@
 import {
   css,
   html,
+  nothing,
   PropertyValueMap,
   PropertyValues,
   TemplateResult
@@ -1436,6 +1437,8 @@ export class ContactChat extends ContactStoreElement {
                 @temba-scroll-threshold-bottom=${this.fetchNewerMessages}
                 @temba-fetch-complete=${this.fetchComplete}
                 avatar=${this.avatar}
+                contactName=${this.currentContact?.name ?? nothing}
+                contactUuid=${this.currentContact?.uuid ?? nothing}
                 agent
                 avatars
                 ?hasFooter=${inFlow}
