@@ -15,7 +15,7 @@ const received = (uuid: string, text: string): ContactEvent =>
     type: 'msg_received',
     created_on: new Date(),
     msg: { text }
-  } as ContactEvent);
+  }) as ContactEvent;
 
 const getAvatar = async (chat: Chat): Promise<TembaUser> => {
   await chat.updateComplete;
