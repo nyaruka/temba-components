@@ -1297,6 +1297,10 @@ export class ContentList<T = any> extends RapidElement {
   @state()
   private bulkCollapsed = false;
 
+  /** Pending rAF handle for the deferred collapse re-measure (0 when
+   * none is scheduled). See {@link updateBulkCollapse}. */
+  private bulkCollapseFrame = 0;
+
   private pending: AbortController = null;
   private popstateHandler: () => void;
   private resizeHandler: () => void;
@@ -1381,6 +1385,10 @@ export class ContentList<T = any> extends RapidElement {
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
     }
+    if (this.bulkCollapseFrame) {
+      cancelAnimationFrame(this.bulkCollapseFrame);
+      this.bulkCollapseFrame = 0;
+    }
     if (this.pending) {
       // Null the pending pointer before aborting so fetchPage's
       // finally block — which gates cleanup on `this.pending ===
@@ -1419,14 +1427,32 @@ export class ContentList<T = any> extends RapidElement {
   }
 
   /** Collapse the bulk-action labels to icon-only when the chips would
-   * overflow the bar. The decision is made against the fully-expanded
-   * width with transitions suppressed (the `measuring` class) — reading
-   * scrollWidth mid-animation otherwise returns a width between the
-   * collapsed and expanded states, which made the collapse flip-flop and
-   * never settle. The expanded layout is forced and the current state
-   * restored synchronously (no paint in between) so there's no flash,
-   * then transitions are re-enabled so a real state change animates. */
+   * overflow the bar. Measures synchronously for immediate feedback,
+   * then re-measures on the next frame: the chip `<temba-icon>`s are
+   * child custom elements that render their SVG in a *later* update
+   * cycle, so the moment the bar first appears they still have zero
+   * width and the chips read as narrow — the bar looks like it fits and
+   * doesn't collapse until a later nudge (a second selection or a
+   * resize) re-runs the measurement. The deferred pass settles it on
+   * first show, once the icons have laid out. */
   private updateBulkCollapse(): void {
+    this.measureBulkCollapse();
+    if (this.bulkCollapseFrame) cancelAnimationFrame(this.bulkCollapseFrame);
+    this.bulkCollapseFrame = requestAnimationFrame(() => {
+      this.bulkCollapseFrame = 0;
+      this.measureBulkCollapse();
+    });
+  }
+
+  /** One overflow measurement. The decision is made against the
+   * fully-expanded width with transitions suppressed (the `measuring`
+   * class) — reading scrollWidth mid-animation otherwise returns a width
+   * between the collapsed and expanded states, which made the collapse
+   * flip-flop and never settle. The expanded layout is forced and the
+   * current state restored synchronously (no paint in between) so
+   * there's no flash, then transitions are re-enabled so a real state
+   * change animates. */
+  private measureBulkCollapse(): void {
     const bar = this.shadowRoot?.querySelector(
       '.bulk-bar'
     ) as HTMLElement | null;
