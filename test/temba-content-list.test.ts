@@ -451,19 +451,16 @@ describe('temba-content-list', () => {
     const bar = list.shadowRoot!.querySelector('.bulk-bar') as HTMLElement;
     assert.exists(bar, 'bulk bar should render when rows are selected');
 
-    // the first action chip's icon lines up with the row's leading
-    // icon (the contact silhouette) — the chip's own padding offsets
-    // the bar so the icons, not the chip edges, align
-    const chipIcon = bar.querySelector(
-      '.bulk-action temba-icon'
-    ) as HTMLElement;
-    const leadIcon = list.shadowRoot!.querySelector(
-      'tr.row td.icon-cell .icon-inner temba-icon'
+    // the first action chip's left edge lines up with the row's
+    // leading content (the contact silhouette icon) — same rule as the
+    // message list, where it aligns with the leading text
+    const chip = bar.querySelector('.bulk-action') as HTMLElement;
+    const lead = list.shadowRoot!.querySelector(
+      'tr.row td.icon-cell .icon-inner'
     ) as HTMLElement;
     expect(
       Math.abs(
-        chipIcon.getBoundingClientRect().left -
-          leadIcon.getBoundingClientRect().left
+        chip.getBoundingClientRect().left - lead.getBoundingClientRect().left
       )
     ).to.be.lessThan(1.5);
     // the page header (search/menu) is NOT replaced
@@ -471,6 +468,8 @@ describe('temba-content-list', () => {
       list.shadowRoot!.querySelector('temba-page-header'),
       'page header stays put'
     );
+    // let the checkbox check animation settle so the capture is stable
+    await new Promise((r) => setTimeout(r, 300));
     await assertScreenshot('content-list/contacts-bulk', getClip(list));
   });
 

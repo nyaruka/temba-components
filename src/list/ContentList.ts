@@ -194,12 +194,11 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-bar {
         position: absolute;
         top: 0;
-        /* Pull the bar left by the chip's own left padding (--cl-bulk-pad,
-           8px) when the row leads with an icon, so the first chip's icon
-           lands exactly on the row icon. For text-leading rows (messages)
-           the pad is 0, so the chip's left edge aligns with the row text
-           (the bulk buttons start at the contact name). */
-        left: calc(var(--cl-firstcol-left, 44px) - var(--cl-bulk-pad, 0px));
+        /* The first chip's left edge sits at the row's leading content
+           (--cl-firstcol-left) — the icon on icon lists, the text on
+           text lists — so the bulk bar starts at the same point as the
+           row content on every list, matching the message list. */
+        left: var(--cl-firstcol-left, 44px);
         right: var(--cl-scrollbar-w, 0px);
         height: var(--cl-header-height, 36px);
         z-index: 4;
@@ -837,7 +836,10 @@ export class ContentList<T = any> extends RapidElement {
       .check-cell {
         width: 1%;
         white-space: nowrap;
-        padding: 0 12px;
+        /* 12px lead from the card edge to the checkbox, then a tight 4px
+           trail to the row's leading content — so every list (icon or
+           text) starts its content at the same point past the checkbox. */
+        padding: 0 4px 0 12px;
         cursor: pointer;
         --icon-color: var(--text-3);
       }
@@ -895,7 +897,7 @@ export class ContentList<T = any> extends RapidElement {
       .icon-cell {
         width: 1%;
         white-space: nowrap;
-        padding: 0 6px 0 0;
+        padding: 0 3px 0 0;
         --icon-color: var(--text-3);
       }
       /* Reserve the icon's footprint on the wrapper itself so the
@@ -923,28 +925,19 @@ export class ContentList<T = any> extends RapidElement {
          padding-right (below) so column content doesn't crowd the
          card chrome. */
       /* The first data cell trims its left padding to sit close to
-         the leading icon — the icon cell's 6px trailing padding
-         plus this 4px makes a snug 10px gap. */
+         the leading icon — the icon cell's 3px trailing padding
+         plus this 2px makes a snug 5px gap. */
       .icon-cell + .head-cell,
       .icon-cell + .cell {
-        padding-left: 4px;
+        padding-left: 2px;
       }
       /* With no icon column the first data cell follows the
-         checkbox directly; it drops its left padding entirely so
-         the value isn't marooned past a gap meant to clear an
-         icon. */
+         checkbox directly; it drops its left padding entirely so the
+         value starts right at the checkbox cell's 4px trailing gap —
+         the same point the leading icon sits at on icon lists. */
       .check-cell + .head-cell,
       .check-cell + .cell {
         padding-left: 0;
-      }
-      /* …and the checkbox cell trims its trailing padding (12px → 4px)
-         in that no-icon case, pulling the first value — the message
-         contact name, and the bulk-action bar that aligns to it — in
-         close to the checkbox instead of leaving an icon-sized gap.
-         Icon lists keep the full 12px; the icon fills that space. */
-      .check-cell:has(+ .cell),
-      .check-cell:has(+ .head-cell) {
-        padding-right: 4px;
       }
       tr.header th:last-child,
       tr.row td:last-child {
@@ -2487,11 +2480,10 @@ export class ContentList<T = any> extends RapidElement {
     // text (e.g. the message contact), so the actions line up with the
     // row content rather than the checkbox cell.
     const frameRect = frame.getBoundingClientRect();
-    const iconLead = scroller.querySelector(
-      'tr.row td.icon-cell .icon-inner'
-    ) as HTMLElement | null;
     const lead =
-      iconLead ||
+      (scroller.querySelector(
+        'tr.row td.icon-cell .icon-inner'
+      ) as HTMLElement | null) ||
       (scroller.querySelector(
         'tr.row td.cell .cell-inner'
       ) as HTMLElement | null) ||
@@ -2503,12 +2495,6 @@ export class ContentList<T = any> extends RapidElement {
         '--cl-firstcol-left',
         `${lead.getBoundingClientRect().left - frameRect.left}px`
       );
-      // When the row leads with an icon, offset the bar by the chip's
-      // own left padding (the .bulk-action 6px) so the chip *icon* lands
-      // on the row icon. When it leads with text (e.g. messages), align
-      // the chip's left edge with the text instead — so the bulk buttons
-      // start at the name.
-      this.style.setProperty('--cl-bulk-pad', iconLead ? '6px' : '0px');
     }
   }
 
