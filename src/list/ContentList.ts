@@ -245,6 +245,11 @@ export class ContentList<T = any> extends RapidElement {
         max-width: 0;
         margin-left: 0;
       }
+      /* While measuring the expanded width, suppress the label animation
+         so scrollWidth reflects the final (not mid-transition) size. */
+      .bulk-bar.measuring .bulk-label {
+        transition: none;
+      }
       .bulk-action:hover {
         background: var(--accent-200);
       }
@@ -1414,18 +1419,24 @@ export class ContentList<T = any> extends RapidElement {
   }
 
   /** Collapse the bulk-action labels to icon-only when the chips would
-   * overflow the bar. Measures the bar's natural (expanded) width so
-   * the decision doesn't oscillate: when currently collapsed it removes
-   * the class to read the expanded scrollWidth, then restores it — a
-   * synchronous reflow with no paint in between. */
+   * overflow the bar. The decision is made against the fully-expanded
+   * width with transitions suppressed (the `measuring` class) — reading
+   * scrollWidth mid-animation otherwise returns a width between the
+   * collapsed and expanded states, which made the collapse flip-flop and
+   * never settle. The expanded layout is forced and the current state
+   * restored synchronously (no paint in between) so there's no flash,
+   * then transitions are re-enabled so a real state change animates. */
   private updateBulkCollapse(): void {
     const bar = this.shadowRoot?.querySelector(
       '.bulk-bar'
     ) as HTMLElement | null;
     if (!bar) return;
-    if (this.bulkCollapsed) bar.classList.remove('collapsed');
+    bar.classList.add('measuring');
+    bar.classList.remove('collapsed');
     const overflows = bar.scrollWidth > bar.clientWidth + 1;
-    if (this.bulkCollapsed) bar.classList.add('collapsed');
+    bar.classList.toggle('collapsed', this.bulkCollapsed);
+    void bar.offsetWidth;
+    bar.classList.remove('measuring');
     if (overflows !== this.bulkCollapsed) this.bulkCollapsed = overflows;
   }
 
