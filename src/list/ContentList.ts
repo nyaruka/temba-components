@@ -931,10 +931,19 @@ export class ContentList<T = any> extends RapidElement {
       /* With no icon column the first data cell follows the
          checkbox directly; it drops its left padding entirely so
          the value isn't marooned past a gap meant to clear an
-         icon — just the checkbox cell's 12px trailing padding. */
+         icon. */
       .check-cell + .head-cell,
       .check-cell + .cell {
         padding-left: 0;
+      }
+      /* …and the checkbox cell trims its trailing padding (12px → 4px)
+         in that no-icon case, pulling the first value — the message
+         contact name, and the bulk-action bar that aligns to it — in
+         close to the checkbox instead of leaving an icon-sized gap.
+         Icon lists keep the full 12px; the icon fills that space. */
+      .check-cell:has(+ .cell),
+      .check-cell:has(+ .head-cell) {
+        padding-right: 4px;
       }
       tr.header th:last-child,
       tr.row td:last-child {
