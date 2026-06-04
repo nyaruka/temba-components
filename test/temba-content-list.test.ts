@@ -351,6 +351,44 @@ describe('temba-content-list', () => {
     await assertScreenshot('content-list/messages', getClip(list));
   });
 
+  it('aligns the bulk bar with the row text when the row has no icon', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-msg-list',
+      { endpoint: '/test-assets/content-list/messages.json' },
+      '',
+      1100
+    )) as MsgList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    (list as any).selectedIds = new Set(
+      (list as any).items.map((i: any) => (list as any).rowId(i))
+    );
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    const bar = list.shadowRoot!.querySelector('.bulk-bar') as HTMLElement;
+    assert.exists(bar, 'bulk bar should render when rows are selected');
+
+    // messages have no row icon, so the first chip's *left edge* (not its
+    // icon) lines up with the first column's text — the bulk buttons
+    // start at the contact name
+    const chip = bar.querySelector('.bulk-action') as HTMLElement;
+    const lead = list.shadowRoot!.querySelector(
+      'tr.row td.cell .cell-inner'
+    ) as HTMLElement;
+    expect(
+      Math.abs(
+        chip.getBoundingClientRect().left - lead.getBoundingClientRect().left
+      )
+    ).to.be.lessThan(1.5);
+  });
+
   it('renders the contacts list (screenshot)', async () => {
     await loadStore();
     const list = (await getComponent(

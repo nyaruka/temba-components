@@ -194,11 +194,12 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-bar {
         position: absolute;
         top: 0;
-        /* Pull the bar 8px left of --cl-firstcol-left (the row's leading
-           icon) so the first chip's own 8px left padding lands its icon
-           exactly on the row icon — the chip's *icon* aligns with the
-           row icon, not the chip's edge. */
-        left: calc(var(--cl-firstcol-left, 44px) - 8px);
+        /* Pull the bar left by the chip's own left padding (--cl-bulk-pad,
+           8px) when the row leads with an icon, so the first chip's icon
+           lands exactly on the row icon. For text-leading rows (messages)
+           the pad is 0, so the chip's left edge aligns with the row text
+           (the bulk buttons start at the contact name). */
+        left: calc(var(--cl-firstcol-left, 44px) - var(--cl-bulk-pad, 0px));
         right: var(--cl-scrollbar-w, 0px);
         height: var(--cl-header-height, 36px);
         z-index: 4;
@@ -2476,10 +2477,11 @@ export class ContentList<T = any> extends RapidElement {
     // text (e.g. the message contact), so the actions line up with the
     // row content rather than the checkbox cell.
     const frameRect = frame.getBoundingClientRect();
+    const iconLead = scroller.querySelector(
+      'tr.row td.icon-cell .icon-inner'
+    ) as HTMLElement | null;
     const lead =
-      (scroller.querySelector(
-        'tr.row td.icon-cell .icon-inner'
-      ) as HTMLElement | null) ||
+      iconLead ||
       (scroller.querySelector(
         'tr.row td.cell .cell-inner'
       ) as HTMLElement | null) ||
@@ -2491,6 +2493,11 @@ export class ContentList<T = any> extends RapidElement {
         '--cl-firstcol-left',
         `${lead.getBoundingClientRect().left - frameRect.left}px`
       );
+      // When the row leads with an icon, offset the bar by the chip's
+      // own left padding so the chip *icon* lands on the row icon. When
+      // it leads with text (e.g. messages), align the chip's left edge
+      // with the text instead — so the bulk buttons start at the name.
+      this.style.setProperty('--cl-bulk-pad', iconLead ? '8px' : '0px');
     }
   }
 
