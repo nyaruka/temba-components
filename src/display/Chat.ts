@@ -802,6 +802,15 @@ export class Chat extends RapidElement {
   @property({ type: Boolean })
   avatars = false;
 
+  // identity of the contact this chat belongs to, used to render a
+  // name-based avatar for the contact's own incoming messages (which the
+  // backend does not attach a `_user` to)
+  @property({ type: String })
+  contactName: string;
+
+  @property({ type: String })
+  contactUuid: string;
+
   @property({ type: Boolean, attribute: false })
   endOfHistory = false;
 
@@ -1213,7 +1222,36 @@ export class Chat extends RapidElement {
     const showAvatar =
       this.avatars && ((isMessageType && this.agent) || !incoming);
 
-    const isSystem = !currentMsg._user?.uuid;
+    // resolve the identity shown in the avatar: prefer the user attached to
+    // the event (an agent or flow author), otherwise fall back to the contact
+    // for their own incoming messages.
+    //
+    // contact fallback assumes `_user` is absent for `msg_received` (contact
+    // messages carry no `_user`, so first_name/last_name aren't available and
+    // getFullName falls back to `name`); the fallback only applies when there
+    // is no `_user` on the event.
+    const fromContact = currentMsg.type === 'msg_received' && !currentMsg._user;
+    const avatarName = currentMsg._user
+      ? currentMsg._user.name
+      : fromContact
+        ? this.contactName
+        : undefined;
+    const avatarUuid = currentMsg._user
+      ? currentMsg._user.uuid
+      : fromContact
+        ? this.contactUuid
+        : undefined;
+
+    // determine whether to fall back to the generic default (system) avatar.
+    // when the event has a `_user`, preserve the original behavior exactly:
+    // system iff that user has no uuid (a name-only flow author still gets the
+    // default avatar). for a contact event with no `_user`, it's system only
+    // when we have no contact identity at all.
+    const isSystem = currentMsg._user
+      ? !currentMsg._user.uuid
+      : fromContact
+        ? !this.contactUuid && !this.contactName
+        : true;
 
     const reasonLabel = this.getReasonLabel(group.reason);
     const showReason = false; // reasonLabel && idx > 0;
@@ -1294,11 +1332,11 @@ export class Chat extends RapidElement {
         ${showAvatar
           ? html`<div class="avatar" style="align-self:flex-end">
               <temba-user
-                uuid=${currentMsg._user?.uuid}
-                name=${name}
-                first_name=${currentMsg._user?.first_name}
-                last_name=${currentMsg._user?.last_name}
-                avatar=${currentMsg._user?.avatar}
+                uuid=${avatarUuid ?? nothing}
+                name=${avatarName ?? nothing}
+                first_name=${currentMsg._user?.first_name ?? nothing}
+                last_name=${currentMsg._user?.last_name ?? nothing}
+                avatar=${currentMsg._user?.avatar ?? nothing}
                 ?system=${isSystem}
               >
               </temba-user>

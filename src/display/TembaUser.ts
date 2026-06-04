@@ -4,6 +4,7 @@ import { property } from 'lit/decorators.js';
 import { colorHash, extractInitials } from '../utils';
 
 import { DEFAULT_AVATAR } from '../webchat/assets';
+import { Icon } from '../Icons';
 import { RapidElement } from '../RapidElement';
 
 export const getFullName = (user: {
@@ -83,8 +84,14 @@ export class TembaUser extends RapidElement {
   public willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
 
-    if (changed.has('system') && this.system) {
-      this.bgimage = `url('${DEFAULT_AVATAR}') center / contain no-repeat`;
+    // when system toggles, set the default avatar background while system, and
+    // clear it otherwise so a reused element doesn't keep a stale default that
+    // would suppress the initials/contact-icon branch. a real `avatar` below
+    // can still override this.
+    if (changed.has('system')) {
+      this.bgimage = this.system
+        ? `url('${DEFAULT_AVATAR}') center / contain no-repeat`
+        : null;
     }
 
     if (
@@ -136,13 +143,18 @@ export class TembaUser extends RapidElement {
               box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
               background:${this.bgimage || this.bgcolor};"
       >
-        ${this.initials && !this.bgimage
-          ? html` <div
-              style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
-            >
-              <div style="border:0px solid blue;">${this.initials}</div>
-            </div>`
-          : null}
+        ${this.bgimage
+          ? null
+          : this.initials
+            ? html` <div
+                style="display:flex; flex-direction: column; align-items:center;flex-grow:1"
+              >
+                <div>${this.initials}</div>
+              </div>`
+            : html`<temba-icon
+                name="${Icon.contact}"
+                style="display:flex;flex-grow:1;justify-content:center;color:rgba(0,0,0,0.35)"
+              ></temba-icon>`}
       </div>
       ${this.showName
         ? html`<div
