@@ -412,6 +412,18 @@ describe('temba-content-list', () => {
 
     const bar = list.shadowRoot!.querySelector('.bulk-bar') as HTMLElement;
     assert.exists(bar, 'bulk bar should render when rows are selected');
+
+    // the first action chip lines up with the first column's text
+    const chip = bar.querySelector('.bulk-action') as HTMLElement;
+    const nameCell = list.shadowRoot!.querySelector(
+      'tr.row td.cell .cell-inner'
+    ) as HTMLElement;
+    expect(
+      Math.abs(
+        chip.getBoundingClientRect().left -
+          nameCell.getBoundingClientRect().left
+      )
+    ).to.be.lessThan(1);
     // the page header (search/menu) is NOT replaced
     assert.exists(
       list.shadowRoot!.querySelector('temba-page-header'),

@@ -194,14 +194,16 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-bar {
         position: absolute;
         top: 0;
-        left: var(--cl-check-width, 44px);
+        left: var(--cl-firstcol-left, 44px);
         right: var(--cl-scrollbar-w, 0px);
         height: var(--cl-header-height, 36px);
         z-index: 4;
         display: flex;
         align-items: center;
         gap: 5px;
-        padding: 0 8px;
+        /* no left padding: the first chip's edge sits at --cl-firstcol-left
+           so it lines up with the first column's text */
+        padding: 0 8px 0 0;
         background: var(--cl-pin-bg);
         /* keep the header's bottom rule visible — the bar sits on top of
            it, so carry the same inset border the header th uses */
@@ -2378,15 +2380,19 @@ export class ContentList<T = any> extends RapidElement {
         `${headerRow.offsetHeight}px`
       );
     }
-    // Width of the select-all checkbox cell — the bulk-action bar starts
-    // just to its right so the checkbox stays uncovered.
-    const checkCell = scroller.querySelector(
-      'tr.header th.check-cell'
+    // Left edge of the first data column's text — the bulk-action bar's
+    // first chip aligns here so the actions line up with the column
+    // content (e.g. the contact name) rather than the checkbox cell.
+    const frameRect = frame.getBoundingClientRect();
+    const firstColInner = scroller.querySelector(
+      'tr.header th.head-cell .head-inner'
     ) as HTMLElement | null;
-    this.style.setProperty(
-      '--cl-check-width',
-      `${checkCell ? checkCell.offsetWidth : 0}px`
-    );
+    if (firstColInner) {
+      this.style.setProperty(
+        '--cl-firstcol-left',
+        `${firstColInner.getBoundingClientRect().left - frameRect.left}px`
+      );
+    }
   }
 
   private renderHeader(): TemplateResult {
