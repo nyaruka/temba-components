@@ -84,8 +84,14 @@ export class TembaUser extends RapidElement {
   public willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
 
-    if (changed.has('system') && this.system) {
-      this.bgimage = `url('${DEFAULT_AVATAR}') center / contain no-repeat`;
+    // when system toggles, set the default avatar background while system, and
+    // clear it otherwise so a reused element doesn't keep a stale default that
+    // would suppress the initials/contact-icon branch. a real `avatar` below
+    // can still override this.
+    if (changed.has('system')) {
+      this.bgimage = this.system
+        ? `url('${DEFAULT_AVATAR}') center / contain no-repeat`
+        : null;
     }
 
     if (
@@ -141,9 +147,9 @@ export class TembaUser extends RapidElement {
           ? null
           : this.initials
             ? html` <div
-                style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
+                style="display:flex; flex-direction: column; align-items:center;flex-grow:1"
               >
-                <div style="border:0px solid blue;">${this.initials}</div>
+                <div>${this.initials}</div>
               </div>`
             : html`<temba-icon
                 name="${Icon.contact}"

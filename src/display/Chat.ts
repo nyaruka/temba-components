@@ -1224,16 +1224,34 @@ export class Chat extends RapidElement {
 
     // resolve the identity shown in the avatar: prefer the user attached to
     // the event (an agent or flow author), otherwise fall back to the contact
-    // for their own incoming messages, which carry no `_user`
-    const fromContact = currentMsg.type === 'msg_received';
-    const avatarName =
-      currentMsg._user?.name ?? (fromContact ? this.contactName : undefined);
-    const avatarUuid =
-      currentMsg._user?.uuid ?? (fromContact ? this.contactUuid : undefined);
+    // for their own incoming messages.
+    //
+    // contact fallback assumes `_user` is absent for `msg_received` (contact
+    // messages carry no `_user`, so first_name/last_name aren't available and
+    // getFullName falls back to `name`); the fallback only applies when there
+    // is no `_user` on the event.
+    const fromContact = currentMsg.type === 'msg_received' && !currentMsg._user;
+    const avatarName = currentMsg._user
+      ? currentMsg._user.name
+      : fromContact
+        ? this.contactName
+        : undefined;
+    const avatarUuid = currentMsg._user
+      ? currentMsg._user.uuid
+      : fromContact
+        ? this.contactUuid
+        : undefined;
 
-    // a system avatar (the generic default) is only used when we have no
-    // identity at all; a contact with a name still gets a dynamic avatar
-    const isSystem = !avatarUuid && !avatarName;
+    // determine whether to fall back to the generic default (system) avatar.
+    // when the event has a `_user`, preserve the original behavior exactly:
+    // system iff that user has no uuid (a name-only flow author still gets the
+    // default avatar). for a contact event with no `_user`, it's system only
+    // when we have no contact identity at all.
+    const isSystem = currentMsg._user
+      ? !currentMsg._user.uuid
+      : fromContact
+        ? !this.contactUuid && !this.contactName
+        : true;
 
     const reasonLabel = this.getReasonLabel(group.reason);
     const showReason = false; // reasonLabel && idx > 0;
