@@ -205,7 +205,7 @@ export class ContentList<T = any> extends RapidElement {
         z-index: 4;
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 4px;
         padding: 0 8px 0 0;
         background: var(--cl-pin-bg);
         /* keep the header's bottom rule visible — the bar sits on top of
@@ -215,16 +215,17 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-action {
         display: inline-flex;
         align-items: center;
-        /* Fixed height shared with the content-menu buttons (.menu-button)
-           and the Search action so the header is the same height whether
-           the bulk-action chips or the paging/menu are showing. */
-        height: 26px;
+        /* Compact chips — the bar is an overlay centered in the table's
+           header row, so the chips size to themselves (they no longer
+           need to match the page-header button height). Kept small and
+           lightly padded so a full set fits the header strip. */
+        height: 22px;
         box-sizing: border-box;
-        padding: 0 8px;
+        padding: 0 6px;
         border-radius: var(--r-sm);
         background: var(--accent-100);
         color: var(--accent-800);
-        font-size: 12.5px;
+        font-size: 12px;
         cursor: pointer;
         user-select: none;
         /* labels never wrap; when the bar runs out of room they collapse
@@ -239,7 +240,7 @@ export class ContentList<T = any> extends RapidElement {
         overflow: hidden;
         white-space: nowrap;
         max-width: 160px;
-        margin-left: 5px;
+        margin-left: 4px;
         transition:
           max-width 220ms ease,
           margin-left 220ms ease;
@@ -2503,10 +2504,11 @@ export class ContentList<T = any> extends RapidElement {
         `${lead.getBoundingClientRect().left - frameRect.left}px`
       );
       // When the row leads with an icon, offset the bar by the chip's
-      // own left padding so the chip *icon* lands on the row icon. When
-      // it leads with text (e.g. messages), align the chip's left edge
-      // with the text instead — so the bulk buttons start at the name.
-      this.style.setProperty('--cl-bulk-pad', iconLead ? '8px' : '0px');
+      // own left padding (the .bulk-action 6px) so the chip *icon* lands
+      // on the row icon. When it leads with text (e.g. messages), align
+      // the chip's left edge with the text instead — so the bulk buttons
+      // start at the name.
+      this.style.setProperty('--cl-bulk-pad', iconLead ? '6px' : '0px');
     }
   }
 
