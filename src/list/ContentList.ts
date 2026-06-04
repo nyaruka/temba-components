@@ -203,6 +203,9 @@ export class ContentList<T = any> extends RapidElement {
         gap: 5px;
         padding: 0 8px;
         background: var(--cl-pin-bg);
+        /* keep the header's bottom rule visible — the bar sits on top of
+           it, so carry the same inset border the header th uses */
+        box-shadow: inset 0 -1px 0 0 var(--border);
       }
       .bulk-action {
         display: inline-flex;
@@ -234,12 +237,14 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-action temba-icon {
         --icon-color: currentColor;
       }
-      /* Quiet, muted selection tally set a little apart from the action
-         chips so it reads as a label rather than another button. */
+      /* Quiet, muted selection tally — right-aligned (margin-left: auto)
+         so the action chips stay fixed against the checkbox regardless
+         of the count's width. */
       .bulk-count {
         color: var(--text-3);
         font-size: 12.5px;
-        margin-right: 6px;
+        margin-left: auto;
+        padding-left: 12px;
       }
 
       /* Label-toggle dropdown — temba-dropdown wraps the bulk-
@@ -1904,10 +1909,13 @@ export class ContentList<T = any> extends RapidElement {
    * than replacing the page header. Positioned absolutely in the
    * table-frame so it doesn't scroll horizontally with the columns. */
   private renderBulkBar(): TemplateResult {
+    // Actions lead (fixed against the checkbox) and the count trails,
+    // right-aligned, so the buttons don't shift as the count's width
+    // changes ("1 selected" vs "100 selected").
     return html`
       <div class="bulk-bar">
-        <span class="bulk-count">${this.selectedIds.size} selected</span>
         ${this.bulkActions.map((a) => this.renderBulkAction(a))}
+        <span class="bulk-count">${this.selectedIds.size} selected</span>
       </div>
     `;
   }
