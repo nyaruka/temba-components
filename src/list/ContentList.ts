@@ -212,7 +212,6 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-action {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
         /* Fixed height shared with the content-menu buttons (.menu-button)
            and the Search action so the header is the same height whether
            the bulk-action chips or the paging/menu are showing. */
@@ -225,6 +224,26 @@ export class ContentList<T = any> extends RapidElement {
         font-size: 12.5px;
         cursor: pointer;
         user-select: none;
+        /* labels never wrap; when the bar runs out of room they collapse
+           to icon-only (see .bulk-bar.collapsed .bulk-label) */
+        white-space: nowrap;
+      }
+      /* The label sits a gap to the right of the icon. Both the width and
+         that gap collapse to 0 when the bar is too narrow, animating the
+         chips down to icon-only — the same max-width trick the tabs use. */
+      .bulk-label {
+        display: inline-block;
+        overflow: hidden;
+        white-space: nowrap;
+        max-width: 160px;
+        margin-left: 5px;
+        transition:
+          max-width 220ms ease,
+          margin-left 220ms ease;
+      }
+      .bulk-bar.collapsed .bulk-label {
+        max-width: 0;
+        margin-left: 0;
       }
       .bulk-action:hover {
         background: var(--accent-200);
@@ -1267,6 +1286,12 @@ export class ContentList<T = any> extends RapidElement {
   @state()
   protected pendingLabel: string | null = null;
 
+  /** When the bulk-action bar's chips would overflow the available
+   * width, their labels collapse to icon-only (animated). Measured in
+   * {@link updateBulkCollapse}. */
+  @state()
+  private bulkCollapsed = false;
+
   private pending: AbortController = null;
   private popstateHandler: () => void;
   private resizeHandler: () => void;
@@ -1328,7 +1353,10 @@ export class ContentList<T = any> extends RapidElement {
     }
     // A viewport resize changes whether the table overflows, so the
     // right-edge scroll affordance has to be re-evaluated.
-    this.resizeHandler = () => this.syncScrollAffordance();
+    this.resizeHandler = () => {
+      this.syncScrollAffordance();
+      this.updateBulkCollapse();
+    };
     window.addEventListener('resize', this.resizeHandler);
     // Pinned columns now size to their content, so a late web-font
     // load shifts their widths — re-measure the sticky offsets once
@@ -1382,6 +1410,23 @@ export class ContentList<T = any> extends RapidElement {
     // on the freshly-laid-out DOM, so settle them after each render.
     this.measurePinOffsets();
     this.syncScrollAffordance();
+    this.updateBulkCollapse();
+  }
+
+  /** Collapse the bulk-action labels to icon-only when the chips would
+   * overflow the bar. Measures the bar's natural (expanded) width so
+   * the decision doesn't oscillate: when currently collapsed it removes
+   * the class to read the expanded scrollWidth, then restores it — a
+   * synchronous reflow with no paint in between. */
+  private updateBulkCollapse(): void {
+    const bar = this.shadowRoot?.querySelector(
+      '.bulk-bar'
+    ) as HTMLElement | null;
+    if (!bar) return;
+    if (this.bulkCollapsed) bar.classList.remove('collapsed');
+    const overflows = bar.scrollWidth > bar.clientWidth + 1;
+    if (this.bulkCollapsed) bar.classList.add('collapsed');
+    if (overflows !== this.bulkCollapsed) this.bulkCollapsed = overflows;
   }
 
   /** Read sort/page/search from the URL on first load / popstate. */
@@ -1915,7 +1960,7 @@ export class ContentList<T = any> extends RapidElement {
     // right-aligned, so the buttons don't shift as the count's width
     // changes ("1 selected" vs "100 selected").
     return html`
-      <div class="bulk-bar">
+      <div class="bulk-bar ${this.bulkCollapsed ? 'collapsed' : ''}">
         ${this.bulkActions.map((a) => this.renderBulkAction(a))}
         <span class="bulk-count">${this.selectedIds.size} selected</span>
       </div>
@@ -1929,12 +1974,13 @@ export class ContentList<T = any> extends RapidElement {
     return html`
       <span
         class="bulk-action ${action.destructive ? 'destructive' : ''}"
+        title=${action.label}
         @click=${() => this.handleBulkAction(action)}
       >
         ${action.icon
           ? html`<temba-icon name=${action.icon} size="0.9"></temba-icon>`
           : null}
-        ${action.label}
+        <span class="bulk-label">${action.label}</span>
       </span>
     `;
   }
@@ -1949,11 +1995,12 @@ export class ContentList<T = any> extends RapidElement {
         <span
           slot="toggle"
           class="bulk-action ${action.destructive ? 'destructive' : ''}"
+          title=${action.label}
         >
           ${action.icon
             ? html`<temba-icon name=${action.icon} size="0.9"></temba-icon>`
             : null}
-          ${action.label}
+          <span class="bulk-label">${action.label}</span>
         </span>
         <div slot="dropdown" class="label-menu">
           ${labels.length === 0
@@ -2380,17 +2427,26 @@ export class ContentList<T = any> extends RapidElement {
         `${headerRow.offsetHeight}px`
       );
     }
-    // Left edge of the first data column's text — the bulk-action bar's
-    // first chip aligns here so the actions line up with the column
-    // content (e.g. the contact name) rather than the checkbox cell.
+    // Left edge of the row's leading content — the bulk-action bar's
+    // first chip aligns here. That's the row icon when there is one
+    // (e.g. the contact silhouette) and otherwise the first column's
+    // text (e.g. the message contact), so the actions line up with the
+    // row content rather than the checkbox cell.
     const frameRect = frame.getBoundingClientRect();
-    const firstColInner = scroller.querySelector(
-      'tr.header th.head-cell .head-inner'
-    ) as HTMLElement | null;
-    if (firstColInner) {
+    const lead =
+      (scroller.querySelector(
+        'tr.row td.icon-cell .icon-inner'
+      ) as HTMLElement | null) ||
+      (scroller.querySelector(
+        'tr.row td.cell .cell-inner'
+      ) as HTMLElement | null) ||
+      (scroller.querySelector(
+        'tr.header th.head-cell .head-inner'
+      ) as HTMLElement | null);
+    if (lead) {
       this.style.setProperty(
         '--cl-firstcol-left',
-        `${firstColInner.getBoundingClientRect().left - frameRect.left}px`
+        `${lead.getBoundingClientRect().left - frameRect.left}px`
       );
     }
   }

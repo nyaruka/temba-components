@@ -413,15 +413,15 @@ describe('temba-content-list', () => {
     const bar = list.shadowRoot!.querySelector('.bulk-bar') as HTMLElement;
     assert.exists(bar, 'bulk bar should render when rows are selected');
 
-    // the first action chip lines up with the first column's text
+    // the first action chip lines up with the row's leading content —
+    // the contact icon (contacts have a row icon)
     const chip = bar.querySelector('.bulk-action') as HTMLElement;
-    const nameCell = list.shadowRoot!.querySelector(
-      'tr.row td.cell .cell-inner'
+    const lead = list.shadowRoot!.querySelector(
+      'tr.row td.icon-cell .icon-inner'
     ) as HTMLElement;
     expect(
       Math.abs(
-        chip.getBoundingClientRect().left -
-          nameCell.getBoundingClientRect().left
+        chip.getBoundingClientRect().left - lead.getBoundingClientRect().left
       )
     ).to.be.lessThan(1);
     // the page header (search/menu) is NOT replaced
@@ -430,6 +430,45 @@ describe('temba-content-list', () => {
       'page header stays put'
     );
     await assertScreenshot('content-list/contacts-bulk', getClip(list));
+  });
+
+  it('collapses the bulk action labels to icons when the bar is too narrow', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      { endpoint: '/test-assets/content-list/contacts.json' },
+      '',
+      360
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    for (
+      let i = 0;
+      i < 200 && (list as any).featuredFields?.length === 0;
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    (list as any).selectedIds = new Set(
+      (list as any).items.map((i: any) => i.uuid)
+    );
+    (list as any).requestUpdate();
+    await list.updateComplete;
+    // the collapse decision is measured in updated() and sets reactive
+    // state, so let that second render settle
+    await list.updateComplete;
+
+    const bar = list.shadowRoot!.querySelector('.bulk-bar') as HTMLElement;
+    expect(bar.classList.contains('collapsed')).to.be.true;
+    expect((list as any).bulkCollapsed).to.be.true;
+    await new Promise((r) => setTimeout(r, 300));
+    await assertScreenshot(
+      'content-list/contacts-bulk-collapsed',
+      getClip(list)
+    );
   });
 
   it('shows the location leaf, a created-on column, and actual dates', async () => {
