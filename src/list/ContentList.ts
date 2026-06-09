@@ -5,7 +5,6 @@ import { Icon } from '../Icons';
 import { CustomEventType } from '../interfaces';
 import { getUrl, postUrl } from '../utils';
 import { designTokens } from '../styles/designTokens';
-import { Dropdown } from '../display/Dropdown';
 
 /** A single column in the list. Subclasses typically define a static
  * set via {@link ContentList.columns}; consumers may also set it as
@@ -69,6 +68,17 @@ export interface ContentListBulkAction {
    * Setting this turns the action into a label-toggle dropdown
    * instead of a fire-and-forget bulk-action event. */
   labelsEndpoint?: string;
+  /** The item field holding each row's current memberships (`[{uuid}]`)
+   * used to pre-check / partially-check the dropdown against the
+   * selected rows. Defaults to `labels` (messages); the contact list
+   * sets it to `groups`. */
+  labelsKey?: string;
+  /** When true, the component does not POST the action to
+   * `actionEndpoint` — it only fires the `temba-bulk-action` event
+   * with the selected ids and leaves the work to the host. Used for
+   * actions that open a modal (e.g. send / start-flow) rather than
+   * mutating rows server-side. */
+  clientOnly?: boolean;
 }
 
 interface FetchResponse<T = any> {
@@ -76,6 +86,16 @@ interface FetchResponse<T = any> {
   count?: number;
   next?: string;
   previous?: string;
+  /** Server-adjusted/normalized form of the search that produced these
+   * results (rapidpro's contact search echoes the parsed `query`).
+   * When present after a search, it's adopted as the basis of the
+   * results and mirrored back into the search input. */
+  query?: string;
+  /** A query-validation error message (e.g. an unparseable search like
+   * `age >`). The server still returns a list-shaped, empty response;
+   * this message is surfaced over the empty table instead of the plain
+   * "nothing to show" copy. */
+  error?: string;
 }
 
 /**
@@ -127,6 +147,10 @@ export class ContentList<T = any> extends RapidElement {
           var(--accent-400) 24%,
           var(--accent-50)
         );
+        /* Tint shared by the frozen (pinned) columns and the header
+           row, so the header reads as the same quiet sub-panel as the
+           pinned section. */
+        --cl-pin-bg: color-mix(in oklab, var(--sunken) 35%, var(--surface));
       }
       /* fillWindow — take the slack of a height-bounded flex-column
          parent so the table scrolls internally; min-height: 0 (set
@@ -148,17 +172,21 @@ export class ContentList<T = any> extends RapidElement {
         font-size: 13px;
       }
 
-      /* Built-in action button (Search). Plain text + icon, no
-         border, host's slotted buttons can match this style or
-         bring their own. */
+      /* Built-in action button (Search). Bordered text + icon on a
+         transparent ground; host's slotted buttons can match this
+         style or bring their own. */
       .action {
         display: inline-flex;
         align-items: center;
         gap: 6px;
         cursor: pointer;
         user-select: none;
-        padding: 6px 8px;
+        height: 26px;
+        box-sizing: border-box;
+        padding: 0 10px;
+        border: 1px solid var(--border-strong);
         border-radius: var(--r-sm);
+        background: transparent;
         color: var(--text-2);
       }
       .action:hover {
@@ -169,17 +197,73 @@ export class ContentList<T = any> extends RapidElement {
         --icon-color: currentColor;
       }
 
+      /* When rows are selected, the bulk actions overlay the column-
+         header row (covering the column labels) starting just right of
+         the select-all checkbox — rather than replacing the page header.
+         Positioned in the table-frame (not the scrolling table) so it
+         stays put horizontally, with an opaque header-tint background to
+         hide the labels underneath, above the sticky header (z 2/3). */
+      .bulk-bar {
+        position: absolute;
+        top: 0;
+        /* The first chip's left edge sits at the row's leading content
+           (--cl-firstcol-left) — the icon on icon lists, the text on
+           text lists — so the bulk bar starts at the same point as the
+           row content on every list, matching the message list. */
+        left: var(--cl-firstcol-left, 44px);
+        right: var(--cl-scrollbar-w, 0px);
+        height: var(--cl-header-height, 36px);
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0 8px 0 0;
+        background: var(--cl-pin-bg);
+        /* keep the header's bottom rule visible — the bar sits on top of
+           it, so carry the same inset border the header th uses */
+        box-shadow: inset 0 -1px 0 0 var(--border);
+      }
       .bulk-action {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
+        /* Compact chips — the bar is an overlay centered in the table's
+           header row, so the chips size to themselves (they no longer
+           need to match the page-header button height). Kept small and
+           lightly padded so a full set fits the header strip. */
+        height: 22px;
+        box-sizing: border-box;
+        padding: 0 6px;
         border-radius: var(--r-sm);
         background: var(--accent-100);
         color: var(--accent-800);
-        font-size: 12.5px;
+        font-size: 12px;
         cursor: pointer;
         user-select: none;
+        /* labels never wrap; when the bar runs out of room they collapse
+           to icon-only (see .bulk-bar.collapsed .bulk-label) */
+        white-space: nowrap;
+      }
+      /* The label sits a gap to the right of the icon. Both the width and
+         that gap collapse to 0 when the bar is too narrow, animating the
+         chips down to icon-only — the same max-width trick the tabs use. */
+      .bulk-label {
+        display: inline-block;
+        overflow: hidden;
+        white-space: nowrap;
+        max-width: 160px;
+        margin-left: 4px;
+        transition:
+          max-width 220ms ease,
+          margin-left 220ms ease;
+      }
+      .bulk-bar.collapsed .bulk-label {
+        max-width: 0;
+        margin-left: 0;
+      }
+      /* While measuring the expanded width, suppress the label animation
+         so scrollWidth reflects the final (not mid-transition) size. */
+      .bulk-bar.measuring .bulk-label {
+        transition: none;
       }
       .bulk-action:hover {
         background: var(--accent-200);
@@ -194,10 +278,18 @@ export class ContentList<T = any> extends RapidElement {
       .bulk-action temba-icon {
         --icon-color: currentColor;
       }
+      /* Quiet, muted selection tally — right-aligned (margin-left: auto)
+         so the action chips stay fixed against the checkbox regardless
+         of the count's width. */
       .bulk-count {
-        font-weight: var(--w-medium);
-        color: var(--accent-800);
-        margin-right: 4px;
+        color: var(--text-3);
+        font-size: 12.5px;
+        margin-left: auto;
+        padding-left: 12px;
+        /* keep the tally on one line — it must never wrap even when the
+           bar is tight (the chips collapse to make room instead) */
+        white-space: nowrap;
+        flex-shrink: 0;
       }
 
       /* Label-toggle dropdown — temba-dropdown wraps the bulk-
@@ -247,19 +339,19 @@ export class ContentList<T = any> extends RapidElement {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .lbl-menu temba-loading {
-        flex: 0 0 auto;
-      }
 
       /* Inline search bar — slides below the title row inside the
-         panel when the search trigger is active. Single-line input
-         with a leading icon, no border, --sunken background. */
+         panel when the search trigger is active. Bare single-line
+         input, no border, --sunken background. */
       .searchbar {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         padding: 6px 12px;
-        margin: 0 0 12px 0;
+        /* Pull up under the header — the header carries its own bottom
+           padding, so without this the searchbar sits a full gap below
+           the title row. The negative top margin tightens that gap. */
+        margin: -6px 0 12px 0;
         background: var(--sunken);
         border-radius: var(--r-sm);
         color: var(--text-3);
@@ -276,27 +368,40 @@ export class ContentList<T = any> extends RapidElement {
       .searchbar input::placeholder {
         color: var(--text-3);
       }
-      .searchbar .clear,
-      .searchbar .submit {
-        cursor: pointer;
-        color: var(--text-3);
-        padding: 2px;
-        display: inline-flex;
-        align-items: center;
-      }
-      .searchbar .clear:hover,
-      .searchbar .submit:hover {
-        color: var(--text-1);
-      }
-      /* Result tally for the active search — quiet, trailing the
-         input, so the user can confirm how many rows matched without
-         the count competing with the query itself. */
-      .searchbar .result-count {
+      /* Trailing controls — a run-search icon and a close (✕), both
+         always present while the bar is open so the bar's height stays
+         put. The close is the way out (the header's Search button hides
+         itself while the bar is open). The "↵ to search" hint sits just
+         left of the run icon and fades in only when there's a pending
+         draft to apply — the same trigger that lights the icon. */
+      .searchbar .search-hint {
         flex: 0 0 auto;
+        font-size: 0.75em;
         color: var(--text-3);
-        font-size: 12px;
         white-space: nowrap;
-        padding: 0 4px;
+        user-select: none;
+      }
+      .searchbar .search-hint .enter-key {
+        position: relative;
+        top: 2px;
+      }
+      /* Both are our standard clickable icons — bare glyph at rest, a
+         circular wash only on hover. The left margin opens a bit of
+         breathing room between the icons (and the hint). The default
+         hover wash is near-white, which washes out against the sunken
+         (grey) box, so each carries a more saturated one. */
+      .searchbar .search-go,
+      .searchbar .search-cancel {
+        flex: 0 0 auto;
+        margin-left: 5px;
+        --icon-color: var(--text-3);
+        --icon-color-circle-hover: rgba(15, 22, 36, 0.1);
+      }
+      /* Run search only renders once a draft is pending (alongside the
+         "↵ to search" hint), so it's always the primary action — its
+         hover wash warms to accent. */
+      .searchbar .search-go {
+        --icon-color-circle-hover: var(--accent-200);
       }
 
       /* Card panel — surface white wrapping the header and table.
@@ -319,10 +424,22 @@ export class ContentList<T = any> extends RapidElement {
       }
       /* A window-filling list isn't a floating card — it fills its
          container flush, so it drops the card radius + shadow that
-         would otherwise reveal the page background at its corners. */
+         would otherwise reveal the page background at its corners. The
+         panel keeps a horizontal inset (so the header and search bar
+         stay padded, not full-bleed) but tightens it to 12px — the
+         check-cell's lead padding — so the title text lines up with the
+         row checkboxes below it. */
       :host([fill-window]) .panel {
         border-radius: 0;
         box-shadow: none;
+        padding: 0 12px;
+      }
+      /* The rule and the table go full-bleed — escape the panel's 12px
+         inset on both sides so the rows use the full width of the
+         parent while the header/search bar above them stay padded. */
+      :host([fill-window]) .header-rule,
+      :host([fill-window]) .table-frame {
+        margin: 0 -12px;
       }
       /* The header holds its size; the table frame takes the slack. */
       temba-page-header,
@@ -375,6 +492,12 @@ export class ContentList<T = any> extends RapidElement {
         overflow: auto;
         height: 100%;
       }
+      /* With no rows to show (empty / loading / search-error state) the
+         body is just the centered state message, so a wide column set
+         shouldn't arm a horizontal scrollbar under it. */
+      .table-scroll.no-rows {
+        overflow-x: hidden;
+      }
 
       /* auto layout lets the contact-field columns size to the
          content shown in them; system columns are instead held to a
@@ -402,9 +525,6 @@ export class ContentList<T = any> extends RapidElement {
       table.table.fixed th.check-cell {
         width: 16px;
       }
-      table.table.fixed th.icon-cell {
-        width: 32px;
-      }
 
       /* The header row sticks to the top of the scroll frame so the
          column labels stay put while the rows scroll under them.
@@ -420,8 +540,13 @@ export class ContentList<T = any> extends RapidElement {
         text-transform: uppercase;
         letter-spacing: 0.06em;
         white-space: nowrap;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
+        background: var(--cl-pin-bg);
+        /* The header's bottom border is an inset shadow, not a real
+           border: the header is position: sticky and border-collapse
+           drops a sticky cell's actual border, so a real border would
+           scroll away as rows pass under it. The shadow stays put, so
+           the header always keeps a bottom rule to scroll under. */
+        box-shadow: inset 0 -1px 0 0 var(--border);
         position: sticky;
         top: 0;
         z-index: 2;
@@ -431,13 +556,10 @@ export class ContentList<T = any> extends RapidElement {
       }
 
       tr.row td {
-        height: 44px;
+        height: 38px;
         vertical-align: middle;
         color: var(--text-1);
         border-bottom: 1px solid var(--border);
-      }
-      tbody tr.row:last-child td {
-        border-bottom: none;
       }
       tr.row:hover {
         background: var(--accent-50);
@@ -560,7 +682,7 @@ export class ContentList<T = any> extends RapidElement {
          cell backgrounds so the tint actually lands. */
       .table-frame.overflowing tr.header th.pinned,
       .table-frame.overflowing tr.row td.pinned {
-        background: color-mix(in oklab, var(--sunken) 35%, var(--surface));
+        background: var(--cl-pin-bg);
       }
       /* The hover/selected wash still wins over the tint so a
          hovered/selected row reads as one continuous strip. */
@@ -577,27 +699,71 @@ export class ContentList<T = any> extends RapidElement {
       .table-frame.overflowing td.pin-last {
         box-shadow: inset -1px 0 0 0 var(--border);
       }
-      /* Once scrolled, a soft drop shadow joins the rule to lift the
-         frozen edge above the content sliding under it. */
-      .table-frame.scrolled th.pin-last,
-      .table-frame.scrolled td.pin-last {
-        box-shadow:
-          inset -1px 0 0 0 var(--border),
-          8px 0 9px -9px rgba(15, 23, 42, 0.45);
-      }
       /* Mirror of the rule for the right-pinned group — the divider
          sits on the inboard (left) edge of its first cell. */
       .table-frame.overflowing th.pin-first,
       .table-frame.overflowing td.pin-first {
         box-shadow: inset 1px 0 0 0 var(--border);
       }
-      /* While there is more table to the right, a drop shadow lifts
-         the right-frozen edge above the content sliding under it. */
-      .table-frame.can-scroll-right th.pin-first,
-      .table-frame.can-scroll-right td.pin-first {
+      /* A pinned header cell keeps the header's bottom-border shadow
+         alongside the pin-edge rule. */
+      .table-frame.overflowing tr.header th.pin-last {
+        box-shadow:
+          inset -1px 0 0 0 var(--border),
+          inset 0 -1px 0 0 var(--border);
+      }
+      .table-frame.overflowing tr.header th.pin-first {
         box-shadow:
           inset 1px 0 0 0 var(--border),
-          -8px 0 9px -9px rgba(15, 23, 42, 0.45);
+          inset 0 -1px 0 0 var(--border);
+      }
+      /* Once scrolled, the frozen edge casts the same soft scroll
+         shadow as the sticky header — a gradient (matching th::after
+         and .scroll-shadow) drawn just outside the pinned edge, over
+         the content sliding under it. It's a ::before so it composes
+         with the header's own ::after scroll shadow on a pinned header
+         cell. */
+      .table-frame th.pin-last::before,
+      .table-frame td.pin-last::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 100%;
+        width: 8px;
+        pointer-events: none;
+        background: linear-gradient(
+          to right,
+          rgba(15, 23, 42, 0.12),
+          rgba(15, 23, 42, 0)
+        );
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+      .table-frame.scrolled th.pin-last::before,
+      .table-frame.scrolled td.pin-last::before {
+        opacity: 1;
+      }
+      .table-frame th.pin-first::before,
+      .table-frame td.pin-first::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 100%;
+        width: 8px;
+        pointer-events: none;
+        background: linear-gradient(
+          to left,
+          rgba(15, 23, 42, 0.12),
+          rgba(15, 23, 42, 0)
+        );
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+      .table-frame.can-scroll-right th.pin-first::before,
+      .table-frame.can-scroll-right td.pin-first::before {
+        opacity: 1;
       }
 
       /* Slack-absorbing column between the pinned and scrolling
@@ -618,31 +784,74 @@ export class ContentList<T = any> extends RapidElement {
       td.grow {
         width: 100%;
       }
+      /* Under auto layout a grow column also claims zero intrinsic
+         width (max-width: 0) so its content can't widen the table:
+         the other columns size to their content first, the grow column
+         takes only the leftover, and a long value ellipsis-truncates
+         against it (via .cell-inner's overflow). This gives a long
+         free-text column — e.g. the message list's body — truncation
+         without forcing the whole table to table-layout: fixed (which
+         would make every column a declared width). Fixed-layout lists
+         keep the spacer-style width:100% behaviour, so this is scoped
+         to the auto path. */
+      table.table:not(.fixed) td.grow {
+        max-width: 0;
+        overflow: hidden;
+      }
 
-      /* Scroll gradient — fades in while there is more table to the
-         right, signalling the row scrolls horizontally. It sits
-         against the inboard edge of the right-pinned group (via
-         --cl-rpin-total, 0 when nothing is right-pinned) so it fades
-         the scrolling content just before it slides under the
-         frozen columns, rather than behind them, and stops short of
-         the horizontal scrollbar (via --cl-scrollbar).
-         pointer-events: none keeps it from eating row clicks. */
+      /* Right-edge horizontal scroll cue — fades in while there is more
+         table to the right. It sits inboard of the right-pinned group
+         (--cl-rpin-total, 0 when nothing is right-pinned) and the
+         vertical scrollbar (--cl-scrollbar-w) so it fades the scrolling
+         content rather than the frozen columns or the scrollbar track,
+         and is sized to the rows' height (--cl-rows-height) so it stops
+         at the bottom of the table instead of running down the empty
+         space below a short list. Its width and intensity match the
+         sticky header's scroll shadow (.header-shadow) so the two read
+         as the same affordance on different axes; pointer-events: none
+         keeps it from eating row clicks. */
       .scroll-shadow {
         position: absolute;
         top: 0;
-        bottom: var(--cl-scrollbar, 0px);
-        right: var(--cl-rpin-total, 0px);
-        width: 28px;
+        height: var(--cl-rows-height, 100%);
+        right: calc(var(--cl-rpin-total, 0px) + var(--cl-scrollbar-w, 0px));
+        width: 8px;
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.15s ease;
         background: linear-gradient(
           to right,
-          transparent,
-          color-mix(in oklab, var(--text-1) 16%, transparent)
+          rgba(15, 23, 42, 0),
+          rgba(15, 23, 42, 0.12)
         );
       }
       .table-frame.can-scroll-right .scroll-shadow {
+        opacity: 1;
+      }
+
+      /* Soft drop shadow under the sticky header once the body scrolls
+         beneath it — the horizontal counterpart of the .scroll-shadow.
+         A single full-width element (rather than a per-cell shadow) so
+         it reads as one consistent shadow left-to-right and never
+         doubles up where a pinned header cell overlaps a scrolling one.
+         Sits just below the header (--cl-header-height) and stops short
+         of the vertical scrollbar (--cl-scrollbar-w). */
+      .header-shadow {
+        position: absolute;
+        top: var(--cl-header-height, 36px);
+        left: 0;
+        right: var(--cl-scrollbar-w, 0px);
+        height: 8px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+        background: linear-gradient(
+          to bottom,
+          rgba(15, 23, 42, 0.12),
+          rgba(15, 23, 42, 0)
+        );
+      }
+      .table-frame.scrolled-down .header-shadow {
         opacity: 1;
       }
 
@@ -655,7 +864,10 @@ export class ContentList<T = any> extends RapidElement {
       .check-cell {
         width: 1%;
         white-space: nowrap;
-        padding: 0 12px;
+        /* 12px lead from the card edge to the checkbox, then a tight 4px
+           trail to the row's leading content — so every list (icon or
+           text) starts its content at the same point past the checkbox. */
+        padding: 0 4px 0 12px;
         cursor: pointer;
         --icon-color: var(--text-3);
       }
@@ -706,51 +918,50 @@ export class ContentList<T = any> extends RapidElement {
         color: var(--accent-700);
       }
 
-      /* Leading entity-type icon column — small icon shared by
-         every row (contact silhouette, flow type icon, etc.).
-         Subclasses override {@link getRowIcon}; when it returns
-         null for every row the column is never rendered. */
-      .icon-cell {
-        width: 1%;
-        white-space: nowrap;
-        padding: 0 6px 0 0;
-        --icon-color: var(--text-3);
+      /* Leading entity-type icon — a small icon shared by every row
+         (contact silhouette, flow type icon, etc.). It rides inside the
+         first column's cell rather than in its own column, so the column
+         header aligns with the icon (the row's leading content) rather
+         than the value beside it — and the alignment reads the same
+         whether or not the list has a leading icon. Subclasses override
+         {@link getRowIcon}; when it returns null for every row no space
+         is reserved (see {@link reservesIcon}). */
+      .lead-wrap {
+        display: flex;
+        align-items: center;
+        min-width: 0;
       }
-      /* Reserve the icon's footprint on the wrapper itself so the
-         icon column's intrinsic width is the same whether
-         <temba-icon> has upgraded or not — without this, the column
-         briefly measures as just the cell's right-padding (6px) and
-         the downstream pinned columns end up positioned ~14px to
-         the left, which races with whatever moment we snapshot.
-         <temba-icon size="1"> renders at 1em, so we reserve 1em
-         square and let the icon paint into it. */
-      .icon-inner {
+      .lead-wrap .cell-inner {
+        min-width: 0;
+      }
+      /* Reserve the icon's 1em footprint plus a snug 5px gap to the
+         value whether or not this row has an icon, so values stay
+         aligned down the column. The fixed box also keeps the column's
+         intrinsic width stable while <temba-icon> upgrades — without it
+         the column briefly measures narrow and downstream pinned columns
+         jump, which races with whatever moment we snapshot. */
+      .lead-icon {
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
         justify-content: center;
         width: 1em;
         height: 1em;
+        margin-right: 5px;
+        --icon-color: var(--text-3);
       }
-      tr.row.selected .icon-cell {
+      tr.row.selected .lead-icon {
         --icon-color: var(--accent-700);
       }
 
-      /* The table-frame sits inside the panel's 20px padding, so the
-         first cell already starts at the page-header's content edge
-         — no extra lead inset needed. The last cell still trims its
-         padding-right (below) so column content doesn't crowd the
-         card chrome. */
-      /* The first data cell trims its left padding to sit close to
-         the leading icon — the icon cell's 6px trailing padding
-         plus this 4px makes a snug 10px gap. */
-      .icon-cell + .head-cell,
-      .icon-cell + .cell {
-        padding-left: 4px;
-      }
-      /* With no icon column the first data cell follows the
-         checkbox directly; it drops its left padding entirely so
-         the value isn't marooned past a gap meant to clear an
-         icon — just the checkbox cell's 12px trailing padding. */
+      /* The first column follows the checkbox directly and drops its
+         left padding, so its content starts right at the checkbox
+         cell's 4px trailing gap: the leading icon on icon lists, the
+         value otherwise — and the header label lines up at that same
+         point. The table-frame sits inside the panel's 20px padding, so
+         that edge already aligns with the page-header content; the last
+         cell trims its padding-right (below) so content doesn't crowd
+         the card chrome. */
       .check-cell + .head-cell,
       .check-cell + .cell {
         padding-left: 0;
@@ -760,11 +971,41 @@ export class ContentList<T = any> extends RapidElement {
         padding-right: 20px;
       }
 
-      .empty,
-      .loading {
-        padding: 40px var(--pad);
-        text-align: center;
+      /* Empty / loading / searching message — rendered after the table
+         (not as a colspan row inside it) and positioned over the body
+         area so it stays centered in the visible container rather than
+         the full, possibly-overflowing table width. Sits below the
+         header (--cl-header-height) and inboard of the vertical
+         scrollbar (--cl-scrollbar-w). */
+      .list-state {
+        position: absolute;
+        top: var(--cl-header-height, 36px);
+        left: 0;
+        right: var(--cl-scrollbar-w, 0px);
+        bottom: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 40px;
         color: var(--text-3);
+        pointer-events: none;
+      }
+      /* Query-validation error — the same centered empty-table slot,
+         but a danger-tinted pill (icon + message) so a bad search reads
+         as something to fix rather than an empty result set. */
+      .list-state.error {
+        color: var(--danger);
+      }
+      .list-state .state-error {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        max-width: min(560px, 80%);
+        padding: 8px 14px;
+        border: 1px solid var(--danger-border);
+        border-radius: var(--r);
+        background: var(--danger-bg);
+        --icon-color: var(--danger);
       }
 
       /* Pager — a compact "‹ 1–N of Total ›" stepper that lives in
@@ -870,6 +1111,26 @@ export class ContentList<T = any> extends RapidElement {
    * chrome carrying a separate title + menu bar. */
   @property({ type: String, attribute: 'content-menu-endpoint' })
   contentMenuEndpoint = '';
+
+  /** The content-menu endpoint with the current committed search folded
+   * in, so the server's build_context_menu sees the same query the list
+   * is showing. This is what surfaces search-dependent menu items — e.g.
+   * the contact list's "Create Smart Group" button, which only appears
+   * when the active query is saveable as a group. Binding the
+   * page-header attribute to this (rather than the raw endpoint) makes
+   * the menu re-fetch whenever the committed search changes. */
+  private contentMenuEndpointWithSearch(): string {
+    if (!this.contentMenuEndpoint || !this.search) {
+      return this.contentMenuEndpoint;
+    }
+    try {
+      const url = new URL(this.contentMenuEndpoint, window.location.origin);
+      url.searchParams.set('search', this.search);
+      return url.pathname + url.search;
+    } catch {
+      return this.contentMenuEndpoint;
+    }
+  }
 
   /** Column definitions. Subclasses set this in the constructor;
    * consumers may also override at the element level. */
@@ -1055,6 +1316,12 @@ export class ContentList<T = any> extends RapidElement {
   @state()
   protected searching = false;
 
+  /** Query-validation error from the last search (e.g. `age >`). Shown
+   * over the empty table in place of the "nothing to show" copy, and
+   * cleared on the next fetch. */
+  @state()
+  protected searchError = '';
+
   @state()
   protected selectedIds: Set<string> = new Set();
 
@@ -1084,6 +1351,16 @@ export class ContentList<T = any> extends RapidElement {
   @state()
   protected pendingLabel: string | null = null;
 
+  /** When the bulk-action bar's chips would overflow the available
+   * width, their labels collapse to icon-only (animated). Measured in
+   * {@link updateBulkCollapse}. */
+  @state()
+  private bulkCollapsed = false;
+
+  /** Pending rAF handle for the deferred collapse re-measure (0 when
+   * none is scheduled). See {@link updateBulkCollapse}. */
+  private bulkCollapseFrame = 0;
+
   private pending: AbortController = null;
   private popstateHandler: () => void;
   private resizeHandler: () => void;
@@ -1096,7 +1373,6 @@ export class ContentList<T = any> extends RapidElement {
    * `right`. Recomputed each render. */
   private rightPinIndexByColumn = new Map<ContentListColumn, number>();
   private checkPinIndex = -1;
-  private iconPinIndex = -1;
   private lastPinIndex = -1;
   /** Right-pin index of the leftmost right-pinned column — the one
    * that carries the divider against the scrolling section. */
@@ -1105,7 +1381,8 @@ export class ContentList<T = any> extends RapidElement {
    * rendered (the last pinned column), or -1 when nothing is
    * pinned. Extra table width pools in that spacer. */
   private spacerAfterIndex = -1;
-  /** Whether the current items reserve a leading-icon column. */
+  /** Whether the current items reserve leading-icon space in the first
+   * column (true when a representative row carries an icon). */
   private reservesIcon = false;
 
   constructor() {
@@ -1145,7 +1422,10 @@ export class ContentList<T = any> extends RapidElement {
     }
     // A viewport resize changes whether the table overflows, so the
     // right-edge scroll affordance has to be re-evaluated.
-    this.resizeHandler = () => this.syncScrollAffordance();
+    this.resizeHandler = () => {
+      this.syncScrollAffordance();
+      this.updateBulkCollapse();
+    };
     window.addEventListener('resize', this.resizeHandler);
     // Pinned columns now size to their content, so a late web-font
     // load shifts their widths — re-measure the sticky offsets once
@@ -1164,6 +1444,10 @@ export class ContentList<T = any> extends RapidElement {
     }
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
+    }
+    if (this.bulkCollapseFrame) {
+      cancelAnimationFrame(this.bulkCollapseFrame);
+      this.bulkCollapseFrame = 0;
     }
     if (this.pending) {
       // Null the pending pointer before aborting so fetchPage's
@@ -1199,6 +1483,47 @@ export class ContentList<T = any> extends RapidElement {
     // on the freshly-laid-out DOM, so settle them after each render.
     this.measurePinOffsets();
     this.syncScrollAffordance();
+    this.updateBulkCollapse();
+  }
+
+  /** Collapse the bulk-action labels to icon-only when the chips would
+   * overflow the bar. Measures synchronously for immediate feedback,
+   * then re-measures on the next frame: the chip `<temba-icon>`s are
+   * child custom elements that render their SVG in a *later* update
+   * cycle, so the moment the bar first appears they still have zero
+   * width and the chips read as narrow — the bar looks like it fits and
+   * doesn't collapse until a later nudge (a second selection or a
+   * resize) re-runs the measurement. The deferred pass settles it on
+   * first show, once the icons have laid out. */
+  private updateBulkCollapse(): void {
+    this.measureBulkCollapse();
+    if (this.bulkCollapseFrame) cancelAnimationFrame(this.bulkCollapseFrame);
+    this.bulkCollapseFrame = requestAnimationFrame(() => {
+      this.bulkCollapseFrame = 0;
+      this.measureBulkCollapse();
+    });
+  }
+
+  /** One overflow measurement. The decision is made against the
+   * fully-expanded width with transitions suppressed (the `measuring`
+   * class) — reading scrollWidth mid-animation otherwise returns a width
+   * between the collapsed and expanded states, which made the collapse
+   * flip-flop and never settle. The expanded layout is forced and the
+   * current state restored synchronously (no paint in between) so
+   * there's no flash, then transitions are re-enabled so a real state
+   * change animates. */
+  private measureBulkCollapse(): void {
+    const bar = this.shadowRoot?.querySelector(
+      '.bulk-bar'
+    ) as HTMLElement | null;
+    if (!bar) return;
+    bar.classList.add('measuring');
+    bar.classList.remove('collapsed');
+    const overflows = bar.scrollWidth > bar.clientWidth + 1;
+    bar.classList.toggle('collapsed', this.bulkCollapsed);
+    void bar.offsetWidth;
+    bar.classList.remove('measuring');
+    if (overflows !== this.bulkCollapsed) this.bulkCollapsed = overflows;
   }
 
   /** Read sort/page/search from the URL on first load / popstate. */
@@ -1378,11 +1703,22 @@ export class ContentList<T = any> extends RapidElement {
     const controller = new AbortController();
     this.pending = controller;
     this.loading = true;
+    // Drop any prior query error so it doesn't linger behind the new
+    // request's loading/searching state.
+    this.searchError = '';
+    // Whether this fetch is a search commit (vs. paging/refresh) —
+    // captured up front since `searching` is cleared in `finally`. Only
+    // a search adopts a server-adjusted query and refocuses the input.
+    const wasSearch = this.searching;
     const requestUrl = url || this.buildRequestUrl();
     this.currentUrl = requestUrl;
     try {
       const response = await getUrl(requestUrl, controller);
       const data = (response.json || {}) as FetchResponse<T>;
+      // A query-validation error comes back list-shaped (status 200,
+      // empty results) with an `error` message — surface it over the
+      // empty table rather than the plain empty-state copy.
+      this.searchError = typeof data.error === 'string' ? data.error : '';
       this.items = data.results || [];
       this.nextCursor = data.next ? this.toRequestUrl(data.next) : '';
       this.prevCursor = data.previous ? this.toRequestUrl(data.previous) : '';
@@ -1411,6 +1747,17 @@ export class ContentList<T = any> extends RapidElement {
         if (visible.has(id)) next.add(id);
       });
       this.selectedIds = next;
+      // If the server echoed an adjusted/normalized query for this
+      // search, adopt it as the basis of the results and mirror it back
+      // into the input — so the box shows exactly what the results
+      // reflect (and the Search button stays hidden until the user
+      // edits away from it again). Keep the URL in step via a replacing
+      // write so it carries the normalized form without a new entry.
+      if (wasSearch && typeof data.query === 'string') {
+        this.search = data.query;
+        this.searchDraft = data.query;
+        this.writeUrlState(true);
+      }
     } catch (err) {
       // aborted or failed; leave items as-is and let the caller see
       // the empty/error state via console — no toast to keep the
@@ -1424,9 +1771,28 @@ export class ContentList<T = any> extends RapidElement {
         this.pending = null;
         this.loading = false;
         this.searching = false;
+        // The input was disabled while the search ran; once it
+        // re-enables, restore focus and drop the cursor at the end of
+        // the (possibly adjusted) query so the user can keep editing
+        // without re-clicking into the box.
+        if (wasSearch && this.searchOpen) {
+          this.updateComplete.then(() => this.focusSearchEnd());
+        }
         this.fireCustomEvent(CustomEventType.FetchComplete);
       }
     }
+  }
+
+  /** Focus the search input and place the caret at the end of its
+   * value — used after a search settles and the box re-enables. */
+  private focusSearchEnd(): void {
+    const input = this.shadowRoot?.querySelector(
+      '.searchbar input'
+    ) as HTMLInputElement | null;
+    if (!input) return;
+    input.focus();
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
   }
 
   /** Public API — programmatic refresh, mirrors `refreshKey` bump.
@@ -1467,19 +1833,16 @@ export class ContentList<T = any> extends RapidElement {
     this.searchDraft = event.target.value || '';
   }
 
-  /** Commit on Enter; let other keys through. Escape clears the
-   * draft (so the user can bail without firing a search). */
+  /** Commit on Enter; let other keys through. Escape closes the bar
+   * outright (clearing any active search, mirroring toggleSearch's
+   * close path) — the keyboard counterpart to the close (✕) button. */
   private handleSearchKey(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
       event.preventDefault();
       this.commitSearch();
     } else if (event.key === 'Escape') {
       event.preventDefault();
-      if (this.searchDraft && this.searchDraft !== this.search) {
-        // Discard the in-progress draft, leaving the committed
-        // search alone — a quick way out without altering results.
-        this.searchDraft = this.search;
-      }
+      this.toggleSearch();
     }
   }
 
@@ -1592,7 +1955,7 @@ export class ContentList<T = any> extends RapidElement {
 
     const ids = Array.from(this.selectedIds);
 
-    if (this.actionEndpoint) {
+    if (this.actionEndpoint && !action.clientOnly) {
       const params = new URLSearchParams();
       params.append('action', action.key);
       ids.forEach((id) => params.append('objects', id));
@@ -1653,79 +2016,95 @@ export class ContentList<T = any> extends RapidElement {
   }
 
   private renderTitlebar(): TemplateResult {
-    const selectionCount = this.selectedIds.size;
-    const bulkVisible = selectionCount > 0 && this.bulkActions.length > 0;
     const hasSubtitle =
       this.subtitle || this.querySelector('[slot="subtitle"]');
-    const resultCount = `${this.total} ${this.total === 1 ? 'result' : 'results'}`;
     // The header — title + content menu — is temba-page-header. The
-    // list forwards its own title/subtitle slots into it and slots
-    // its search / bulk-action controls into the header's actions
-    // area, so the list and a plain page share one header.
+    // list forwards its own title/subtitle slots into it and slots its
+    // pager / search into the header's actions area. The bulk actions
+    // are NOT here — when rows are selected they overlay the column-
+    // header row instead (see renderBulkBar), so the page header stays
+    // put rather than swapping its contents.
     return html`
       <temba-page-header
-        content-menu-endpoint=${this.contentMenuEndpoint}
-        ?hide-menu=${bulkVisible}
+        content-menu-endpoint=${this.contentMenuEndpointWithSearch()}
       >
         <slot name="title" slot="title">${this.listTitle}</slot>
         ${hasSubtitle
           ? html`<slot name="subtitle" slot="subtitle">${this.subtitle}</slot>`
           : null}
         <div slot="actions" class="header-actions">
-          ${bulkVisible
+          ${this.renderPager()}
+          ${this.searchable && !this.searchOpen
             ? html`
-                <span class="bulk-count">${selectionCount} selected</span>
-                ${this.bulkActions.map((a) => this.renderBulkAction(a))}
+                <span class="action" @click=${() => this.toggleSearch()}>
+                  <temba-icon name=${Icon.search} size="0.95"></temba-icon>
+                  Search
+                </span>
               `
-            : html`
-                ${this.renderPager()}
-                ${this.searchable && !this.searchOpen
-                  ? html`
-                      <span class="action" @click=${() => this.toggleSearch()}>
-                        <temba-icon
-                          name=${Icon.search}
-                          size="0.95"
-                        ></temba-icon>
-                        Search
-                      </span>
-                    `
-                  : null}
-                <slot name="actions"></slot>
-              `}
+            : null}
+          <slot name="actions"></slot>
         </div>
       </temba-page-header>
       ${this.searchable && this.searchOpen
         ? html`
             <div class="searchbar">
-              <span
-                class="submit"
-                title="Search"
-                aria-label="Search"
-                @click=${() => this.commitSearch()}
-              >
-                <temba-icon name=${Icon.search} size="0.95"></temba-icon>
-              </span>
               <input
                 type="text"
                 placeholder=${this.searchPlaceholder}
                 .value=${this.searchDraft}
+                ?disabled=${this.searching}
                 @input=${this.handleSearchInput}
                 @keydown=${this.handleSearchKey}
               />
-              ${this.search && this.hasCount && !this.loading
-                ? html`<span class="result-count">${resultCount}</span>`
+              ${!this.searching && this.searchDraft !== this.search
+                ? html`
+                    <span class="search-hint">
+                      <span class="enter-key">↵</span> to search
+                    </span>
+                    <temba-icon
+                      class="search-go"
+                      name=${Icon.search}
+                      size="1.1"
+                      clickable
+                      title="Search"
+                      aria-label="Run search"
+                      @click=${() => this.commitSearch()}
+                    ></temba-icon>
+                  `
                 : null}
-              <span
-                class="clear"
-                title="Close search"
-                aria-label="Close search"
+              <temba-icon
+                class="search-cancel"
+                name=${Icon.close}
+                size="1.1"
+                clickable
+                title="Cancel search"
+                aria-label="Cancel search"
                 @click=${() => this.toggleSearch()}
-              >
-                <temba-icon name=${Icon.close} size="0.85"></temba-icon>
-              </span>
+              ></temba-icon>
             </div>
           `
         : null}
+    `;
+  }
+
+  /** True when there's a selection and actions to run on it. */
+  private get bulkVisible(): boolean {
+    return this.selectedIds.size > 0 && this.bulkActions.length > 0;
+  }
+
+  /** The bulk-action bar — overlaid on the column-header row (just
+   * right of the select-all checkbox) when rows are selected, rather
+   * than replacing the page header. Positioned absolutely in the
+   * table-frame so it doesn't scroll horizontally with the columns. */
+  private renderBulkBar(): TemplateResult {
+    // Actions lead (fixed against the checkbox) and the count trails,
+    // right-aligned, so the buttons don't shift as the count's width
+    // changes ("1 selected" vs "100 selected").
+    return html`
+      <div class="bulk-bar ${this.bulkCollapsed ? 'collapsed' : ''}">
+        ${this.bulkActions.map((a) => this.renderBulkAction(a))}
+        <span class="bulk-count">${this.selectedIds.size} selected</span>
+      </div>
     `;
   }
 
@@ -1736,12 +2115,13 @@ export class ContentList<T = any> extends RapidElement {
     return html`
       <span
         class="bulk-action ${action.destructive ? 'destructive' : ''}"
+        title=${action.label}
         @click=${() => this.handleBulkAction(action)}
       >
         ${action.icon
           ? html`<temba-icon name=${action.icon} size="0.9"></temba-icon>`
           : null}
-        ${action.label}
+        <span class="bulk-label">${action.label}</span>
       </span>
     `;
   }
@@ -1751,17 +2131,17 @@ export class ContentList<T = any> extends RapidElement {
     return html`
       <temba-dropdown
         class="label-dropdown"
-        data-action-key=${action.key}
         @temba-opened=${() => this.handleLabelDropdownOpened(action)}
       >
         <span
           slot="toggle"
           class="bulk-action ${action.destructive ? 'destructive' : ''}"
+          title=${action.label}
         >
           ${action.icon
             ? html`<temba-icon name=${action.icon} size="0.9"></temba-icon>`
             : null}
-          ${action.label}
+          <span class="bulk-label">${action.label}</span>
         </span>
         <div slot="dropdown" class="label-menu">
           ${labels.length === 0
@@ -1776,7 +2156,7 @@ export class ContentList<T = any> extends RapidElement {
     label: any,
     action: ContentListBulkAction
   ): TemplateResult {
-    const state = this.computeLabelState(label.uuid);
+    const state = this.computeLabelState(label.uuid, action.labelsKey);
     const isPending = this.pendingLabel === label.uuid;
     const isBlocked = this.pendingLabel !== null && !isPending;
     return html`
@@ -1787,18 +2167,17 @@ export class ContentList<T = any> extends RapidElement {
         @click=${(e: MouseEvent) => {
           e.stopPropagation();
           if (this.pendingLabel !== null) return;
-          this.toggleLabel(label, state, action.key);
+          this.toggleLabel(label, state);
         }}
       >
         <temba-checkbox
           size="1.1"
           ?checked=${state === 'all'}
           ?partial=${state === 'some'}
+          ?busy=${isPending}
+          ?disabled=${isBlocked}
         ></temba-checkbox>
         <span class="lbl-name">${label.name}</span>
-        ${isPending
-          ? html`<temba-loading units="3" size="6"></temba-loading>`
-          : null}
       </div>
     `;
   }
@@ -1809,7 +2188,11 @@ export class ContentList<T = any> extends RapidElement {
     if (this.labelsByActionKey[action.key] || !action.labelsEndpoint) return;
     try {
       const response = await getUrl(action.labelsEndpoint);
-      const labels = response.json?.results || [];
+      const labels = (response.json?.results || [])
+        .slice()
+        .sort((a: any, b: any) =>
+          String(a.name || '').localeCompare(String(b.name || ''))
+        );
       this.labelsByActionKey = {
         ...this.labelsByActionKey,
         [action.key]: labels
@@ -1821,15 +2204,20 @@ export class ContentList<T = any> extends RapidElement {
   }
 
   /** Compute the tri-state across the selected rows for a given
-   * label uuid: 'all' if every selected row has it, 'some' if at
-   * least one but not all do, 'none' otherwise. */
-  private computeLabelState(labelUuid: string): 'none' | 'some' | 'all' {
+   * label/group uuid: 'all' if every selected row has it, 'some' if
+   * at least one but not all do, 'none' otherwise. Membership is read
+   * from the `labelsKey` item field (default 'labels'; contacts use
+   * 'groups'). */
+  private computeLabelState(
+    labelUuid: string,
+    labelsKey = 'labels'
+  ): 'none' | 'some' | 'all' {
     const selected = this.items.filter((item) =>
       this.selectedIds.has(this.rowId(item))
     );
     if (selected.length === 0) return 'none';
     const withLabel = selected.filter((item) =>
-      ((item as any).labels || []).some((l: any) => l.uuid === labelUuid)
+      ((item as any)[labelsKey] || []).some((l: any) => l.uuid === labelUuid)
     );
     if (withLabel.length === 0) return 'none';
     if (withLabel.length === selected.length) return 'all';
@@ -1847,27 +2235,15 @@ export class ContentList<T = any> extends RapidElement {
    * filtered result decide which rows stay. We POST first, then
    * refresh once the server confirms. The `pendingLabel` state
    * blocks further toggles until the round-trip completes. */
-  private async toggleLabel(
-    label: any,
-    state: string,
-    actionKey: string
-  ): Promise<void> {
+  private async toggleLabel(label: any, state: string): Promise<void> {
     if (this.pendingLabel !== null) return;
     const add = state !== 'all';
     const originalSelectedIds = Array.from(this.selectedIds);
     this.pendingLabel = label.uuid;
     try {
-      // Close just the dropdown for the action that fired — other
-      // label dropdowns in the toolbar (e.g. a separate "labels"
-      // grouping) stay in whatever state the user left them.
-      // `actionKey` is a consumer-supplied public-API field, so
-      // CSS.escape() keeps a key containing `"` or `\` from throwing
-      // SyntaxError (and leaving the dropdown stuck open).
-      const dropdown = this.shadowRoot?.querySelector(
-        `.label-dropdown[data-action-key="${CSS.escape(actionKey)}"]`
-      ) as Dropdown | null;
-      if (dropdown) dropdown.open = false;
-
+      // The dropdown is left open so several labels/groups can be
+      // toggled in one pass — each checkbox updates in place as the
+      // list re-fetches.
       if (this.actionEndpoint) {
         // application/x-www-form-urlencoded matches what Django's
         // smartmin `BulkActionMixin` reads from `request.POST`, and
@@ -2012,7 +2388,6 @@ export class ContentList<T = any> extends RapidElement {
     this.pinIndexByColumn = new Map();
     this.rightPinIndexByColumn = new Map();
     this.checkPinIndex = -1;
-    this.iconPinIndex = -1;
     this.lastPinIndex = -1;
     this.firstRightPinIndex = -1;
     this.spacerAfterIndex = -1;
@@ -2026,14 +2401,15 @@ export class ContentList<T = any> extends RapidElement {
     }
     this.firstRightPinIndex = ridx - 1;
 
-    // Left-pinned columns + the leading checkbox/icon cells.
+    // Left-pinned columns + the leading checkbox cell. The leading icon
+    // rides inside the first column's cell, so it adds no pin slot of
+    // its own.
     const leftPinnedCount = this.columns.filter((c) =>
       this.isLeftPinned(c)
     ).length;
     if (leftPinnedCount === 0) return;
     let idx = 0;
     if (this.hasCheckboxes) this.checkPinIndex = idx++;
-    if (this.reservesIcon) this.iconPinIndex = idx++;
     this.columns.forEach((c) => {
       if (this.isLeftPinned(c)) this.pinIndexByColumn.set(c, idx++);
     });
@@ -2106,17 +2482,6 @@ export class ContentList<T = any> extends RapidElement {
     return parts.join(' ');
   }
 
-  /** Column count for the empty/loading row's colspan — includes
-   * the leading cells and the slack spacer when present. */
-  private colSpan(): number {
-    return (
-      (this.hasCheckboxes ? 1 : 0) +
-      (this.reservesIcon ? 1 : 0) +
-      (this.spacerAfterIndex >= 0 ? 1 : 0) +
-      this.columns.length
-    );
-  }
-
   /** Measure the header's pinned cells and publish a cumulative
    * `left` offset per pin index as a CSS var on the host. Pinned
    * cells (header + body) read these via {@link pinStyle}. Pinned
@@ -2174,13 +2539,56 @@ export class ContentList<T = any> extends RapidElement {
       'can-scroll-right',
       scroller.scrollLeft < maxScroll - 1
     );
-    // Height of the horizontal scrollbar (0 for overlay scrollbars)
-    // — the scroll gradient is lifted by this so it never paints
-    // over the scrollbar track.
+    // Vertical scroll lifts the sticky header above the rows passing
+    // under it with the same soft drop shadow the pinned columns use.
+    frame.classList.toggle('scrolled-down', scroller.scrollTop > 1);
+    // The vertical scrollbar's width (0 for overlay scrollbars) pulls
+    // the right-edge scroll gradient inboard so it never paints over
+    // the scrollbar track.
     this.style.setProperty(
-      '--cl-scrollbar',
-      `${scroller.offsetHeight - scroller.clientHeight}px`
+      '--cl-scrollbar-w',
+      `${scroller.offsetWidth - scroller.clientWidth}px`
     );
+    // Height of the visible rows — the lesser of the table's own height
+    // and the visible area (clientHeight already excludes the horizontal
+    // scrollbar). The right-edge scroll gradient is sized to this so it
+    // stops at the bottom of the rows rather than running down the empty
+    // space below a short table.
+    const table = scroller.querySelector('table') as HTMLElement | null;
+    const rowsHeight = table
+      ? Math.min(scroller.clientHeight, table.offsetHeight)
+      : scroller.clientHeight;
+    this.style.setProperty('--cl-rows-height', `${rowsHeight}px`);
+    // Header height positions the header's scroll shadow just below it.
+    const headerRow = scroller.querySelector('tr.header') as HTMLElement | null;
+    if (headerRow) {
+      this.style.setProperty(
+        '--cl-header-height',
+        `${headerRow.offsetHeight}px`
+      );
+    }
+    // Left edge of the row's leading content — the bulk-action bar's
+    // first chip aligns here. That's the row icon when there is one
+    // (e.g. the contact silhouette) and otherwise the first column's
+    // text (e.g. the message contact), so the actions line up with the
+    // row content rather than the checkbox cell.
+    const frameRect = frame.getBoundingClientRect();
+    const lead =
+      (scroller.querySelector(
+        'tr.row td.lead-cell .lead-icon'
+      ) as HTMLElement | null) ||
+      (scroller.querySelector(
+        'tr.row td.cell .cell-inner'
+      ) as HTMLElement | null) ||
+      (scroller.querySelector(
+        'tr.header th.head-cell .head-inner'
+      ) as HTMLElement | null);
+    if (lead) {
+      this.style.setProperty(
+        '--cl-firstcol-left',
+        `${lead.getBoundingClientRect().left - frameRect.left}px`
+      );
+    }
   }
 
   private renderHeader(): TemplateResult {
@@ -2208,12 +2616,6 @@ export class ContentList<T = any> extends RapidElement {
                   </div>
                 </th>
               `
-            : null}
-          ${this.reservesIcon
-            ? html`<th
-                class="icon-cell ${this.pinClass(this.iconPinIndex)}"
-                style=${this.pinStyle(this.iconPinIndex)}
-              ></th>`
             : null}
           ${this.columns.map((c, i) =>
             i === this.spacerAfterIndex
@@ -2276,7 +2678,6 @@ export class ContentList<T = any> extends RapidElement {
     const id = this.rowId(item);
     const selected = this.selectedIds.has(id);
     const href = this.getRowHref(item);
-    const icon = this.getRowIcon(item);
     return html`
       <tr
         class="row ${selected ? 'selected' : ''} ${href ? 'clickable' : ''}"
@@ -2305,57 +2706,73 @@ export class ContentList<T = any> extends RapidElement {
               </td>
             `
           : null}
-        ${this.reservesIcon
-          ? html`
-              <td
-                class="icon-cell ${this.pinClass(this.iconPinIndex)}"
-                style=${this.pinStyle(this.iconPinIndex)}
-              >
-                ${icon
-                  ? html`<div class="icon-inner">
-                      <temba-icon name=${icon} size="1"></temba-icon>
-                    </div>`
-                  : null}
-              </td>
-            `
-          : null}
         ${this.columns.map((c, i) =>
           i === this.spacerAfterIndex
-            ? html`${this.renderBodyCell(item, c)}
+            ? html`${this.renderBodyCell(item, c, i === 0)}
                 <td class="spacer"></td>`
-            : this.renderBodyCell(item, c)
+            : this.renderBodyCell(item, c, i === 0)
         )}
       </tr>
     `;
   }
 
-  private renderBodyCell(item: T, column: ContentListColumn): TemplateResult {
+  private renderBodyCell(
+    item: T,
+    column: ContentListColumn,
+    isLead = false
+  ): TemplateResult {
+    const inner = html`
+      <div class="cell-inner" style=${this.cellWidthStyle(column)}>
+        ${this.renderCell(item, column)}
+      </div>
+    `;
+    // The first column carries the row's leading icon (when the list
+    // reserves one), so its header aligns with the icon rather than the
+    // value. A row with no icon still reserves the space to keep values
+    // aligned down the column.
+    const lead = isLead && this.reservesIcon;
+    const icon = lead ? this.getRowIcon(item) : null;
     return html`
       <td
-        class="cell ${column.align || ''} ${column.grow
-          ? 'grow'
-          : ''} ${this.columnPinClass(column)}"
+        class="cell ${lead ? 'lead-cell' : ''} ${column.align ||
+        ''} ${column.grow ? 'grow' : ''} ${this.columnPinClass(column)}"
         style=${this.columnPinStyle(column)}
       >
-        <div class="cell-inner" style=${this.cellWidthStyle(column)}>
-          ${this.renderCell(item, column)}
-        </div>
+        ${lead
+          ? html`<div class="lead-wrap">
+              <span class="lead-icon"
+                >${icon
+                  ? html`<temba-icon name=${icon} size="1"></temba-icon>`
+                  : null}</span
+              >${inner}
+            </div>`
+          : inner}
       </td>
     `;
   }
 
   /** The pager — a compact "‹ 1–N of Total ›" stepper for the
-   * header's actions cluster. A cursor list has no total, so it
-   * shows chevrons only, gated on whether the last response handed
-   * back a cursor for that direction. Returns nothing when there is
-   * neither a page to move to nor a count worth showing. */
+   * header's actions cluster. The "N–M of Total" status shows whenever
+   * the response carried a count (`hasCount`) — in cursor mode too,
+   * using the synthetic page for the range; an uncounted cursor list
+   * falls back to chevrons only, gated on whether the last response
+   * handed back a cursor for that direction. Returns nothing when there
+   * is neither a page to move to nor a count worth showing. */
   private renderPager(): TemplateResult {
     const lastPage = Math.max(1, Math.ceil(this.total / this.pageSize));
     const first = this.total === 0 ? 0 : (this.page - 1) * this.pageSize + 1;
-    const last = Math.min(this.total, this.page * this.pageSize);
+    // Derive `last` from the rows actually shown rather than page*pageSize,
+    // so a short slice (a partial cursor page, or the final page) reports
+    // the true position instead of overshooting the total.
+    const last = first === 0 ? 0 : first + this.items.length - 1;
     const atStart = this.cursorMode ? !this.prevCursor : this.page <= 1;
     const atEnd = this.cursorMode ? !this.nextCursor : this.page >= lastPage;
-    if (this.cursorMode ? atStart && atEnd : this.total === 0) {
+    // Nothing to show: an empty counted list (the .list-state covers it),
+    // or an uncounted cursor list with no other page to step to. When the
+    // endpoint provides a count we show the "N–M of Total" status in both
+    // page and cursor mode (the synthetic page tracks position in cursor
+    // mode too).
+    if (this.hasCount ? this.total === 0 : atStart && atEnd) {
       return html``;
     }
     return html`
@@ -2368,7 +2785,7 @@ export class ContentList<T = any> extends RapidElement {
         >
           <temba-icon name=${Icon.arrow_left} size="1"></temba-icon>
         </span>
-        ${!this.cursorMode
+        ${this.hasCount
           ? html`<span class="pager-status"
               >${first}&ndash;${last} of ${this.total}</span
             >`
@@ -2389,42 +2806,56 @@ export class ContentList<T = any> extends RapidElement {
     // Pin layout depends on the current columns + items, so resolve
     // it once per render before the header and rows are built.
     this.computePinLayout();
-    const span = this.colSpan();
+    // The empty / loading / searching state is shown over the body area
+    // (see .list-state) rather than as a colspan row, so it centers in
+    // the visible container instead of the overflowing table width.
+    // A query error takes over the empty-table treatment (with its own
+    // error styling) in place of the plain "nothing to show" copy.
+    const stateError = !this.searching && !this.loading && !!this.searchError;
+    const stateMessage = this.searching
+      ? 'Searching…'
+      : this.loading && this.items.length === 0
+        ? 'Loading…'
+        : stateError
+          ? this.searchError
+          : this.items.length === 0
+            ? this.emptyMessage
+            : null;
     return html`
       <div class="panel">
         ${this.renderTitlebar()}
         <div class="header-rule"></div>
         <div class="table-frame">
           <div
-            class="table-scroll"
+            class="table-scroll ${stateMessage ? 'no-rows' : ''}"
             @scroll=${() => this.syncScrollAffordance()}
           >
             <table
               class="table ${this.fixedLayout ? 'fixed' : ''}"
-              style=${this.minTableWidth
+              style=${!stateMessage && this.minTableWidth
                 ? `min-width: ${this.minTableWidth};`
                 : ''}
             >
               ${this.renderHeader()}
               <tbody>
-                ${this.searching
-                  ? html`<tr>
-                      <td class="loading" colspan=${span}>Searching&hellip;</td>
-                    </tr>`
-                  : this.loading && this.items.length === 0
-                    ? html`<tr>
-                        <td class="loading" colspan=${span}>Loading&hellip;</td>
-                      </tr>`
-                    : this.items.length === 0
-                      ? html`<tr>
-                          <td class="empty" colspan=${span}>
-                            ${this.emptyMessage}
-                          </td>
-                        </tr>`
-                      : this.items.map((i) => this.renderRow(i))}
+                ${stateMessage
+                  ? null
+                  : this.items.map((i) => this.renderRow(i))}
               </tbody>
             </table>
           </div>
+          ${stateMessage
+            ? html`<div class="list-state ${stateError ? 'error' : ''}">
+                ${stateError
+                  ? html`<span class="state-error">
+                      <temba-icon name=${Icon.error} size="1"></temba-icon>
+                      ${stateMessage}
+                    </span>`
+                  : stateMessage}
+              </div>`
+            : null}
+          ${this.bulkVisible ? this.renderBulkBar() : null}
+          <div class="header-shadow"></div>
           <div class="scroll-shadow"></div>
         </div>
       </div>

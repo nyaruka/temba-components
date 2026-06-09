@@ -11,12 +11,13 @@
       "fields": {
         "state": "California",
         "district": "Alameda",
-        "ward": "Oakland",
+        "ward": "USA > California > Alameda > Oakland",
         "joined": "2024-03-12T09:15:00Z",
         "age": 34,
         "gender": "Female"
       },
-      "last_seen_on": "2026-05-11T13:42:11Z"
+      "last_seen_on": "2026-05-11T13:42:11Z",
+      "created_on": "2024-03-12T09:15:00Z"
     },
     {
       "uuid": "c-002",
@@ -26,12 +27,13 @@
       "fields": {
         "state": "Lagos",
         "district": "Ikeja",
-        "ward": "GRA Phase 1",
+        "ward": "Nigeria > Lagos > Ikeja > GRA Phase 1",
         "joined": "2023-11-01T17:30:00Z",
         "age": 41,
         "gender": "Male"
       },
-      "last_seen_on": "2026-05-11T13:14:02Z"
+      "last_seen_on": "2026-05-11T13:14:02Z",
+      "created_on": "2023-11-01T17:30:00Z"
     },
     {
       "uuid": "c-003",
@@ -41,12 +43,13 @@
       "fields": {
         "state": "Western Cape",
         "district": "City of Cape Town",
-        "ward": "Ward 115",
+        "ward": "South Africa > Western Cape > City of Cape Town > Ward 115",
         "joined": "2025-01-20T08:05:00Z",
         "age": 28,
         "gender": "Female"
       },
-      "last_seen_on": "2026-05-11T12:58:00Z"
+      "last_seen_on": "2026-05-11T12:58:00Z",
+      "created_on": "2025-01-20T08:05:00Z"
     },
     {
       "uuid": "c-004",
@@ -56,12 +59,13 @@
       "fields": {
         "state": "Seoul",
         "district": "Gangnam",
-        "ward": "Yeoksam",
+        "ward": "South Korea > Seoul > Gangnam > Yeoksam",
         "joined": "2022-07-08T11:45:00Z",
         "age": 52,
         "gender": "Male"
       },
-      "last_seen_on": "2026-05-11T11:30:45Z"
+      "last_seen_on": "2026-05-11T11:30:45Z",
+      "created_on": "2022-07-08T11:45:00Z"
     },
     {
       "uuid": "c-005",
@@ -71,12 +75,13 @@
       "fields": {
         "state": "Nairobi",
         "district": "Westlands",
-        "ward": "Parklands",
+        "ward": "Kenya > Nairobi > Westlands > Parklands",
         "joined": "2024-09-30T14:20:00Z",
         "age": 23,
         "gender": "Female"
       },
-      "last_seen_on": "2026-05-11T10:14:20Z"
+      "last_seen_on": "2026-05-11T10:14:20Z",
+      "created_on": "2024-09-30T14:20:00Z"
     },
     {
       "uuid": "c-006",
@@ -86,12 +91,13 @@
       "fields": {
         "state": "Cairo",
         "district": "Nasr City",
-        "ward": "Zone 8",
+        "ward": "Egypt > Cairo > Nasr City > Zone 8",
         "joined": "2023-04-17T19:00:00Z",
         "age": 37,
         "gender": "Male"
       },
-      "last_seen_on": "2026-05-10T22:01:12Z"
+      "last_seen_on": "2026-05-10T22:01:12Z",
+      "created_on": "2023-04-17T19:00:00Z"
     },
     {
       "uuid": "c-007",
@@ -101,12 +107,13 @@
       "fields": {
         "state": "Stockholm",
         "district": "Sodermalm",
-        "ward": "Mariatorget",
+        "ward": "Sweden > Stockholm > Sodermalm > Mariatorget",
         "joined": "2025-02-11T07:40:00Z",
         "age": 45,
-        "gender": "Female"
+        "gender": ""
       },
-      "last_seen_on": "2026-05-10T16:45:00Z"
+      "last_seen_on": "2026-05-10T16:45:00Z",
+      "created_on": "2025-02-11T07:40:00Z"
     }
   ]
 }

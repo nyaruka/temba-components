@@ -1,5 +1,6 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import { Checkbox } from '../src/form/Checkbox';
+import { Icon } from '../src/Icons';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const getCheckbox = async (props: any) => {
@@ -194,5 +195,28 @@ describe('temba-checkbox', () => {
     );
 
     await assertScreenshot('checkbox/checkbox-with-help-text', getClip(el));
+  });
+
+  it('ignores clicks and shows spinning arrows while busy', async () => {
+    const el: Checkbox = await getCheckbox({
+      label: 'My Checkbox',
+      busy: true
+    });
+
+    // a busy checkbox must not toggle when clicked — the host owns the
+    // in-flight change and clears busy when it resolves
+    el.click();
+    expect(el.checked).to.not.equal(true);
+
+    // the glyph is swapped for a spinning progress icon
+    const icon = el.shadowRoot.querySelector('temba-icon') as HTMLElement;
+    expect(icon.getAttribute('name')).to.equal(Icon.progress_spinner);
+    expect(icon.hasAttribute('spin')).to.equal(true);
+
+    // clearing busy restores normal click-to-toggle behavior
+    el.busy = false;
+    await el.updateComplete;
+    el.click();
+    expect(el.checked).to.equal(true);
   });
 });

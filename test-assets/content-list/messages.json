@@ -6,7 +6,7 @@
     {
       "id": 1001,
       "contact": { "name": "Amelia Chen", "urn": "tel:+15551112222" },
-      "text": "I'd like to know my account balance please",
+      "text": "I'd like to know my account balance please, and also whether the daily digest covers weekend transactions or just weekdays — thanks so much for the help with all of this!",
       "labels": [{ "name": "Inquiry" }],
       "flow": null,
       "msg_type": "text",

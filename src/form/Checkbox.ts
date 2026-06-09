@@ -88,6 +88,15 @@ export class Checkbox extends FieldElement {
         cursor: not-allowed;
         --icon-color: #ccc;
       }
+
+      /* While a change driven by this checkbox is in flight, the glyph
+         is swapped for spinning arrows to signal work is underway, and the
+         white checkbox backing is hidden so the circular arrows aren't
+         framed by a square. Clicks are ignored in handleClick so the user
+         can't re-fire the same toggle. */
+      .checkbox-container.busy .checkbox-background {
+        display: none;
+      }
     `;
   }
 
@@ -102,6 +111,12 @@ export class Checkbox extends FieldElement {
 
   @property({ type: Boolean })
   disabled = false;
+
+  // When set, the checkbox glyph is replaced by spinning arrows to indicate
+  // a change it drives is in flight, and clicks are ignored until the host
+  // clears it.
+  @property({ type: Boolean })
+  busy = false;
 
   @property({ type: Number })
   size = 1.2;
@@ -154,7 +169,7 @@ export class Checkbox extends FieldElement {
   }
 
   private handleClick(): void {
-    if (!this.disabled) {
+    if (!this.disabled && !this.busy) {
       this.checked = !this.checked;
     }
   }
@@ -165,22 +180,33 @@ export class Checkbox extends FieldElement {
   }
 
   protected renderWidget(): TemplateResult {
-    const icon = html`<temba-icon
-      name="${this.checked
-        ? Icon.checkbox_checked
-        : this.partial
-          ? Icon.checkbox_partial
-          : Icon.checkbox}"
-      size="${this.size}"
-      animatechange="${this.animateChange}"
-    ></temba-icon>`;
+    const icon = this.busy
+      ? html`<temba-icon
+          name="${Icon.progress_spinner}"
+          size="${this.size}"
+          spin
+        ></temba-icon>`
+      : html`<temba-icon
+          name="${this.checked
+            ? Icon.checkbox_checked
+            : this.partial
+              ? Icon.checkbox_partial
+              : Icon.checkbox}"
+          size="${this.size}"
+          animatechange="${this.animateChange}"
+        ></temba-icon>`;
 
     return html`
       <div
         class="wrapper ${this.label ? 'label' : ''}"
         @click=${this.handleClick}
       >
-        <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
+        <div
+          class="checkbox-container ${this.disabled ? 'disabled' : ''} ${this
+            .busy
+            ? 'busy'
+            : ''}"
+        >
           <div class="checkbox-background"></div>
           ${icon}
 

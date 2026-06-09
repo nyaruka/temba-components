@@ -7,6 +7,9 @@ import { getUrl } from '../utils';
 
 const FIELD_PREFIX = 'field:';
 
+/** Placeholder shown in any cell whose value is empty. */
+const EMPTY = '--';
+
 /**
  * Contact CRUDL list — drop-in replacement for the rapidpro
  * `contacts/contact_list.html` table. Each row carries a contact
@@ -60,6 +63,16 @@ export class ContactList extends ContentList<Contact> {
     this.bulkActions = [
       { key: 'send', label: 'Send', icon: Icon.compose },
       { key: 'flow', label: 'Start flow', icon: Icon.flow },
+      // Group toggle — a dropdown of the workspace's static (manual)
+      // groups to add/remove the selection to/from, like the message
+      // list's label dropdown.
+      {
+        key: 'label',
+        label: 'Group',
+        icon: Icon.group,
+        labelsEndpoint: '/api/v2/groups.json?manual_only=1',
+        labelsKey: 'groups'
+      },
       { key: 'archive', label: 'Archive', icon: Icon.archive },
       { key: 'delete', label: 'Delete', icon: Icon.delete, destructive: true }
     ];
@@ -117,15 +130,16 @@ export class ContactList extends ContentList<Contact> {
     }
   }
 
-  /** Columns: name, urn, the featured fields, then last seen.
+  /** Columns: name, urn, the featured fields, then last seen and
+   * created on.
    *
-   * Name + URN lead and Last-seen trails, with the workspace's
-   * custom fields filling the middle. Every column sizes to its
-   * content between min/max bounds — none are hard-fixed — so the
+   * Name leads, with URN, the workspace's custom fields, and the
+   * last-seen / created-on dates trailing it. Every column sizes to
+   * its content between min/max bounds — none are hard-fixed — so the
    * table stays compact and overflows into a horizontal scroll only
-   * when the field set is genuinely wide. Name + URN are pinned to
-   * the left edge and Last-seen to the right, so identity and
-   * recency stay anchored while the fields scroll between them.
+   * when the field set is genuinely wide. Only Name is pinned to the
+   * left edge, so identity stays anchored while everything else
+   * scrolls.
    *
    * There is deliberately no group-membership column — contacts
    * routinely belong to dozens of groups, so a groups cell is
@@ -158,8 +172,7 @@ export class ContactList extends ContentList<Contact> {
         key: 'urn',
         label: 'URN',
         minWidth: '120px',
-        maxWidth: '190px',
-        pinned: true
+        maxWidth: '190px'
       },
       ...fieldColumns,
       {
@@ -168,8 +181,15 @@ export class ContactList extends ContentList<Contact> {
         sortable: true,
         minWidth: '96px',
         maxWidth: '150px',
-        align: 'right',
-        pinned: 'right'
+        align: 'right'
+      },
+      {
+        key: 'created_on',
+        label: 'Created on',
+        sortable: true,
+        minWidth: '96px',
+        maxWidth: '150px',
+        align: 'right'
       }
     ];
   }
@@ -189,11 +209,16 @@ export class ContactList extends ContentList<Contact> {
     if (column.key.startsWith(FIELD_PREFIX)) {
       const fieldKey = column.key.substring(FIELD_PREFIX.length);
       const raw = item.fields?.[fieldKey];
-      if (raw == null || raw === '') return '';
-      // Date/time fields render as a relative duration, matching the
-      // Last-seen column — never a raw timestamp string.
+      if (raw == null || raw === '') return EMPTY;
+      // Location values are stored as a full hierarchy path
+      // (e.g. "Nigeria > Yobe > Nguru > Dabule"); show only the leaf.
+      if (this.isLocationField(fieldKey)) {
+        const path = String(raw);
+        return html`<span title=${path}>${this.locationLeaf(path)}</span>`;
+      }
+      // Date/time fields render via the timedate format.
       if (this.isDateField(fieldKey)) {
-        return html`<temba-date value=${raw} display="duration"></temba-date>`;
+        return html`<temba-date value=${raw} display="timedate"></temba-date>`;
       }
       const value = String(raw);
       return html`<span title=${value}>${value}</span>`;
@@ -201,19 +226,26 @@ export class ContactList extends ContentList<Contact> {
     switch (column.key) {
       case 'name':
         return html`<span class="contact-name" title=${item.name || ''}
-          >${item.name || '—'}</span
+          >${item.name || EMPTY}</span
         >`;
       case 'urn':
         return html`<span class="contact-urn"
-          >${this.primaryUrn(item) || ''}</span
+          >${this.primaryUrn(item) || EMPTY}</span
         >`;
       case 'last_seen_on':
         return item.last_seen_on
           ? html`<temba-date
               value=${item.last_seen_on}
-              display="duration"
+              display="timedate"
             ></temba-date>`
-          : '';
+          : EMPTY;
+      case 'created_on':
+        return item.created_on
+          ? html`<temba-date
+              value=${item.created_on}
+              display="timedate"
+            ></temba-date>`
+          : EMPTY;
       default:
         return super.renderCell(item, column);
     }
@@ -227,6 +259,24 @@ export class ContactList extends ContentList<Contact> {
     );
     const type = field?.value_type;
     return type === 'datetime' || type === 'date';
+  }
+
+  /** True when a featured field stores a location value (state /
+   * district / ward) — those are serialized as a full hierarchy path
+   * and we render only the leaf. */
+  private isLocationField(fieldKey: string): boolean {
+    const field = (this.featuredFields || []).find(
+      (f: any) => f.key === fieldKey
+    );
+    const type = field?.value_type;
+    return type === 'state' || type === 'district' || type === 'ward';
+  }
+
+  /** The last segment of a location hierarchy path, e.g.
+   * "Nigeria > Yobe > Nguru > Dabule" → "Dabule". */
+  private locationLeaf(path: string): string {
+    const parts = path.split('>');
+    return parts[parts.length - 1].trim();
   }
 
   private primaryUrn(item: Contact): string {

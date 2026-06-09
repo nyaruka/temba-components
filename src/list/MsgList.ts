@@ -8,7 +8,7 @@ import { Msg } from '../interfaces';
  * `msgs/msg_list.html` table. Reverse-chronological; the message
  * cell carries the body text with its attachment thumbnails right
  * after it and the flow / label pills pushed to the trailing edge,
- * with a duration timestamp closing the row.
+ * with a timedate timestamp closing the row.
  */
 export class MsgList extends ContentList<Msg> {
   static get styles() {
@@ -100,11 +100,13 @@ export class MsgList extends ContentList<Msg> {
     this.searchPlaceholder = 'Search messages';
     // Messages page 100 at a time, matching rapidpro's msg list.
     this.pageSize = 100;
-    // Fixed layout so a long message ellipsis-truncates within its
-    // column instead of stretching the table; minTableWidth lets the
-    // list scroll horizontally once the container is too narrow to
-    // keep the columns usable, rather than clipping anything.
-    this.fixedLayout = true;
+    // Auto layout so the Contact / Sent columns size to their content
+    // (no stranded width on the short Sent value), while the Message
+    // column is a `grow` column — under auto layout it claims zero
+    // intrinsic width and ellipsis-truncates against the leftover space
+    // rather than stretching the table. minTableWidth lets the list
+    // scroll horizontally once the container is too narrow to keep the
+    // columns usable, rather than clipping anything.
     this.minTableWidth = '640px';
     this.columns = [
       {
@@ -117,9 +119,7 @@ export class MsgList extends ContentList<Msg> {
       {
         key: 'created_on',
         label: 'Sent',
-        width: '120px',
-        align: 'right',
-        pinned: 'right'
+        align: 'right'
       }
     ];
     this.bulkActions = [
@@ -172,7 +172,7 @@ export class MsgList extends ContentList<Msg> {
     `;
   }
 
-  /** The sent cell — duration timestamp with an optional channel-log
+  /** The sent cell — timedate timestamp with an optional channel-log
    * icon to its right. The icon is rendered when the server includes
    * a logs_url on the row (permission- and retention-gated
    * server-side). stopPropagation keeps the row's contact navigation
@@ -181,7 +181,7 @@ export class MsgList extends ContentList<Msg> {
     if (!item.created_on) return '';
     return html`
       <div class="sent-cell">
-        <temba-date value=${item.created_on} display="duration"></temba-date>
+        <temba-date value=${item.created_on} display="timedate"></temba-date>
         ${item.logs_url && this.isSafeHref(item.logs_url)
           ? html`
               <a
