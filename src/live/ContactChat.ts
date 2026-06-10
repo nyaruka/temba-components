@@ -45,6 +45,9 @@ export const MIN_CHAT_REFRESH = 500;
 export const BODY_SNIPPET_LENGTH = 250;
 */
 
+// how often we send typing indicators while the user is composing
+export const TYPING_THROTTLE = 4000;
+
 // re-export for backwards compatibility
 export { renderTicketAction, renderTicketAssigneeChanged };
 
@@ -529,6 +532,9 @@ export class ContactChat extends ContactStoreElement {
   beforeUUID: string = null; // for scrolling back through history
   afterUUID: string = null; // for polling new messages
   refreshId = null;
+
+  // last time we sent a typing indicator for the user
+  lastTypingSent = 0;
   polling = false;
   pollingInterval = 2000; // start at 2 seconds
   lastFetchTime: number = null;
@@ -924,6 +930,26 @@ export class ContactChat extends ContactStoreElement {
     compose.triggerSend();
   }
 
+  private handleComposeChanged(evt: CustomEvent) {
+    const text = evt.detail?.und?.text;
+    if (!this.currentContact || !text) {
+      return;
+    }
+
+    // let the contact know we're typing, at most once per throttle window
+    const now = Date.now();
+    if (now - this.lastTypingSent < TYPING_THROTTLE) {
+      return;
+    }
+    this.lastTypingSent = now;
+
+    postJSON(`/contact/chat/${this.currentContact.uuid}/`, {
+      typing: true
+    }).catch(() => {
+      // typing indicators are best effort
+    });
+  }
+
   private handleSend(evt: CustomEvent) {
     this.errorMessage = null;
     const composeEle = evt.currentTarget as Compose;
@@ -1075,8 +1101,10 @@ export class ContactChat extends ContactStoreElement {
         if (fetchContact === this.currentContact.uuid) {
           const hasNewEvents = messages.length > 0;
           chat.addMessages(messages, null, true);
+          chat.typing = !!page.typing;
           this.polling = false;
-          this.scheduleRefresh(hasNewEvents);
+          // keep polling quickly while the contact is typing
+          this.scheduleRefresh(hasNewEvents || !!page.typing);
         } else {
           this.polling = false;
         }
@@ -1238,6 +1266,7 @@ export class ContactChat extends ContactStoreElement {
           shortcuts
           min-height="75"
           @temba-submitted=${this.handleSend.bind(this)}
+          @temba-content-changed=${this.handleComposeChanged.bind(this)}
         >
         </temba-compose>
         ${this.errorMessage

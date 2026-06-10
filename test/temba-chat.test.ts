@@ -63,3 +63,22 @@ describe('temba-chat contact avatars', () => {
     assert.isNotNull(user.bgimage);
   });
 });
+
+describe('temba-chat typing indicator', () => {
+  it('shows an animated typing bubble while the contact is typing', async () => {
+    const chat = await createChat(
+      'contactname="Jane Doe" contactuuid="contact-1"'
+    );
+    chat.loadMessages([received('msg-1', 'hello there')]);
+    await chat.updateComplete;
+    assert.isNull(chat.shadowRoot.querySelector('.typing-dots'));
+
+    chat.typing = true;
+    await chat.updateComplete;
+    assert.isNotNull(chat.shadowRoot.querySelector('.typing-dots'));
+
+    chat.typing = false;
+    await chat.updateComplete;
+    assert.isNull(chat.shadowRoot.querySelector('.typing-dots'));
+  });
+});

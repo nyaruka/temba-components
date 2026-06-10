@@ -239,6 +239,53 @@ describe('temba-contact-chat', () => {
     );
   });
 
+  it('sends throttled typing indicators while composing', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    mockPOST(/contact\/chat\/contact-dave-active\//, {});
+
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    const fetchStub = window.fetch as SinonStub;
+
+    const typingPosts = () =>
+      fetchStub.getCalls().filter((call) => {
+        return (
+          `${call.args[0]}`.includes('/contact/chat/contact-dave-active/') &&
+          call.args[1]?.body === JSON.stringify({ typing: true })
+        );
+      });
+
+    const typeSomething = (text: string) => {
+      compose.dispatchEvent(
+        new CustomEvent(CustomEventType.ContentChanged, {
+          detail: { und: { text } }
+        })
+      );
+    };
+
+    // move past the initial throttle window (fake timers start at zero)
+    clock.tick(5000);
+
+    typeSomething('hello');
+    expect(typingPosts().length).to.equal(1);
+
+    // more typing inside the throttle window doesn't send another
+    typeSomething('hello wor');
+    expect(typingPosts().length).to.equal(1);
+
+    // but once the throttle window passes it does
+    clock.tick(5000);
+    typeSomething('hello world');
+    expect(typingPosts().length).to.equal(2);
+
+    // clearing the compose doesn't send typing
+    clock.tick(5000);
+    typeSomething('');
+    expect(typingPosts().length).to.equal(2);
+  });
+
   it('shows failure message with retry', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();

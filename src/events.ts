@@ -117,4 +117,5 @@ export type CallStartedEvent = ContactEvent;
 export interface ContactHistoryPage {
   events: ContactEvent[];
   next: string | null;
+  typing?: boolean;
 }

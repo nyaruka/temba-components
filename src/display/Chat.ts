@@ -313,6 +313,42 @@ export class Chat extends RapidElement {
         color: rgba(255, 255, 255, 0.7);
       }
 
+      .typing-dots {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 0;
+      }
+
+      .typing-dots span {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.35);
+        animation: typing-blink 1.2s infinite both;
+      }
+
+      .typing-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .typing-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes typing-blink {
+        0%,
+        80%,
+        100% {
+          opacity: 0.25;
+          transform: translateY(0);
+        }
+        40% {
+          opacity: 1;
+          transform: translateY(-2px);
+        }
+      }
+
       .note .bubble {
         background: #fffac3;
         border: 1px solid #e8d169;
@@ -828,6 +864,10 @@ export class Chat extends RapidElement {
 
   @property({ type: Boolean })
   showTimestamps = true;
+
+  // whether the contact is currently typing, shown as an animated bubble
+  @property({ type: Boolean })
+  typing = false;
 
   @property({ type: String, attribute: false })
   searchHighlight: string = null;
@@ -1352,6 +1392,35 @@ export class Chat extends RapidElement {
     return { html: resultHtml, timestamp: newLastShownTimestamp };
   }
 
+  // renders an animated bubble indicating the contact is typing, styled to
+  // match a message group from the contact
+  private renderTyping(): TemplateResult {
+    const showAvatar = this.avatars && this.agent;
+    return html`<div class="block ${this.agent ? 'outgoing' : 'incoming'}">
+      <div class="group-messages" style="flex-grow:1">
+        <div class="row message latest">
+          <div class="bubble-wrap">
+            <div class="bubble">
+              <div class="typing-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      ${showAvatar
+        ? html`<div class="avatar" style="align-self:flex-end">
+            <temba-user
+              uuid=${this.contactUuid ?? nothing}
+              name=${this.contactName ?? nothing}
+              ?system=${!this.contactUuid && !this.contactName}
+            >
+            </temba-user>
+          </div>`
+        : null}
+    </div>`;
+  }
+
   private renderNote(
     event: TicketEvent,
     name: string | null,
@@ -1507,6 +1576,7 @@ export class Chat extends RapidElement {
         ${this.hideTopScroll ? 'scroll-at-top' : ''}"
     >
       <div class="scroll" @scroll=${this.handleScroll}>
+        ${this.typing ? this.renderTyping() : null}
         ${this.messageGroups
           ? (() => {
               let lastTimestamp: Date | null = null;
