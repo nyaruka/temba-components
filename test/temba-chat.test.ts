@@ -64,6 +64,14 @@ describe('temba-chat contact avatars', () => {
   });
 });
 
+const created = (uuid: string, text: string): ContactEvent =>
+  ({
+    uuid,
+    type: 'msg_created',
+    created_on: new Date(),
+    msg: { text }
+  }) as ContactEvent;
+
 describe('temba-chat typing indicator', () => {
   it('shows an animated typing bubble while the contact is typing', async () => {
     const chat = await createChat(
@@ -80,5 +88,40 @@ describe('temba-chat typing indicator', () => {
     chat.typing = false;
     await chat.updateComplete;
     assert.isNull(chat.shadowRoot.querySelector('.typing-dots'));
+  });
+
+  it('joins the newest message group when it is from the contact', async () => {
+    const chat = await createChat(
+      'contactname="Jane Doe" contactuuid="contact-1"'
+    );
+    chat.loadMessages([received('msg-1', 'hello there')]);
+    await chat.updateComplete;
+
+    chat.typing = true;
+    await chat.updateComplete;
+
+    // typing bubble renders inside the contact's group, not as its own block
+    const blocks = chat.shadowRoot.querySelectorAll('.block');
+    assert.equal(blocks.length, 1);
+    assert.isNotNull(blocks[0].querySelector('.typing-dots'));
+
+    // and the typing bubble takes over as the latest bubble in the group
+    const latest = blocks[0].querySelectorAll('.row.latest');
+    assert.equal(latest.length, 1);
+    assert.isNotNull(latest[0].querySelector('.typing-dots'));
+  });
+
+  it('renders as its own group when the newest message is outgoing', async () => {
+    const chat = await createChat(
+      'contactname="Jane Doe" contactuuid="contact-1"'
+    );
+    chat.loadMessages([created('msg-1', 'how can we help?')]);
+    await chat.updateComplete;
+
+    chat.typing = true;
+    await chat.updateComplete;
+
+    const blocks = chat.shadowRoot.querySelectorAll('.block');
+    assert.equal(blocks.length, 2);
   });
 });

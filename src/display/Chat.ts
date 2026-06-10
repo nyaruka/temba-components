@@ -1245,6 +1245,9 @@ export class Chat extends RapidElement {
     const today = new Date();
     const msgIds = group.messages;
 
+    // whether the typing indicator renders as the latest bubble of this group
+    const appendTyping = idx === 0 && this.typingJoinsNewestGroup();
+
     const mostRecentId = msgIds[msgIds.length - 1];
     const currentMsg = this.msgMap.get(mostRecentId);
 
@@ -1351,7 +1354,8 @@ export class Chat extends RapidElement {
                   (statusClass === 'failed' || statusClass === 'errored'));
               const unsendableClass = hasError ? 'error' : '';
               const deletedClass = msgEvent._deleted ? 'deleted' : '';
-              const latestClass = index === msgIds.length - 1 ? 'latest' : '';
+              const latestClass =
+                index === msgIds.length - 1 && !appendTyping ? 'latest' : '';
               const eventClass = msg._rendered ? 'is-event' : '';
               const noteClass = msg.type === 'ticket_note_added' ? 'note' : '';
               const matchClass =
@@ -1368,6 +1372,7 @@ export class Chat extends RapidElement {
               </div>`;
             }
           )}
+          ${appendTyping ? this.renderTypingBubble() : null}
         </div>
         ${showAvatar
           ? html`<div class="avatar" style="align-self:flex-end">
@@ -1392,21 +1397,40 @@ export class Chat extends RapidElement {
     return { html: resultHtml, timestamp: newLastShownTimestamp };
   }
 
-  // renders an animated bubble indicating the contact is typing, styled to
-  // match a message group from the contact
+  // renders the row containing the animated typing bubble
+  private renderTypingBubble(): TemplateResult {
+    return html`<div class="row message latest">
+      <div class="bubble-wrap">
+        <div class="bubble">
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // whether the typing indicator should render as part of the newest message group rather
+  // than as its own group - the same rules used to group the contact's messages
+  private typingJoinsNewestGroup(): boolean {
+    if (!this.typing || this.messageGroups.length === 0) {
+      return false;
+    }
+    const group = this.messageGroups[0];
+    const lastMsg = this.msgMap.get(group.messages[group.messages.length - 1]);
+    if (!lastMsg || lastMsg.type !== 'msg_received') {
+      return false;
+    }
+    return (
+      Math.abs(Date.now() - lastMsg.created_on.getTime()) < BATCH_TIME_WINDOW
+    );
+  }
+
+  // renders an animated bubble indicating the contact is typing, as its own group styled
+  // to match a message group from the contact
   private renderTyping(): TemplateResult {
     const showAvatar = this.avatars && this.agent;
     return html`<div class="block ${this.agent ? 'outgoing' : 'incoming'}">
       <div class="group-messages" style="flex-grow:1">
-        <div class="row message latest">
-          <div class="bubble-wrap">
-            <div class="bubble">
-              <div class="typing-dots">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
-          </div>
-        </div>
+        ${this.renderTypingBubble()}
       </div>
       ${showAvatar
         ? html`<div class="avatar" style="align-self:flex-end">
@@ -1576,7 +1600,9 @@ export class Chat extends RapidElement {
         ${this.hideTopScroll ? 'scroll-at-top' : ''}"
     >
       <div class="scroll" @scroll=${this.handleScroll}>
-        ${this.typing ? this.renderTyping() : null}
+        ${this.typing && !this.typingJoinsNewestGroup()
+          ? this.renderTyping()
+          : null}
         ${this.messageGroups
           ? (() => {
               let lastTimestamp: Date | null = null;
