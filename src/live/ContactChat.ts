@@ -1101,7 +1101,14 @@ export class ContactChat extends ContactStoreElement {
         if (fetchContact === this.currentContact.uuid) {
           const hasNewEvents = messages.length > 0;
           chat.addMessages(messages, null, true);
-          chat.typing = !!page.typing;
+          // typing turns on immediately, but when new events are arriving leave clearing
+          // it to the chat, so that an incoming message replaces the typing bubble in the
+          // same render rather than the bubble disappearing first
+          if (page.typing) {
+            chat.typing = true;
+          } else if (!hasNewEvents) {
+            chat.typing = false;
+          }
           this.polling = false;
           // keep polling quickly while the contact is typing
           this.scheduleRefresh(hasNewEvents || !!page.typing);

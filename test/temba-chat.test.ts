@@ -124,4 +124,42 @@ describe('temba-chat typing indicator', () => {
     const blocks = chat.shadowRoot.querySelectorAll('.block');
     assert.equal(blocks.length, 2);
   });
+
+  it('is cleared by an incoming message but not an outgoing one', async () => {
+    const chat = await createChat(
+      'contactname="Jane Doe" contactuuid="contact-1"'
+    );
+    chat.loadMessages([received('msg-1', 'hello there')]);
+    await chat.updateComplete;
+
+    chat.typing = true;
+    await chat.updateComplete;
+
+    // an incoming message takes the typing bubble's place
+    chat.addMessages(
+      [received('msg-2', 'here is my question')],
+      new Date(Date.now() - 10000),
+      true
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    await chat.updateComplete;
+
+    assert.isFalse(chat.typing);
+    assert.isNull(chat.shadowRoot.querySelector('.typing-dots'));
+
+    // but an outgoing message leaves it showing
+    chat.typing = true;
+    await chat.updateComplete;
+
+    chat.addMessages(
+      [created('msg-3', 'good question')],
+      new Date(Date.now() - 10000),
+      true
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    await chat.updateComplete;
+
+    assert.isTrue(chat.typing);
+    assert.isNotNull(chat.shadowRoot.querySelector('.typing-dots'));
+  });
 });

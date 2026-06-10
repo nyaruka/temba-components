@@ -904,6 +904,7 @@ export class Chat extends RapidElement {
         this.fetching = false;
         // first add messages to the map
         const newMessages = [];
+        let newIncoming = false;
         for (const m of messages) {
           // filter out metadata events - they aren't rendered but cached for later reference
           if (m.type === 'msg_deleted' || m.type === 'msg_status_changed') {
@@ -916,6 +917,7 @@ export class Chat extends RapidElement {
 
           if (this.addMessage(m)) {
             newMessages.push(m.uuid);
+            newIncoming = newIncoming || m.type === 'msg_received';
           }
         }
 
@@ -932,6 +934,12 @@ export class Chat extends RapidElement {
 
         const grouped = this.groupMessages(newMessages);
         this.insertGroups(grouped, append);
+
+        // a new message from the contact takes the typing bubble's place - clearing typing in
+        // the same render means the bubble appears to fill in with the message
+        if (append && newIncoming) {
+          this.typing = false;
+        }
 
         // show notification if new messages are appended and user is scrolled away from bottom
         // but not during search (searchHighlight is set)
