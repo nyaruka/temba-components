@@ -114,9 +114,9 @@ export interface Flow {
   /** Completion ratio in the range 0–1. */
   completion: number;
   has_issues: boolean;
-  status: 'active' | 'archived' | string;
   labels: ObjectReference[];
-  /** Recent run counts, oldest to newest — rendered as a sparkline. */
+  /** Recent daily engagement counts, oldest to newest — rendered as
+   * a sparkline. Empty when there's been no recent engagement. */
   activity: number[];
 }
 

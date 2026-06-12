@@ -918,14 +918,12 @@ export class ContentList<T = any> extends RapidElement {
         color: var(--accent-700);
       }
 
-      /* Leading entity-type icon — a small icon shared by every row
-         (contact silhouette, flow type icon, etc.). It rides inside the
+      /* Leading entity-type icon — a small icon flagging a row (contact
+         silhouette, voice/background flow, etc.). It rides inside the
          first column's cell rather than in its own column, so the column
-         header aligns with the icon (the row's leading content) rather
-         than the value beside it — and the alignment reads the same
-         whether or not the list has a leading icon. Subclasses override
-         {@link getRowIcon}; when it returns null for every row no space
-         is reserved (see {@link reservesIcon}). */
+         header aligns with the row's leading content. Subclasses
+         override {@link getRowIcon}; a row whose icon is null renders
+         its value flush at the column edge with no reserved gutter. */
       .lead-wrap {
         display: flex;
         align-items: center;
@@ -934,12 +932,12 @@ export class ContentList<T = any> extends RapidElement {
       .lead-wrap .cell-inner {
         min-width: 0;
       }
-      /* Reserve the icon's 1em footprint plus a snug 5px gap to the
-         value whether or not this row has an icon, so values stay
-         aligned down the column. The fixed box also keeps the column's
-         intrinsic width stable while <temba-icon> upgrades — without it
-         the column briefly measures narrow and downstream pinned columns
-         jump, which races with whatever moment we snapshot. */
+      /* The icon's 1em footprint plus a snug 5px gap to the value.
+         The fixed box keeps the column's intrinsic width stable while
+         <temba-icon> upgrades — without it the column briefly measures
+         narrow and downstream pinned columns jump, which races with
+         whatever moment we snapshot. Rows without an icon don't render
+         this box at all — their value sits flush at the column edge. */
       .lead-icon {
         flex: 0 0 auto;
         display: flex;
@@ -2380,11 +2378,14 @@ export class ContentList<T = any> extends RapidElement {
    * cells pin alongside them so identity stays anchored); right-
    * pinned columns contiguous to the last. */
   private computePinLayout(): void {
-    // Reserve an empty leading-icon column when any row would carry
-    // an icon — probe a representative row, then skip the icon
-    // per-row if that row's own getRowIcon returns null.
-    this.reservesIcon =
-      this.items.length > 0 && this.getRowIcon(this.items[0]) !== null;
+    // Whether any row on this page carries a leading icon — probe
+    // every row (a page can lead with icon-less rows, e.g. message
+    // flows). Rows render their icon inline (no gutter on icon-less
+    // rows); this flag just marks the first column's cells as
+    // lead-cells for alignment lookups.
+    this.reservesIcon = this.items.some(
+      (item) => this.getRowIcon(item) !== null
+    );
     this.pinIndexByColumn = new Map();
     this.rightPinIndexByColumn = new Map();
     this.checkPinIndex = -1;
@@ -2728,8 +2729,9 @@ export class ContentList<T = any> extends RapidElement {
     `;
     // The first column carries the row's leading icon (when the list
     // reserves one), so its header aligns with the icon rather than the
-    // value. A row with no icon still reserves the space to keep values
-    // aligned down the column.
+    // value. A row with no icon renders its value flush at the column
+    // edge — the icon is an inline flag on the rows that have one (e.g.
+    // voice flows), not a gutter every row indents around.
     const lead = isLead && this.reservesIcon;
     const icon = lead ? this.getRowIcon(item) : null;
     return html`
@@ -2738,12 +2740,10 @@ export class ContentList<T = any> extends RapidElement {
         ''} ${column.grow ? 'grow' : ''} ${this.columnPinClass(column)}"
         style=${this.columnPinStyle(column)}
       >
-        ${lead
+        ${icon
           ? html`<div class="lead-wrap">
               <span class="lead-icon"
-                >${icon
-                  ? html`<temba-icon name=${icon} size="1"></temba-icon>`
-                  : null}</span
+                ><temba-icon name=${icon} size="1"></temba-icon></span
               >${inner}
             </div>`
           : inner}
