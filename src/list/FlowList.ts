@@ -5,10 +5,10 @@ import { Flow, ObjectReference } from '../interfaces';
 
 /**
  * Flow CRUDL list — drop-in replacement for the rapidpro
- * `flows/flow_list.html` table. Each row's leading icon reflects
- * the flow type (messaging / voice / background / surveyor).
- * Columns: name, status, runs, ongoing, completion bar, activity
- * sparkline.
+ * `flows/flow_list.html` table. Rows of the unusual flow types
+ * (voice / background / surveyor) carry a leading type icon;
+ * message flows don't. Columns: name, runs, ongoing, completion
+ * bar, activity sparkline.
  */
 export class FlowList extends ContentList<Flow> {
   static get styles() {
@@ -92,7 +92,6 @@ export class FlowList extends ContentList<Flow> {
         width: '280px',
         pinned: true
       },
-      { key: 'status', label: 'Status', width: '110px' },
       {
         key: 'runs',
         label: 'Runs',
@@ -137,7 +136,9 @@ export class FlowList extends ContentList<Flow> {
       case 'survey':
         return Icon.flow_surveyor;
       default:
-        return Icon.flow_message;
+        // message flows are the common case and carry no icon — only
+        // the unusual types get flagged, matching the legacy table
+        return null;
     }
   }
 
@@ -183,8 +184,6 @@ export class FlowList extends ContentList<Flow> {
         return this.renderCompletion(item);
       case 'activity':
         return this.renderSparkline(item.activity || []);
-      case 'status':
-        return this.renderFlowStatus(item);
       default:
         return super.renderCell(item, column);
     }
@@ -234,12 +233,5 @@ export class FlowList extends ContentList<Flow> {
         <polyline class="line" points=${line}></polyline>
       </svg>
     `;
-  }
-
-  private renderFlowStatus(item: Flow): TemplateResult {
-    const status = (item.status || 'active').toString().toLowerCase();
-    const kind = status === 'archived' ? 'archived' : 'active';
-    const label = status === 'archived' ? 'Archived' : 'Active';
-    return this.renderStatusPill(kind, label);
   }
 }
