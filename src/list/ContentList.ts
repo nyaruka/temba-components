@@ -328,6 +328,14 @@ export class ContentList<T = any> extends RapidElement {
         background: var(--accent-50);
         color: var(--text-1);
       }
+      /* Blocked while a label-toggle POST is in flight, matching the
+         treatment of the label rows above. */
+      .lbl-create.blocked,
+      .lbl-create.blocked:hover {
+        cursor: not-allowed;
+        background: transparent;
+        color: var(--text-3);
+      }
       .lbl-create:first-child {
         border-top: none;
         margin-top: 0;
@@ -2180,7 +2188,9 @@ export class ContentList<T = any> extends RapidElement {
               : labels.map((label) => this.renderLabelOption(label, action))}
           ${labels && action.allowCreate
             ? html`<div
-                class="lbl-create"
+                class="lbl-create ${this.pendingLabel !== null
+                  ? 'blocked'
+                  : ''}"
                 @click=${() => this.handleLabelCreate(action)}
               >
                 New Label&hellip;
@@ -2193,8 +2203,10 @@ export class ContentList<T = any> extends RapidElement {
 
   /** The dropdown's "New Label…" row — fire the event with the
    * current selection and let the click bubble so the dropdown
-   * closes; the host opens its create modal seeded with the ids. */
+   * closes; the host opens its create modal seeded with the ids.
+   * Blocked while a toggle POST is in flight, like the label rows. */
   private handleLabelCreate(action: ContentListBulkAction): void {
+    if (this.pendingLabel !== null) return;
     this.fireCustomEvent(CustomEventType.LabelCreate, {
       action: action.key,
       ids: Array.from(this.selectedIds)
@@ -2247,6 +2259,14 @@ export class ContentList<T = any> extends RapidElement {
         [action.key]: labels
       };
     } catch (err) {
+      // Mark the list as fetched-empty rather than leaving it
+      // undefined — otherwise the dropdown shows "Loading…" until
+      // it's closed and reopened. A later refresh() clears the cache
+      // so a retry still happens.
+      this.labelsByActionKey = {
+        ...this.labelsByActionKey,
+        [action.key]: []
+      };
       // eslint-disable-next-line no-console
       console.error('failed to fetch labels', err);
     }
