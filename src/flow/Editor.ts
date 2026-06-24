@@ -1708,8 +1708,27 @@ export class Editor extends RapidElement {
     zustand.getState().setLanguageCode(languageCode);
   }
 
-  private renderMakeDefaultBody(newLanguage: string, currentLanguage: string) {
-    return `<div style="padding: 20px; line-height: 1.5;">Make <b>${newLanguage}</b> the default language for this flow? <b>${currentLanguage}</b> will be kept as a translation.</div>`;
+  private buildMakeDefaultBody(
+    newLanguage: string,
+    currentLanguage: string
+  ): HTMLElement {
+    // Build with textContent rather than innerHTML: language names fall back to
+    // the raw, server-derived language code when Intl/ADDITIONAL_LANGUAGE_NAMES
+    // can't resolve them, so they must never be interpolated into markup.
+    const body = document.createElement('div');
+    body.style.cssText = 'padding: 20px; line-height: 1.5;';
+    const newName = document.createElement('b');
+    newName.textContent = newLanguage;
+    const currentName = document.createElement('b');
+    currentName.textContent = currentLanguage;
+    body.append(
+      'Make ',
+      newName,
+      ' the default language for this flow? ',
+      currentName,
+      ' will be kept as a translation.'
+    );
+    return body;
   }
 
   private showMakeDefaultLanguageConfirmation(): void {
@@ -1737,9 +1756,8 @@ export class Editor extends RapidElement {
     dialog.primaryButtonName = 'Update';
     dialog.cancelButtonName = 'Cancel';
     dialog.submittingName = 'Updating';
-    dialog.innerHTML = this.renderMakeDefaultBody(
-      newLanguageName,
-      currentLanguageName
+    dialog.appendChild(
+      this.buildMakeDefaultBody(newLanguageName, currentLanguageName)
     );
 
     // closes the dialog and removes its node once the close animation finishes.
@@ -1751,6 +1769,16 @@ export class Editor extends RapidElement {
       dialog.removeAttribute('data-make-default');
       dialog.open = false;
       window.setTimeout(() => dialog.remove(), 500);
+    };
+
+    // created lazily on first error and reused across retries so server-
+    // controlled text is only ever set via textContent, never parsed as HTML.
+    let errorNode: HTMLElement | null = null;
+    const clearError = () => {
+      if (errorNode) {
+        errorNode.remove();
+        errorNode = null;
+      }
     };
 
     let submitting = false;
@@ -1774,19 +1802,40 @@ export class Editor extends RapidElement {
       submitting = true;
       dialog.submitting = true;
       dialog.disabled = true;
-      const error = await this.changeDefaultLanguage(languageCode);
+      // Drop the Cancel affordance while the request is in flight. A
+      // `closes:true` button (Cancel, and Escape which clicks it) bypasses
+      // `dialog.disabled`, so leaving it would let the user close the dialog
+      // even though the POST can't be recalled — the swap would land after an
+      // apparent cancel. Removing the name un-renders the button entirely.
+      dialog.cancelButtonName = '';
+      const { error, flushFailed } =
+        await this.changeDefaultLanguage(languageCode);
       submitting = false;
       dialog.submitting = false;
       dialog.disabled = false;
+      dialog.cancelButtonName = 'Cancel';
 
-      if (error) {
-        // keep the dialog open so the user can retry or cancel.
-        dialog.innerHTML =
-          this.renderMakeDefaultBody(newLanguageName, currentLanguageName) +
-          `<div style="padding: 0 20px 16px; color: var(--color-error, #e34f4f);">${error}</div>`;
+      if (flushFailed) {
+        // flushSave already surfaced its own "Save Failed" dialog via the
+        // reactive saveError path; close this one rather than stacking a
+        // duplicate message on top of it.
+        cleanup();
         return;
       }
 
+      if (error) {
+        // keep the dialog open so the user can retry or cancel
+        if (!errorNode) {
+          errorNode = document.createElement('div');
+          errorNode.style.cssText =
+            'padding: 0 20px 16px; color: var(--color-error, #e34f4f);';
+          dialog.appendChild(errorNode);
+        }
+        errorNode.textContent = error;
+        return;
+      }
+
+      clearError();
       cleanup();
     });
 
@@ -1801,23 +1850,18 @@ export class Editor extends RapidElement {
    */
   private async changeDefaultLanguage(
     languageCode: string
-  ): Promise<string | null> {
-    // persist any pending edits so mailroom swaps the latest saved definition.
-    // Snapshot any pre-existing save error first so a stale error from earlier
-    // in the session doesn't trigger a false abort below.
-    const priorSaveError = this.saveError;
+  ): Promise<{ error: string | null; flushFailed: boolean }> {
+    // persist any pending edits so mailroom swaps the latest saved definition
     await this.flushSave();
 
-    // If the flush did not land — a new save error appeared, or there are
-    // still unsaved changes (dirtyDate is cleared only on a successful save) —
-    // abort rather than letting mailroom swap a stale definition and silently
-    // drop the user's latest edits.
-    const flushFailed = this.saveError !== priorSaveError || !!this.dirtyDate;
-    if (flushFailed) {
-      return (
-        this.saveError ||
-        'Unable to save your latest changes. Please try again before changing the default language.'
-      );
+    // A successful save clears dirtyDate; saveChanges leaves it in place on
+    // failure. So if it's still set the flush did not land — abort rather than
+    // letting mailroom swap a stale definition and silently drop the latest
+    // edits. dirtyDate alone is the signal: the failed save also sets saveError,
+    // which surfaces the standard "Save Failed" dialog via updated(), so the
+    // caller closes its own dialog instead of duplicating that message.
+    if (this.dirtyDate) {
+      return { error: null, flushFailed: true };
     }
 
     try {
@@ -1827,7 +1871,10 @@ export class Editor extends RapidElement {
       );
 
       if (response.status < 200 || response.status >= 300) {
-        return this.extractErrorMessage(response);
+        return {
+          error: this.extractErrorMessage(response),
+          flushFailed: false
+        };
       }
 
       // reload the swapped definition; fetchRevision resets the editing
@@ -1836,10 +1883,13 @@ export class Editor extends RapidElement {
 
       // refresh the revisions list if it's currently open
       this.getRevisionsWindow()?.refresh();
-      return null;
+      return { error: null, flushFailed: false };
     } catch (error) {
       console.error('Failed to change default language:', error);
-      return 'Unable to change the default language. Please try again.';
+      return {
+        error: 'Unable to change the default language. Please try again.',
+        flushFailed: false
+      };
     }
   }
 

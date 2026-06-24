@@ -2245,5 +2245,57 @@ describe('Localization Editing', () => {
       dialog.open = false;
       dialog.remove();
     });
+
+    it('blocks cancel while the swap request is in flight', async () => {
+      let resolvePost: (value: any) => void = () => {};
+      (storeElement as any).postJSON = (url: string) => {
+        if (url.includes('change_language')) {
+          return new Promise((resolve) => {
+            resolvePost = resolve;
+          });
+        }
+        return Promise.resolve({ status: 200, json: {} });
+      };
+
+      await selectLanguageInToolbar(editor, 'Spanish', 'spa');
+      reloadCount = 0;
+
+      const toolbar = await getToolbar(editor);
+      getMakeDefaultButton(toolbar)!.click();
+      await editor.updateComplete;
+
+      const dialog = document.body.querySelector('temba-dialog') as any;
+      dialog.dispatchEvent(
+        new CustomEvent('temba-button-clicked', {
+          detail: { button: { name: 'Update' } }
+        })
+      );
+      await aTimeout(0);
+
+      // mid-flight the Cancel affordance is removed so the (un-recallable)
+      // request can't be abandoned, and a stray cancel event is ignored
+      expect(dialog.cancelButtonName).to.equal('');
+      dialog.dispatchEvent(
+        new CustomEvent('temba-button-clicked', {
+          detail: { button: { name: 'Cancel' } }
+        })
+      );
+      await aTimeout(0);
+      expect(dialog.open, 'dialog stays open during the swap').to.be.true;
+      expect(reloadCount).to.equal(0);
+
+      // once the request resolves the swap completes and the dialog closes
+      resolvePost({
+        status: 200,
+        json: { status: 'success', revision: { revision: 2 } }
+      });
+      await aTimeout(10);
+
+      expect(dialog.cancelButtonName).to.equal('Cancel');
+      expect(dialog.open).to.be.false;
+      expect(reloadCount).to.equal(1);
+
+      dialog.remove();
+    });
   });
 });
