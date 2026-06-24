@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use pnpm svg to update
-export const SVG_FINGERPRINT = 'ed78045b1cf74b0b9242822c54badf99';
+export const SVG_FINGERPRINT = '45268f1573f1e352c7d62232863725bb';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -98,8 +98,10 @@ export enum Icon {
   issue = 'alert-square',
   label = 'tag-01',
   language = 'translate-01',
+  language_default = 'switch-horizontal-01',
   link = 'link-external-01',
   location = 'marker-pin-01',
+  shuffle = 'shuffle-01',
   log = 'file-02',
   logout = 'log-out-04',
   menu = 'menu-01',

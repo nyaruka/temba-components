@@ -192,6 +192,11 @@ export class EditorToolbar extends RapidElement {
         color: #1a7f37;
       }
 
+      .toolbar-btn.make-default {
+        width: var(--toolbar-translation-control-height);
+        height: var(--toolbar-translation-control-height);
+      }
+
       .toolbar-zoom-level {
         font-size: 12px;
         min-width: 40px;
@@ -248,6 +253,9 @@ export class EditorToolbar extends RapidElement {
 
   @property({ type: Boolean, attribute: 'show-localization-tools' })
   showLocalizationTools = false;
+
+  @property({ type: Boolean, attribute: 'can-make-default' })
+  canMakeDefault = false;
 
   @property({ type: Boolean, attribute: 'has-pending-translations' })
   hasPendingTranslations = false;
@@ -457,6 +465,7 @@ export class EditorToolbar extends RapidElement {
                       min-width="230"
                     ></temba-options>
                   </div>
+                  ${this.canMakeDefault ? this.renderMakeDefaultButton() : ''}
                   ${this.showLocalizationTools
                     ? this.renderTranslationTools()
                     : ''}
@@ -565,6 +574,21 @@ export class EditorToolbar extends RapidElement {
         </div>
       </div>
     `;
+  }
+
+  private renderMakeDefaultButton(): TemplateResult {
+    return this.renderTip(
+      `Make ${this.currentLanguageName} the default`,
+      html`
+        <button
+          class="toolbar-btn language-tool make-default"
+          @click=${() => this.fireToolbarAction('make-default-language')}
+          aria-label="Make default language"
+        >
+          <temba-icon name=${Icon.language_default} size="1"></temba-icon>
+        </button>
+      `
+    );
   }
 
   private renderTranslationTools(): TemplateResult {
