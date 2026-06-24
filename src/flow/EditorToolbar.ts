@@ -585,7 +585,7 @@ export class EditorToolbar extends RapidElement {
           @click=${() => this.fireToolbarAction('make-default-language')}
           aria-label="Make default language"
         >
-          <temba-icon name=${Icon.shuffle} size="1"></temba-icon>
+          <temba-icon name=${Icon.language_default} size="1"></temba-icon>
         </button>
       `
     );
