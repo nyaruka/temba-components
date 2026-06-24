@@ -97,7 +97,8 @@ export type ToolbarAction =
   | { action: 'revisions' }
   | { action: 'search' }
   | { action: 'language-change'; isPrimary?: boolean; languageCode?: string }
-  | { action: 'auto-translate' };
+  | { action: 'auto-translate' }
+  | { action: 'make-default-language' };
 const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 
 // How long the pending-changes auto-save countdown runs (in ms).
@@ -1705,6 +1706,97 @@ export class Editor extends RapidElement {
 
   private handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
+  }
+
+  private renderMakeDefaultBody(newLanguage: string, currentLanguage: string) {
+    return `<div style="padding: 20px; line-height: 1.5;">Make <b>${newLanguage}</b> the default language for this flow? <b>${currentLanguage}</b> will be kept as a translation.</div>`;
+  }
+
+  private showMakeDefaultLanguageConfirmation(): void {
+    if (this.viewingRevision) {
+      return;
+    }
+
+    const languageCode = this.languageCode;
+    const baseLanguage = this.definition?.language;
+    if (!languageCode || !baseLanguage || languageCode === baseLanguage) {
+      return;
+    }
+
+    const newLanguageName = getLanguageName(languageCode);
+    const currentLanguageName = getLanguageName(baseLanguage);
+
+    const dialog = document.createElement('temba-dialog') as Dialog;
+    dialog.header = 'Change Default Language';
+    dialog.primaryButtonName = 'Update';
+    dialog.cancelButtonName = 'Cancel';
+    dialog.submittingName = 'Updating';
+    dialog.innerHTML = this.renderMakeDefaultBody(
+      newLanguageName,
+      currentLanguageName
+    );
+
+    dialog.addEventListener('temba-button-clicked', async (event: any) => {
+      if (event.detail.button.name !== 'Update') {
+        return;
+      }
+
+      dialog.submitting = true;
+      const error = await this.changeDefaultLanguage(languageCode);
+      dialog.submitting = false;
+
+      if (error) {
+        dialog.innerHTML =
+          this.renderMakeDefaultBody(newLanguageName, currentLanguageName) +
+          `<div style="padding: 0 20px 16px; color: var(--color-error, #e34f4f);">${error}</div>`;
+        return;
+      }
+
+      dialog.open = false;
+    });
+
+    document.body.appendChild(dialog);
+    dialog.open = true;
+
+    dialog.addEventListener('temba-dialog-hidden', () => {
+      if (dialog.parentNode) {
+        document.body.removeChild(dialog);
+      }
+    });
+  }
+
+  /**
+   * Asks the backend to promote a fully-translated language to be the flow's
+   * base language, then reloads the swapped definition. Resolves to null on
+   * success or an error message string on failure.
+   */
+  private async changeDefaultLanguage(
+    languageCode: string
+  ): Promise<string | null> {
+    // persist any pending edits so mailroom swaps the latest saved definition
+    await this.flushSave();
+
+    try {
+      const response = await getStore().postJSON(
+        `/flow/change_language/${this.flow}/`,
+        { language: languageCode }
+      );
+
+      if (response.status < 200 || response.status >= 300) {
+        return this.extractErrorMessage(response);
+      }
+
+      // reload the swapped definition; fetchRevision resets the editing
+      // language to the new base language
+      await getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+
+      // refresh the revisions list if it's currently open
+      this.getRevisionsWindow()?.refresh();
+      return null;
+    } catch (error) {
+      console.error('Failed to change default language:', error);
+      return 'Unable to change the default language. Please try again.';
+    }
   }
 
   private getAvailableLanguages(): Array<{ code: string; name: string }> {
@@ -3694,6 +3786,14 @@ export class Editor extends RapidElement {
     const hasPendingTranslations =
       Boolean(activeLanguage) && progress.total > 0;
 
+    // a fully-translated language can be promoted to be the flow's base
+    // language (not while viewing a historical revision)
+    const canMakeDefault =
+      Boolean(activeLanguage) &&
+      progress.total > 0 &&
+      percent === 100 &&
+      !this.viewingRevision;
+
     return html`
       <temba-editor-toolbar
         ?message-view=${this.showMessageTable}
@@ -3709,6 +3809,7 @@ export class Editor extends RapidElement {
         ?is-base-language=${isBaseSelected}
         .languagePercent=${percent}
         ?show-localization-tools=${Boolean(activeLanguage)}
+        ?can-make-default=${canMakeDefault}
         ?has-pending-translations=${hasPendingTranslations ||
         this.autoTranslating}
         ?auto-translate-disabled=${this.viewingRevision}
@@ -3750,6 +3851,9 @@ export class Editor extends RapidElement {
         break;
       case 'auto-translate':
         this.handleAutoTranslateClick();
+        break;
+      case 'make-default-language':
+        this.showMakeDefaultLanguageConfirmation();
         break;
       case 'language-change':
         if (detail.isPrimary) {

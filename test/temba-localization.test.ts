@@ -1,4 +1,4 @@
-import { expect, fixture, html } from '@open-wc/testing';
+import { aTimeout, expect, fixture, html } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { NodeEditor } from '../src/flow/NodeEditor';
 import { SendMsg, FlowDefinition } from '../src/store/flow-definition';
@@ -2139,5 +2139,111 @@ describe('Localization Editing', () => {
     expect(localization).to.be.undefined;
 
     nodeEditor.remove();
+  });
+
+  describe('Default language switching', () => {
+    let originalFetchRevision: any;
+    let reloadCount: number;
+    let reloadEndpoint: string | null;
+
+    const getMakeDefaultButton = (toolbar: any): HTMLElement | null =>
+      toolbar.shadowRoot.querySelector('.toolbar-btn.make-default');
+
+    const clickMakeDefaultAndConfirm = async (): Promise<any> => {
+      const toolbar = await getToolbar(editor);
+      getMakeDefaultButton(toolbar)!.click();
+      await editor.updateComplete;
+
+      const dialog = document.body.querySelector('temba-dialog') as any;
+      dialog.dispatchEvent(
+        new CustomEvent('temba-button-clicked', {
+          detail: { button: { name: 'Update' } }
+        })
+      );
+      await aTimeout(10);
+      return dialog;
+    };
+
+    beforeEach(async () => {
+      // stub the reload so promoting doesn't hit the network
+      originalFetchRevision = zustand.getState().fetchRevision;
+      reloadCount = 0;
+      reloadEndpoint = null;
+      zustand.setState({
+        fetchRevision: async (endpoint: string) => {
+          reloadCount += 1;
+          reloadEndpoint = endpoint;
+        }
+      } as any);
+
+      // give the editor a flow id so endpoint URLs are well-formed
+      editor.flow = 'test-flow';
+      await editor.updateComplete;
+    });
+
+    afterEach(() => {
+      zustand.setState({ fetchRevision: originalFetchRevision } as any);
+    });
+
+    it('hides the make-default control on the base language', async () => {
+      const toolbar = await getToolbar(editor);
+      expect(getMakeDefaultButton(toolbar)).to.be.null;
+    });
+
+    it('shows the make-default control for a fully-translated language', async () => {
+      await selectLanguageInToolbar(editor, 'Spanish', 'spa');
+      const toolbar = await getToolbar(editor);
+      expect(toolbar.canMakeDefault).to.be.true;
+      expect(getMakeDefaultButton(toolbar)).to.exist;
+    });
+
+    it('hides the make-default control for a partially-translated language', async () => {
+      await selectLanguageInToolbar(editor, 'French', 'fra');
+      const toolbar = await getToolbar(editor);
+      expect(toolbar.canMakeDefault).to.be.false;
+      expect(getMakeDefaultButton(toolbar)).to.be.null;
+    });
+
+    it('promotes a fully-translated language to the flow default', async () => {
+      const calls: Array<{ url: string; body: any }> = [];
+      (storeElement as any).postJSON = async (url: string, body: any) => {
+        calls.push({ url, body });
+        return {
+          status: 200,
+          json: { status: 'success', revision: { revision: 2 } }
+        };
+      };
+
+      await selectLanguageInToolbar(editor, 'Spanish', 'spa');
+      reloadCount = 0;
+      const dialog = await clickMakeDefaultAndConfirm();
+
+      const changeCall = calls.find((c) => c.url.includes('change_language'));
+      expect(changeCall, 'change_language endpoint should be called').to.exist;
+      expect(changeCall!.body).to.deep.equal({ language: 'spa' });
+      expect(reloadCount).to.equal(1);
+      expect(reloadEndpoint).to.equal('/flow/revisions/test-flow');
+      expect(dialog.open).to.be.false;
+
+      dialog.remove();
+    });
+
+    it('keeps the dialog open and shows an error when the change fails', async () => {
+      (storeElement as any).postJSON = async () => ({
+        status: 400,
+        json: { status: 'failure', description: 'Not a valid language.' }
+      });
+
+      await selectLanguageInToolbar(editor, 'Spanish', 'spa');
+      reloadCount = 0;
+      const dialog = await clickMakeDefaultAndConfirm();
+
+      expect(dialog.open).to.be.true;
+      expect(dialog.textContent).to.contain('Not a valid language.');
+      expect(reloadCount).to.equal(0);
+
+      dialog.open = false;
+      dialog.remove();
+    });
   });
 });

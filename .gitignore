@@ -37,3 +37,6 @@ run.sh
 # codex local artifacts
 CODEX.md
 .claude/
+
+# Claude Code local settings
+.claude/settings.local.json
