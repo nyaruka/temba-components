@@ -1773,8 +1773,23 @@ export class Editor extends RapidElement {
   private async changeDefaultLanguage(
     languageCode: string
   ): Promise<string | null> {
-    // persist any pending edits so mailroom swaps the latest saved definition
+    // persist any pending edits so mailroom swaps the latest saved definition.
+    // Snapshot any pre-existing save error first so a stale error from earlier
+    // in the session doesn't trigger a false abort below.
+    const priorSaveError = this.saveError;
     await this.flushSave();
+
+    // If the flush did not land — a new save error appeared, or there are
+    // still unsaved changes (dirtyDate is cleared only on a successful save) —
+    // abort rather than letting mailroom swap a stale definition and silently
+    // drop the user's latest edits.
+    const flushFailed = this.saveError !== priorSaveError || !!this.dirtyDate;
+    if (flushFailed) {
+      return (
+        this.saveError ||
+        'Unable to save your latest changes. Please try again before changing the default language.'
+      );
+    }
 
     try {
       const response = await getStore().postJSON(
@@ -3787,11 +3802,13 @@ export class Editor extends RapidElement {
       Boolean(activeLanguage) && progress.total > 0;
 
     // a fully-translated language can be promoted to be the flow's base
-    // language (not while viewing a historical revision)
+    // language (not while viewing a historical revision). Gate on the raw
+    // counts rather than the rounded percent — e.g. 199/200 rounds to 100%
+    // but is not actually complete, and the server does no completeness check.
     const canMakeDefault =
       Boolean(activeLanguage) &&
       progress.total > 0 &&
-      percent === 100 &&
+      progress.localized === progress.total &&
       !this.viewingRevision;
 
     return html`
