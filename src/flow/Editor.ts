@@ -1736,33 +1736,48 @@ export class Editor extends RapidElement {
       currentLanguageName
     );
 
+    // closes the dialog and removes its node once the close animation finishes.
+    // The dialog never fires temba-dialog-hidden (hideOnClick is not set), so we
+    // must drive removal explicitly rather than relying on that event.
+    const cleanup = () => {
+      dialog.open = false;
+      window.setTimeout(() => dialog.remove(), 500);
+    };
+
+    let submitting = false;
     dialog.addEventListener('temba-button-clicked', async (event: any) => {
+      // Cancel/Escape route through this same event; tear the dialog down.
       if (event.detail.button.name !== 'Update') {
+        cleanup();
         return;
       }
 
+      // guard against double-submit: the primary button stays clickable while
+      // the request is in flight, so ignore re-entrant clicks.
+      if (submitting) {
+        return;
+      }
+      submitting = true;
       dialog.submitting = true;
+      dialog.disabled = true;
       const error = await this.changeDefaultLanguage(languageCode);
+      submitting = false;
       dialog.submitting = false;
+      dialog.disabled = false;
 
       if (error) {
+        // keep the dialog open so the user can retry or cancel.
         dialog.innerHTML =
           this.renderMakeDefaultBody(newLanguageName, currentLanguageName) +
           `<div style="padding: 0 20px 16px; color: var(--color-error, #e34f4f);">${error}</div>`;
         return;
       }
 
-      dialog.open = false;
+      cleanup();
     });
 
     document.body.appendChild(dialog);
     dialog.open = true;
-
-    dialog.addEventListener('temba-dialog-hidden', () => {
-      if (dialog.parentNode) {
-        document.body.removeChild(dialog);
-      }
-    });
   }
 
   /**
