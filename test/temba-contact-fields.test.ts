@@ -56,4 +56,59 @@ describe(TAG, () => {
 
     // await assertScreenshot('contacts/fields-updated', getClip(fields));
   });
+
+  // regression: the contact data and the store's field definitions load
+  // independently. if the contact data arrives first (more likely under
+  // Firefox's request scheduling) we must not render against missing field
+  // definitions, which previously threw and left the tab blank.
+  it('does not render or crash before field definitions load', async () => {
+    await loadStore();
+    const fields: ContactFields = await getFields({
+      contact: 'contact-dave-active'
+    });
+
+    // simulate the race: contact data present, but definitions not yet loaded
+    fields.fieldsReady = false;
+    await fields.updateComplete;
+
+    // nothing should render and, crucially, render must not throw
+    expect(fields.shadowRoot.querySelectorAll('temba-contact-field').length).to.equal(
+      0
+    );
+
+    // once the definitions arrive, the fields populate
+    fields.fieldsReady = true;
+    await fields.updateComplete;
+    expect(
+      fields.shadowRoot.querySelectorAll('temba-contact-field').length
+    ).to.be.greaterThan(0);
+  });
+
+  // regression: a contact may carry a field key whose definition no longer
+  // exists (e.g. a deleted field). a single missing definition must not throw
+  // and blank out the entire tab.
+  it('ignores contact field keys with no matching definition', async () => {
+    await loadStore();
+    const fields: ContactFields = await getFields({
+      contact: 'contact-dave-active'
+    });
+
+    const known = fields.shadowRoot.querySelectorAll(
+      'temba-contact-field'
+    ).length;
+    expect(known).to.be.greaterThan(0);
+
+    // inject a field key that has no definition in the store
+    fields.data = {
+      ...fields.data,
+      fields: { ...fields.data.fields, nonexistent_field_xyz: 'orphan value' }
+    };
+    await fields.updateComplete;
+
+    // render must not throw and the orphan key must be dropped, leaving the
+    // known fields intact
+    expect(
+      fields.shadowRoot.querySelectorAll('temba-contact-field').length
+    ).to.equal(known);
+  });
 });
