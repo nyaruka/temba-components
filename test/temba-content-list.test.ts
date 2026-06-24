@@ -1064,4 +1064,73 @@ describe('temba-content-list', () => {
     head.click();
     expect((list as any).sort).to.equal('');
   });
+
+  it('shows the label dropdown create row and fires temba-label-create', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    list.columns = [{ key: 'name', label: 'Name' }];
+    const action = {
+      key: 'label',
+      label: 'Label',
+      labelsEndpoint: '/test-assets/content-list/labels.json',
+      allowCreate: true
+    };
+    list.bulkActions = [action];
+    (list as any).selectedIds = new Set(
+      (list as any).items.map((i: any) => (list as any).rowId(i))
+    );
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    // before the dropdown's lazy fetch the create row isn't rendered yet
+    assert.notExists(list.shadowRoot!.querySelector('.lbl-create'));
+
+    await (list as any).handleLabelDropdownOpened(action);
+    await list.updateComplete;
+
+    const create = list.shadowRoot!.querySelector('.lbl-create') as HTMLElement;
+    assert.exists(create, 'create row should render when allowCreate is set');
+
+    let detail: any = null;
+    list.addEventListener(CustomEventType.LabelCreate, ((e: CustomEvent) => {
+      detail = e.detail;
+    }) as EventListener);
+    create.click();
+    expect(detail.action).to.equal('label');
+    expect(detail.ids).to.deep.equal(['u-1', 'u-2', 'u-3']);
+
+    // a refresh (e.g. after the host's create modal submits) drops the
+    // cached dropdown labels so the next open re-fetches them
+    list.refresh();
+    expect((list as any).labelsByActionKey).to.deep.equal({});
+  });
+
+  it('shows an empty state in the label dropdown without allowCreate', async () => {
+    const list = (await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    })) as ContentList;
+    list.columns = [{ key: 'name', label: 'Name' }];
+    const action = {
+      key: 'label',
+      label: 'Label',
+      labelsEndpoint: '/test-assets/content-list/labels-empty.json'
+    };
+    list.bulkActions = [action];
+    (list as any).selectedIds = new Set(['u-1']);
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    await (list as any).handleLabelDropdownOpened(action);
+    await list.updateComplete;
+
+    // fetched-empty with no create affordance reads as "No labels", not a
+    // permanent "Loading…"
+    const empty = list.shadowRoot!.querySelector(
+      '.label-menu-empty'
+    ) as HTMLElement;
+    assert.exists(empty);
+    expect(empty.textContent).to.contain('No labels');
+    assert.notExists(list.shadowRoot!.querySelector('.lbl-create'));
+  });
 });

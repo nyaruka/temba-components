@@ -367,6 +367,10 @@ export enum CustomEventType {
   RowClick = 'temba-row-click',
   SelectionChange = 'temba-selection-change',
   BulkAction = 'temba-bulk-action',
+  /** The label dropdown's "New Label…" row was clicked — detail
+   * carries the action key and the selected row ids so the host can
+   * open its create modal seeded with the selection. */
+  LabelCreate = 'temba-label-create',
   /** A restorable piece of component state changed (page, sort, …).
    * Fired by lists so the host SPA can persist the state into the
    * browser's history entry (typically via `history.replaceState`).
