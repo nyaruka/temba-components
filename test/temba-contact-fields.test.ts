@@ -72,9 +72,9 @@ describe(TAG, () => {
     await fields.updateComplete;
 
     // nothing should render and, crucially, render must not throw
-    expect(fields.shadowRoot.querySelectorAll('temba-contact-field').length).to.equal(
-      0
-    );
+    expect(
+      fields.shadowRoot.querySelectorAll('temba-contact-field').length
+    ).to.equal(0);
 
     // once the definitions arrive, the fields populate
     fields.fieldsReady = true;
