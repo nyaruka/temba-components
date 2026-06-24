@@ -1723,10 +1723,16 @@ export class Editor extends RapidElement {
       return;
     }
 
+    // don't stack a second confirmation if one is already open
+    if (document.body.querySelector('temba-dialog[data-make-default]')) {
+      return;
+    }
+
     const newLanguageName = getLanguageName(languageCode);
     const currentLanguageName = getLanguageName(baseLanguage);
 
     const dialog = document.createElement('temba-dialog') as Dialog;
+    dialog.setAttribute('data-make-default', '');
     dialog.header = 'Change Default Language';
     dialog.primaryButtonName = 'Update';
     dialog.cancelButtonName = 'Cancel';
@@ -1740,6 +1746,9 @@ export class Editor extends RapidElement {
     // The dialog never fires temba-dialog-hidden (hideOnClick is not set), so we
     // must drive removal explicitly rather than relying on that event.
     const cleanup = () => {
+      // drop the marker first so a fresh confirmation can be opened immediately,
+      // even though the node lingers briefly for the close animation
+      dialog.removeAttribute('data-make-default');
       dialog.open = false;
       window.setTimeout(() => dialog.remove(), 500);
     };
@@ -1747,7 +1756,12 @@ export class Editor extends RapidElement {
     let submitting = false;
     dialog.addEventListener('temba-button-clicked', async (event: any) => {
       // Cancel/Escape route through this same event; tear the dialog down.
+      // Ignore cancel while a swap is in flight — the request can't be recalled,
+      // so closing here would let the change land after an apparent cancel.
       if (event.detail.button.name !== 'Update') {
+        if (submitting) {
+          return;
+        }
         cleanup();
         return;
       }
