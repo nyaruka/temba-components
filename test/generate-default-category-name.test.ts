@@ -43,6 +43,16 @@ describe('generateDefaultCategoryName', () => {
       ).to.equal('Green');
     });
 
+    it('strips trailing punctuation from a comma-separated list', () => {
+      expect(
+        generateDefaultCategoryName(
+          'has_any_word',
+          getOperatorConfig,
+          'red, blue, green'
+        )
+      ).to.equal('Red');
+    });
+
     it('returns empty string for empty argument', () => {
       expect(
         generateDefaultCategoryName('has_any_word', getOperatorConfig, '')
