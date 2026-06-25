@@ -61,6 +61,16 @@ describe('generateDefaultCategoryName', () => {
       ).to.equal('Thank you');
     });
 
+    it('capitalizes the whole phrase for has_only_phrase', () => {
+      expect(
+        generateDefaultCategoryName(
+          'has_only_phrase',
+          getOperatorConfig,
+          'no thanks'
+        )
+      ).to.equal('No thanks');
+    });
+
     it('capitalizes the whole phrase for has_beginning', () => {
       expect(
         generateDefaultCategoryName(
