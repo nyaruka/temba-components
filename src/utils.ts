@@ -1291,9 +1291,15 @@ export const generateDefaultCategoryName = (
 
   // Handle different operator types
   switch (operator) {
-    // Word/phrase operators - capitalize first letter of value
+    // Word-list operators - the argument is a list of words, so only the
+    // first word seeds the category name (e.g. "red maroon fire" -> "Red")
     case 'has_any_word':
-    case 'has_all_words':
+    case 'has_all_words': {
+      const firstWord = cleanValue1.split(/\s+/)[0];
+      return firstWord ? capitalize(firstWord) : '';
+    }
+
+    // Phrase operators - the argument is a single phrase, capitalize as-is
     case 'has_phrase':
     case 'has_only_phrase':
     case 'has_beginning':
