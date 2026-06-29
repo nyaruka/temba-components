@@ -94,9 +94,32 @@ export class ContactFields extends ContactStoreElement {
   @property({ type: Boolean })
   disabled = false;
 
+  // tracks whether the store's contact field definitions have loaded. these
+  // load independently of the contact data this element fetches, so we can't
+  // render field rows until they're present (see render). this is reactive so
+  // that flipping it re-renders once the definitions arrive.
+  @property({ type: Boolean, attribute: false })
+  fieldsReady = false;
+
   connectedCallback(): void {
     super.connectedCallback();
     this.handleFieldChanged = this.handleFieldChanged.bind(this);
+
+    // field definitions are usually already loaded by the time this element
+    // connects, but during a cold load they may still be in flight
+    this.fieldsReady =
+      !!this.store &&
+      (this.store.ready ||
+        (this.store.getKeyedAssets()['fields'] || []).length > 0);
+  }
+
+  protected storeUpdated(event: CustomEvent) {
+    super.storeUpdated(event);
+    // the store fires a StoreUpdated for the fields endpoint once the field
+    // definitions have loaded; that's our signal that it's safe to render
+    if (this.store && event.detail.url === this.store.fieldsEndpoint) {
+      this.fieldsReady = true;
+    }
   }
 
   private isAgent(): boolean {
@@ -148,9 +171,17 @@ export class ContactFields extends ContactStoreElement {
   }
 
   public render(): TemplateResult {
-    if (this.data) {
-      const fieldsToShow = Object.entries(this.data.fields).sort(
-        (a: [string, string], b: [string, string]) => {
+    // we need both the contact data and the field definitions (loaded during
+    // store init) before we can render. these load independently, so the
+    // contact data can arrive first; rendering then would crash on missing
+    // field definitions and leave the tab empty (see getContactField below).
+    if (this.data && this.fieldsReady) {
+      // guard against keys with no matching field definition (mid-load races
+      // or fields that have since been deleted) so a single missing
+      // definition can't throw and blank out the entire tab
+      const fieldsToShow = Object.entries(this.data.fields)
+        .filter(([key]: [string, string]) => !!this.store.getContactField(key))
+        .sort((a: [string, string], b: [string, string]) => {
           const [ak] = a;
           const [bk] = b;
           const fieldA = this.store.getContactField(ak);
@@ -212,8 +243,7 @@ export class ContactFields extends ContactStoreElement {
           }
 
           return ak.localeCompare(bk);
-        }
-      );
+        });
 
       if (fieldsToShow.length == 0) {
         return html`<slot name="empty"></slot>`;

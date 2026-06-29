@@ -97,7 +97,8 @@ export type ToolbarAction =
   | { action: 'revisions' }
   | { action: 'search' }
   | { action: 'language-change'; isPrimary?: boolean; languageCode?: string }
-  | { action: 'auto-translate' };
+  | { action: 'auto-translate' }
+  | { action: 'make-default-language' };
 const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 
 // How long the pending-changes auto-save countdown runs (in ms).
@@ -1705,6 +1706,191 @@ export class Editor extends RapidElement {
 
   private handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
+  }
+
+  private buildMakeDefaultBody(
+    newLanguage: string,
+    currentLanguage: string
+  ): HTMLElement {
+    // Build with textContent rather than innerHTML: language names fall back to
+    // the raw, server-derived language code when Intl/ADDITIONAL_LANGUAGE_NAMES
+    // can't resolve them, so they must never be interpolated into markup.
+    const body = document.createElement('div');
+    body.style.cssText = 'padding: 20px; line-height: 1.5;';
+    const newName = document.createElement('b');
+    newName.textContent = newLanguage;
+    const currentName = document.createElement('b');
+    currentName.textContent = currentLanguage;
+    body.append(
+      'Make ',
+      newName,
+      ' the default language for this flow? ',
+      currentName,
+      ' will be kept as a translation.'
+    );
+    return body;
+  }
+
+  private showMakeDefaultLanguageConfirmation(): void {
+    if (this.viewingRevision) {
+      return;
+    }
+
+    const languageCode = this.languageCode;
+    const baseLanguage = this.definition?.language;
+    if (!languageCode || !baseLanguage || languageCode === baseLanguage) {
+      return;
+    }
+
+    // don't stack a second confirmation if one is already open
+    if (document.body.querySelector('temba-dialog[data-make-default]')) {
+      return;
+    }
+
+    const newLanguageName = getLanguageName(languageCode);
+    const currentLanguageName = getLanguageName(baseLanguage);
+
+    const dialog = document.createElement('temba-dialog') as Dialog;
+    dialog.setAttribute('data-make-default', '');
+    dialog.header = 'Change Default Language';
+    dialog.primaryButtonName = 'Update';
+    dialog.cancelButtonName = 'Cancel';
+    dialog.submittingName = 'Updating';
+    dialog.appendChild(
+      this.buildMakeDefaultBody(newLanguageName, currentLanguageName)
+    );
+
+    // closes the dialog and removes its node once the close animation finishes.
+    // The dialog never fires temba-dialog-hidden (hideOnClick is not set), so we
+    // must drive removal explicitly rather than relying on that event.
+    const cleanup = () => {
+      // drop the marker first so a fresh confirmation can be opened immediately,
+      // even though the node lingers briefly for the close animation
+      dialog.removeAttribute('data-make-default');
+      dialog.open = false;
+      window.setTimeout(() => dialog.remove(), 500);
+    };
+
+    // created lazily on first error and reused across retries so server-
+    // controlled text is only ever set via textContent, never parsed as HTML.
+    let errorNode: HTMLElement | null = null;
+    const clearError = () => {
+      if (errorNode) {
+        errorNode.remove();
+        errorNode = null;
+      }
+    };
+
+    let submitting = false;
+    dialog.addEventListener('temba-button-clicked', async (event: any) => {
+      // Cancel/Escape route through this same event; tear the dialog down.
+      // Ignore cancel while a swap is in flight — the request can't be recalled,
+      // so closing here would let the change land after an apparent cancel.
+      if (event.detail.button.name !== 'Update') {
+        if (submitting) {
+          return;
+        }
+        cleanup();
+        return;
+      }
+
+      // guard against double-submit: the primary button stays clickable while
+      // the request is in flight, so ignore re-entrant clicks.
+      if (submitting) {
+        return;
+      }
+      submitting = true;
+      dialog.submitting = true;
+      dialog.disabled = true;
+      // Drop the Cancel affordance while the request is in flight. A
+      // `closes:true` button (Cancel, and Escape which clicks it) bypasses
+      // `dialog.disabled`, so leaving it would let the user close the dialog
+      // even though the POST can't be recalled — the swap would land after an
+      // apparent cancel. Removing the name un-renders the button entirely.
+      dialog.cancelButtonName = '';
+      const { error, flushFailed } =
+        await this.changeDefaultLanguage(languageCode);
+      submitting = false;
+      dialog.submitting = false;
+      dialog.disabled = false;
+      dialog.cancelButtonName = 'Cancel';
+
+      if (flushFailed) {
+        // flushSave already surfaced its own "Save Failed" dialog via the
+        // reactive saveError path; close this one rather than stacking a
+        // duplicate message on top of it.
+        cleanup();
+        return;
+      }
+
+      if (error) {
+        // keep the dialog open so the user can retry or cancel
+        if (!errorNode) {
+          errorNode = document.createElement('div');
+          errorNode.style.cssText =
+            'padding: 0 20px 16px; color: var(--color-error, #e34f4f);';
+          dialog.appendChild(errorNode);
+        }
+        errorNode.textContent = error;
+        return;
+      }
+
+      clearError();
+      cleanup();
+    });
+
+    document.body.appendChild(dialog);
+    dialog.open = true;
+  }
+
+  /**
+   * Asks the backend to promote a fully-translated language to be the flow's
+   * base language, then reloads the swapped definition. Resolves to null on
+   * success or an error message string on failure.
+   */
+  private async changeDefaultLanguage(
+    languageCode: string
+  ): Promise<{ error: string | null; flushFailed: boolean }> {
+    // persist any pending edits so mailroom swaps the latest saved definition
+    await this.flushSave();
+
+    // A successful save clears dirtyDate; saveChanges leaves it in place on
+    // failure. So if it's still set the flush did not land — abort rather than
+    // letting mailroom swap a stale definition and silently drop the latest
+    // edits. dirtyDate alone is the signal: the failed save also sets saveError,
+    // which surfaces the standard "Save Failed" dialog via updated(), so the
+    // caller closes its own dialog instead of duplicating that message.
+    if (this.dirtyDate) {
+      return { error: null, flushFailed: true };
+    }
+
+    try {
+      const response = await getStore().postJSON(
+        `/flow/change_language/${this.flow}/`,
+        { language: languageCode }
+      );
+
+      if (response.status < 200 || response.status >= 300) {
+        return {
+          error: this.extractErrorMessage(response),
+          flushFailed: false
+        };
+      }
+
+      // reload the swapped definition; fetchRevision resets the editing
+      // language to the new base language
+      await getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+
+      // refresh the revisions list if it's currently open
+      this.getRevisionsWindow()?.refresh();
+      return { error: null, flushFailed: false };
+    } catch (error) {
+      console.error('Failed to change default language:', error);
+      return {
+        error: 'Unable to change the default language. Please try again.',
+        flushFailed: false
+      };
+    }
   }
 
   private getAvailableLanguages(): Array<{ code: string; name: string }> {
@@ -3694,6 +3880,16 @@ export class Editor extends RapidElement {
     const hasPendingTranslations =
       Boolean(activeLanguage) && progress.total > 0;
 
+    // a fully-translated language can be promoted to be the flow's base
+    // language (not while viewing a historical revision). Gate on the raw
+    // counts rather than the rounded percent — e.g. 199/200 rounds to 100%
+    // but is not actually complete, and the server does no completeness check.
+    const canMakeDefault =
+      Boolean(activeLanguage) &&
+      progress.total > 0 &&
+      progress.localized === progress.total &&
+      !this.viewingRevision;
+
     return html`
       <temba-editor-toolbar
         ?message-view=${this.showMessageTable}
@@ -3709,6 +3905,7 @@ export class Editor extends RapidElement {
         ?is-base-language=${isBaseSelected}
         .languagePercent=${percent}
         ?show-localization-tools=${Boolean(activeLanguage)}
+        ?can-make-default=${canMakeDefault}
         ?has-pending-translations=${hasPendingTranslations ||
         this.autoTranslating}
         ?auto-translate-disabled=${this.viewingRevision}
@@ -3750,6 +3947,9 @@ export class Editor extends RapidElement {
         break;
       case 'auto-translate':
         this.handleAutoTranslateClick();
+        break;
+      case 'make-default-language':
+        this.showMakeDefaultLanguageConfirmation();
         break;
       case 'language-change':
         if (detail.isPrimary) {
