@@ -185,4 +185,145 @@ describe('split_by_webhook node config', () => {
       expect(resultNode.actions![0].uuid).to.equal('existing-action-uuid');
     });
   });
+
+  describe('legacy webhook result_name support', () => {
+    // Legacy webhooks (from the old flow editor) store the result_name on the
+    // call_webhook action. Modern webhooks store it on the router. These must
+    // be supported in parallel — editing a legacy webhook must keep it legacy
+    // because the placement changes how the result is referenced downstream.
+
+    const legacyNode: Node = {
+      uuid: 'd02536d0-7e86-47ab-8c60-fcf2678abc2b',
+      actions: [
+        {
+          type: 'call_webhook',
+          uuid: '9aa018e7-4934-457a-b582-63b164c562f7',
+          method: 'GET',
+          url: 'http://localhost/?cmd=country',
+          result_name: 'Country Webhook'
+        } as CallWebhook
+      ],
+      router: {
+        type: 'switch',
+        operand: '@results.country_webhook.category',
+        categories: [],
+        cases: []
+      } as any,
+      exits: []
+    };
+
+    const modernNode: Node = {
+      uuid: 'd02536d0-7e86-47ab-8c60-fcf2678abc2b',
+      actions: [
+        {
+          type: 'call_webhook',
+          uuid: '9aa018e7-4934-457a-b582-63b164c562f7',
+          method: 'GET',
+          url: 'http://localhost/?cmd=country'
+        } as CallWebhook
+      ],
+      router: {
+        type: 'switch',
+        operand: '@webhook.status',
+        result_name: 'Country Webhook',
+        categories: [],
+        cases: []
+      } as any,
+      exits: []
+    };
+
+    it('reads result_name from the action for legacy webhooks', () => {
+      const formData = split_by_webhook.toFormData!(legacyNode);
+      expect(formData.result_name).to.equal('Country Webhook');
+    });
+
+    it('reads result_name from the router for modern webhooks', () => {
+      const formData = split_by_webhook.toFormData!(modernNode);
+      expect(formData.result_name).to.equal('Country Webhook');
+    });
+
+    it('keeps result_name on the action when editing a legacy webhook', () => {
+      const formData = {
+        uuid: legacyNode.uuid,
+        method: [{ value: 'GET', name: 'GET' }],
+        url: 'http://localhost/?cmd=country',
+        headers: [],
+        body: '',
+        result_name: 'Country Webhook'
+      };
+
+      const resultNode = split_by_webhook.fromFormData!(formData, legacyNode);
+
+      const action = resultNode.actions![0] as CallWebhook;
+      expect(action.result_name).to.equal('Country Webhook');
+      // Should NOT also be duplicated onto the router
+      expect(resultNode.router!.result_name).to.be.undefined;
+    });
+
+    it('keeps result_name on the router when editing a modern webhook', () => {
+      const formData = {
+        uuid: modernNode.uuid,
+        method: [{ value: 'GET', name: 'GET' }],
+        url: 'http://localhost/?cmd=country',
+        headers: [],
+        body: '',
+        result_name: 'Country Webhook'
+      };
+
+      const resultNode = split_by_webhook.fromFormData!(formData, modernNode);
+
+      expect(resultNode.router!.result_name).to.equal('Country Webhook');
+      const action = resultNode.actions![0] as CallWebhook;
+      expect(action.result_name).to.be.undefined;
+    });
+
+    it('stores result_name on the router for brand new webhooks', () => {
+      const newNode: Node = {
+        uuid: 'new-node',
+        actions: [],
+        exits: []
+      };
+
+      const formData = {
+        uuid: 'new-node',
+        method: [{ value: 'GET', name: 'GET' }],
+        url: 'https://example.com/api',
+        headers: [],
+        body: '',
+        result_name: 'My Result'
+      };
+
+      const resultNode = split_by_webhook.fromFormData!(formData, newNode);
+
+      expect(resultNode.router!.result_name).to.equal('My Result');
+      const action = resultNode.actions![0] as CallWebhook;
+      expect(action.result_name).to.be.undefined;
+    });
+
+    it('round-trips a legacy webhook without migrating it to the modern format', () => {
+      const formData = split_by_webhook.toFormData!(legacyNode);
+      const resultNode = split_by_webhook.fromFormData!(formData, legacyNode);
+
+      const action = resultNode.actions![0] as CallWebhook;
+      expect(action.result_name).to.equal('Country Webhook');
+      expect(resultNode.router!.result_name).to.be.undefined;
+    });
+
+    it('drops the action result_name when a legacy webhook clears it', () => {
+      const formData = {
+        uuid: legacyNode.uuid,
+        method: [{ value: 'GET', name: 'GET' }],
+        url: 'http://localhost/?cmd=country',
+        headers: [],
+        body: '',
+        result_name: ''
+      };
+
+      const resultNode = split_by_webhook.fromFormData!(formData, legacyNode);
+
+      const action = resultNode.actions![0] as CallWebhook;
+      expect(action.result_name).to.be.undefined;
+      expect(resultNode.router!.result_name).to.be.undefined;
+    });
+  });
 });
