@@ -200,7 +200,10 @@ export const split_by_webhook: NodeConfig = {
         callWebhookAction?.headers ||
         getDefaultHeadersRecord(callWebhookAction?.method || 'GET'),
       body: callWebhookAction?.body || '',
-      result_name: node.router?.result_name || ''
+      // Legacy webhooks store result_name on the action; modern ones store it
+      // on the router. Prefer the action so legacy nodes round-trip correctly.
+      result_name:
+        callWebhookAction?.result_name || node.router?.result_name || ''
     };
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -213,8 +216,16 @@ export const split_by_webhook: NodeConfig = {
     // Find existing call_webhook action to preserve its UUID
     const existingCallWebhookAction = originalNode.actions?.find(
       (action) => action.type === 'call_webhook'
-    );
+    ) as CallWebhook | undefined;
     const callWebhookUuid = existingCallWebhookAction?.uuid || generateUUID();
+
+    // Legacy webhooks keep the result_name on the action rather than the
+    // router. Detect them by the presence of result_name on the existing
+    // action so they continue to round-trip in their original format instead
+    // of being silently migrated (which would change how results are
+    // referenced downstream of the flow).
+    const isLegacyResultName = !!existingCallWebhookAction?.result_name;
+    const trimmedResultName = formData.result_name?.trim() || '';
 
     // Create call_webhook action
     const callWebhookAction: CallWebhook = {
@@ -225,6 +236,11 @@ export const split_by_webhook: NodeConfig = {
       headers: formData.headers || [],
       body: formData.body || ''
     };
+
+    // Preserve the legacy placement: result_name stays on the action.
+    if (isLegacyResultName && trimmedResultName !== '') {
+      callWebhookAction.result_name = trimmedResultName;
+    }
 
     // Create categories and exits for Success and Failure
     const existingCategories = originalNode.router?.categories || [];
@@ -247,9 +263,11 @@ export const split_by_webhook: NodeConfig = {
       ...router
     };
 
-    // Only set result_name if provided
-    if (formData.result_name && formData.result_name.trim() !== '') {
-      finalRouter.result_name = formData.result_name.trim();
+    // Modern webhooks store result_name on the router. For legacy webhooks the
+    // result_name lives on the action (set above), so we leave it off the
+    // router to avoid storing it in both places.
+    if (!isLegacyResultName && trimmedResultName !== '') {
+      finalRouter.result_name = trimmedResultName;
     }
 
     // Return the complete node
