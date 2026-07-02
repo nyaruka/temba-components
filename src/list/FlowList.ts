@@ -1,7 +1,7 @@
 import { css, html, TemplateResult } from 'lit';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
-import { Flow, ObjectReference } from '../interfaces';
+import { CustomEventType, Flow, ObjectReference } from '../interfaces';
 
 /**
  * Flow CRUDL list — drop-in replacement for the rapidpro
@@ -89,27 +89,28 @@ export class FlowList extends ContentList<Flow> {
         key: 'name',
         label: 'Name',
         sortable: true,
-        width: '280px',
+        minWidth: '160px',
+        maxWidth: '280px',
         pinned: true
       },
       {
         key: 'runs',
         label: 'Runs',
         sortable: true,
-        width: '90px',
+        minWidth: '64px',
         align: 'right'
       },
       {
         key: 'ongoing',
         label: 'Ongoing',
         sortable: true,
-        width: '90px',
+        minWidth: '64px',
         align: 'right'
       },
       {
         key: 'completion',
         label: 'Completion',
-        width: '130px',
+        minWidth: '110px',
         align: 'right'
       },
       { key: 'activity', label: 'Activity', width: '120px', align: 'right' }
@@ -146,6 +147,25 @@ export class FlowList extends ContentList<Flow> {
     return item?.uuid ? `/flow/editor/${item.uuid}/` : null;
   }
 
+  /** Clicking a label chip opens that label's filtered flow list rather
+   * than falling through to the row click (which opens the flow editor). */
+  private handleLabelClick(label: ObjectReference, event: MouseEvent): void {
+    // Stop the click from bubbling to the row's navigation handler.
+    event.stopPropagation();
+    if (!label?.uuid) return;
+    const href = `/flow/filter/${label.uuid}/`;
+    // Guard the JSON-driven href against open-redirect, same as the
+    // row-click path in ContentList.handleRowClick.
+    if (!this.isSafeHref(href)) return;
+    // Meta/ctrl-click opens a new tab, matching ordinary links and the
+    // row-click behavior.
+    if (event.metaKey || event.ctrlKey) {
+      window.open(href, '_blank');
+      return;
+    }
+    this.fireCustomEvent(CustomEventType.Redirected, { url: href });
+  }
+
   protected renderCell(
     item: Flow,
     column: ContentListColumn
@@ -166,7 +186,11 @@ export class FlowList extends ContentList<Flow> {
             ? html`<span class="flow-labels">
                 ${labels.map(
                   (l: ObjectReference) =>
-                    html`<temba-label type="label" icon=${Icon.label}
+                    html`<temba-label
+                      type="label"
+                      icon=${Icon.label}
+                      clickable
+                      @click=${(e: MouseEvent) => this.handleLabelClick(l, e)}
                       >${l.name}</temba-label
                     >`
                 )}
