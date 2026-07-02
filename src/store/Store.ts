@@ -158,6 +158,23 @@ export class Store extends RapidElement {
   }
 
   private cache: any;
+
+  // user avatar urls by user uuid, seeded from server-hydrated user
+  // references so ones that arrive without an avatar (e.g. events published
+  // over sockets) can be filled in from users we've already seen. LRU-bounded
+  // so long-lived tabs don't accumulate every user ever seen.
+  private userAvatars = lru<string>(500);
+
+  public setUserAvatar(uuid: string, avatar: string) {
+    if (uuid && avatar) {
+      this.userAvatars.set(uuid, avatar);
+    }
+  }
+
+  public getUserAvatar(uuid: string): string {
+    return this.userAvatars.get(uuid);
+  }
+
   public getLocale() {
     return this.locale[0];
   }
@@ -561,6 +578,7 @@ export class Store extends RapidElement {
             const results = response.json.results;
             if (results && results.length === 1) {
               const user = results[0];
+              this.setUserAvatar(user.uuid, user.avatar);
 
               items.forEach((item) => {
                 // replace each key with a matching user

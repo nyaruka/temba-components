@@ -1,6 +1,12 @@
 import { SinonStub, useFakeTimers } from 'sinon';
 import { Compose } from '../src/form/Compose';
 import { ContactChat } from '../src/live/ContactChat';
+import {
+  PublicationHandler,
+  setSocketProvider,
+  SocketProvider,
+  SocketSubscription
+} from '../src/live/SocketService';
 import { Attachment, CustomEventType } from '../src/interfaces';
 import {
   assertScreenshot,
@@ -20,6 +26,61 @@ import {
 import { expect, oneEvent } from '@open-wc/testing';
 
 let clock: any;
+
+interface MockSubscription {
+  channel: string;
+  onPublication: PublicationHandler;
+  onSubscribed?: () => void;
+  unsubscribed: boolean;
+}
+
+class MockSocketProvider implements SocketProvider {
+  public subs: MockSubscription[] = [];
+
+  public subscribe(
+    channel: string,
+    onPublication: PublicationHandler,
+    onSubscribed?: () => void
+  ): SocketSubscription {
+    const sub: MockSubscription = {
+      channel,
+      onPublication,
+      onSubscribed,
+      unsubscribed: false
+    };
+    this.subs.push(sub);
+
+    // confirm the subscription asynchronously like a real socket would
+    if (onSubscribed) {
+      setTimeout(() => {
+        if (!sub.unsubscribed) {
+          sub.onSubscribed();
+        }
+      }, 0);
+    }
+
+    return {
+      unsubscribe: () => {
+        sub.unsubscribed = true;
+      }
+    };
+  }
+
+  public publish(channel: string, data: any) {
+    this.subs
+      .filter((sub) => sub.channel === channel && !sub.unsubscribed)
+      .forEach((sub) => sub.onPublication(data));
+  }
+
+  public activeChannels(): string[] {
+    return this.subs
+      .filter((sub) => !sub.unsubscribed)
+      .map((sub) => sub.channel);
+  }
+}
+
+let mockSocket: MockSocketProvider;
+let previousSocketProvider: SocketProvider;
 
 const TAG = 'temba-contact-chat';
 const getContactChat = async (attrs: any = {}) => {
@@ -70,11 +131,15 @@ describe('temba-contact-chat', () => {
 
     mockAPI();
     clock = useFakeTimers();
+
+    mockSocket = new MockSocketProvider();
+    previousSocketProvider = setSocketProvider(mockSocket);
   });
 
   afterEach(function () {
     clock.restore();
     mockedNow.restore();
+    setSocketProvider(previousSocketProvider);
   });
 
   // temporarily disabled as it's too flaky in CI
@@ -387,5 +452,161 @@ describe('temba-contact-chat', () => {
     expect(chat.searchNoResults).to.be.true;
 
     await assertScreenshot('contacts/chat-search-no-results', getClip(chat));
+  });
+
+  it('subscribes to the contact history channel', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    expect(mockSocket.activeChannels()).to.deep.equal([
+      `history:${chat.currentContact.uuid}`
+    ]);
+  });
+
+  it('renders events published on the socket', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const eventUUID = '01998888-0000-7000-8000-000000000001';
+    mockSocket.publish(`history:${chat.currentContact.uuid}`, {
+      uuid: eventUUID,
+      type: 'msg_received',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      msg: {
+        urn: 'tel:+250788123123',
+        text: 'hello over the socket',
+        channel: { uuid: '8a81e9e0-10a0-4319-9b00-ce723cfa8303', name: 'SMS' }
+      }
+    });
+
+    // flush the render timeouts in addMessages
+    for (let i = 0; i < 10; i++) {
+      await waitFor(50);
+      clock.tick(50);
+      await chat.updateComplete;
+    }
+
+    // the event was ingested and is now our newest seen event
+    expect(chat.afterUUID).to.equal(eventUUID);
+
+    // and it rendered in the chat
+    const tembaChat = chat.shadowRoot.querySelector('temba-chat');
+    const row = tembaChat.shadowRoot.querySelector(
+      `.row[data-uuid="${eventUUID}"]`
+    );
+    expect(row).to.exist;
+  });
+
+  it('ignores socket events while searching', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showSearch: true
+    });
+
+    // enter search mode
+    const searchToggle = chat.shadowRoot.querySelector(
+      '.search-toggle'
+    ) as HTMLElement;
+    searchToggle.click();
+    await waitFor(100);
+    clock.tick(100);
+    await chat.updateComplete;
+
+    const before = chat.afterUUID;
+    mockSocket.publish(`history:${chat.currentContact.uuid}`, {
+      uuid: '01998888-0000-7000-8000-000000000002',
+      type: 'msg_received',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      msg: { text: 'should be ignored' }
+    });
+
+    expect(chat.afterUUID).to.equal(before);
+  });
+
+  it('keeps the contact channel subscribed across ticket changes', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const contactChannel = `history:${chat.currentContact.uuid}`;
+    expect(mockSocket.activeChannels()).to.deep.equal([contactChannel]);
+    const contactSub = mockSocket.subs[0];
+
+    const makeTicket = (uuid: string) =>
+      ({
+        uuid,
+        topic: { uuid: 'topic-1', name: 'General' },
+        assignee: null,
+        closed_on: null
+      }) as any;
+
+    chat.currentTicket = makeTicket('ticket-1');
+    await chat.updateComplete;
+    expect(mockSocket.activeChannels()).to.deep.equal([
+      contactChannel,
+      `${contactChannel}:ticket-1`
+    ]);
+
+    chat.currentTicket = makeTicket('ticket-2');
+    await chat.updateComplete;
+    expect(mockSocket.activeChannels()).to.deep.equal([
+      contactChannel,
+      `${contactChannel}:ticket-2`
+    ]);
+
+    // the contact subscription was never torn down along the way
+    expect(contactSub.unsubscribed).to.be.false;
+  });
+
+  it('fills in missing user avatars from the store cache', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const channel = `history:${chat.currentContact.uuid}`;
+    const userUUID = 'aaaa1111-0000-4000-8000-000000000001';
+
+    // a hydrated event seeds the avatar cache
+    mockSocket.publish(channel, {
+      uuid: '01998888-0000-7000-8000-000000000003',
+      type: 'ticket_note_added',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      note: 'first note',
+      _user: {
+        uuid: userUUID,
+        name: 'Ann Admin',
+        avatar: '/media/avatars/ann.jpg'
+      }
+    });
+
+    // an unhydrated ref for the same user gets the cached avatar
+    const unhydrated = {
+      uuid: '01998888-0000-7000-8000-000000000004',
+      type: 'ticket_note_added',
+      created_on: '2025-09-25T12:01:00.000000+00:00',
+      note: 'second note',
+      _user: { uuid: userUUID, name: 'Ann Admin' }
+    };
+    mockSocket.publish(channel, unhydrated);
+
+    expect(unhydrated._user['avatar']).to.equal('/media/avatars/ann.jpg');
+  });
+
+  it('unsubscribes when removed from the page', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    expect(mockSocket.activeChannels().length).to.equal(1);
+    chat.remove();
+    expect(mockSocket.activeChannels().length).to.equal(0);
   });
 });

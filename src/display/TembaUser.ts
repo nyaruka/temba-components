@@ -116,6 +116,13 @@ export class TembaUser extends RapidElement {
     if (changed.has('avatar')) {
       if (this.avatar) {
         this.bgimage = `url('${this.avatar}') center / contain no-repeat`;
+      } else {
+        // clearing the avatar must also clear the image, otherwise a reused
+        // element keeps showing the previous user's avatar - fall back to the
+        // system default or the initials/contact-icon branch
+        this.bgimage = this.system
+          ? `url('${DEFAULT_AVATAR}') center / contain no-repeat`
+          : null;
       }
     }
   }
