@@ -36,14 +36,7 @@ import {
   renderTicketAction,
   renderTicketAssigneeChanged
 } from '../events/eventRenderers';
-
-/*
-export const SCROLL_THRESHOLD = 100;
-export const SIMULATED_WEB_SLOWNESS = 0;
-export const MAX_CHAT_REFRESH = 10000;
-export const MIN_CHAT_REFRESH = 500;
-export const BODY_SNIPPET_LENGTH = 250;
-*/
+import { subscribeToSocket, SocketSubscription } from './SocketService';
 
 // re-export for backwards compatibility
 export { renderTicketAction, renderTicketAssigneeChanged };
@@ -527,11 +520,12 @@ export class ContactChat extends ContactStoreElement {
 
   ticket = null;
   beforeUUID: string = null; // for scrolling back through history
-  afterUUID: string = null; // for polling new messages
-  refreshId = null;
-  polling = false;
-  pollingInterval = 2000; // start at 2 seconds
-  lastFetchTime: number = null;
+  afterUUID: string = null; // newest event seen, for catch-up fetches
+
+  // live socket subscriptions for the current contact (and ticket)
+  private subscriptions: SocketSubscription[] = [];
+  private subscribedChannels: string[] = [];
+  private fetchingMissed = false;
 
   constructor() {
     super();
@@ -562,28 +556,22 @@ export class ContactChat extends ContactStoreElement {
   public connectedCallback() {
     super.connectedCallback();
     this.chat = this.shadowRoot.querySelector('temba-chat');
+    this.updateSubscriptions();
   }
 
   public disconnectedCallback() {
     super.disconnectedCallback();
-    if (this.refreshId) {
-      clearInterval(this.refreshId);
-    }
+    this.unsubscribeAll();
   }
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    // if we don't have an endpoint infer one
     if (
-      changedProperties.has('data') ||
-      changedProperties.has('currentContact')
+      changedProperties.has('currentContact') ||
+      changedProperties.has('currentTicket')
     ) {
-      // unschedule any previous refreshes
-      if (this.refreshId) {
-        clearTimeout(this.refreshId);
-        this.refreshId = null;
-      }
+      this.updateSubscriptions();
     }
 
     if (changedProperties.has('currentContact') && this.currentContact) {
@@ -594,9 +582,62 @@ export class ContactChat extends ContactStoreElement {
       ) {
         this.reset();
       } else {
-        setTimeout(() => this.checkForNewMessages(), 500);
+        this.fetchMissedEvents();
       }
       this.fetchPreviousMessages();
+    }
+  }
+
+  private unsubscribeAll() {
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
+    this.subscriptions = [];
+    this.subscribedChannels = [];
+  }
+
+  /**
+   * Keeps our socket subscriptions in sync with the current contact and
+   * ticket. New events arrive as they happen on "history:<contact-uuid>";
+   * ticket detail events (notes, assignment, topic) only arrive on
+   * "history:<contact-uuid>:<ticket-uuid>" so we subscribe to both when
+   * viewing a ticket.
+   */
+  private updateSubscriptions() {
+    const channels = [];
+    if (this.isConnected && this.currentContact) {
+      channels.push(`history:${this.currentContact.uuid}`);
+      if (this.currentTicket) {
+        channels.push(
+          `history:${this.currentContact.uuid}:${this.currentTicket.uuid}`
+        );
+      }
+    }
+
+    if (channels.join(',') === this.subscribedChannels.join(',')) {
+      return;
+    }
+
+    this.unsubscribeAll();
+    this.subscribedChannels = channels;
+    this.subscriptions = channels.map((channel) =>
+      subscribeToSocket(
+        channel,
+        (data: any) => this.handleSocketEvent(data),
+        // on every (re)subscribe fetch anything we might have missed
+        () => this.fetchMissedEvents()
+      )
+    );
+  }
+
+  private handleSocketEvent(event: any) {
+    // while searching we're viewing an arbitrary point in history, new
+    // events will be picked up by the refetch when search closes
+    if (!this.chat || this.searchMode || !this.currentContact) {
+      return;
+    }
+
+    const messages = this.createMessages({ events: [event], next: null });
+    if (messages.length > 0) {
+      this.chat.addMessages(messages, null, true);
     }
   }
 
@@ -607,10 +648,7 @@ export class ContactChat extends ContactStoreElement {
     this.ticket = null;
     this.beforeUUID = null;
     this.afterUUID = null;
-    this.refreshId = null;
-    this.polling = false;
-    this.pollingInterval = 2000;
-    this.lastFetchTime = null;
+    this.fetchingMissed = false;
 
     const compose = this.shadowRoot.querySelector('temba-compose') as Compose;
     if (compose) {
@@ -628,11 +666,6 @@ export class ContactChat extends ContactStoreElement {
       this.searchIndex = -1;
       this.searchLoading = false;
       this.searchNoResults = false;
-      // stop polling while searching
-      if (this.refreshId) {
-        clearTimeout(this.refreshId);
-        this.refreshId = null;
-      }
       window.setTimeout(() => {
         const input = this.shadowRoot.querySelector('.search-input') as any;
         if (input) {
@@ -953,10 +986,8 @@ export class ContactChat extends ContactStoreElement {
         if (response.status < 400) {
           const event = response.json.event;
           event.created_on = new Date(event.created_on);
+          this.resolveUserAvatar(event);
           this.chat.addMessages([event], null, true);
-          // reset polling interval to 2 seconds after sending a message
-          this.pollingInterval = 2000;
-          this.checkForNewMessages();
           composeEle.reset();
           this.fireCustomEvent(CustomEventType.MessageSent, {
             msg: payload,
@@ -978,25 +1009,6 @@ export class ContactChat extends ContactStoreElement {
     return null;
   }
 
-  private scheduleRefresh(hasNewEvents = false) {
-    if (this.refreshId) {
-      clearTimeout(this.refreshId);
-      this.refreshId = null;
-    }
-
-    // reset to 2 seconds if we received new events
-    if (hasNewEvents) {
-      this.pollingInterval = 2000;
-    } else {
-      // increase interval by 1 second up to max of 15 seconds
-      this.pollingInterval = Math.min(this.pollingInterval + 1000, 15000);
-    }
-
-    this.refreshId = setTimeout(() => {
-      this.checkForNewMessages();
-    }, this.pollingInterval);
-  }
-
   public prerender(event: ContactEvent) {
     // use the unified renderEvent function with isSimulation = false
     const rendered = renderEvent(event, false);
@@ -1009,10 +1021,27 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
+  /**
+   * Keeps the store's avatar cache fresh from server-hydrated user refs and
+   * fills in refs that arrive without one - events published over sockets
+   * carry only a user's uuid and name.
+   */
+  private resolveUserAvatar(event: any) {
+    const user = event._user;
+    if (user && user.uuid && this.store) {
+      if (user.avatar) {
+        this.store.setUserAvatar(user.uuid, user.avatar);
+      } else {
+        user.avatar = this.store.getUserAvatar(user.uuid);
+      }
+    }
+  }
+
   private createMessages(page: ContactHistoryPage): ContactEvent[] {
     if (page.events) {
       const messages: ContactEvent[] = [];
       page.events.forEach((event) => {
+        this.resolveUserAvatar(event);
         // track the UUID of the newest event for polling
         if (
           !this.afterUUID ||
@@ -1047,18 +1076,24 @@ export class ContactChat extends ContactStoreElement {
     return [];
   }
 
-  private checkForNewMessages() {
+  /**
+   * Fetches any events newer than the last one we've seen. New events
+   * normally arrive over the socket, so this is only needed to cover gaps -
+   * events published between our initial history fetch and the subscription
+   * becoming active, or while a dropped connection was reconnecting.
+   */
+  private fetchMissedEvents() {
     // we are already working on it or in search mode
-    if (this.polling || this.searchMode) {
+    if (this.fetchingMissed || this.searchMode) {
       return;
     }
 
     const chat = this.chat;
     if (this.currentContact && this.afterUUID) {
-      this.polling = true;
-      this.lastFetchTime = Date.now();
+      this.fetchingMissed = true;
       const endpoint = this.getEndpoint();
       if (!endpoint) {
+        this.fetchingMissed = false;
         return;
       }
 
@@ -1070,16 +1105,16 @@ export class ContactChat extends ContactStoreElement {
         null,
         this.afterUUID
       ).then((page: ContactHistoryPage) => {
+        this.fetchingMissed = false;
+
+        // things may have changed while we were fetching
+        if (this.searchMode || fetchContact !== this.currentContact?.uuid) {
+          return;
+        }
+
         const messages = this.createMessages(page);
         messages.reverse();
-        if (fetchContact === this.currentContact.uuid) {
-          const hasNewEvents = messages.length > 0;
-          chat.addMessages(messages, null, true);
-          this.polling = false;
-          this.scheduleRefresh(hasNewEvents);
-        } else {
-          this.polling = false;
-        }
+        chat.addMessages(messages, null, true);
       });
     }
   }
@@ -1130,9 +1165,6 @@ export class ContactChat extends ContactStoreElement {
         }
 
         chat.addMessages(messages);
-        if (!this.searchMode) {
-          this.scheduleRefresh();
-        }
       });
     }
   }

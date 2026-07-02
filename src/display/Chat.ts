@@ -838,6 +838,10 @@ export class Chat extends RapidElement {
   private msgMap = new Map<string, ContactEvent>();
   private metadataCache = new Map<string, ContactEvent>();
 
+  // bumped on reset so deferred addMessages work from before a reset is
+  // discarded rather than re-merged into the fresh view
+  private resetGeneration = 0;
+
   public firstUpdated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -858,10 +862,16 @@ export class Chat extends RapidElement {
       startTime = new Date();
     }
 
+    const generation = this.resetGeneration;
     const elapsed = new Date().getTime() - startTime.getTime();
     window.setTimeout(
       () => {
         this.fetching = false;
+
+        // the chat was reset while we were waiting, our messages are stale
+        if (generation !== this.resetGeneration) {
+          return;
+        }
         // first add messages to the map
         const newMessages = [];
         for (const m of messages) {
@@ -905,6 +915,10 @@ export class Chat extends RapidElement {
         }
 
         window.setTimeout(() => {
+          if (generation !== this.resetGeneration) {
+            return;
+          }
+
           // when appending (new messages at bottom), adjust scroll to maintain visible content
           // with column-reverse, new content at bottom increases scrollHeight
           if (append && (isScrolledAway || maintainScroll)) {
@@ -1486,6 +1500,7 @@ export class Chat extends RapidElement {
   }
 
   public reset() {
+    this.resetGeneration++;
     this.msgMap.clear();
     this.messageGroups = [];
     this.hideBottomScroll = true;
