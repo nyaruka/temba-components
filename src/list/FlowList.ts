@@ -154,7 +154,7 @@ export class FlowList extends ContentList<Flow> {
     event.stopPropagation();
     event.preventDefault();
     if (!label?.uuid) return;
-    const href = `/flow/labels/${label.uuid}`;
+    const href = `/flow/filter/${label.uuid}/`;
     // Meta/ctrl-click opens a new tab, matching ordinary links and the
     // row-click behavior.
     if (event.metaKey || event.ctrlKey) {

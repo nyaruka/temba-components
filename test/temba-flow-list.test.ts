@@ -51,7 +51,7 @@ describe('temba-flow-list', () => {
     expect(event.stopPropagation.called).to.be.true;
     expect(event.preventDefault.called).to.be.true;
     expect(fired).to.have.length(1);
-    expect(fired[0].url).to.equal('/flow/labels/label-1');
+    expect(fired[0].url).to.equal('/flow/filter/label-1/');
   });
 
   it('opens the label view in a new tab on meta/ctrl-click', async () => {
@@ -68,7 +68,7 @@ describe('temba-flow-list', () => {
         makeClick({ metaKey: true })
       );
 
-      expect(openStub.calledWith('/flow/labels/label-1', '_blank')).to.be.true;
+      expect(openStub.calledWith('/flow/filter/label-1/', '_blank')).to.be.true;
       // no in-app redirect when opening a new tab
       expect(fired).to.have.length(0);
     } finally {
@@ -107,7 +107,7 @@ describe('temba-flow-list', () => {
 
     // the label navigates, and the row's flow-editor navigation is suppressed
     expect(redirects).to.have.length(1);
-    expect(redirects[0].url).to.equal('/flow/labels/label-1');
+    expect(redirects[0].url).to.equal('/flow/filter/label-1/');
     expect(rowClicks, 'row click suppressed').to.have.length(0);
   });
 
