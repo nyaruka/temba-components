@@ -30,6 +30,34 @@ describe('temba-user', () => {
     assert.include(user.bgimage, "url('/img/a.png')");
   });
 
+  it('clears bgimage when avatar is removed', async () => {
+    // lit reuses elements across renders, so an element that showed one
+    // user's avatar must fall back to initials when reused for a user
+    // without one
+    const user = await createUser(
+      '<temba-user name="Jane" avatar="/img/a.png"></temba-user>'
+    );
+    assert.include(user.bgimage, "url('/img/a.png')");
+
+    user.avatar = null;
+    user.name = 'Bob Contact';
+    await user.updateComplete;
+    assert.isNull(user.bgimage);
+    assert.equal(user.initials, 'BC');
+  });
+
+  it('restores default avatar when avatar is removed from system user', async () => {
+    const user = await createUser(
+      '<temba-user name="Bot" system avatar="/img/a.png"></temba-user>'
+    );
+    assert.include(user.bgimage, "url('/img/a.png')");
+
+    user.avatar = null;
+    await user.updateComplete;
+    assert.isNotNull(user.bgimage);
+    assert.notInclude(user.bgimage, '/img/a.png');
+  });
+
   it('uses default avatar when system is true', async () => {
     const user = await createUser(
       '<temba-user name="Bot" system></temba-user>'
