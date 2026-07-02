@@ -528,6 +528,42 @@ describe('temba-contact-chat', () => {
     expect(chat.afterUUID).to.equal(before);
   });
 
+  it('keeps the contact channel subscribed across ticket changes', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const contactChannel = `history:${chat.currentContact.uuid}`;
+    expect(mockSocket.activeChannels()).to.deep.equal([contactChannel]);
+    const contactSub = mockSocket.subs[0];
+
+    const makeTicket = (uuid: string) =>
+      ({
+        uuid,
+        topic: { uuid: 'topic-1', name: 'General' },
+        assignee: null,
+        closed_on: null
+      }) as any;
+
+    chat.currentTicket = makeTicket('ticket-1');
+    await chat.updateComplete;
+    expect(mockSocket.activeChannels()).to.deep.equal([
+      contactChannel,
+      `${contactChannel}:ticket-1`
+    ]);
+
+    chat.currentTicket = makeTicket('ticket-2');
+    await chat.updateComplete;
+    expect(mockSocket.activeChannels()).to.deep.equal([
+      contactChannel,
+      `${contactChannel}:ticket-2`
+    ]);
+
+    // the contact subscription was never torn down along the way
+    expect(contactSub.unsubscribed).to.be.false;
+  });
+
   it('fills in missing user avatars from the store cache', async () => {
     await loadStore();
     const chat: ContactChat = await getContactChat({

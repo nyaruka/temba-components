@@ -522,9 +522,8 @@ export class ContactChat extends ContactStoreElement {
   beforeUUID: string = null; // for scrolling back through history
   afterUUID: string = null; // newest event seen, for catch-up fetches
 
-  // live socket subscriptions for the current contact (and ticket)
-  private subscriptions: SocketSubscription[] = [];
-  private subscribedChannels: string[] = [];
+  // live socket subscriptions by channel for the current contact (and ticket)
+  private subscriptions = new Map<string, SocketSubscription>();
   private fetchingMissed = false;
 
   constructor() {
@@ -590,8 +589,7 @@ export class ContactChat extends ContactStoreElement {
 
   private unsubscribeAll() {
     this.subscriptions.forEach((sub) => sub.unsubscribe());
-    this.subscriptions = [];
-    this.subscribedChannels = [];
+    this.subscriptions.clear();
   }
 
   /**
@@ -599,33 +597,43 @@ export class ContactChat extends ContactStoreElement {
    * ticket. New events arrive as they happen on "history:<contact-uuid>";
    * ticket detail events (notes, assignment, topic) only arrive on
    * "history:<contact-uuid>:<ticket-uuid>" so we subscribe to both when
-   * viewing a ticket.
+   * viewing a ticket. Only the channels that actually changed are touched,
+   * so switching tickets on the same contact leaves the contact channel
+   * continuously subscribed with no gap in delivery.
    */
   private updateSubscriptions() {
-    const channels = [];
+    const channels = new Set<string>();
     if (this.isConnected && this.currentContact) {
-      channels.push(`history:${this.currentContact.uuid}`);
+      channels.add(`history:${this.currentContact.uuid}`);
       if (this.currentTicket) {
-        channels.push(
+        channels.add(
           `history:${this.currentContact.uuid}:${this.currentTicket.uuid}`
         );
       }
     }
 
-    if (channels.join(',') === this.subscribedChannels.join(',')) {
-      return;
-    }
+    // drop subscriptions we no longer need
+    this.subscriptions.forEach((sub, channel) => {
+      if (!channels.has(channel)) {
+        sub.unsubscribe();
+        this.subscriptions.delete(channel);
+      }
+    });
 
-    this.unsubscribeAll();
-    this.subscribedChannels = channels;
-    this.subscriptions = channels.map((channel) =>
-      subscribeToSocket(
-        channel,
-        (data: any) => this.handleSocketEvent(data),
-        // on every (re)subscribe fetch anything we might have missed
-        () => this.fetchMissedEvents()
-      )
-    );
+    // add any new ones
+    channels.forEach((channel) => {
+      if (!this.subscriptions.has(channel)) {
+        this.subscriptions.set(
+          channel,
+          subscribeToSocket(
+            channel,
+            (data: any) => this.handleSocketEvent(data),
+            // on every (re)subscribe fetch anything we might have missed
+            () => this.fetchMissedEvents()
+          )
+        );
+      }
+    });
   }
 
   private handleSocketEvent(event: any) {
@@ -1098,24 +1106,26 @@ export class ContactChat extends ContactStoreElement {
       }
 
       const fetchContact = this.currentContact.uuid;
+      const fetchTicket = this.currentTicket?.uuid;
 
-      fetchContactHistory(
-        endpoint,
-        this.currentTicket?.uuid,
-        null,
-        this.afterUUID
-      ).then((page: ContactHistoryPage) => {
-        this.fetchingMissed = false;
+      fetchContactHistory(endpoint, fetchTicket, null, this.afterUUID).then(
+        (page: ContactHistoryPage) => {
+          this.fetchingMissed = false;
 
-        // things may have changed while we were fetching
-        if (this.searchMode || fetchContact !== this.currentContact?.uuid) {
-          return;
+          // things may have changed while we were fetching
+          if (
+            this.searchMode ||
+            fetchContact !== this.currentContact?.uuid ||
+            fetchTicket !== this.currentTicket?.uuid
+          ) {
+            return;
+          }
+
+          const messages = this.createMessages(page);
+          messages.reverse();
+          chat.addMessages(messages, null, true);
         }
-
-        const messages = this.createMessages(page);
-        messages.reverse();
-        chat.addMessages(messages, null, true);
-      });
+      );
     }
   }
 

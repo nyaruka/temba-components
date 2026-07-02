@@ -1502,6 +1502,7 @@ export class Chat extends RapidElement {
   public reset() {
     this.resetGeneration++;
     this.msgMap.clear();
+    this.metadataCache.clear();
     this.messageGroups = [];
     this.hideBottomScroll = true;
     this.hideTopScroll = true;
