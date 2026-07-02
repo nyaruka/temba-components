@@ -49,7 +49,6 @@ describe('temba-flow-list', () => {
 
     // the row's navigation must not also fire
     expect(event.stopPropagation.called).to.be.true;
-    expect(event.preventDefault.called).to.be.true;
     expect(fired).to.have.length(1);
     expect(fired[0].url).to.equal('/flow/filter/label-1/');
   });
@@ -109,6 +108,37 @@ describe('temba-flow-list', () => {
     expect(redirects).to.have.length(1);
     expect(redirects[0].url).to.equal('/flow/filter/label-1/');
     expect(rowClicks, 'row click suppressed').to.have.length(0);
+  });
+
+  it('opens the flow editor on a click outside a chip', async () => {
+    const list: FlowList = await getFlowList();
+    // a row that carries a label chip, so we can click *around* it
+    (list as any).items = [
+      {
+        uuid: 'flow-1',
+        name: 'Flow 1',
+        labels: [{ uuid: 'label-1', name: 'Important' }]
+      }
+    ];
+    list.requestUpdate();
+    await list.updateComplete;
+
+    const row = list.shadowRoot.querySelector('tr.row') as HTMLElement;
+    expect(row, 'row rendered').to.exist;
+
+    const redirects: any[] = [];
+    list.addEventListener(CustomEventType.Redirected, (e: any) =>
+      redirects.push(e.detail)
+    );
+
+    // click the row itself (not the chip) — navigation falls through to
+    // the editor
+    row.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, composed: true })
+    );
+
+    expect(redirects).to.have.length(1);
+    expect(redirects[0].url).to.equal('/flow/editor/flow-1/');
   });
 
   it('ignores a label with no uuid', async () => {

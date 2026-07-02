@@ -152,9 +152,11 @@ export class FlowList extends ContentList<Flow> {
   private handleLabelClick(label: ObjectReference, event: MouseEvent): void {
     // Stop the click from bubbling to the row's navigation handler.
     event.stopPropagation();
-    event.preventDefault();
     if (!label?.uuid) return;
     const href = `/flow/filter/${label.uuid}/`;
+    // Guard the JSON-driven href against open-redirect, same as the
+    // row-click path in ContentList.handleRowClick.
+    if (!this.isSafeHref(href)) return;
     // Meta/ctrl-click opens a new tab, matching ordinary links and the
     // row-click behavior.
     if (event.metaKey || event.ctrlKey) {
