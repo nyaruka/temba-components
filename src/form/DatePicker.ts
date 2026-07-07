@@ -29,7 +29,9 @@ export class DatePicker extends FieldElement {
 
       .input-wrapper {
         padding: var(--temba-textinput-padding);
-        flex-grow: 1;
+        /* dwarfs the tz-wrapper's grow so the input takes the extra
+           space when everything fits on one line */
+        flex-grow: 999;
       }
 
       .tz {
@@ -65,6 +67,8 @@ export class DatePicker extends FieldElement {
         flex-direction: row;
         align-items: center;
         padding: 0.4em 0em;
+        /* when we wrap to our own row, fill it edge to edge */
+        flex-grow: 1;
       }
 
       .container:focus-within {

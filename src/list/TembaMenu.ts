@@ -162,6 +162,21 @@ export class TembaMenu extends ResizeElement {
         display: none;
       }
 
+      /* the loading skeleton reserves the menu footprint, the rail is 36px
+         items with 8px margins and a level is 12em items plus padding */
+      .level-0.loading-rail {
+        min-width: 52px;
+      }
+
+      .level.loading-level {
+        width: 178px;
+      }
+
+      /* when the skeleton root has a remembered width, the level fills it */
+      .root .loading-level {
+        flex-grow: 1;
+      }
+
       .level-0 > .item,
       .level-0 > temba-dropdown > div[slot='toggle'] > .avatar,
       .level-0 > temba-dropdown > div[slot='toggle'] > .item {
@@ -800,6 +815,27 @@ export class TembaMenu extends ResizeElement {
         this.value = null;
       }
     }
+
+    // remember our rendered width so the next load can reserve it exactly
+    if (this.root && this.root.items && !this.isMobile()) {
+      const width = this.offsetWidth;
+      if (width > 0 && width !== this.getStoredWidth()) {
+        try {
+          window.localStorage.setItem('temba-menu-width', `${width}`);
+        } catch (e) {
+          // storage isn't available, the width just won't be remembered
+        }
+      }
+    }
+  }
+
+  private getStoredWidth(): number {
+    try {
+      const width = parseInt(window.localStorage.getItem('temba-menu-width'));
+      return isNaN(width) ? 0 : width;
+    } catch (e) {
+      return 0;
+    }
   }
 
   public reset() {
@@ -1304,6 +1340,21 @@ export class TembaMenu extends ResizeElement {
 
   public render(): TemplateResult {
     if (!this.root || !this.root.items) {
+      // reserve our footprint while the menu loads so the rest of the page
+      // doesn't reflow when it arrives, using our remembered width when we
+      // have one so the reservation is exact
+      if (this.endpoint && !this.isMobile()) {
+        const reserved = this.getStoredWidth();
+        return html`<div
+          class="root"
+          style="${reserved ? `width:${reserved}px` : ''}"
+        >
+          <div class="level level-0 loading-rail">
+            <div class="empty"></div>
+          </div>
+          <div class="level level-1 loading-level"></div>
+        </div>`;
+      }
       return null;
     }
 

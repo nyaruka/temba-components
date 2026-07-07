@@ -31,6 +31,17 @@ describe('temba-menu', () => {
     expect(list.root).is.undefined;
   });
 
+  it('reserves its width while loading', async () => {
+    // an endpoint that never yields items leaves us in the loading state,
+    // where we hold the footprint of the rail plus one level so the page
+    // doesn't reflow when the menu arrives
+    const menu: TembaMenu = await getMenu({
+      endpoint: '/test-assets/menu/does-not-exist.json'
+    });
+    assert.isNotNull(menu.shadowRoot.querySelector('.loading-level'));
+    assert.isAtLeast(menu.offsetWidth, 200);
+  });
+
   it('renders with endpoint', async () => {
     const menu: TembaMenu = await getMenu({
       endpoint: '/test-assets/menu/menu-root.json'

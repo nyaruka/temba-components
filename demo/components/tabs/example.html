@@ -17,6 +17,11 @@
       temba-tab > div {
         padding: 20px;
       }
+
+      /* let the split tabs example use the full window */
+      body {
+        max-width: none;
+      }
     </style>
   </head>
   <body>
@@ -80,6 +85,39 @@
               Historical records and activity logs are shown in this section.
             </p>
           </div>
+        </temba-tab>
+      </temba-tabs>
+    </div>
+
+    <div class="example">
+      <h3>Split Tabs</h3>
+      <p>
+        The first tab declares a maxWidth and following tabs declare a
+        splitWidth. When there is enough room, those tabs are pulled out of the
+        tab strip and shown side by side as a merged view, with resizers
+        between the secondary panes. The strip is orderable, so tabs can be
+        dragged to control which panes are pulled down first — the pinned
+        first tab can't be moved. Resize the window to see tabs merge and pop
+        back out.
+      </p>
+      <temba-tabs orderable style="height:300px; background:#f3f4f6;">
+        <temba-tab name="Chat" icon="message" maxWidth="500" pinned>
+          <div>This pane is capped at 500px when the view is split.</div>
+        </temba-tab>
+        <temba-tab name="Details" icon="info" splitWidth="200">
+          <div>This pane joins the split view when 200px is available.</div>
+        </temba-tab>
+        <temba-tab name="Fields" icon="fields" splitWidth="200">
+          <div>
+            This pane joins next and can be resized with the resizer, its
+            width is remembered.
+          </div>
+        </temba-tab>
+        <temba-tab name="Notes" icon="notes" splitWidth="200">
+          <div>This pane joins when there is room for it too.</div>
+        </temba-tab>
+        <temba-tab name="Static" icon="flow">
+          <div>This tab never joins the split view.</div>
         </temba-tab>
       </temba-tabs>
     </div>
