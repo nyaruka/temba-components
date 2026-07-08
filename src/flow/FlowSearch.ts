@@ -316,6 +316,29 @@ function getTypeName(
 }
 
 /**
+ * Build the display fields for a result that matched on its type name
+ * (e.g. "email" matching a "Send Email" action). Shows the first content
+ * text as an unhighlighted preview when available, otherwise highlights
+ * the match within the type name itself. Returns null if the type name
+ * doesn't match the query.
+ */
+function makeTypeNameResult(
+  typeName: string,
+  query: string,
+  contentTexts: string[]
+): Pick<SearchResult, 'fullText' | 'matchStart' | 'matchLength'> | null {
+  const idx = typeName.toLowerCase().indexOf(query);
+  if (idx === -1) {
+    return null;
+  }
+  const preview = contentTexts.find((t) => t.trim());
+  if (preview) {
+    return { fullText: preview, matchStart: 0, matchLength: 0 };
+  }
+  return { fullText: typeName, matchStart: idx, matchLength: query.length };
+}
+
+/**
  * Get the localized name for a category, falling back to the original name.
  */
 function localizeCategoryName(
@@ -640,11 +663,13 @@ export class FlowSearch extends LitElement {
         if (node.actions) {
           for (const action of node.actions) {
             const actionConfig = ACTION_CONFIG[action.type];
+            const typeName = getTypeName(actionConfig, undefined);
             const searchAction = localizeAction(
               action,
               langLocalization?.[action.uuid]
             );
             const texts = getActionSearchTexts(searchAction);
+            let matched = false;
             for (const text of texts) {
               const lowerText = text.toLowerCase();
               const idx = lowerText.indexOf(query);
@@ -652,13 +677,29 @@ export class FlowSearch extends LitElement {
                 results.push({
                   nodeUuid: node.uuid,
                   action,
-                  typeName: getTypeName(actionConfig, undefined),
+                  typeName,
                   color: getColor(actionConfig, undefined),
                   fullText: text,
                   matchStart: idx,
                   matchLength: query.length
                 });
+                matched = true;
                 break; // One match per action is enough
+              }
+            }
+
+            // Fall back to matching the action type name (e.g. "email"
+            // matches all "Send Email" actions)
+            if (!matched) {
+              const typeMatch = makeTypeNameResult(typeName, query, texts);
+              if (typeMatch) {
+                results.push({
+                  nodeUuid: node.uuid,
+                  action,
+                  typeName,
+                  color: getColor(actionConfig, undefined),
+                  ...typeMatch
+                });
               }
             }
           }
@@ -679,6 +720,8 @@ export class FlowSearch extends LitElement {
           }
         }
 
+        const typeName = getTypeName(undefined, nodeConfig);
+        let matched = false;
         for (const text of nodeTexts) {
           const lowerText = text.toLowerCase();
           const idx = lowerText.indexOf(query);
@@ -686,13 +729,29 @@ export class FlowSearch extends LitElement {
             results.push({
               nodeUuid: node.uuid,
               action: null,
-              typeName: getTypeName(undefined, nodeConfig),
+              typeName,
               color: getColor(undefined, nodeConfig),
               fullText: text,
               matchStart: idx,
               matchLength: query.length
             });
+            matched = true;
             break; // One match per node is enough
+          }
+        }
+
+        // Fall back to matching the node type name (e.g. "wait" matches
+        // all "Wait for Response" nodes)
+        if (!matched) {
+          const typeMatch = makeTypeNameResult(typeName, query, nodeTexts);
+          if (typeMatch) {
+            results.push({
+              nodeUuid: node.uuid,
+              action: null,
+              typeName,
+              color: getColor(undefined, nodeConfig),
+              ...typeMatch
+            });
           }
         }
       }
@@ -837,6 +896,11 @@ export class FlowSearch extends LitElement {
 
     // Replace newlines with spaces for single-line display
     const text = result.fullText.replace(/\n/g, ' ');
+
+    // Type-name matches show an unhighlighted content preview
+    if (matchLength === 0) {
+      return html`${text}`;
+    }
 
     // Show leading context before the match, then the match, then trailing.
     // CSS text-overflow:ellipsis clips the trailing text, so we keep the match
