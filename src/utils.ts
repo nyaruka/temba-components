@@ -17,6 +17,18 @@ export { isSystemCategory } from './flow/categoryUtils';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
+/**
+ * Normalize a message attachment into the `contentType:url` string that
+ * `temba-thumbnail` expects. The messages CRUDL endpoint serializes
+ * attachments as `{content_type, url}` objects, while other message
+ * surfaces (e.g. realtime contact events) carry them already as strings —
+ * accept either shape.
+ */
+export const attachmentAsString = (attachment: string | Attachment): string =>
+  typeof attachment === 'string'
+    ? attachment
+    : `${attachment.content_type}:${attachment.url}`;
+
 export const colorHash = new ColorHash();
 
 export type Asset = KeyedAsset & Ticket & ContactField & Shortcut;

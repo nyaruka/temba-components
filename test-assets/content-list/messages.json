@@ -34,7 +34,9 @@
       "id": 1004,
       "contact": { "name": "Daniel Park", "urn": "tel:+15557778888" },
       "text": "Here is the photo you asked for",
-      "attachments": ["image/jpeg:https://example.com/img.jpg"],
+      "attachments": [
+        { "content_type": "image/jpeg", "url": "https://example.com/img.jpg" }
+      ],
       "labels": [{ "name": "Receipt" }],
       "flow": null,
       "msg_type": "text",

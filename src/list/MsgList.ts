@@ -2,6 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
 import { Msg } from '../interfaces';
+import { attachmentAsString } from '../utils';
 
 /**
  * Message CRUDL list — drop-in replacement for the rapidpro
@@ -14,9 +15,9 @@ export class MsgList extends ContentList<Msg> {
   static get styles() {
     return css`
       ${ContentList.styles}
-      /* The message cell holds the body text with its attachment
-         thumbnails right after it, and the flow / label pills pushed
-         to the trailing edge. The text sizes to content and
+      /* The message cell holds the body text on the leading edge, with
+         its attachment thumbnails and the flow / label pills grouped
+         and pushed to the trailing edge. The text sizes to content and
          ellipsizes when squeezed — resolved per row, so a busy row
          doesn't widen a column for all of them. */
       .msg-cell {
@@ -34,20 +35,28 @@ export class MsgList extends ContentList<Msg> {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      /* Attachment thumbnails sit immediately after the text. */
+      /* Attachments + pills, grouped and pushed to the trailing edge so
+         the thumbnails are right-aligned rather than trailing the text. */
+      .msg-trailing {
+        flex: 0 0 auto;
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      /* Attachment thumbnails, right-aligned within the trailing group. */
       .msg-attachments {
         flex: 0 0 auto;
         display: flex;
         align-items: center;
         gap: 6px;
       }
-      /* Flow + label pills, pushed to the trailing edge of the cell. */
+      /* Flow + label pills, at the trailing edge of the cell. */
       .cell-pills {
         flex: 0 0 auto;
         display: flex;
         align-items: center;
         gap: 6px;
-        margin-left: auto;
       }
       /* Attachment thumbnails are sized well below the 44px row so
          they never grow its height — a small square preview rather
@@ -160,14 +169,17 @@ export class MsgList extends ContentList<Msg> {
     }
   }
 
-  /** The message cell — body text, its attachment thumbnails, then
-   * the trailing flow / label pills. Each piece sizes to content, so
-   * the split is resolved independently for every row. */
+  /** The message cell — body text on the leading edge, with its
+   * attachment thumbnails and the trailing flow / label pills grouped
+   * and right-aligned. Each piece sizes to content, so the split is
+   * resolved independently for every row. */
   private renderMessageCell(item: Msg): TemplateResult {
     return html`
       <div class="msg-cell">
         <span class="msg-text">${this.renderMessageText(item)}</span>
-        ${this.renderAttachments(item)}${this.renderPills(item)}
+        <div class="msg-trailing">
+          ${this.renderAttachments(item)}${this.renderPills(item)}
+        </div>
       </div>
     `;
   }
@@ -208,8 +220,8 @@ export class MsgList extends ContentList<Msg> {
     return item.text || '';
   }
 
-  /** Attachment thumbnails for a row, sitting immediately after the
-   * message text, or '' when the row carries none. */
+  /** Attachment thumbnails for a row, right-aligned in the trailing
+   * group, or '' when the row carries none. */
   private renderAttachments(item: Msg): TemplateResult | string {
     const attachments = item.attachments || [];
     if (!attachments.length) return '';
@@ -219,7 +231,7 @@ export class MsgList extends ContentList<Msg> {
           (a) => html`
             <temba-thumbnail
               class="msg-thumb"
-              attachment=${a}
+              attachment=${attachmentAsString(a)}
             ></temba-thumbnail>
           `
         )}

@@ -182,6 +182,11 @@ export class Thumbnail extends RapidElement {
   // audio player state
   private audio: HTMLAudioElement | null = null;
 
+  // set when an image attachment fails to load, so we fall back to an
+  // icon instead of the browser's broken-image glyph
+  @state()
+  private imageError = false;
+
   @state()
   private audioPlaying = false;
 
@@ -264,6 +269,8 @@ export class Thumbnail extends RapidElement {
 
     // convert our attachment to a url and label
     if (changes.has('attachment')) {
+      // a new attachment gets a fresh shot at loading its image
+      this.imageError = false;
       if (this.attachment) {
         const splitIndex = this.attachment.indexOf(':');
         if (splitIndex === -1) {
@@ -337,11 +344,24 @@ export class Thumbnail extends RapidElement {
     }
   }
 
-  public handleThumbnailClicked() {
-    if (this.contentType === ThumbnailContentType.IMAGE && this.preview) {
+  public handleThumbnailClicked(e?: Event) {
+    // a thumbnail click is a self-contained action (lightbox / open / play);
+    // don't let it bubble to a clickable ancestor (e.g. a list row that would
+    // otherwise navigate away instead of showing the attachment)
+    e?.stopPropagation();
+    if (
+      this.contentType === ThumbnailContentType.IMAGE &&
+      this.preview &&
+      !this.imageError
+    ) {
       window.setTimeout(() => {
         const lightbox = document.querySelector('temba-lightbox') as Lightbox;
-        lightbox.showElement(this);
+        if (lightbox) {
+          lightbox.showElement(this);
+        } else {
+          // no lightbox mounted on this page — just open the image
+          window.open(this.url, '_blank');
+        }
       }, 100);
     } else if (this.contentType === ThumbnailContentType.LOCATION) {
       // open location in openstreetmap
@@ -372,12 +392,17 @@ export class Thumbnail extends RapidElement {
           : ''}"
         url=${this.url}
       >
-        ${this.contentType === ThumbnailContentType.IMAGE && this.preview
+        ${this.contentType === ThumbnailContentType.IMAGE &&
+        this.preview &&
+        !this.imageError
           ? html`<div class=""><div class="download" @click=${this.handleDownload.bind(
               this
             )}><temba-icon size="1" style="color:#fff;" name="download"></temba-icon></div><img
           class="observe thumb ${this.contentType}"
           src="${this.url}"
+          @error=${() => {
+            this.imageError = true;
+          }}
         ></img></div>`
           : this.contentType === ThumbnailContentType.AUDIO
             ? html`<div class="audio-player">

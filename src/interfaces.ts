@@ -137,7 +137,10 @@ export interface Msg {
   /** Message type as exposed by the messages CRUDL endpoint
    * (`text` / `optin` / …); mirrors `type` for that surface. */
   msg_type?: string;
-  attachments: string[];
+  /** Attachments as exposed by the messages CRUDL endpoint, which
+   * serializes each as a `{content_type, url}` object; some other
+   * message surfaces carry them as `contentType:url` strings. */
+  attachments: (string | Attachment)[];
   /** Labels applied to the message. */
   labels?: ObjectReference[];
   /** The flow the message was sent from, when there is one. */

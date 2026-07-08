@@ -393,6 +393,44 @@ describe('temba-content-list', () => {
     await assertScreenshot('content-list/messages', getClip(list));
   });
 
+  it('right-aligns the attachment thumbnails in the message cell', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-msg-list',
+      { endpoint: '/test-assets/content-list/messages.json' },
+      '',
+      1100
+    )) as MsgList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    const thumb = list.shadowRoot!.querySelector('.msg-thumb') as HTMLElement;
+    assert.exists(thumb, 'a row should render an attachment thumbnail');
+    const cell = thumb.closest('.msg-cell') as HTMLElement;
+    const text = cell.querySelector('.msg-text') as HTMLElement;
+    const trailing = cell.querySelector('.msg-trailing') as HTMLElement;
+    assert.exists(trailing, 'attachments should live in the trailing group');
+
+    // the trailing group (attachments + pills) is pushed to the cell's
+    // right edge rather than trailing the message text
+    expect(
+      Math.abs(
+        trailing.getBoundingClientRect().right -
+          cell.getBoundingClientRect().right
+      )
+    ).to.be.lessThan(2);
+
+    // so the thumbnail sits well to the right of the message text, not
+    // immediately after it (a wide auto-margin gap separates them)
+    const gap =
+      thumb.getBoundingClientRect().left - text.getBoundingClientRect().right;
+    expect(gap).to.be.greaterThan(50);
+  });
+
   it('aligns the bulk bar with the row text when the row has no icon', async () => {
     await loadStore();
     const list = (await getComponent(
