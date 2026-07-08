@@ -500,6 +500,24 @@ export class TabPane extends RapidElement {
           this.updateSplitting(true);
         }, TabPane.GROW_DELAY);
         this.applySplitStyles(width);
+        // going from no split to a split, cap the anchor at its split width
+        // now so its content doesn't stretch across the full width and then
+        // reflow when the extra panes are pulled in after the width settles.
+        // the reserved space stays empty until the panes arrive.
+        //
+        // only cap the width here — the pane is still a column at this point
+        // (the split/row layout doesn't kick in until the panes actually
+        // arrive), so setting flex:0 0 auto would collapse the anchor to its
+        // content height and leave just the compose box showing. leaving the
+        // selected tab's flex-grow in place keeps it filling the height while
+        // the explicit width holds the reserved space on the cross axis.
+        if (this.splitTabs.length === 0) {
+          const primary = group[0];
+          if (primary && group.includes(this.options[this.index])) {
+            primary.style.removeProperty('flex');
+            primary.style.width = `${primary.maxWidth}px`;
+          }
+        }
         return;
       }
       this.splitTabs = group;

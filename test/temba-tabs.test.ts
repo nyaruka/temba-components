@@ -204,6 +204,30 @@ describe('temba-tabs', () => {
     assert.equal(tabs.splitTabs.length, 2);
   });
 
+  it('reserves the anchor width while waiting to split', async () => {
+    const wrapper = (await fixture(
+      `<div style="width:1300px;display:flex;">${SPLIT_TABS}</div>`
+    )) as HTMLDivElement;
+    const tabs = wrapper.querySelector('temba-tabs') as TabPane;
+    await tabs.updateComplete;
+
+    // while we wait for the width to settle we haven't split yet, but the
+    // anchor is already capped so its content doesn't stretch across the
+    // full width and reflow when the panes finally arrive
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal(tabs.splitTabs.length, 0);
+    assert.equal(tabs.getTab(0).style.width, '600px');
+    // only the width is capped — the anchor keeps its flex-grow so it still
+    // fills the pane height. capping flex here would collapse it to content
+    // height and leave just the shortest child (e.g. a compose box) visible
+    // until the split finally activates
+    assert.equal(tabs.getTab(0).style.flex, '');
+
+    await settle(tabs);
+    assert.equal(tabs.splitTabs.length, 3);
+    assert.equal(tabs.getTab(0).style.width, '600px');
+  });
+
   it('pops tabs back out when the width shrinks', async () => {
     const tabs = await getTabs(1300);
     assert.equal(tabs.splitTabs.length, 3);
