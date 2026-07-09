@@ -292,11 +292,12 @@ export class Dialog extends ResizeElement {
   // the default signal that escape would discard the user's edits
   private contentEdited = false;
 
-  // whether the user has actually interacted (pointer or key) with the dialog
-  // since opening; components initializing their values fire synthetic change
-  // events while the content loads (e.g. selects with preset values), so
-  // edits only count once an interaction has happened
-  private contentInteracted = false;
+  // elements the user has actually interacted with (pointer or key) since the
+  // dialog opened; components fire synthetic change events on programmatic
+  // value changes (initialization of preset values, async option resolution),
+  // so an input/change only counts as an edit when it originates from an
+  // element the user has touched
+  private interactedElements = new WeakSet<EventTarget>();
 
   scrollOffset: any = 0;
 
@@ -342,7 +343,7 @@ export class Dialog extends ResizeElement {
 
     if (changes.has('open')) {
       this.contentEdited = false;
-      this.contentInteracted = false;
+      this.interactedElements = new WeakSet<EventTarget>();
       const body = document.querySelector('body');
 
       if (this.open) {
@@ -482,12 +483,17 @@ export class Dialog extends ResizeElement {
     return this.checkForChanges ? this.checkForChanges() : this.contentEdited;
   }
 
-  private handleContentInteraction() {
-    this.contentInteracted = true;
+  private handleContentInteraction(event: Event) {
+    // the path covers the interacted element and its ancestors, so a change
+    // fired later by a containing component (e.g. a select whose inner input
+    // was clicked) still matches
+    event.composedPath().forEach((el) => this.interactedElements.add(el));
   }
 
-  private handleContentEdited() {
-    if (this.contentInteracted) {
+  private handleContentEdited(event: Event) {
+    // only the originating element is checked (not its ancestors, which the
+    // paths of unrelated interactions also pass through)
+    if (this.interactedElements.has(event.composedPath()[0])) {
       this.contentEdited = true;
     }
   }

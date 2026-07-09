@@ -1391,6 +1391,90 @@ describe('temba-node-editor', () => {
       expect(cancelled).to.equal(true);
     });
 
+    it('leaves escapes aimed at an open select dropdown alone', async () => {
+      const el = await openSendMsgEditor();
+      confirmStub.returns(false);
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      // escape whose path passes through a select with an open dropdown
+      // should only close the dropdown, not touch the editor
+      const select = document.createElement('temba-select') as any;
+      select.isOpen = () => true;
+      el.appendChild(select);
+      select.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          composed: true
+        })
+      );
+      await el.updateComplete;
+
+      expect(confirmStub.called).to.equal(false);
+      expect(cancelled).to.equal(false);
+    });
+
+    it('leaves escapes belonging to a nested dialog alone', async () => {
+      const el = await openSendMsgEditor();
+      confirmStub.returns(false);
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      // escape routed through a dialog other than the editor's own belongs
+      // to that dialog
+      const nested = document.createElement('temba-dialog');
+      const content = document.createElement('div');
+      nested.appendChild(content);
+      document.body.appendChild(nested);
+      try {
+        content.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'Escape',
+            bubbles: true,
+            composed: true
+          })
+        );
+        await el.updateComplete;
+
+        expect(confirmStub.called).to.equal(false);
+        expect(cancelled).to.equal(false);
+      } finally {
+        nested.remove();
+      }
+    });
+
+    it('does not apply a stale resolve over a concurrent edit', async () => {
+      const el = await openSendMsgEditor();
+
+      // a resolve that only completes after the user has edited
+      let release: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      const realConfig = (el as any).getConfig();
+      (el as any).getConfig = () => ({
+        ...realConfig,
+        resolveFormData: async (formData: any) => {
+          await gate;
+          return { ...formData, text: 'resolved late' };
+        }
+      });
+
+      const pending = (el as any).resolveFormData();
+      (el as any).formData = { ...(el as any).formData, text: 'user edit' };
+      release!();
+      await pending;
+
+      // the stale resolve must not overwrite the edit or rebase the baseline
+      expect((el as any).formData.text).to.equal('user edit');
+      expect((el as any).hasUnsavedChanges()).to.equal(true);
+    });
+
     it('stops escape keyups from reaching the dialog', async () => {
       const el = await openSendMsgEditor();
       confirmStub.returns(false);

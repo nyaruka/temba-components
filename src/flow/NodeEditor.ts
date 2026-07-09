@@ -538,6 +538,24 @@ export class NodeEditor extends RapidElement {
 
   private handleEscapeKey(event: KeyboardEvent): void {
     if (event.key === 'Escape' && this.isOpen) {
+      const path = event.composedPath();
+
+      // an escape aimed at an open select dropdown just closes the dropdown
+      if (
+        path.some(
+          (el) =>
+            el instanceof Element &&
+            el.tagName === 'TEMBA-SELECT' &&
+            (el as any).isOpen?.()
+        )
+      ) {
+        return;
+      }
+
+      if (!this.ownsEscape(path)) {
+        return;
+      }
+
       if (
         this.hasUnsavedChanges() &&
         !window.confirm(Dialog.UNSAVED_CHANGES_MESSAGE)
@@ -548,13 +566,30 @@ export class NodeEditor extends RapidElement {
     }
   }
 
+  // an escape routed through a dialog other than our own (e.g. a nested
+  // dialog or modax opened from a field) belongs to that dialog; an escape
+  // with no dialog in its path (canvas or body focus) is ours to handle
+  private ownsEscape(path: EventTarget[]): boolean {
+    for (const el of path) {
+      if (el instanceof Element && el.tagName === 'TEMBA-DIALOG') {
+        return el === this.shadowRoot?.querySelector('temba-dialog');
+      }
+    }
+    return true;
+  }
+
   // temba-dialog handles escape itself on KEYUP reaching its container, which
   // would prompt a second time after the keydown handler above has already
   // asked (or dismiss unprompted if its keyup ever arrived first). While the
-  // editor is open, escape is owned entirely by the keydown handler, so stop
-  // escape keyups before the dialog sees them.
+  // editor is open, escape within our own dialog is owned entirely by the
+  // keydown handler, so stop those keyups before the dialog sees them —
+  // but leave escapes belonging to a dialog layered above us alone.
   private swallowEscapeUp(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && this.isOpen) {
+    if (
+      event.key === 'Escape' &&
+      this.isOpen &&
+      this.ownsEscape(event.composedPath())
+    ) {
       event.stopPropagation();
     }
   }
@@ -787,8 +822,15 @@ export class NodeEditor extends RapidElement {
     const config = this.getConfig();
     if (!config?.resolveFormData) return;
 
+    const input = this.formData;
     try {
-      const resolved = await config.resolveFormData(this.formData);
+      const resolved = await config.resolveFormData(input);
+
+      // if the user edited while the resolve was in flight, applying the
+      // stale result would overwrite their edit — and rebasing the baseline
+      // below would then mask the loss as a clean form
+      if (this.formData !== input) return;
+
       if (resolved && resolved !== this.formData) {
         this.formData = resolved;
         this.processFormDataForEditing();

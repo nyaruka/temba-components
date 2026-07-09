@@ -178,6 +178,46 @@ describe('temba-dialog', () => {
       expect(dialog.open).to.equal(false);
     });
 
+    it('ignores change events from elements the user never touched', async () => {
+      const dialog: Dialog = await fixture(getDialogHTML());
+      await open(dialog);
+
+      // interact with the input, but a change arrives from a different
+      // element (e.g. an async select resolving preset values late)
+      const other = document.createElement('span');
+      dialog.appendChild(other);
+      dialog
+        .querySelector('input')
+        .dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      other.dispatchEvent(new Event('change', { bubbles: true }));
+
+      pressEscape(dialog);
+
+      expect(confirmStub.called).to.equal(false);
+      expect(dialog.open).to.equal(false);
+    });
+
+    it('counts changes fired by a component containing the touched element', async () => {
+      const dialog: Dialog = await fixture(getDialogHTML());
+      await open(dialog);
+      confirmStub.returns(false);
+
+      // interaction lands on an inner element; the change is fired by its
+      // container (how temba components re-fire changes on their host)
+      const container = document.createElement('div');
+      const inner = document.createElement('span');
+      container.appendChild(inner);
+      dialog.appendChild(container);
+
+      inner.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      container.dispatchEvent(new Event('change', { bubbles: true }));
+
+      pressEscape(dialog);
+
+      expect(confirmStub.calledOnce).to.equal(true);
+      expect(dialog.open).to.equal(true);
+    });
+
     it('stays open when content was edited and confirm is declined', async () => {
       const dialog: Dialog = await fixture(getDialogHTML());
       await open(dialog);
