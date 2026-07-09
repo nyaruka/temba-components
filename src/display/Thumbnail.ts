@@ -354,15 +354,17 @@ export class Thumbnail extends RapidElement {
       this.preview &&
       !this.imageError
     ) {
-      window.setTimeout(() => {
-        const lightbox = document.querySelector('temba-lightbox') as Lightbox;
-        if (lightbox) {
+      const lightbox = document.querySelector('temba-lightbox') as Lightbox;
+      if (lightbox) {
+        window.setTimeout(() => {
           lightbox.showElement(this);
-        } else {
-          // no lightbox mounted on this page — just open the image
-          window.open(this.url, '_blank');
-        }
-      }, 100);
+        }, 100);
+      } else {
+        // no lightbox mounted on this page — just open the image. This must
+        // happen synchronously inside the click's user activation or popup
+        // blockers will eat it.
+        window.open(this.url, '_blank');
+      }
     } else if (this.contentType === ThumbnailContentType.LOCATION) {
       // open location in openstreetmap
       const osmUrl = `https://www.openstreetmap.org/?mlat=${this.latitude}&mlon=${this.longitude}#map=15/${this.latitude}/${this.longitude}`;

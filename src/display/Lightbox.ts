@@ -1,5 +1,5 @@
 import { css, html, PropertyValueMap } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
 
@@ -72,6 +72,7 @@ export class Lightbox extends RapidElement {
   @property({ type: Boolean })
   zoom = false;
 
+  @state()
   private url = '';
 
   protected updated(
@@ -88,7 +89,10 @@ export class Lightbox extends RapidElement {
     // once zoomed out, wait for the fade to finish before unmounting the image
     if (changed.has('zoom') && !this.zoom && this.show) {
       window.setTimeout(() => {
-        this.show = false;
+        // unless a re-open during the fade-out already zoomed us back in
+        if (!this.zoom) {
+          this.show = false;
+        }
       }, this.animationTime);
     }
   }
@@ -97,7 +101,12 @@ export class Lightbox extends RapidElement {
     // the clicked element is either a raw <img> or a temba-thumbnail that
     // exposes the attachment url; take whichever gives us an image source
     this.url = (ele as HTMLImageElement).src || (ele as any).url || '';
-    this.show = true;
+    if (this.show) {
+      // already mounted (e.g. re-opened mid-dismissal) — re-zoom in place
+      this.zoom = true;
+    } else {
+      this.show = true; // updated() flips zoom on the next tick
+    }
   }
 
   public handleClick() {

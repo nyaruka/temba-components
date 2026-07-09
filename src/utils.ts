@@ -24,10 +24,17 @@ export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
  * surfaces (e.g. realtime contact events) carry them already as strings —
  * accept either shape.
  */
-export const attachmentAsString = (attachment: string | Attachment): string =>
-  typeof attachment === 'string'
-    ? attachment
-    : `${attachment.content_type}:${attachment.url}`;
+export const attachmentAsString = (attachment: string | Attachment): string => {
+  if (typeof attachment === 'string') {
+    return attachment;
+  }
+  // guard against malformed objects — an empty result is a no-op for
+  // temba-thumbnail, which beats rendering "undefined:…"
+  if (!attachment?.content_type || !attachment?.url) {
+    return '';
+  }
+  return `${attachment.content_type}:${attachment.url}`;
+};
 
 export const colorHash = new ColorHash();
 
