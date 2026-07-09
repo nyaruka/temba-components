@@ -29,11 +29,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Upgrade npm to latest (requires 9.5.0+ for provenance)
+      - name: Upgrade npm (requires 9.5.0+ for provenance; pinned since npm 12.0.0 breaks provenance publish)
         run: |
           echo "Current npm version:"
           npm --version
-          npm install -g npm@latest
+          npm install -g npm@11
           echo "Updated npm version:"
           npm --version
       - name: Publish to NPM
