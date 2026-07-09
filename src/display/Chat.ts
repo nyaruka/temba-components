@@ -113,6 +113,13 @@ export interface MsgEvent extends ContactEvent {
   _logs_url?: string;
 }
 
+// whether a message has nothing to show in its bubble (and isn't deleted)
+const isEmptyMsg = (event: MsgEvent): boolean =>
+  !event._deleted &&
+  !!event.msg &&
+  !event.msg.text &&
+  (event.msg.attachments || []).length === 0;
+
 const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
 const VERBOSE_FORMAT = {
   weekday: undefined,
@@ -1328,13 +1335,7 @@ export class Chat extends RapidElement {
                   (statusClass === 'failed' || statusClass === 'errored'));
               const unsendableClass = hasError ? 'error' : '';
               const deletedClass = msgEvent._deleted ? 'deleted' : '';
-              const emptyClass =
-                !msgEvent._deleted &&
-                msgEvent.msg &&
-                !msgEvent.msg.text &&
-                (msgEvent.msg.attachments || []).length === 0
-                  ? 'empty'
-                  : '';
+              const emptyClass = isEmptyMsg(msgEvent) ? 'empty' : '';
               const latestClass = index === msgIds.length - 1 ? 'latest' : '';
               const eventClass = msg._rendered ? 'is-event' : '';
               const noteClass = msg.type === 'ticket_note_added' ? 'note' : '';
@@ -1441,10 +1442,7 @@ export class Chat extends RapidElement {
       : null;
 
     // messages with no text and no attachments get a muted placeholder
-    const isEmpty =
-      !isDeleted &&
-      !message.msg.text &&
-      (message.msg.attachments || []).length === 0;
+    const isEmpty = isEmptyMsg(message);
 
     // check if message has location attachment and text is just coordinates
     const hasLocationAttachment = message.msg.attachments?.some((att) =>
