@@ -113,6 +113,13 @@ export interface MsgEvent extends ContactEvent {
   _logs_url?: string;
 }
 
+// whether a message has nothing to show in its bubble (and isn't deleted)
+const isEmptyMsg = (event: MsgEvent): boolean =>
+  !event._deleted &&
+  !!event.msg &&
+  !event.msg.text &&
+  (event.msg.attachments || []).length === 0;
+
 const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
 const VERBOSE_FORMAT = {
   weekday: undefined,
@@ -351,13 +358,15 @@ export class Chat extends RapidElement {
         color: rgba(192, 24, 41, 0.6);
       }
 
-      .deleted .bubble {
+      .deleted .bubble,
+      .empty .bubble {
         background: #fff;
         color: #999;
         border: 1px solid #e0e0e0;
       }
 
-      .deleted .bubble .name {
+      .deleted .bubble .name,
+      .empty .bubble .name {
         color: #aaa;
       }
 
@@ -369,7 +378,8 @@ export class Chat extends RapidElement {
         font-size: 13px;
       }
 
-      .message-deleted {
+      .message-deleted,
+      .message-empty {
         font-style: italic;
         margin-bottom: 0;
         line-height: 1.2;
@@ -1325,13 +1335,14 @@ export class Chat extends RapidElement {
                   (statusClass === 'failed' || statusClass === 'errored'));
               const unsendableClass = hasError ? 'error' : '';
               const deletedClass = msgEvent._deleted ? 'deleted' : '';
+              const emptyClass = isEmptyMsg(msgEvent) ? 'empty' : '';
               const latestClass = index === msgIds.length - 1 ? 'latest' : '';
               const eventClass = msg._rendered ? 'is-event' : '';
               const noteClass = msg.type === 'ticket_note_added' ? 'note' : '';
               const matchClass =
                 this.highlightMessageUuid === msg.uuid ? 'search-match' : '';
               return html`<div
-                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass} ${noteClass} ${matchClass}"
+                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${emptyClass} ${latestClass} ${eventClass} ${noteClass} ${matchClass}"
                 data-uuid=${msg.uuid || nothing}
               >
                 ${this.renderMessage(
@@ -1430,6 +1441,9 @@ export class Chat extends RapidElement {
         : message._deleted.user?.name || 'user'
       : null;
 
+    // messages with no text and no attachments get a muted placeholder
+    const isEmpty = isEmptyMsg(message);
+
     // check if message has location attachment and text is just coordinates
     const hasLocationAttachment = message.msg.attachments?.some((att) =>
       att.startsWith('geo:')
@@ -1480,12 +1494,17 @@ export class Chat extends RapidElement {
                 Message deleted by ${deletedByText}
               </div>
             </div>`
-          : message.msg.text && !textIsCoordinates
+          : isEmpty
             ? html`<div class="bubble">
                 ${name ? html`<div class="name">${name}</div>` : null}
-                <div class="message-text">${messageText}</div>
+                <div class="message-empty">Empty Message</div>
               </div>`
-            : null}
+            : message.msg.text && !textIsCoordinates
+              ? html`<div class="bubble">
+                  ${name ? html`<div class="name">${name}</div>` : null}
+                  <div class="message-text">${messageText}</div>
+                </div>`
+              : null}
 
         <div class="attachments">
           ${(message.msg.attachments || []).map(
