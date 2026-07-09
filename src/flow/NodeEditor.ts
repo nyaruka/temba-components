@@ -20,6 +20,7 @@ import {
   SPLIT_GROUP_METADATA
 } from './types';
 import { CustomEventType } from '../interfaces';
+import { Dialog } from '../layout/Dialog';
 import { generateUUID } from '../utils';
 import {
   formatIssueMessage,
@@ -477,6 +478,11 @@ export class NodeEditor extends RapidElement {
   @state()
   private originalFormData: FormData = {};
 
+  // snapshot of getComparableFormData(), refreshed on any non-user mutation
+  // (init, async resolve) — the baseline for detecting unsaved edits when
+  // dismissing via escape
+  private pristineFormData = '';
+
   @state()
   private errors: { [key: string]: string } = {};
 
@@ -515,22 +521,75 @@ export class NodeEditor extends RapidElement {
   private issuesByAction!: Map<string, FlowIssue[]>;
 
   private boundHandleEscape = this.handleEscapeKey.bind(this);
+  private boundSwallowEscapeUp = this.swallowEscapeUp.bind(this);
 
   connectedCallback(): void {
     super.connectedCallback();
     this.initializeFormData();
     document.addEventListener('keydown', this.boundHandleEscape);
+    document.addEventListener('keyup', this.boundSwallowEscapeUp, true);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     document.removeEventListener('keydown', this.boundHandleEscape);
+    document.removeEventListener('keyup', this.boundSwallowEscapeUp, true);
   }
 
   private handleEscapeKey(event: KeyboardEvent): void {
     if (event.key === 'Escape' && this.isOpen) {
+      if (
+        this.hasUnsavedChanges() &&
+        !window.confirm(Dialog.UNSAVED_CHANGES_MESSAGE)
+      ) {
+        return;
+      }
       this.handleCancel();
     }
+  }
+
+  // temba-dialog handles escape itself on KEYUP reaching its container, which
+  // would prompt a second time after the keydown handler above has already
+  // asked (or dismiss unprompted if its keyup ever arrived first). While the
+  // editor is open, escape is owned entirely by the keydown handler, so stop
+  // escape keyups before the dialog sees them.
+  private swallowEscapeUp(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && this.isOpen) {
+      event.stopPropagation();
+    }
+  }
+
+  private hasUnsavedChanges(): boolean {
+    return this.getComparableFormData() !== this.pristineFormData;
+  }
+
+  // JSON of formData with array-editor scaffolding filtered out: array editors
+  // seed a blank row (carrying field defaults, e.g. an attachment type) into
+  // form data on first render, which must not count as a user edit
+  private getComparableFormData(): string {
+    const form = this.getConfig()?.form;
+    const comparable = { ...this.formData };
+
+    if (form) {
+      Object.entries(form).forEach(([fieldName, fieldConfig]) => {
+        const value = comparable[fieldName];
+        if (fieldConfig.type === 'array' && Array.isArray(value)) {
+          // same emptiness semantics as ArrayEditor.isEmptyItem
+          const isEmpty =
+            fieldConfig.isEmptyItem ||
+            ((item: any) => {
+              const values = Object.values(item || {});
+              return (
+                values.length === 0 ||
+                values.every((v) => v === undefined || v === null || v === '')
+              );
+            });
+          comparable[fieldName] = value.filter((item: any) => !isEmpty(item));
+        }
+      });
+    }
+
+    return JSON.stringify(comparable);
   }
 
   willUpdate(changedProperties: PropertyValues): void {
@@ -719,6 +778,9 @@ export class NodeEditor extends RapidElement {
         this.formData[key] = { ...value };
       }
     });
+
+    // fresh form, so nothing to warn about discarding yet
+    this.pristineFormData = this.getComparableFormData();
   }
 
   private async resolveFormData(): Promise<void> {
@@ -748,6 +810,9 @@ export class NodeEditor extends RapidElement {
             }
           });
         }
+
+        // resolving isn't a user edit; rebase the unsaved-changes baseline
+        this.pristineFormData = this.getComparableFormData();
 
         this.requestUpdate();
       }
@@ -2690,6 +2755,7 @@ export class NodeEditor extends RapidElement {
         .open="${this.isOpen}"
         .originX=${this.dialogOrigin?.x ?? null}
         .originY=${this.dialogOrigin?.y ?? null}
+        .checkForChanges=${() => this.hasUnsavedChanges()}
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="Save"
         cancelButtonName="Cancel"

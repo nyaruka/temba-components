@@ -129,4 +129,117 @@ describe('temba-dialog', () => {
     expect(primary.submitting).to.equal(true);
     expect(cancel.submitting).to.equal(false);
   });
+
+  describe('escape with unsaved changes', () => {
+    let confirmStub: sinon.SinonStub;
+
+    beforeEach(() => {
+      confirmStub = sinon.stub(window, 'confirm');
+    });
+
+    afterEach(() => {
+      confirmStub.restore();
+    });
+
+    const pressEscape = (dialog: Dialog) => {
+      const container = dialog.shadowRoot.querySelector('.dialog-container');
+      container.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape' }));
+    };
+
+    const editContent = (dialog: Dialog) => {
+      const input = dialog.querySelector('input');
+      // edits only count after a user interaction with the dialog
+      input.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    it('hides without confirming when content was not edited', async () => {
+      const dialog: Dialog = await fixture(getDialogHTML());
+      await open(dialog);
+
+      pressEscape(dialog);
+
+      expect(confirmStub.called).to.equal(false);
+      expect(dialog.open).to.equal(false);
+    });
+
+    it('ignores change events fired without user interaction', async () => {
+      const dialog: Dialog = await fixture(getDialogHTML());
+      await open(dialog);
+
+      // components initializing preset values fire change events on load;
+      // without a pointer or key interaction these must not count as edits
+      dialog
+        .querySelector('input')
+        .dispatchEvent(new Event('change', { bubbles: true }));
+      pressEscape(dialog);
+
+      expect(confirmStub.called).to.equal(false);
+      expect(dialog.open).to.equal(false);
+    });
+
+    it('stays open when content was edited and confirm is declined', async () => {
+      const dialog: Dialog = await fixture(getDialogHTML());
+      await open(dialog);
+      confirmStub.returns(false);
+
+      editContent(dialog);
+      pressEscape(dialog);
+
+      expect(confirmStub.calledOnce).to.equal(true);
+      expect(confirmStub.firstCall.args[0]).to.equal(
+        Dialog.UNSAVED_CHANGES_MESSAGE
+      );
+      expect(dialog.open).to.equal(true);
+    });
+
+    it('hides when content was edited and confirm is accepted', async () => {
+      const dialog: Dialog = await fixture(getDialogHTML());
+      await open(dialog);
+      confirmStub.returns(true);
+
+      editContent(dialog);
+      pressEscape(dialog);
+
+      expect(confirmStub.calledOnce).to.equal(true);
+      expect(dialog.open).to.equal(false);
+    });
+
+    it('resets edit tracking when reopened', async () => {
+      const dialog: Dialog = await fixture(getDialogHTML());
+      await open(dialog);
+
+      editContent(dialog);
+      await close(dialog);
+      await open(dialog);
+
+      pressEscape(dialog);
+
+      expect(confirmStub.called).to.equal(false);
+      expect(dialog.open).to.equal(false);
+    });
+
+    it('prefers checkForChanges over event tracking', async () => {
+      const dialog: Dialog = await fixture(getDialogHTML());
+      await open(dialog);
+
+      // owner says nothing changed, so edit events don't matter
+      dialog.checkForChanges = () => false;
+      editContent(dialog);
+      pressEscape(dialog);
+
+      expect(confirmStub.called).to.equal(false);
+      expect(dialog.open).to.equal(false);
+
+      await open(dialog);
+      confirmStub.returns(false);
+
+      // owner says there are changes even though no events fired
+      dialog.checkForChanges = () => true;
+      pressEscape(dialog);
+
+      expect(confirmStub.calledOnce).to.equal(true);
+      expect(dialog.open).to.equal(true);
+    });
+  });
 });

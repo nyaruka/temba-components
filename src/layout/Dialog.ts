@@ -20,6 +20,9 @@ export class DialogButton {
 }
 
 export class Dialog extends ResizeElement {
+  public static readonly UNSAVED_CHANGES_MESSAGE =
+    'You have unsaved changes. Are you sure you want to discard them?';
+
   static get widths(): { [size: string]: string } {
     return {
       small: '400px',
@@ -273,11 +276,27 @@ export class Dialog extends ResizeElement {
   @property({ attribute: false })
   onButtonClicked: (button: Button) => void;
 
+  // when set, consulted instead of the built-in edit tracking to decide
+  // whether escape should confirm before dismissing — for owners that can
+  // compare actual values (and so ignore edits that were reverted)
+  @property({ attribute: false })
+  checkForChanges?: () => boolean;
+
   @property({ type: Number })
   originX: number | null = null;
 
   @property({ type: Number })
   originY: number | null = null;
+
+  // whether any input/change has bubbled from our content since opening;
+  // the default signal that escape would discard the user's edits
+  private contentEdited = false;
+
+  // whether the user has actually interacted (pointer or key) with the dialog
+  // since opening; components initializing their values fire synthetic change
+  // events while the content loads (e.g. selects with preset values), so
+  // edits only count once an interaction has happened
+  private contentInteracted = false;
 
   scrollOffset: any = 0;
 
@@ -322,6 +341,8 @@ export class Dialog extends ResizeElement {
     super.updated(changes);
 
     if (changes.has('open')) {
+      this.contentEdited = false;
+      this.contentInteracted = false;
       const body = document.querySelector('body');
 
       if (this.open) {
@@ -457,8 +478,28 @@ export class Dialog extends ResizeElement {
     return this.shadowRoot.querySelector(`temba-button[primary]`);
   }
 
+  public hasUnsavedChanges(): boolean {
+    return this.checkForChanges ? this.checkForChanges() : this.contentEdited;
+  }
+
+  private handleContentInteraction() {
+    this.contentInteracted = true;
+  }
+
+  private handleContentEdited() {
+    if (this.contentInteracted) {
+      this.contentEdited = true;
+    }
+  }
+
   private handleKeyUp(event: KeyboardEvent) {
     if (event.key === 'Escape') {
+      if (
+        this.hasUnsavedChanges() &&
+        !window.confirm(Dialog.UNSAVED_CHANGES_MESSAGE)
+      ) {
+        return;
+      }
       this.clickCancel();
     }
   }
@@ -533,6 +574,10 @@ export class Dialog extends ResizeElement {
           }"></div>
           <div
             @keyup=${this.handleKeyUp}
+            @keydown=${this.handleContentInteraction}
+            @pointerdown=${this.handleContentInteraction}
+            @input=${this.handleContentEdited}
+            @change=${this.handleContentEdited}
             style=${styleMap(dialogStyle)}
             class="dialog-container"
           >
