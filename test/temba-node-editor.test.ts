@@ -1,6 +1,8 @@
 import '../temba-modules';
 import { html, fixture, expect } from '@open-wc/testing';
+import * as sinon from 'sinon';
 import { assertScreenshot, getClip } from './utils.test';
+import { Dialog } from '../src/layout/Dialog';
 import { zustand } from '../src/store/AppState';
 
 // Define interface for NodeEditor component
@@ -1267,6 +1269,241 @@ describe('temba-node-editor', () => {
       ]);
       const el = await createNewWaitNode();
       expect((el as any).formData.result_name).to.equal('Result 4');
+    });
+  });
+
+  describe('escape with unsaved changes', () => {
+    let confirmStub: sinon.SinonStub;
+
+    beforeEach(() => {
+      confirmStub = sinon.stub(window, 'confirm');
+    });
+
+    afterEach(() => {
+      confirmStub.restore();
+    });
+
+    const openSendMsgEditor = async () => {
+      const action = {
+        uuid: 'test-action-uuid',
+        type: 'send_msg',
+        text: 'Hello world',
+        quick_replies: []
+      };
+
+      const el = (await fixture(html`
+        <temba-node-editor
+          .action=${action}
+          .isOpen=${true}
+        ></temba-node-editor>
+      `)) as NodeEditorElement;
+
+      await el.updateComplete;
+      return el;
+    };
+
+    const pressEscape = () => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      );
+    };
+
+    it('cancels without confirming when nothing was modified', async () => {
+      const el = await openSendMsgEditor();
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      pressEscape();
+      await el.updateComplete;
+
+      expect(confirmStub.called).to.equal(false);
+      expect(cancelled).to.equal(true);
+    });
+
+    it('keeps editing when the confirm is declined', async () => {
+      const el = await openSendMsgEditor();
+      confirmStub.returns(false);
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      (el as any).formData = { ...(el as any).formData, text: 'Changed text' };
+      await el.updateComplete;
+
+      pressEscape();
+      await el.updateComplete;
+
+      expect(confirmStub.calledOnce).to.equal(true);
+      expect(confirmStub.firstCall.args[0]).to.equal(
+        Dialog.UNSAVED_CHANGES_MESSAGE
+      );
+      expect(cancelled).to.equal(false);
+
+      // still dirty, so a second escape asks again
+      pressEscape();
+      await el.updateComplete;
+      expect(confirmStub.calledTwice).to.equal(true);
+      expect(cancelled).to.equal(false);
+    });
+
+    it('discards changes when the confirm is accepted', async () => {
+      const el = await openSendMsgEditor();
+      confirmStub.returns(true);
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      (el as any).formData = { ...(el as any).formData, text: 'Changed text' };
+      await el.updateComplete;
+
+      pressEscape();
+      await el.updateComplete;
+
+      expect(confirmStub.calledOnce).to.equal(true);
+      expect(cancelled).to.equal(true);
+    });
+
+    it('does not confirm when reverted back to the original values', async () => {
+      const el = await openSendMsgEditor();
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      const original = (el as any).formData;
+      (el as any).formData = { ...original, text: 'Changed text' };
+      (el as any).formData = { ...original };
+      await el.updateComplete;
+
+      pressEscape();
+      await el.updateComplete;
+
+      // matches the original, so no warning
+      expect(confirmStub.called).to.equal(false);
+      expect(cancelled).to.equal(true);
+    });
+
+    it('leaves escapes aimed at an open select dropdown alone', async () => {
+      const el = await openSendMsgEditor();
+      confirmStub.returns(false);
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      // escape whose path passes through a select with an open dropdown
+      // should only close the dropdown, not touch the editor
+      const select = document.createElement('temba-select') as any;
+      select.isOpen = () => true;
+      el.appendChild(select);
+      select.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          composed: true
+        })
+      );
+      await el.updateComplete;
+
+      expect(confirmStub.called).to.equal(false);
+      expect(cancelled).to.equal(false);
+    });
+
+    it('leaves escapes belonging to a nested dialog alone', async () => {
+      const el = await openSendMsgEditor();
+      confirmStub.returns(false);
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      // escape routed through a dialog other than the editor's own belongs
+      // to that dialog
+      const nested = document.createElement('temba-dialog');
+      const content = document.createElement('div');
+      nested.appendChild(content);
+      document.body.appendChild(nested);
+      try {
+        content.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'Escape',
+            bubbles: true,
+            composed: true
+          })
+        );
+        await el.updateComplete;
+
+        expect(confirmStub.called).to.equal(false);
+        expect(cancelled).to.equal(false);
+      } finally {
+        nested.remove();
+      }
+    });
+
+    it('does not apply a stale resolve over a concurrent edit', async () => {
+      const el = await openSendMsgEditor();
+
+      // a resolve that only completes after the user has edited
+      let release: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      const realConfig = (el as any).getConfig();
+      (el as any).getConfig = () => ({
+        ...realConfig,
+        resolveFormData: async (formData: any) => {
+          await gate;
+          return { ...formData, text: 'resolved late' };
+        }
+      });
+
+      const pending = (el as any).resolveFormData();
+      (el as any).formData = { ...(el as any).formData, text: 'user edit' };
+      release!();
+      await pending;
+
+      // the stale resolve must not overwrite the edit or rebase the baseline
+      expect((el as any).formData.text).to.equal('user edit');
+      expect((el as any).hasUnsavedChanges()).to.equal(true);
+    });
+
+    it('stops escape keyups from reaching the dialog', async () => {
+      const el = await openSendMsgEditor();
+      confirmStub.returns(false);
+
+      let cancelled = false;
+      el.addEventListener('temba-node-edit-cancelled', () => {
+        cancelled = true;
+      });
+
+      (el as any).formData = { ...(el as any).formData, text: 'Changed text' };
+      await el.updateComplete;
+
+      // temba-dialog handles escape keyups from within itself, which would
+      // prompt a second time after the editor's keydown handler already has;
+      // the editor's capture listener must stop them
+      const form = el.shadowRoot!.querySelector('.node-editor-form');
+      form!.dispatchEvent(
+        new KeyboardEvent('keyup', {
+          key: 'Escape',
+          bubbles: true,
+          composed: true
+        })
+      );
+      await el.updateComplete;
+
+      expect(confirmStub.called).to.equal(false);
+      expect(cancelled).to.equal(false);
+      const dialog = el.shadowRoot!.querySelector('temba-dialog') as any;
+      expect(dialog.open).to.equal(true);
     });
   });
 });
