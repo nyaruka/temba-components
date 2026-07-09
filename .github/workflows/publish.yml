@@ -28,7 +28,7 @@ jobs:
       - name: Setup Node.js and upgrade npm
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Upgrade npm to latest (requires 9.5.0+ for provenance)
         run: |
           echo "Current npm version:"
