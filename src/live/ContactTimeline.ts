@@ -708,7 +708,11 @@ export class ContactTimeline extends EndpointMonitorElement {
     // message events display the message text; flow-bearing events show a
     // clickable flow pill linking to the flow (the "start" action is implied)
     const body = isMessage
-      ? html`<div class="title-text">${event.message}</div>`
+      ? html`<div class="title-text">
+          <temba-expression-highlight
+            >${event.message}</temba-expression-highlight
+          >
+        </div>`
       : event.flow
         ? html`<temba-label
             type="flow"

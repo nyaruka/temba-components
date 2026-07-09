@@ -127,6 +127,42 @@ describe(TAG, () => {
     expect(root.querySelectorAll('.dot.now').length).to.equal(1);
   });
 
+  it('syntax highlights expressions in message events', async () => {
+    await loadStore();
+    const events = await getEvents({
+      ...FIRST_PAGE,
+      future: [
+        {
+          type: 'campaign_event',
+          scheduled: '2024-06-10T12:00:00+00:00',
+          campaign: { uuid: 'camp-1', name: 'Onboarding' },
+          message:
+            'Time to refill @fields.patient_medications. Please reach out to your pharmacist.'
+        }
+      ]
+    });
+
+    // message text is rendered through the expression highlighter (past
+    // message events render the same way, so find the future one by text)
+    const highlight = Array.from(
+      events.shadowRoot.querySelectorAll(
+        '.title-text temba-expression-highlight'
+      )
+    ).find((ele) =>
+      ele.textContent.includes('@fields.patient_medications')
+    ) as any;
+    expect(highlight).to.not.equal(undefined);
+    expect(highlight.textContent.trim()).to.equal(
+      'Time to refill @fields.patient_medications. Please reach out to your pharmacist.'
+    );
+
+    // and the expression inside it is tokenized
+    await highlight.updateComplete;
+    const identifier = highlight.shadowRoot.querySelector('.tok-id');
+    expect(identifier).to.not.equal(null);
+    expect(identifier.textContent).to.contain('fields.patient_medications');
+  });
+
   it('renders an empty state when there are no events', async () => {
     await loadStore();
     const events = await getEvents({
