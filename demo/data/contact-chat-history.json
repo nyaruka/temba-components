@@ -2,6 +2,38 @@
   "next": null,
   "events": [
     {
+      "uuid": "019f1e71-4a20-7c15-9d42-8b1f6e2a9c04",
+      "type": "msg_received",
+      "created_on": "2026-07-01T16:09:29.000000+00:00",
+      "msg": {
+        "urn": "telegram:7856382063",
+        "channel": {
+          "uuid": "246dfb67-dfcb-475d-ae81-cb49357537c7",
+          "name": "Telegram ureportglobal"
+        },
+        "external_id": "123751",
+        "text": "This message was deleted"
+      },
+      "_deleted": {
+        "created_on": "2026-07-01T16:10:00.000000+00:00",
+        "by_contact": true
+      }
+    },
+    {
+      "uuid": "019f1e70-ed92-7861-8b57-93cf1a1f88b3",
+      "type": "msg_received",
+      "created_on": "2026-07-01T16:09:05.262559+00:00",
+      "msg": {
+        "urn": "telegram:7856382063",
+        "channel": {
+          "uuid": "246dfb67-dfcb-475d-ae81-cb49357537c7",
+          "name": "Telegram ureportglobal"
+        },
+        "external_id": "123750",
+        "text": ""
+      }
+    },
+    {
       "uuid": "019a0001-0001-7001-8001-000000000010",
       "type": "msg_created",
       "created_on": "2025-09-24T20:40:27.239439+00:00",
