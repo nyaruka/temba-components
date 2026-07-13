@@ -1,5 +1,5 @@
 {
-  "count": 6,
+  "count": 7,
   "next": null,
   "previous": null,
   "results": [
@@ -34,7 +34,9 @@
       "id": 1004,
       "contact": { "name": "Daniel Park", "urn": "tel:+15557778888" },
       "text": "Here is the photo you asked for",
-      "attachments": ["image/jpeg:https://example.com/img.jpg"],
+      "attachments": [
+        { "content_type": "image/jpeg", "url": "https://example.com/img.jpg" }
+      ],
       "labels": [{ "name": "Receipt" }],
       "flow": null,
       "msg_type": "text",
@@ -57,6 +59,18 @@
       "flow": null,
       "msg_type": "text",
       "created_on": "2026-05-10T22:01:12Z"
+    },
+    {
+      "id": 1007,
+      "contact": { "name": "Grace Liu", "urn": "tel:+15552220003" },
+      "text": "",
+      "attachments": [
+        { "content_type": "image/jpeg", "url": "https://example.com/pic.jpg" }
+      ],
+      "labels": [],
+      "flow": null,
+      "msg_type": "text",
+      "created_on": "2026-05-10T21:15:33Z"
     }
   ]
 }

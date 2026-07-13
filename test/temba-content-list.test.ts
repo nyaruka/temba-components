@@ -393,6 +393,68 @@ describe('temba-content-list', () => {
     await assertScreenshot('content-list/messages', getClip(list));
   });
 
+  it('renders attachment thumbnails immediately after the message text', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-msg-list',
+      { endpoint: '/test-assets/content-list/messages.json' },
+      '',
+      1100
+    )) as MsgList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    const thumb = list.shadowRoot!.querySelector('.msg-thumb') as HTMLElement;
+    assert.exists(thumb, 'a row should render an attachment thumbnail');
+    const cell = thumb.closest('.msg-cell') as HTMLElement;
+    const text = cell.querySelector('.msg-text') as HTMLElement;
+
+    // the thumbnail trails the message text directly — separated only
+    // by the cell's own gap, not pushed to the trailing edge
+    const gap =
+      thumb.getBoundingClientRect().left - text.getBoundingClientRect().right;
+    expect(gap).to.be.greaterThan(0);
+    expect(gap).to.be.lessThan(20);
+  });
+
+  it('starts an attachment-only message with the attachment', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-msg-list',
+      { endpoint: '/test-assets/content-list/messages.json' },
+      '',
+      1100
+    )) as MsgList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    // the fixture's last row (Grace Liu) carries an attachment and no text
+    const cells = Array.from(
+      list.shadowRoot!.querySelectorAll('.msg-cell')
+    ) as HTMLElement[];
+    const cell = cells[cells.length - 1];
+    const thumb = cell.querySelector('.msg-thumb') as HTMLElement;
+    assert.exists(thumb, 'the attachment-only row should render a thumbnail');
+    assert.notExists(
+      cell.querySelector('.msg-text'),
+      'an attachment-only row should render no text span'
+    );
+
+    // with no text span, the thumbnail sits at the cell's leading edge
+    // rather than floating after an empty text placeholder
+    expect(
+      thumb.getBoundingClientRect().left - cell.getBoundingClientRect().left
+    ).to.be.lessThan(2);
+  });
+
   it('aligns the bulk bar with the row text when the row has no icon', async () => {
     await loadStore();
     const list = (await getComponent(

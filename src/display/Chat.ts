@@ -5,6 +5,7 @@ import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { TicketEvent } from '../events';
 import { DEFAULT_AVATAR } from '../webchat/assets';
+import { attachmentAsString } from '../utils';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 200; // pixels from top
@@ -1446,7 +1447,7 @@ export class Chat extends RapidElement {
 
     // check if message has location attachment and text is just coordinates
     const hasLocationAttachment = message.msg.attachments?.some((att) =>
-      att.startsWith('geo:')
+      attachmentAsString(att).startsWith('geo:')
     );
     const textIsCoordinates =
       hasLocationAttachment &&
@@ -1510,7 +1511,7 @@ export class Chat extends RapidElement {
           ${(message.msg.attachments || []).map(
             (attachment) =>
               html`<temba-thumbnail
-                attachment="${attachment}"
+                attachment="${attachmentAsString(attachment)}"
               ></temba-thumbnail>`
           )}
         </div>
