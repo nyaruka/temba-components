@@ -35,25 +35,17 @@ export class MsgList extends ContentList<Msg> {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      /* Attachments + pills, grouped and pushed to the trailing edge so
-         the thumbnails are right-aligned rather than trailing the text. */
-      .msg-trailing {
-        flex: 0 0 auto;
-        margin-left: auto;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      /* Attachment thumbnails, right-aligned within the trailing group. */
+      /* Attachment thumbnails, immediately after the message text. */
       .msg-attachments {
         flex: 0 0 auto;
         display: flex;
         align-items: center;
         gap: 6px;
       }
-      /* Flow + label pills, at the trailing edge of the cell. */
+      /* Flow + label pills, pushed to the trailing edge of the cell. */
       .cell-pills {
         flex: 0 0 auto;
+        margin-left: auto;
         display: flex;
         align-items: center;
         gap: 6px;
@@ -169,17 +161,19 @@ export class MsgList extends ContentList<Msg> {
     }
   }
 
-  /** The message cell — body text on the leading edge, with its
-   * attachment thumbnails and the trailing flow / label pills grouped
-   * and right-aligned. Each piece sizes to content, so the split is
-   * resolved independently for every row. */
+  /** The message cell — body text on the leading edge with its
+   * attachment thumbnails immediately after it, and the flow / label
+   * pills pushed to the trailing edge. Each piece sizes to content, so
+   * the split is resolved independently for every row. A message with
+   * no text renders no text span at all — otherwise its min-width
+   * would strand an attachment-only row's thumbnails away from the
+   * leading edge. */
   private renderMessageCell(item: Msg): TemplateResult {
+    const text = this.renderMessageText(item);
     return html`
       <div class="msg-cell">
-        <span class="msg-text">${this.renderMessageText(item)}</span>
-        <div class="msg-trailing">
-          ${this.renderAttachments(item)}${this.renderPills(item)}
-        </div>
+        ${text ? html`<span class="msg-text">${text}</span>` : ''}
+        ${this.renderAttachments(item)}${this.renderPills(item)}
       </div>
     `;
   }
@@ -220,8 +214,8 @@ export class MsgList extends ContentList<Msg> {
     return item.text || '';
   }
 
-  /** Attachment thumbnails for a row, right-aligned in the trailing
-   * group, or '' when the row carries none. */
+  /** Attachment thumbnails for a row, immediately after the message
+   * text, or '' when the row carries none. */
   private renderAttachments(item: Msg): TemplateResult | string {
     const attachments = item.attachments || [];
     if (!attachments.length) return '';

@@ -393,7 +393,7 @@ describe('temba-content-list', () => {
     await assertScreenshot('content-list/messages', getClip(list));
   });
 
-  it('right-aligns the attachment thumbnails in the message cell', async () => {
+  it('renders attachment thumbnails immediately after the message text', async () => {
     await loadStore();
     const list = (await getComponent(
       'temba-msg-list',
@@ -412,23 +412,47 @@ describe('temba-content-list', () => {
     assert.exists(thumb, 'a row should render an attachment thumbnail');
     const cell = thumb.closest('.msg-cell') as HTMLElement;
     const text = cell.querySelector('.msg-text') as HTMLElement;
-    const trailing = cell.querySelector('.msg-trailing') as HTMLElement;
-    assert.exists(trailing, 'attachments should live in the trailing group');
 
-    // the trailing group (attachments + pills) is pushed to the cell's
-    // right edge rather than trailing the message text
-    expect(
-      Math.abs(
-        trailing.getBoundingClientRect().right -
-          cell.getBoundingClientRect().right
-      )
-    ).to.be.lessThan(2);
-
-    // so the thumbnail sits well to the right of the message text, not
-    // immediately after it (a wide auto-margin gap separates them)
+    // the thumbnail trails the message text directly — separated only
+    // by the cell's own gap, not pushed to the trailing edge
     const gap =
       thumb.getBoundingClientRect().left - text.getBoundingClientRect().right;
-    expect(gap).to.be.greaterThan(50);
+    expect(gap).to.be.greaterThan(0);
+    expect(gap).to.be.lessThan(20);
+  });
+
+  it('starts an attachment-only message with the attachment', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-msg-list',
+      { endpoint: '/test-assets/content-list/messages.json' },
+      '',
+      1100
+    )) as MsgList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    // the fixture's last row (Grace Liu) carries an attachment and no text
+    const cells = Array.from(
+      list.shadowRoot!.querySelectorAll('.msg-cell')
+    ) as HTMLElement[];
+    const cell = cells[cells.length - 1];
+    const thumb = cell.querySelector('.msg-thumb') as HTMLElement;
+    assert.exists(thumb, 'the attachment-only row should render a thumbnail');
+    assert.notExists(
+      cell.querySelector('.msg-text'),
+      'an attachment-only row should render no text span'
+    );
+
+    // with no text span, the thumbnail sits at the cell's leading edge
+    // rather than floating after an empty text placeholder
+    expect(
+      thumb.getBoundingClientRect().left - cell.getBoundingClientRect().left
+    ).to.be.lessThan(2);
   });
 
   it('aligns the bulk bar with the row text when the row has no icon', async () => {
