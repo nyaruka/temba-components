@@ -363,6 +363,38 @@ describe('temba-trigger-list', () => {
     expect(pills[3].getAttribute('title')).to.equal('Drivers, not Staff');
   });
 
+  it('keeps keyword pills from collapsing to bare chrome', async () => {
+    // narrow enough that the keyword row can't fit everything
+    const list: TriggerList = await getTriggerList({}, 560);
+    (list as any).items = [
+      trigger({ keywords: ['registration', 'subscription', 'notification'] })
+    ];
+    list.requestUpdate();
+    await list.updateComplete;
+
+    const pills = list.shadowRoot.querySelectorAll(
+      'temba-label[type="keyword"]'
+    );
+    expect(pills).to.have.length(3);
+    pills.forEach((p: any) => {
+      // long keywords are the shrinkable ones, floored at 4em so a
+      // squeezed pill keeps a few identifying characters
+      expect(p.classList.contains('wide')).to.be.true;
+      expect(p.getBoundingClientRect().width).to.be.greaterThan(40);
+    });
+
+    // short keywords never shrink at all
+    (list as any).items = [trigger({ keywords: ['go', 'hi', 'join'] })];
+    list.requestUpdate();
+    await list.updateComplete;
+    list.shadowRoot
+      .querySelectorAll('temba-label[type="keyword"]')
+      .forEach((p: any) => {
+        expect(p.classList.contains('wide')).to.be.false;
+        expect(getComputedStyle(p).flexShrink).to.equal('0');
+      });
+  });
+
   it('folds keyword pills past the cap into a +N summary', async () => {
     const list: TriggerList = await getTriggerList();
     (list as any).items = [

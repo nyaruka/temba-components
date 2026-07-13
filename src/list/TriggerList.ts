@@ -12,6 +12,16 @@ const EMPTY = '--';
  * bare icons that identify nothing. */
 const MAX_PILLS = 3;
 
+/** Name length past which a filter pill is marked `wide` — the pill
+ * that gives up space (down to a floor) when the row is squeezed,
+ * so its short-named siblings keep their full text. */
+const WIDE_PILL_CHARS = 11;
+
+/** Keyword length past which a keyword pill is marked `wide`. Lower
+ * than the filter-pill threshold to match the keyword pills' compact
+ * monospace sizing and their smaller shrink floor. */
+const WIDE_KEYWORD_CHARS = 5;
+
 /** A resolved filter pill (channel / contact / group / excluded
  * group) ready to render — see {@link TriggerList.renderFilters}. */
 interface FilterPill {
@@ -115,14 +125,13 @@ export class TriggerList extends ContentList<Trigger> {
         flex-shrink: 1;
         min-width: 7em;
       }
-      /* Keyword pills sit in the grow column where space varies more;
-         they shrink-with-ellipsis rather than clip. No floor here — a
-         min-width would stretch pills whose natural size is below it,
-         and keywords are short enough (≤16 chars, capped at three by
-         the +N summary) that a squeeze stays readable. */
-      .details .pills temba-label {
-        flex-shrink: 1;
-        min-width: 0;
+      /* Keyword pills follow the same rule — short ones never shrink
+         (so a pill can never collapse to bare chrome), long ones give
+         up space — but with a smaller floor matched to their compact
+         monospace sizing, so the floor never stretches a pill beyond
+         its natural width. */
+      .details .pills temba-label.wide {
+        min-width: 4em;
       }
       /* Exclusion pills — group pills derive their palette from
          --recipient (see pillVariants.ts), so re-anchoring it to the
@@ -130,14 +139,6 @@ export class TriggerList extends ContentList<Trigger> {
          pill chrome identical to its included siblings. */
       .pills temba-label.exclude {
         --recipient: var(--danger);
-      }
-      /* A long-named pill absorbs the row's squeeze first — the huge
-         shrink factor concentrates the deficit on it (down to a
-         readable floor) so its short-named siblings keep their full
-         text instead of everything ellipsizing proportionally. */
-      .pills temba-label.wide {
-        flex-shrink: 999;
-        min-width: 7em;
       }
       /* The "+N" summary pill never shrinks — it's the affordance
          that says more exist, so it must stay legible while its
@@ -252,7 +253,12 @@ export class TriggerList extends ContentList<Trigger> {
           >
           <span class="pills">
             ${visible.map(
-              (k) => html`<temba-label type="keyword">${k}</temba-label>`
+              (k) =>
+                html`<temba-label
+                  type="keyword"
+                  class=${k.length > WIDE_KEYWORD_CHARS ? 'wide' : ''}
+                  >${k}</temba-label
+                >`
             )}
             ${this.renderOverflowPill(keywords.slice(MAX_PILLS))}
           </span>
@@ -335,7 +341,8 @@ export class TriggerList extends ContentList<Trigger> {
       ${visible.map(
         (f) =>
           html`<temba-label
-            class="${f.exclude ? 'exclude' : ''} ${f.name.length > 11
+            class="${f.exclude ? 'exclude' : ''} ${f.name.length >
+            WIDE_PILL_CHARS
               ? 'wide'
               : ''}"
             type=${f.type}
