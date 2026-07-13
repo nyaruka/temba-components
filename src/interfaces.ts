@@ -120,6 +120,20 @@ export interface Flow {
   activity: number[];
 }
 
+/** A single row in the campaign CRUDL list
+ * (`campaigns/campaign_list.html`). */
+export interface Campaign {
+  uuid: string;
+  name: string;
+  /** The contact group the campaign schedules against. */
+  group: ObjectReference;
+  /** Number of events (messages / flow starts) in the campaign. */
+  events: number;
+  /** Contacts currently in the campaign's group. */
+  contacts: number;
+  modified_on: string;
+}
+
 export interface Msg {
   /** Numeric id — present on persisted messages (the CRUDL list
    * keys rows off it); absent on outbound drafts. */

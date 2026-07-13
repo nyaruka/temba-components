@@ -69,7 +69,8 @@
 
     <p>
       JSON-driven CRUDL list. Subclasses (<code>temba-msg-list</code>,
-      <code>temba-contact-list</code>, <code>temba-flow-list</code>) define
+      <code>temba-contact-list</code>, <code>temba-flow-list</code>,
+      <code>temba-campaign-list</code>) define
       columns and per-cell rendering; the base
       <code>temba-content-list</code> handles search, sort, multi-select,
       pagination, and bulk-action events.
@@ -186,6 +187,27 @@
       </div>
     </div>
 
+    <div class="demo">
+      <h3>Campaigns</h3>
+      <p class="description">
+        Campaign list with a leading campaign icon on every row, the group
+        pill the campaign schedules against, contact / event counts, and
+        the last-updated date.
+      </p>
+      <temba-campaign-list
+        id="campaigns"
+        list-title="Campaigns"
+        subtitle="Scheduled messages and flow starts."
+        endpoint="/demo/components/content-list/data/campaigns.json"
+        action-endpoint="/demo/components/content-list/campaign-list-action"
+        content-menu-endpoint="/demo/components/content-list/data/campaigns-menu.json"
+      ></temba-campaign-list>
+      <div class="events" id="campaigns-events">
+        <div class="label">Events</div>
+        (waiting)
+      </div>
+    </div>
+
     <script type="module">
       import '/out-tsc/temba-modules.js';
 
@@ -220,6 +242,7 @@
       wire('contacts-basic', 'contacts-basic-events');
       wire('contacts-system', 'contacts-system-events');
       wire('flows', 'flows-events');
+      wire('campaigns', 'campaigns-events');
 
       // Block real navigation so contact-row hrefs don't take you away
       document.addEventListener('click', (e) => {
