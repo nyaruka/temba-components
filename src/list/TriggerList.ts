@@ -206,6 +206,13 @@ export class TriggerList extends ContentList<Trigger> {
 
   private lastHostWidth = -1;
 
+  /** Each pill cell's width as of its last budget computation, keyed
+   * like {@link pillBudgets}. A host resize only resets the cells
+   * whose width actually moved — when the table is already at its
+   * column minimums (scrolling horizontally), a window resize changes
+   * the host but not the cells, and nothing re-folds or flashes. */
+  private pillCellWidths: Map<string, number> = new Map();
+
   public connectedCallback(): void {
     super.connectedCallback();
     this.hostResizeObserver = new ResizeObserver((entries) => {
@@ -213,19 +220,42 @@ export class TriggerList extends ContentList<Trigger> {
       // ignore height-only changes and sub-pixel noise
       if (Math.abs(width - this.lastHostWidth) <= 1) return;
       this.lastHostWidth = width;
-      // the width changed — start over from the full budget and let
-      // the post-render measure walk each cell back down
-      if (this.pillBudgets.size) {
-        this.pillBudgets = new Map();
-        this.updateComplete.then(() => this.schedulePillMeasure());
-      } else {
-        this.schedulePillMeasure();
-      }
+      this.syncPillCellWidths();
     });
     this.hostResizeObserver.observe(this);
     // Late web-font loads change pill text widths.
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => this.schedulePillMeasure());
+    }
+  }
+
+  /** After the host's width changes, find the pill cells whose own
+   * width actually changed with it: reset those budgets to the full
+   * cap (the measure walks them back down to what now fits) and
+   * leave every other cell untouched. */
+  private syncPillCellWidths(): void {
+    const containers = this.shadowRoot.querySelectorAll('.pills[data-fit]');
+    let resetBudgets: Map<string, number> = null;
+    let needMeasure = false;
+    containers.forEach((el: Element) => {
+      const key = (el as HTMLElement).dataset.fit;
+      const cell = el.closest('td');
+      if (!cell) return;
+      const width = cell.clientWidth;
+      const last = this.pillCellWidths.get(key);
+      if (last != null && Math.abs(width - last) <= 1) return;
+      this.pillCellWidths.set(key, width);
+      needMeasure = true;
+      if (this.pillBudgets.has(key)) {
+        resetBudgets = resetBudgets || new Map(this.pillBudgets);
+        resetBudgets.delete(key);
+      }
+    });
+    if (resetBudgets) {
+      this.pillBudgets = resetBudgets;
+      this.updateComplete.then(() => this.schedulePillMeasure());
+    } else if (needMeasure) {
+      this.schedulePillMeasure();
     }
   }
 
@@ -268,6 +298,12 @@ export class TriggerList extends ContentList<Trigger> {
     containers.forEach((el: Element) => {
       const key = (el as HTMLElement).dataset.fit;
       const budget = this.pillBudgets.get(key) ?? MAX_PILLS;
+      // record the cell width this budget was computed at, so a later
+      // resize can tell which cells actually moved
+      const cell = el.closest('td');
+      if (cell) {
+        this.pillCellWidths.set(key, cell.clientWidth);
+      }
       // +1 tolerance for fractional layout rounding
       if (budget > 0 && el.scrollWidth > el.clientWidth + 1) {
         next = next || new Map(this.pillBudgets);

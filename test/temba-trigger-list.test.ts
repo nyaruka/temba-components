@@ -445,6 +445,28 @@ describe('temba-trigger-list', () => {
     expect((list as any).pillBudgets).to.deep.equal(budgets);
   });
 
+  it('keeps budgets on a resize that leaves column widths unchanged', async () => {
+    // at 560 the table is already at its column minimums and scrolls
+    // horizontally — the columns can't get any narrower
+    const list: TriggerList = await getTriggerList({}, 560);
+    (list as any).items = [
+      trigger({ keywords: ['join', 'stop', 'help', 'info'] })
+    ];
+    list.requestUpdate();
+    await settlePills(list);
+
+    const before = new Map((list as any).pillBudgets);
+    expect(before.size, 'folding happened').to.be.greaterThan(0);
+
+    // widen the page slightly — the host resizes, but the columns
+    // stay pinned at their minimums, so no cell width changes and no
+    // budget may be reset (a reset re-renders and flashes)
+    (list.parentElement as HTMLElement).style.width = '585px';
+    await settlePills(list);
+
+    expect((list as any).pillBudgets).to.deep.equal(before);
+  });
+
   it('folds keyword pills past the cap into a +N summary', async () => {
     const list: TriggerList = await getTriggerList();
     (list as any).items = [
