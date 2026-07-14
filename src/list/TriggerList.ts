@@ -197,20 +197,32 @@ export class TriggerList extends ContentList<Trigger> {
    * none is scheduled). */
   private pillMeasureFrame = 0;
 
-  private pillResizeHandler: () => void;
+  /** Watches the host's width so budgets recompute only when the
+   * geometry can actually change — never on scroll-driven re-renders,
+   * which would force layout reads for nothing. The host's width is
+   * page-layout-driven (folding pills can't change it), so observing
+   * it can't oscillate with the folding itself. */
+  private hostResizeObserver: ResizeObserver;
+
+  private lastHostWidth = -1;
 
   public connectedCallback(): void {
     super.connectedCallback();
-    // A resize changes how many pills fit — start over from the
-    // full budget and let the post-render measure walk back down.
-    this.pillResizeHandler = () => {
+    this.hostResizeObserver = new ResizeObserver((entries) => {
+      const width = entries[entries.length - 1].contentRect.width;
+      // ignore height-only changes and sub-pixel noise
+      if (Math.abs(width - this.lastHostWidth) <= 1) return;
+      this.lastHostWidth = width;
+      // the width changed — start over from the full budget and let
+      // the post-render measure walk each cell back down
       if (this.pillBudgets.size) {
         this.pillBudgets = new Map();
+        this.updateComplete.then(() => this.schedulePillMeasure());
       } else {
         this.schedulePillMeasure();
       }
-    };
-    window.addEventListener('resize', this.pillResizeHandler);
+    });
+    this.hostResizeObserver.observe(this);
     // Late web-font loads change pill text widths.
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => this.schedulePillMeasure());
@@ -219,7 +231,7 @@ export class TriggerList extends ContentList<Trigger> {
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('resize', this.pillResizeHandler);
+    this.hostResizeObserver.disconnect();
     if (this.pillMeasureFrame) {
       cancelAnimationFrame(this.pillMeasureFrame);
       this.pillMeasureFrame = 0;
@@ -228,7 +240,11 @@ export class TriggerList extends ContentList<Trigger> {
 
   protected updated(changes: PropertyValues): void {
     super.updated(changes);
-    this.schedulePillMeasure();
+    // Only a new set of rows warrants a fresh measure — re-renders
+    // from scroll state (header shadows etc.) don't move any pills.
+    if (changes.has('items')) {
+      this.schedulePillMeasure();
+    }
   }
 
   private schedulePillMeasure(): void {
@@ -260,6 +276,9 @@ export class TriggerList extends ContentList<Trigger> {
     });
     if (next) {
       this.pillBudgets = next;
+      // keep converging after the fold re-renders — updated() no
+      // longer measures on every pass, so chain explicitly
+      this.updateComplete.then(() => this.schedulePillMeasure());
     }
   }
 

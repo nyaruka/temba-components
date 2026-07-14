@@ -426,6 +426,25 @@ describe('temba-trigger-list', () => {
     expect(overflow.textContent.trim()).to.equal(`+${4 - visible.length}`);
   });
 
+  it('does not remeasure pills on unrelated re-renders', async () => {
+    const list: TriggerList = await getTriggerList({}, 560);
+    (list as any).items = [
+      trigger({ keywords: ['join', 'stop', 'help', 'info'] })
+    ];
+    list.requestUpdate();
+    await settlePills(list);
+
+    const budgets = new Map((list as any).pillBudgets);
+
+    // a re-render with no item/geometry change — what a scroll-state
+    // update looks like — must not schedule a measure pass
+    list.requestUpdate();
+    await list.updateComplete;
+
+    expect((list as any).pillMeasureFrame).to.equal(0);
+    expect((list as any).pillBudgets).to.deep.equal(budgets);
+  });
+
   it('folds keyword pills past the cap into a +N summary', async () => {
     const list: TriggerList = await getTriggerList();
     (list as any).items = [
