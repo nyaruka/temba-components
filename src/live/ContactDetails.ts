@@ -90,14 +90,13 @@ export class ContactDetails extends ContactStoreElement {
             </div>`
           : null}
         ${this.data.urns.map((urn) => {
-          const parts = urn.split(':');
-          let scheme = SCHEMES[parts[0]];
+          let scheme = SCHEMES[urn.scheme];
           if (!scheme) {
-            scheme = capitalize(parts[0] as any);
+            scheme = capitalize(urn.scheme as any);
           }
           return html`<temba-contact-field
             name=${scheme}
-            value=${parts[1]}
+            value=${urn.display || urn.path}
             disabled
           ></temba-contact-field>`;
         })}

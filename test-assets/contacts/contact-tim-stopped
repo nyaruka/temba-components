@@ -8,12 +8,48 @@
       "status": "stopped",
       "language": "eng",
       "urns": [
-        "telegram:24028613#dmb4ever",
-        "facebook:123123",
-        "instagram:123232",
-        "line:12322",
-        "whatsapp:2342334422",
-        "tel:+12065553567"
+        {
+          "channel": {
+            "uuid": "chan-2",
+            "name": "Telegram Channel"
+          },
+          "scheme": "telegram",
+          "path": "24028613",
+          "display": "dmb4ever"
+        },
+        {
+          "channel": null,
+          "scheme": "facebook",
+          "path": "123123",
+          "display": null
+        },
+        {
+          "channel": null,
+          "scheme": "instagram",
+          "path": "123232",
+          "display": null
+        },
+        {
+          "channel": null,
+          "scheme": "line",
+          "path": "12322",
+          "display": null
+        },
+        {
+          "channel": null,
+          "scheme": "whatsapp",
+          "path": "2342334422",
+          "display": null
+        },
+        {
+          "channel": {
+            "uuid": "chan-3",
+            "name": "SMS Channel"
+          },
+          "scheme": "tel",
+          "path": "+12065553567",
+          "display": null
+        }
       ],
       "groups": [
         {
