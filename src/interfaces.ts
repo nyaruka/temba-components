@@ -192,6 +192,8 @@ export interface ContactGroup {
 export interface URN {
   scheme: string;
   path: string;
+  display?: string;
+  channel?: ObjectReference;
 }
 
 export interface Group {
@@ -224,7 +226,7 @@ export interface Contact {
   uuid: string;
   stopped: boolean;
   blocked: boolean;
-  urns: string[];
+  urns: URN[];
   language?: string;
   fields: { [key: string]: string };
   groups: Group[];

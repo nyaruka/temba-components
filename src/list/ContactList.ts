@@ -284,7 +284,9 @@ export class ContactList extends ContentList<Contact> {
     if (i.urn) return i.urn;
     if (Array.isArray(i.urns) && i.urns.length > 0) {
       const u = i.urns[0];
-      return typeof u === 'string' ? u.split(':')[1] || u : u?.display || '';
+      return typeof u === 'string'
+        ? u.split(':')[1] || u
+        : u?.display || u?.path || '';
     }
     return '';
   }

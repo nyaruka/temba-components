@@ -40,7 +40,8 @@ describe(TAG, () => {
     data.groups.forEach((group) => {
       delete group['is_dynamic'];
     });
-    mockPOST(/api\/v2\/contacts\.json\?uuid=contact-dave-active/, data);
+    // field updates post to the same endpoint the contact was fetched from
+    mockPOST(/\/test-assets\/contacts\/contact-dave-active/, data);
 
     // update our fields
     await typeInto(

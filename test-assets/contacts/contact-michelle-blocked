@@ -8,7 +8,15 @@
       "status": "blocked",
       "language": "fra",
       "urns": [
-        "telegram:25028613#bobama"
+        {
+          "channel": {
+            "uuid": "chan-2",
+            "name": "Telegram Channel"
+          },
+          "scheme": "telegram",
+          "path": "25028613",
+          "display": "bobama"
+        }
       ],
       "groups": [
         {

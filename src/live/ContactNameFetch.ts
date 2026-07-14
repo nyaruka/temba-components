@@ -21,9 +21,10 @@ export class ContactNameFetch extends ContactStoreElement {
 
   public render(): TemplateResult {
     if (this.data) {
+      const urn = this.data.urns.length > 0 ? this.data.urns[0] : null;
       return html` <temba-contact-name
           name=${this.data.name || this.data.ref}
-          urn=${this.data.urns.length > 0 ? this.data.urns[0] : null}
+          urn=${urn ? `${urn.scheme}:${urn.display || urn.path}` : null}
         ></temba-contact-name>
         <slot></slot>`;
     }

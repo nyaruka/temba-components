@@ -1,7 +1,15 @@
 import { PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Contact, Group } from '../interfaces';
+import { Contact, Group, URN } from '../interfaces';
 import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
+
+/**
+ * Returns the URN that will be used to message the given contact — URNs are
+ * ordered by priority and only ones with a channel are sendable.
+ */
+export const getDestinationURN = (contact: Contact): URN => {
+  return (contact?.urns || []).find((urn) => !!urn.channel) || null;
+};
 
 export class ContactStoreElement extends EndpointMonitorElement {
   @property({ type: String })
@@ -10,8 +18,10 @@ export class ContactStoreElement extends EndpointMonitorElement {
   @property({ type: Object, attribute: false })
   data: Contact;
 
+  // expand_urns resolves each URN against a channel so we know which one
+  // will be used when messaging the contact
   @property({ type: String })
-  endpoint = '/api/v2/contacts.json?uuid=';
+  endpoint = '/api/v2/contacts.json?expand_urns=true&uuid=';
 
   prepareData(data: any) {
     if (data && data.length > 0) {
