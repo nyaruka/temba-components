@@ -1,4 +1,5 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
+import { state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
@@ -9,7 +10,9 @@ const EMPTY = '--';
 
 /** Most pills a cell renders before folding the remainder into a
  * "+N" summary — past this, shrinking pills to fit degrades them to
- * bare icons that identify nothing. */
+ * bare icons that identify nothing. This is the upper bound; a cell
+ * that can't fit even this many folds further after measurement
+ * (see {@link TriggerList.measurePillFit}). */
 const MAX_PILLS = 3;
 
 /** Name length past which a filter pill is marked `wide` — the pill
@@ -112,6 +115,10 @@ export class TriggerList extends ContentList<Trigger> {
         gap: 4px;
         min-width: 0;
         max-width: 100%;
+        /* Anything past the box (only possible in the frame or two
+           before measurePillFit folds the budget down) clips inside
+           the pill row rather than painting into the next column. */
+        overflow: hidden;
       }
       /* Short-named pills never squeeze — with the +N cap bounding
          the row, they always fit, so they keep their full text. */
@@ -175,6 +182,91 @@ export class TriggerList extends ContentList<Trigger> {
     this.bulkActions = [
       { key: 'archive', label: 'Archive', icon: Icon.archive }
     ];
+  }
+
+  /** Per-cell visible-pill budget, keyed `${rowId}:${cellKey}`. A
+   * cell starts at {@link MAX_PILLS}; after each render the cell is
+   * measured and its budget walked down until the pills (plus the
+   * "+N" summary) actually fit — so a narrow column folds pills into
+   * the summary instead of clipping them at the cell edge. Reset on
+   * resize so widening the window restores pills. */
+  @state()
+  private pillBudgets: Map<string, number> = new Map();
+
+  /** Pending rAF handle for the deferred pill-fit measure (0 when
+   * none is scheduled). */
+  private pillMeasureFrame = 0;
+
+  private pillResizeHandler: () => void;
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    // A resize changes how many pills fit — start over from the
+    // full budget and let the post-render measure walk back down.
+    this.pillResizeHandler = () => {
+      if (this.pillBudgets.size) {
+        this.pillBudgets = new Map();
+      } else {
+        this.schedulePillMeasure();
+      }
+    };
+    window.addEventListener('resize', this.pillResizeHandler);
+    // Late web-font loads change pill text widths.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => this.schedulePillMeasure());
+    }
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener('resize', this.pillResizeHandler);
+    if (this.pillMeasureFrame) {
+      cancelAnimationFrame(this.pillMeasureFrame);
+      this.pillMeasureFrame = 0;
+    }
+  }
+
+  protected updated(changes: PropertyValues): void {
+    super.updated(changes);
+    this.schedulePillMeasure();
+  }
+
+  private schedulePillMeasure(): void {
+    if (this.pillMeasureFrame) return;
+    this.pillMeasureFrame = requestAnimationFrame(() => {
+      this.pillMeasureFrame = 0;
+      this.measurePillFit();
+    });
+  }
+
+  /** Walk each pill row's budget down one pill per pass while its
+   * content overflows its box. Shrinking a budget re-renders (the
+   * hidden pill moves into the "+N" summary), which schedules the
+   * next measure — so a cell converges to the largest count that
+   * fits within a few frames. Budgets floor at zero: a cell too
+   * narrow for even one pill shows just the "+N" summary, whose
+   * tooltip still names everything. */
+  private measurePillFit(): void {
+    const containers = this.shadowRoot.querySelectorAll('.pills[data-fit]');
+    let next: Map<string, number> = null;
+    containers.forEach((el: Element) => {
+      const key = (el as HTMLElement).dataset.fit;
+      const budget = this.pillBudgets.get(key) ?? MAX_PILLS;
+      // +1 tolerance for fractional layout rounding
+      if (budget > 0 && el.scrollWidth > el.clientWidth + 1) {
+        next = next || new Map(this.pillBudgets);
+        next.set(key, budget - 1);
+      }
+    });
+    if (next) {
+      this.pillBudgets = next;
+    }
+  }
+
+  /** The visible-pill budget for a cell — MAX_PILLS until
+   * measurement has folded it down. */
+  private pillBudget(item: Trigger, cellKey: string): number {
+    return this.pillBudgets.get(`${this.rowId(item)}:${cellKey}`) ?? MAX_PILLS;
   }
 
   protected getRowIcon(item: Trigger): string | null {
@@ -245,13 +337,14 @@ export class TriggerList extends ContentList<Trigger> {
       case 'keyword': {
         const keywords = item.keywords || [];
         if (!keywords.length) break;
-        const visible = keywords.slice(0, MAX_PILLS);
+        const budget = this.pillBudget(item, 'keywords');
+        const visible = keywords.slice(0, budget);
         return html`<span class="details">
           <span class="type-name">Message</span>
           <span class="lead-in"
             >${item.match_type === 'O' ? 'matches' : 'starts with'}</span
           >
-          <span class="pills">
+          <span class="pills" data-fit="${this.rowId(item)}:keywords">
             ${visible.map(
               (k) =>
                 html`<temba-label
@@ -260,7 +353,7 @@ export class TriggerList extends ContentList<Trigger> {
                   >${k}</temba-label
                 >`
             )}
-            ${this.renderOverflowPill(keywords.slice(MAX_PILLS))}
+            ${this.renderOverflowPill(keywords.slice(budget))}
           </span>
         </span>`;
       }
@@ -289,9 +382,9 @@ export class TriggerList extends ContentList<Trigger> {
   /** The filter pills scoping the trigger: the channel first (there
    * is only ever one), then the contacts a scheduled trigger starts,
    * the groups it's limited to, and — tinted red — the groups it
-   * excludes. At most {@link MAX_PILLS} pills render; the rest fold
-   * into a "+N" summary pill so a crowded row never squeezes its
-   * pills down to bare icons. */
+   * excludes. At most the cell's measured budget (≤ {@link MAX_PILLS})
+   * renders; the rest fold into a "+N" summary pill so a crowded row
+   * never squeezes its pills down to bare icons or clips them. */
   private renderFilters(item: Trigger): TemplateResult | string {
     const channel = item.channel;
     const filters: FilterPill[] = [];
@@ -331,13 +424,14 @@ export class TriggerList extends ContentList<Trigger> {
       return EMPTY;
     }
 
-    const visible = filters.slice(0, MAX_PILLS);
+    const budget = this.pillBudget(item, 'filters');
+    const visible = filters.slice(0, budget);
     // excluded names keep their meaning in the summary tooltip
     const hidden = filters
-      .slice(MAX_PILLS)
+      .slice(budget)
       .map((f) => (f.exclude ? `not ${f.name}` : f.name));
 
-    return html`<span class="pills">
+    return html`<span class="pills" data-fit="${this.rowId(item)}:filters">
       ${visible.map(
         (f) =>
           html`<temba-label

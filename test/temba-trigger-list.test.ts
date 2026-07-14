@@ -20,6 +20,15 @@ const makeClick = (over: any = {}) =>
     ...over
   }) as any;
 
+/** Let the post-render pill-fit measurement converge — each pass is
+ * a rAF followed by the re-render it may trigger. */
+const settlePills = async (list: TriggerList) => {
+  for (let i = 0; i < 6; i++) {
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    await list.updateComplete;
+  }
+};
+
 const trigger = (over: any = {}) => ({
   id: 101,
   type: 'keyword',
@@ -370,12 +379,11 @@ describe('temba-trigger-list', () => {
       trigger({ keywords: ['registration', 'subscription', 'notification'] })
     ];
     list.requestUpdate();
-    await list.updateComplete;
+    await settlePills(list);
 
     const pills = list.shadowRoot.querySelectorAll(
       'temba-label[type="keyword"]'
     );
-    expect(pills).to.have.length(3);
     pills.forEach((p: any) => {
       // long keywords are the shrinkable ones, floored at 4em so a
       // squeezed pill keeps a few identifying characters
@@ -386,13 +394,36 @@ describe('temba-trigger-list', () => {
     // short keywords never shrink at all
     (list as any).items = [trigger({ keywords: ['go', 'hi', 'join'] })];
     list.requestUpdate();
-    await list.updateComplete;
+    await settlePills(list);
     list.shadowRoot
       .querySelectorAll('temba-label[type="keyword"]')
       .forEach((p: any) => {
         expect(p.classList.contains('wide')).to.be.false;
         expect(getComputedStyle(p).flexShrink).to.equal('0');
       });
+  });
+
+  it('folds pills down to what actually fits instead of clipping', async () => {
+    // a narrow list whose trigger column cannot fit three pills
+    const list: TriggerList = await getTriggerList({}, 560);
+    (list as any).items = [
+      trigger({ keywords: ['join', 'stop', 'help', 'info'] })
+    ];
+    list.requestUpdate();
+    await settlePills(list);
+
+    const pillBox = list.shadowRoot.querySelector(
+      '.pills[data-fit]'
+    ) as HTMLElement;
+    // the budget has converged — nothing overflows the pill row
+    expect(pillBox.scrollWidth).to.be.at.most(pillBox.clientWidth + 1);
+
+    // fewer pills render than the static cap, and the +N summary
+    // accounts for every hidden keyword
+    const visible = pillBox.querySelectorAll('temba-label[type="keyword"]');
+    expect(visible.length).to.be.lessThan(3);
+    const overflow = pillBox.querySelector('temba-label.overflow');
+    expect(overflow.textContent.trim()).to.equal(`+${4 - visible.length}`);
   });
 
   it('folds keyword pills past the cap into a +N summary', async () => {
