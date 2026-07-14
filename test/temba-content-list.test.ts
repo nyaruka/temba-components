@@ -5,6 +5,7 @@ import { ContentList } from '../src/list/ContentList';
 import { ContactList } from '../src/list/ContactList';
 import { FlowList } from '../src/list/FlowList';
 import { MsgList } from '../src/list/MsgList';
+import { TriggerList } from '../src/list/TriggerList';
 import {
   assertScreenshot,
   clearMockGets,
@@ -683,6 +684,23 @@ describe('temba-content-list', () => {
     });
     await list.updateComplete;
     await assertScreenshot('content-list/flows', getClip(list));
+  });
+
+  it('renders the triggers list (screenshot)', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-trigger-list',
+      { endpoint: '/test-assets/content-list/triggers.json' },
+      '',
+      1100
+    )) as TriggerList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+    await assertScreenshot('content-list/triggers', getClip(list));
   });
 
   it('follows cursor pagination when the response has no count', async () => {

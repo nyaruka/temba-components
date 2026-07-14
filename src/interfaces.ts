@@ -120,6 +120,45 @@ export interface Flow {
   activity: number[];
 }
 
+/** A single row in the trigger CRUDL list
+ * (`triggers/trigger_list.html`): what starts the flow (type +
+ * per-type details), any channel / group filters, and the flow it
+ * starts. Triggers have no uuid — rows key off the numeric id. */
+export interface Trigger {
+  id: number;
+  /** Trigger type slug — drives the leading row icon and the
+   * details cell (`keyword`, `catch_all`, `schedule`,
+   * `inbound_call`, `missed_call`, `new_conversation`, `referral`,
+   * `closed_ticket`, `opt_in`, `opt_out`). */
+  type: string;
+  /** The flow the trigger starts. */
+  flow: ObjectReference;
+  /** Channel the trigger is limited to, with its type icon. */
+  channel?: (ObjectReference & { icon?: string }) | null;
+  /** Groups the trigger is limited to. */
+  groups?: ObjectReference[];
+  /** Groups the trigger excludes. */
+  exclude_groups?: ObjectReference[];
+  /** Contacts a scheduled trigger starts directly. */
+  contacts?: ObjectReference[];
+  /** Keyword triggers only. */
+  keywords?: string[];
+  /** Keyword match type — `F` (starts with) or `O` (matches). */
+  match_type?: string | null;
+  /** Referral triggers only. */
+  referrer_id?: string | null;
+  /** Scheduled triggers only — `display` is the server-rendered
+   * human schedule ("each week on Monday"); `next_fire` is unset
+   * once the schedule is exhausted or paused. */
+  schedule?: {
+    repeat_period?: string;
+    display?: string;
+    next_fire?: string | null;
+  } | null;
+  priority?: number;
+  created_on?: string;
+}
+
 export interface Msg {
   /** Numeric id — present on persisted messages (the CRUDL list
    * keys rows off it); absent on outbound drafts. */
