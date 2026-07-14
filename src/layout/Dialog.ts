@@ -594,7 +594,9 @@ export class Dialog extends ResizeElement {
               <temba-loading units="6" size="8"></temba-loading>
             </div>
 
-            ${this.buttons.length > 0 || this.querySelector('[slot="gutter"]')
+            ${// the gutter check is render-time only (not reactive) - fine
+            // while consumers slot gutter content declaratively up front
+            this.buttons.length > 0 || this.querySelector('[slot="gutter"]')
               ? html`<div class="dialog-footer">
                   <div class="flex-grow">
                     <slot name="gutter"></slot>

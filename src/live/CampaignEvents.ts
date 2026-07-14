@@ -994,24 +994,26 @@ export class CampaignEvents extends EndpointMonitorElement {
                       ${this.data?.campaign?.name || this.headerTitle}
                     </div>
                   </div>
-                  <div class="detail-actions">
-                    ${this.canEdit(event)
-                      ? html`<button
-                          class="menu-button"
-                          @click=${this.handleEditClicked}
-                        >
-                          ${this.lang_edit}
-                        </button>`
-                      : null}
-                    ${this.canDelete()
-                      ? html`<button
-                          class="menu-button destructive"
-                          @click=${this.handleDeleteClicked}
-                        >
-                          ${this.lang_delete}
-                        </button>`
-                      : null}
-                  </div>
+                  ${this.canEdit(event) || this.canDelete()
+                    ? html`<div class="detail-actions">
+                        ${this.canEdit(event)
+                          ? html`<button
+                              class="menu-button"
+                              @click=${this.handleEditClicked}
+                            >
+                              ${this.lang_edit}
+                            </button>`
+                          : null}
+                        ${this.canDelete()
+                          ? html`<button
+                              class="menu-button destructive"
+                              @click=${this.handleDeleteClicked}
+                            >
+                              ${this.lang_delete}
+                            </button>`
+                          : null}
+                      </div>`
+                    : null}
                 </div>
 
                 <div class="detail-body">

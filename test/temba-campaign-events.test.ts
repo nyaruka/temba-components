@@ -430,6 +430,26 @@ describe(TAG, () => {
     expect(dialog.open).to.equal(true);
   });
 
+  it('closes the detail modal on Escape', async () => {
+    await loadStore();
+    mockGET(/campaignevent\/fires\//, { fires: [] });
+    const events = await getEvents();
+
+    const dialog = events.shadowRoot.querySelector('temba-dialog') as any;
+    (
+      events.shadowRoot.querySelector('.event.clickable') as HTMLElement
+    ).click();
+    await events.updateComplete;
+    expect(dialog.open).to.equal(true);
+
+    // with no dialog buttons the component itself handles Escape
+    dialog.dispatchEvent(
+      new KeyboardEvent('keyup', { key: 'Escape', bubbles: true })
+    );
+    await events.updateComplete;
+    expect(dialog.open).to.equal(false);
+  });
+
   it('renders slotted badges in their own row', async () => {
     await loadStore();
     mockGET(/campaign\/events\//, EVENTS);
