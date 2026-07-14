@@ -162,7 +162,7 @@ export class TriggerList extends ContentList<Trigger> {
     this.emptyMessage = 'No triggers';
     this.searchPlaceholder = 'Search triggers';
     this.columns = [
-      { key: 'trigger', label: 'Trigger', grow: true, minWidth: '200px' },
+      { key: 'trigger', label: 'Trigger', grow: true, minWidth: '260px' },
       {
         key: 'filters',
         label: 'Filters',
