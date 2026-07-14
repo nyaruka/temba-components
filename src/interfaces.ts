@@ -54,6 +54,25 @@ export interface ScheduledEvent {
   message?: string;
 }
 
+// one event definition in a campaign's schedule, offset from a date field
+// on the contact - consumed by the temba-campaign-events component
+export interface CampaignScheduleEvent {
+  uuid: string;
+  type: 'message' | 'flow';
+  status: 'ready' | 'scheduling';
+  offset: number;
+  unit: string;
+  offset_display: string;
+  delivery_hour_display?: string;
+  relative_to: { key: string; name: string; system?: boolean };
+  flow?: ObjectReference;
+  message?: string;
+  count: number;
+  edit_url: string;
+  delete_url: string;
+  fires_url: string;
+}
+
 export interface NamedUser extends User {
   name: string;
 }
