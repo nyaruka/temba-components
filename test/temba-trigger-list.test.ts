@@ -462,6 +462,8 @@ describe('temba-trigger-list', () => {
     // stay pinned at their minimums, so no cell width changes and no
     // budget may be reset (a reset re-renders and flashes)
     (list.parentElement as HTMLElement).style.width = '585px';
+    // wait out the resize debounce, then let any recompute settle
+    await new Promise((resolve) => setTimeout(resolve, 300));
     await settlePills(list);
 
     expect((list as any).pillBudgets).to.deep.equal(before);

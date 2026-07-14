@@ -25,6 +25,11 @@ const WIDE_PILL_CHARS = 11;
  * monospace sizing and their smaller shrink floor. */
 const WIDE_KEYWORD_CHARS = 5;
 
+/** Quiet period after the last resize before pill budgets recompute.
+ * Resize events arrive in bursts while dragging — refolding on each
+ * one flashes the pills, so wait for the size to settle. */
+const PILL_SYNC_DEBOUNCE = 200;
+
 /** A resolved filter pill (channel / contact / group / excluded
  * group) ready to render — see {@link TriggerList.renderFilters}. */
 interface FilterPill {
@@ -206,6 +211,10 @@ export class TriggerList extends ContentList<Trigger> {
 
   private lastHostWidth = -1;
 
+  /** Pending debounce timer for the post-resize budget recompute (0
+   * when none is scheduled). */
+  private pillSyncTimeout = 0;
+
   /** Each pill cell's width as of its last budget computation, keyed
    * like {@link pillBudgets}. A host resize only resets the cells
    * whose width actually moved — when the table is already at its
@@ -220,7 +229,14 @@ export class TriggerList extends ContentList<Trigger> {
       // ignore height-only changes and sub-pixel noise
       if (Math.abs(width - this.lastHostWidth) <= 1) return;
       this.lastHostWidth = width;
-      this.syncPillCellWidths();
+      // debounce the recompute to the end of the resize burst — while
+      // the drag is in flight, overflowing pills crop cleanly inside
+      // their row (.pills is overflow: hidden) and refold just once
+      window.clearTimeout(this.pillSyncTimeout);
+      this.pillSyncTimeout = window.setTimeout(() => {
+        this.pillSyncTimeout = 0;
+        this.syncPillCellWidths();
+      }, PILL_SYNC_DEBOUNCE);
     });
     this.hostResizeObserver.observe(this);
     // Late web-font loads change pill text widths.
@@ -262,6 +278,8 @@ export class TriggerList extends ContentList<Trigger> {
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this.hostResizeObserver.disconnect();
+    window.clearTimeout(this.pillSyncTimeout);
+    this.pillSyncTimeout = 0;
     if (this.pillMeasureFrame) {
       cancelAnimationFrame(this.pillMeasureFrame);
       this.pillMeasureFrame = 0;
