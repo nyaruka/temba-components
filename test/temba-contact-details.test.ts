@@ -18,7 +18,7 @@ const getContactDetails = async (attrs: any = {}) => {
 describe('temba-contact-tickets', () => {
   beforeEach(() => {
     mockGET(
-      /\/api\/v2\/contacts.json\?.*uuid=24d64810-3315-4ff5-be85-48e3fe055bf9/,
+      /\/api\/v2\/contacts.json\?expand_urns=true&uuid=24d64810-3315-4ff5-be85-48e3fe055bf9/,
       '/test-assets/contacts/contact-dave-active'
     );
   });

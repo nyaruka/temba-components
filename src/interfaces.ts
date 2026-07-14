@@ -192,8 +192,8 @@ export interface ContactGroup {
 export interface URN {
   scheme: string;
   path: string;
-  display?: string;
-  channel?: ObjectReference;
+  display?: string | null;
+  channel?: ObjectReference | null;
 }
 
 export interface Group {

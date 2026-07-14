@@ -7,7 +7,7 @@ import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
  * Returns the URN that will be used to message the given contact — URNs are
  * ordered by priority and only ones with a channel are sendable.
  */
-export const getDestinationURN = (contact: Contact): URN => {
+export const getDestinationURN = (contact: Contact | null): URN | null => {
   return (contact?.urns || []).find((urn) => !!urn.channel) || null;
 };
 
