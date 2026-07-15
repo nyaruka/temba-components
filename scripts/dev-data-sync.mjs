@@ -117,7 +117,7 @@ function showStatus() {
   
   if (!fs.existsSync(DEV_DATA_DIR)) {
     console.log('❌ No development data directory found');
-    console.log('💡 Run the dev server to initialize, or use "pnpm dev-data:reset"');
+    console.log('💡 Run the dev server to initialize, or use "bun run dev-data:reset"');
     return;
   }
 
@@ -175,8 +175,8 @@ switch (command) {
     console.log('  reset/wipe  - Wipe dev data and restore defaults');
     console.log('  status      - Show current status');
     console.log('');
-    console.log('Usage: pnpm dev-data:copy');
-    console.log('       pnpm dev-data:reset');
-    console.log('       pnpm dev-data:status');
+    console.log('Usage: bun run dev-data:copy');
+    console.log('       bun run dev-data:reset');
+    console.log('       bun run dev-data:status');
     process.exit(1);
 }

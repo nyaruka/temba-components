@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
-// for cache busting we dynamically generate a fingerprint, use pnpm svg to update
+// for cache busting we dynamically generate a fingerprint, use bun run svg to update
 export const SVG_FINGERPRINT = '45268f1573f1e352c7d62232863725bb';
 
 // only icons below are included in the sprite sheet
