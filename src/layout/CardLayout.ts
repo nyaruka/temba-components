@@ -2,7 +2,15 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
+import { postJSON } from '../utils';
 import { Card } from './Card';
+
+/** Saved card layout state — order and collapsed lists may reference cards
+ * beyond the ones the current page renders. */
+export interface CardSettings {
+  order?: string[];
+  collapsed?: string[];
+}
 
 /**
  * Responsive layout for a main view with supporting panels. When wide, the
@@ -13,6 +21,14 @@ import { Card } from './Card';
  *
  * Panels are declared as slotted temba-cards with an id; the main view goes
  * in slot="main".
+ *
+ * The layout can persist card order and collapsed state itself: seed it
+ * with `settings` and point `settings-endpoint` at a POST endpoint that
+ * merges top-level keys (rapidpro's user settings view). Saves are
+ * debounced and posted as `{[settingsKey]: {order, collapsed}}`. The saved
+ * lists are the union across pages — a page rendering only a subset of the
+ * cards merges its relative order into the full saved order rather than
+ * clobbering the position of cards it doesn't show.
  */
 export class CardLayout extends RapidElement {
   static get styles() {
@@ -113,6 +129,32 @@ export class CardLayout extends RapidElement {
   @property({ type: Array })
   order: string[] = [];
 
+  // saved order + collapsed state to seed from (JSON attribute)
+  @property({ type: Object })
+  settings: CardSettings = null;
+
+  // where to POST settings changes; persistence is off when unset
+  @property({ type: String, attribute: 'settings-endpoint' })
+  settingsEndpoint = '';
+
+  // top-level key the settings are posted (and saved) under
+  @property({ type: String, attribute: 'settings-key' })
+  settingsKey = 'contact_cards';
+
+  // debounce window for settings saves (ms) — tests shrink it
+  saveDelay = 500;
+
+  // the full saved lists — unlike `order`, these keep ids for cards other
+  // pages show, so a save from this page can't clobber their state
+  private savedOrder: string[] = [];
+  private savedCollapsed: string[] = [];
+
+  // cards whose collapsed state has been seeded from settings — seed once
+  // so a later mutation can't undo the user's toggles
+  private seeded = new Set<string>();
+
+  private saveTimeout: ReturnType<typeof setTimeout> = null;
+
   @property({ type: String, attribute: 'main-name' })
   mainName = 'Chat';
 
@@ -140,18 +182,27 @@ export class CardLayout extends RapidElement {
     }
   };
 
+  private handleToggle = (event: Event) => {
+    // only collapse toggles from our own cards should trigger a save
+    if ((event.target as Element).parentElement === this) {
+      this.scheduleSave();
+    }
+  };
+
   public connectedCallback(): void {
     super.connectedCallback();
     this.addEventListener(
       CustomEventType.DetailsChanged,
       this.handleDetailsChanged
     );
+    this.addEventListener('toggle', this.handleToggle);
 
     // the wide render reprojects via its slotchange, but the narrow render
     // has no default slot — watch for cards added/removed in either mode
     this.mutations = new MutationObserver(() => {
       this.applyProjection();
       this.applyOrder();
+      this.applyCollapsed();
       this.requestUpdate();
     });
     this.mutations.observe(this, { childList: true });
@@ -175,8 +226,16 @@ export class CardLayout extends RapidElement {
       CustomEventType.DetailsChanged,
       this.handleDetailsChanged
     );
+    this.removeEventListener('toggle', this.handleToggle);
     this.resizer?.disconnect();
     this.mutations?.disconnect();
+
+    // flush a pending save so navigating away doesn't drop it
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+      this.saveSettings();
+    }
     super.disconnectedCallback();
   }
 
@@ -227,9 +286,27 @@ export class CardLayout extends RapidElement {
     this.requestUpdate();
   }
 
+  /** Seed collapsed state from the saved settings — once per card, so
+   * later slot churn can't undo a toggle the user has since made. */
+  private applyCollapsed() {
+    if (!this.settings) {
+      return;
+    }
+    const collapsed = this.settings.collapsed || [];
+    this.getCards().forEach((card) => {
+      if (!this.seeded.has(card.id)) {
+        this.seeded.add(card.id);
+        if (collapsed.includes(card.id)) {
+          card.collapsed = true;
+        }
+      }
+    });
+  }
+
   private handleSlotChange() {
     this.applyProjection();
     this.applyOrder();
+    this.applyCollapsed();
     // tab entries render from the slotted cards
     this.requestUpdate();
   }
@@ -238,6 +315,67 @@ export class CardLayout extends RapidElement {
     // keep our order prop in sync so a mode switch and back doesn't undo
     // a drag; the event continues up to the host
     this.order = event.detail.ids;
+    this.scheduleSave();
+  }
+
+  private scheduleSave() {
+    if (!this.settingsEndpoint) {
+      return;
+    }
+    clearTimeout(this.saveTimeout);
+    this.saveTimeout = setTimeout(() => {
+      this.saveTimeout = null;
+      this.saveSettings();
+    }, this.saveDelay);
+  }
+
+  /** Slot this page's cards into the full saved order without disturbing
+   * the position of cards this page doesn't show. */
+  private mergeOrder(existing: string[], present: string[]): string[] {
+    const queue = present.slice();
+    const result = existing.map((id) =>
+      present.includes(id) ? queue.shift() : id
+    );
+    return result.concat(queue);
+  }
+
+  private saveSettings() {
+    if (!this.settingsEndpoint) {
+      return;
+    }
+
+    const present = this.getIds();
+    const collapsed = this.getCards()
+      .filter((card) => card.collapsed)
+      .map((card) => card.id);
+
+    this.savedOrder = this.mergeOrder(this.savedOrder, present);
+    this.savedCollapsed = this.savedCollapsed
+      .filter((id) => !present.includes(id))
+      .concat(collapsed);
+
+    postJSON(this.settingsEndpoint, {
+      [this.settingsKey]: {
+        order: this.savedOrder,
+        collapsed: this.savedCollapsed
+      }
+    }).catch(() => {
+      // a failed save isn't worth interrupting the user over — the next
+      // change will retry with the same merged state
+    });
+  }
+
+  protected willUpdate(changes: Map<PropertyKey, unknown>): void {
+    super.willUpdate(changes);
+    // seed here so setting `order` rides the same update cycle
+    if (changes.has('settings') && this.settings) {
+      this.savedOrder = this.settings.order || [];
+      this.savedCollapsed = this.settings.collapsed || [];
+      if (this.savedOrder.length > 0) {
+        this.order = this.savedOrder;
+      }
+      this.applyCollapsed();
+    }
   }
 
   protected updated(changes: Map<PropertyKey, unknown>): void {

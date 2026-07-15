@@ -1,8 +1,10 @@
 import { expect, fixture, oneEvent } from '@open-wc/testing';
 import { html } from 'lit';
+import { SinonStub } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
+import { Card } from '../src/layout/Card';
 import { CardLayout } from '../src/layout/CardLayout';
-import { waitForCondition } from './utils.test';
+import { mockPOST, waitForCondition } from './utils.test';
 
 const LAYOUT = html`
   <temba-card-layout breakpoint="800">
@@ -215,6 +217,121 @@ describe('temba-card-layout', () => {
     sibling.style.flexBasis = '450px';
     await waitForCondition(() => layout.narrow);
     expect(layout.shadowRoot.querySelector('temba-tabs')).to.exist;
+  });
+
+  describe('settings persistence', () => {
+    const SETTINGS_URL = /\/user\/settings\//;
+
+    // HTMLElement.click() is unreliable under the puppeteer harness —
+    // dispatch the click on a card's header directly
+    const clickHeader = (card: Card) => {
+      card.shadowRoot
+        .querySelector('.card-header')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    };
+
+    const getSettingsPosts = () => {
+      return (window.fetch as SinonStub)
+        .getCalls()
+        .filter(
+          (call) =>
+            SETTINGS_URL.test(String(call.args[0])) &&
+            call.args[1]?.method === 'POST'
+        )
+        .map((call) => JSON.parse(call.args[1].body));
+    };
+
+    const createPersistentLayout = async (settings: string) => {
+      mockPOST(SETTINGS_URL, { settings: {} });
+      const initialPosts = getSettingsPosts().length;
+      const layout = await createLayout(
+        1000,
+        html`
+          <temba-card-layout
+            breakpoint="800"
+            settings-endpoint="/user/settings/"
+            settings=${settings}
+          >
+            <div slot="main">main</div>
+            <temba-card id="card-a" label="Alpha"><div>A</div></temba-card>
+            <temba-card id="card-b" label="Beta"><div>B</div></temba-card>
+          </temba-card-layout>
+        `
+      );
+      layout.saveDelay = 10;
+      return {
+        layout,
+        newPosts: () => getSettingsPosts().slice(initialPosts)
+      };
+    };
+
+    it('seeds order and collapsed state from settings', async () => {
+      const { layout } = await createPersistentLayout(
+        '{"order": ["card-b", "card-a"], "collapsed": ["card-a"]}'
+      );
+
+      expect(layout.getIds()).to.deep.equal(['card-b', 'card-a']);
+      expect((layout.querySelector('#card-a') as Card).collapsed).to.be.true;
+      expect((layout.querySelector('#card-b') as Card).collapsed).to.be.false;
+    });
+
+    it('posts merged settings on toggle without clobbering other pages', async () => {
+      // saved state includes cards this page doesn't render — card-x in the
+      // order and card-z collapsed — which must survive a save from here
+      const { layout, newPosts } = await createPersistentLayout(
+        '{"order": ["card-b", "card-x", "card-a"], "collapsed": ["card-z", "card-a"]}'
+      );
+      expect(layout.getIds()).to.deep.equal(['card-b', 'card-a']);
+
+      // expand card-a
+      clickHeader(layout.querySelector('#card-a') as Card);
+
+      await waitForCondition(() => newPosts().length > 0);
+      expect(newPosts()[0]).to.deep.equal({
+        contact_cards: {
+          order: ['card-b', 'card-x', 'card-a'],
+          collapsed: ['card-z']
+        }
+      });
+    });
+
+    it('posts the merged order after a drag', async () => {
+      const { layout, newPosts } = await createPersistentLayout(
+        '{"order": ["card-x", "card-a", "card-b"]}'
+      );
+      expect(layout.getIds()).to.deep.equal(['card-a', 'card-b']);
+
+      const header = layout
+        .querySelector('#card-a')
+        .shadowRoot.querySelector('.card-header') as HTMLElement;
+      const rect = header.getBoundingClientRect();
+      const bounds = layout.getBoundingClientRect();
+
+      await moveMouse(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      await mouseDown();
+      await moveMouse(rect.left + rect.width / 2, bounds.bottom - 5);
+      await mouseUp();
+
+      // card-x keeps its saved slot; the present cards swap around it
+      await waitForCondition(() => newPosts().length > 0);
+      expect(newPosts()[0].contact_cards.order).to.deep.equal([
+        'card-x',
+        'card-b',
+        'card-a'
+      ]);
+    });
+
+    it('flushes a pending save on disconnect', async () => {
+      const { layout, newPosts } = await createPersistentLayout('{}');
+      layout.saveDelay = 60000;
+
+      clickHeader(layout.querySelector('#card-a') as Card);
+      expect(newPosts().length).to.equal(0);
+
+      layout.remove();
+      await waitForCondition(() => newPosts().length > 0);
+      expect(newPosts()[0].contact_cards.collapsed).to.deep.equal(['card-a']);
+    });
   });
 
   it('reorders on drag through the forwarded slots', async () => {

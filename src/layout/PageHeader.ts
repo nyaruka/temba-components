@@ -70,6 +70,8 @@ export class PageHeader extends RapidElement {
       }
       .title {
         font-size: 15.5px;
+        /* slotted contact names render at the title's size */
+        --contact-name-font-size: 15.5px;
         font-weight: var(--w-semibold);
         color: var(--text-1);
         line-height: 1.25;
