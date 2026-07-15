@@ -10,6 +10,9 @@ export class Resizer extends ResizeElement {
       display: block;
       position: relative;
       width: var(--box-width, 200px);
+      /* hold the drag-clamp floor against flex compression too, so
+         shrinking the browser can't squeeze us below minWidth */
+      min-width: var(--box-min-width, 200px);
       --resizer-handle-size: 15px;
     }
 
@@ -69,12 +72,29 @@ export class Resizer extends ResizeElement {
     this.stopResize = this.stopResize.bind(this);
   }
 
+  protected willUpdate(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.willUpdate(changes);
+    // clamp programmatic width sets (e.g. a stored width restored on
+    // load) the same way drags are clamped
+    if (changes.has('currentWidth') && this.currentWidth != null) {
+      this.currentWidth = Math.min(
+        Math.max(this.currentWidth, this.minWidth),
+        this.maxWidth
+      );
+    }
+  }
+
   protected updated(
     _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(_changedProperties);
     if (_changedProperties.has('currentWidth')) {
       this.style.setProperty('--box-width', `${this.currentWidth}px`);
+    }
+    if (_changedProperties.has('minWidth')) {
+      this.style.setProperty('--box-min-width', `${this.minWidth}px`);
     }
   }
 

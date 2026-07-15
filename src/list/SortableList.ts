@@ -111,9 +111,11 @@ export class SortableList extends RapidElement {
   }
 
   private getSortableElements(): Element[] {
+    // flatten so wrapper components can forward their host's children
+    // through a nested <slot>
     const eles = this.shadowRoot
       .querySelector('slot')
-      .assignedElements()
+      .assignedElements({ flatten: true })
       .filter(
         (ele) =>
           ele.classList.contains('sortable') &&
@@ -539,11 +541,31 @@ export class SortableList extends RapidElement {
   private beginDrag(
     target: HTMLElement,
     clientX: number,
-    clientY: number
+    clientY: number,
+    path: EventTarget[] = []
   ): boolean {
-    // if we have a drag handle, only allow dragging from that element
+    // if we have a drag handle, only allow dragging from that element. The
+    // handle may live inside a sortable child's shadow DOM (where event
+    // retargeting hides it from event.target), so walk the composed path up
+    // to and including the .sortable host looking for it.
     if (this.dragHandle) {
-      if (!target.classList.contains(this.dragHandle)) {
+      const searchPath = path.length > 0 ? path : [target];
+      let onHandle = false;
+      for (const hop of searchPath) {
+        // shadow roots appear as non-Element hops mid-path (e.g. an icon
+        // inside the handle) — skip them rather than giving up
+        if (!(hop instanceof Element)) {
+          continue;
+        }
+        if (hop.classList.contains(this.dragHandle)) {
+          onHandle = true;
+          break;
+        }
+        if (hop.classList.contains('sortable')) {
+          break;
+        }
+      }
+      if (!onHandle) {
         return false;
       }
     }
@@ -572,7 +594,12 @@ export class SortableList extends RapidElement {
 
   private handleMouseDown(event: MouseEvent) {
     if (
-      this.beginDrag(event.target as HTMLElement, event.clientX, event.clientY)
+      this.beginDrag(
+        event.target as HTMLElement,
+        event.clientX,
+        event.clientY,
+        event.composedPath()
+      )
     ) {
       event.preventDefault();
       event.stopPropagation();
@@ -586,7 +613,12 @@ export class SortableList extends RapidElement {
     const touch = event.touches[0];
     if (!touch) return;
     if (
-      this.beginDrag(event.target as HTMLElement, touch.clientX, touch.clientY)
+      this.beginDrag(
+        event.target as HTMLElement,
+        touch.clientX,
+        touch.clientY,
+        event.composedPath()
+      )
     ) {
       event.stopPropagation();
       document.addEventListener('touchmove', this.handleTouchMove, {
