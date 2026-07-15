@@ -450,6 +450,60 @@ export default {
           return;
         }
 
+        // Handle contact timeline (upcoming / past scheduled events).
+        // Dates are generated relative to now so the demo never goes stale.
+        if (context.request.method === 'GET' && context.path.match(/^\/contact\/timeline\/[^/]+\/$/)) {
+          const now = new Date();
+          const days = n => new Date(now.getTime() + n * 86400000).toISOString();
+          const campaign = { uuid: 'campaign-1', name: 'Customer Onboarding' };
+          context.contentType = 'application/json';
+          context.body = JSON.stringify({
+            now: now.toISOString(),
+            campaigns: [campaign],
+            future_count: 3,
+            future: [
+              {
+                type: 'campaign_event',
+                scheduled: days(2),
+                repeat_period: 'O',
+                campaign,
+                flow: { uuid: 'flow-1', name: 'Welcome Check-in' }
+              },
+              {
+                type: 'scheduled_broadcast',
+                scheduled: days(5),
+                repeat_period: 'W',
+                message: 'Weekly tips: how to get the most out of your account'
+              },
+              {
+                type: 'campaign_event',
+                scheduled: days(9),
+                repeat_period: 'O',
+                campaign,
+                flow: { uuid: 'flow-2', name: 'Satisfaction Survey' }
+              }
+            ],
+            past: [
+              {
+                type: 'campaign_event',
+                scheduled: days(-3),
+                repeat_period: 'O',
+                campaign,
+                flow: { uuid: 'flow-3', name: 'Getting Started' }
+              },
+              {
+                type: 'sent_broadcast',
+                scheduled: days(-7),
+                repeat_period: 'O',
+                message: 'Welcome aboard!'
+              }
+            ],
+            next_before: null,
+            next_after: null
+          });
+          return;
+        }
+
         // Serve the content-list demo messages from in-memory state
         // so a labeling POST is reflected on the next refresh. Honors
         // an optional `?label=<uuid>` filter for testing the filtered-

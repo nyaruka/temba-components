@@ -28,6 +28,31 @@ describe('temba-resizer', () => {
     assert.equal(r.currentWidth, 500);
   });
 
+  it('holds minWidth against flex compression', async () => {
+    // shrinking the browser must not squeeze the pane below minWidth
+    const parent = document.createElement('div');
+    parent.setAttribute('style', 'display: flex; width: 800px;');
+    const r = (await fixture('<temba-resizer minWidth="260"></temba-resizer>', {
+      parentNode: parent
+    })) as Resizer;
+    const sibling = document.createElement('div');
+    sibling.setAttribute('style', 'flex: 1 1 auto; min-width: 600px;');
+    parent.appendChild(sibling);
+    await r.updateComplete;
+
+    assert.equal(getComputedStyle(r).minWidth, '260px');
+    assert.isAtLeast(r.getBoundingClientRect().width, 260);
+  });
+
+  it('clamps a programmatic currentWidth set', async () => {
+    // e.g. a stale stored width restored on page load
+    const r = await createResizer();
+    r.currentWidth = 10;
+    await r.updateComplete;
+    assert.equal(r.currentWidth, r.minWidth);
+    assert.equal(r.style.getPropertyValue('--box-width'), '200px');
+  });
+
   it('applies --box-width style on update', async () => {
     const r = await createResizer();
     r.setWidth(350);

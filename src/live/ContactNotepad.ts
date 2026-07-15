@@ -13,6 +13,11 @@ export class ContactNotepad extends ContactStoreElement {
   dirtyMessage =
     'You have unsaved changes to the contact notepad. Are you sure you want to contiunue?';
 
+  // grow with the note instead of filling the parent and scrolling —
+  // used when embedded in a card that must never scroll internally
+  @property({ type: Boolean, reflect: true })
+  autogrow = false;
+
   static get styles() {
     return css`
       ${designTokens}
@@ -52,6 +57,41 @@ export class ContactNotepad extends ContactStoreElement {
         outline: none;
       }
 
+      /* flex-grow only matters in a height-bounded flex parent (the tab
+         pane): the textarea stretches to fill the note surface, pinning
+         the attribution toolbar to the bottom. In the card column the
+         parent is a plain block, so the notepad still hugs its text. */
+      :host([autogrow]) {
+        height: auto;
+        margin-top: 0;
+        flex-grow: 1;
+        /* in a height-bounded flex parent (tab pane) the autosize can
+           measure while flex-stretched and overshoot — allow flex to
+           shrink us back so the toolbar never overflows the pane */
+        min-height: 0;
+      }
+
+      /* hug the text — the JS autosize sets the exact height, so the only
+         floor is a single line for an empty note. border-box so setting
+         height = scrollHeight doesn't re-add the padding. Snug under the
+         card title, aligned to the 12px inset, with breathing room under
+         the last line of text. */
+      :host([autogrow]) .notepad {
+        box-sizing: border-box;
+        overflow-y: hidden;
+        min-height: 2em;
+        height: 2em;
+        padding: 0.25em 10px 1em 10px;
+      }
+
+      /* embedded in a card that supplies the chrome — drop our own so the
+         note surface bleeds to the card's edges */
+      :host([autogrow]) .wrapper {
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
       .toolbar {
         background: rgba(0, 0, 0, 0.03);
         padding: 0.25em 0.5em;
@@ -73,8 +113,49 @@ export class ContactNotepad extends ContactStoreElement {
     `;
   }
 
+  private resizer: ResizeObserver;
+  private lastWidth = 0;
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    // text rewraps when our width changes (browser resize, layout mode
+    // switches), changing the height the note needs — only react to width
+    // so our own height writes don't loop the observer
+    this.resizer = new ResizeObserver(() => {
+      requestAnimationFrame(() => {
+        const width = this.offsetWidth;
+        if (width > 0 && width !== this.lastWidth) {
+          this.lastWidth = width;
+          this.autosize();
+        }
+      });
+    });
+    this.resizer.observe(this);
+  }
+
+  public disconnectedCallback(): void {
+    this.resizer?.disconnect();
+    super.disconnectedCallback();
+  }
+
   private handleChange() {
     this.markDirty();
+    // surface the unsaved state so a wrapping card can show its dirty mark
+    this.fireCustomEvent(CustomEventType.DetailsChanged, { dirty: true });
+    this.autosize();
+  }
+
+  private autosize() {
+    if (!this.autogrow) {
+      return;
+    }
+    const notepad = this.shadowRoot.querySelector(
+      '.notepad'
+    ) as HTMLTextAreaElement;
+    if (notepad) {
+      notepad.style.height = 'auto';
+      notepad.style.height = notepad.scrollHeight + 'px';
+    }
   }
 
   private submitChanges() {
@@ -94,13 +175,18 @@ export class ContactNotepad extends ContactStoreElement {
 
     if (changes.has('data')) {
       this.note =
-        this.data?.notes.length > 0
+        this.data?.notes?.length > 0
           ? { ...this.data.notes[this.data.notes.length - 1] }
           : null;
       this.fireCustomEvent(CustomEventType.DetailsChanged, {
-        count: this.note && this.note.text.length > 0 ? 1 : 0
+        count: this.note && this.note.text.length > 0 ? 1 : 0,
+        dirty: false
       });
       this.markClean();
+    }
+
+    if (changes.has('note') || changes.has('data')) {
+      this.autosize();
     }
   }
 

@@ -70,6 +70,8 @@ export class PageHeader extends RapidElement {
       }
       .title {
         font-size: 15.5px;
+        /* slotted contact names render at the title's size */
+        --contact-name-font-size: 15.5px;
         font-weight: var(--w-semibold);
         color: var(--text-1);
         line-height: 1.25;
@@ -138,10 +140,6 @@ export class PageHeader extends RapidElement {
       }
       .menu-button.primary:hover {
         background: var(--accent-700);
-      }
-      .menu-button[disabled] {
-        opacity: 0.45;
-        cursor: not-allowed;
       }
 
       /* Overflow toggle — the trailing ⋮ that opens the rest of the
@@ -282,7 +280,9 @@ export class PageHeader extends RapidElement {
    * origin — same payload the standalone content menu emits, so the
    * host's existing menu handling keeps working. */
   private handleItemClicked(item: ContentMenuItem, event: MouseEvent): void {
-    if (item.disabled) return;
+    // note: item.disabled does NOT make the item inert — in the content
+    // menu contract it means the opened modal starts with its submit
+    // disabled (hosts pass it through to showModax)
     const el = event.currentTarget as Element;
     const rect = el?.getBoundingClientRect();
     this.fireCustomEvent(CustomEventType.Selection, {
@@ -300,7 +300,6 @@ export class PageHeader extends RapidElement {
         (button) => html`
           <div
             class="menu-button ${button.primary ? 'primary' : ''}"
-            ?disabled=${button.disabled}
             @click=${(e: MouseEvent) => this.handleItemClicked(button, e)}
           >
             ${button.label}
