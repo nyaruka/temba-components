@@ -151,6 +151,8 @@ export interface Campaign {
   /** Contacts currently in the campaign's group. */
   contacts: number;
   modified_on: string;
+}
+
 /** A single row in the trigger CRUDL list
  * (`triggers/trigger_list.html`): what starts the flow (type +
  * per-type details), any channel / group filters, and the flow it
