@@ -1,59 +1,65 @@
 import { css, html, PropertyValueMap } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
-import { styleMap } from 'lit-html/directives/style-map.js';
 
 /**
- * This component relies on a bit of sleight of hand magic
- * to achieve it's effect. As such, it requires the use of
- * computed animation times and window.setTimeout().
+ * A full-screen viewer for an image attachment. `showElement` is handed the
+ * element that was clicked (a raw <img> or a temba-thumbnail exposing a `url`),
+ * and we present that image centered and contained within the viewport with a
+ * short fade / scale-in. Clicking anywhere dismisses it.
  */
 export class Lightbox extends RapidElement {
   static get styles() {
     return css`
       :host {
-        z-index: 10000;
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
+        z-index: 10000;
       }
 
-      .mask {
+      /* a full-viewport layer that centers the image, catches the dismiss
+         click, and lays a light translucent mask over the page behind */
+      .backdrop {
+        position: fixed;
+        inset: 0;
         display: flex;
-        opacity: 0;
+        align-items: center;
+        justify-content: center;
         background: rgba(0, 0, 0, 0.5);
-        position: absolute;
-        height: 100svh;
-        width: 100svw;
+        opacity: 0;
         pointer-events: none;
+        transition: opacity var(--anim) ease;
       }
 
-      .zoom .mask {
+      .backdrop.zoom {
         opacity: 1;
         pointer-events: auto;
       }
 
-      .matte {
-        position: absolute;
-        transform: translate(400, 400) scale(3, 3);
-        border-radius: 2%;
-        overflow: hidden;
-        box-shadow: 0 0 12px 3px rgba(0, 0, 0, 0.15);
+      img {
+        /* contain the image within the viewport at any aspect ratio, on
+           its own solid backing (so transparent images aren't see-through) */
+        box-sizing: border-box;
+        max-width: 90vw;
+        max-height: 90vh;
+        object-fit: contain;
+        background: #fff;
+        padding: 6px;
+        border-radius: calc(var(--curvature) * 1.5);
+        box-shadow: 0 0 24px 6px rgba(0, 0, 0, 0.4);
+        transform: scale(0.85);
+        opacity: 0;
+        transition:
+          transform var(--anim) ease,
+          opacity var(--anim) ease;
       }
 
-      .download {
-        background: rgba(0, 0, 0, 0.5);
-        position: absolute;
-        display:flex;
-        align-items:center;
-        color:#fff;
-        padding:0.5em;
-        border-radius:var(--curvature);
-        background:rgba(0,0,0,0.5);
+      .zoom img {
+        transform: scale(1);
+        opacity: 1;
       }
-
-  }
     `;
   }
 
@@ -66,77 +72,41 @@ export class Lightbox extends RapidElement {
   @property({ type: Boolean })
   zoom = false;
 
-  @property({ type: Number })
-  zoomPct = 0.9;
-
-  private ele: HTMLElement;
-  private left: number;
-  private top: number;
-  private height: number;
-  private width: number;
-  private scale = 1;
-  private xTrans = 0;
-  private yTrans = 0;
+  @state()
+  private url = '';
 
   protected updated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
+    // mount first (opacity 0 / scaled down), then flip to zoom on the next
+    // tick so the transition to the visible state actually animates
     if (changed.has('show') && this.show) {
       window.setTimeout(() => {
         this.zoom = true;
       }, 0);
     }
 
+    // once zoomed out, wait for the fade to finish before unmounting the image
     if (changed.has('zoom') && !this.zoom && this.show) {
       window.setTimeout(() => {
-        this.show = false;
+        // unless a re-open during the fade-out already zoomed us back in
+        if (!this.zoom) {
+          this.show = false;
+        }
       }, this.animationTime);
     }
   }
 
   public showElement(ele: HTMLElement) {
-    // size our matte according to the ele's boundaries
-    const bounds = ele.getBoundingClientRect();
-    this.ele = ele.cloneNode() as HTMLElement;
-    (this.ele as any).zoom = true;
-
-    this.left = bounds.left;
-    this.top = bounds.top;
-    this.width = bounds.width;
-    this.height = bounds.height;
-
-    this.xTrans = 0;
-    this.yTrans = 0;
-    this.scale = 1;
-
-    let desiredWidth = this.width;
-    let desiredHeight = this.height;
-    let desiredScale = this.scale;
-
-    const maxHeight = window.innerHeight * this.zoomPct;
-    const maxWidth = window.innerWidth * this.zoomPct;
-
-    // if the width fits, constrain by height
-    if (this.width * (maxHeight / this.height) < maxWidth) {
-      desiredHeight = window.innerHeight * this.zoomPct;
-      desiredScale = desiredHeight / this.height;
-      desiredWidth = this.width * desiredScale;
+    // the clicked element is either a raw <img> or a temba-thumbnail that
+    // exposes the attachment url; take whichever gives us an image source
+    this.url = (ele as HTMLImageElement).src || (ele as any).url || '';
+    if (this.show) {
+      // already mounted (e.g. re-opened mid-dismissal) — re-zoom in place
+      this.zoom = true;
     } else {
-      desiredWidth = window.innerWidth * this.zoomPct;
-      desiredScale = desiredWidth / this.width;
-      desiredHeight = this.height * desiredScale;
+      this.show = true; // updated() flips zoom on the next tick
     }
-
-    const xGrowth = (desiredWidth - this.width) / 2;
-    const xDest = (window.innerWidth - desiredWidth) / 2;
-    this.xTrans = xDest - this.left + xGrowth;
-
-    const yGrowth = (desiredHeight - this.height) / 2;
-    const yDest = (window.innerHeight - desiredHeight) / 2;
-    this.yTrans = yDest - this.top + yGrowth;
-
-    this.scale = desiredScale;
-    this.show = true;
   }
 
   public handleClick() {
@@ -144,37 +114,15 @@ export class Lightbox extends RapidElement {
   }
 
   public render() {
-    const styles = {
-      transition: `transform ${this.animationTime}ms ease, box-shadow ${this.animationTime}ms ease`
-    };
-
-    if (this.show) {
-      styles['left'] = this.left + 'px';
-      styles['top'] = this.top + 'px';
-      styles['width'] = this.width + 'px';
-    }
-
-    if (this.zoom) {
-      styles['transform'] =
-        `translate(${this.xTrans}px, ${this.yTrans}px) scale(${this.scale}, ${this.scale})`;
-    }
-
     return html`
       <div
-        class=${getClasses({
-          container: true,
-          show: this.show,
-          zoom: this.zoom
-        })}
+        class=${getClasses({ backdrop: true, zoom: this.zoom })}
+        style="--anim: ${this.animationTime}ms"
         @click=${this.handleClick}
       >
-        <div
-          class=${getClasses({ mask: true })}
-          style="transition: all ${this.animationTime}ms; ease"
-        ></div>
-        <div class=${getClasses({ matte: true })} style=${styleMap(styles)}>
-          ${this.show ? html`${this.ele}` : null}
-        </div>
+        ${this.show && this.url
+          ? html`<img src=${this.url} alt="attachment" />`
+          : null}
       </div>
     `;
   }

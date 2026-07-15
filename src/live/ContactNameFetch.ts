@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { ContactStoreElement } from './ContactStoreElement';
+import { ContactStoreElement, getDestinationURN } from './ContactStoreElement';
 
 export class ContactNameFetch extends ContactStoreElement {
   @property({ type: Number, attribute: 'icon-size' })
@@ -21,9 +21,12 @@ export class ContactNameFetch extends ContactStoreElement {
 
   public render(): TemplateResult {
     if (this.data) {
+      // show the URN that will be used when messaging the contact, falling
+      // back to their highest priority URN if none are sendable
+      const urn = getDestinationURN(this.data) || this.data.urns[0] || null;
       return html` <temba-contact-name
           name=${this.data.name || this.data.ref}
-          urn=${this.data.urns.length > 0 ? this.data.urns[0] : null}
+          urn=${urn ? `${urn.scheme}:${urn.display || urn.path}` : null}
         ></temba-contact-name>
         <slot></slot>`;
     }

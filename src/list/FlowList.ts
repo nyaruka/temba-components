@@ -14,23 +14,38 @@ export class FlowList extends ContentList<Flow> {
   static get styles() {
     return css`
       ${ContentList.styles}
+      /* The name cell is a flex row (name text, issue icon, label
+         chips) that fills the grow column. When space runs out the
+         text spans ellipsize — the flex items shrink instead of the
+         cell hard-clipping them mid-glyph, which is what happens to
+         an inline-flex atomic inline under .cell-inner's ellipsis. */
       .flow-name {
         color: inherit;
         font-weight: var(--w-medium);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+      .flow-name .name {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
       }
       .flow-labels {
-        display: inline-flex;
+        display: flex;
         align-items: center;
         gap: 4px;
-        margin-left: 4px;
+        min-width: 0;
+      }
+      /* Chips shrink with the row and ellipsize internally (the
+         label's own slot handles that) rather than being clipped
+         mid-chip at the column edge. */
+      .flow-labels temba-label {
+        min-width: 0;
       }
       .issue-icon {
+        flex: none;
         --icon-color: var(--warning);
       }
       .num {
@@ -84,13 +99,20 @@ export class FlowList extends ContentList<Flow> {
     this.valueKey = 'uuid';
     this.emptyMessage = 'No flows';
     this.searchPlaceholder = 'Search flows';
+    // The name column is a `grow` column — it pools the table's
+    // leftover width so long names (and their label chips) get all
+    // available space before truncating, instead of clipping against
+    // a fixed cap while slack sits in the spacer. minTableWidth arms
+    // a horizontal scroll once the container is too narrow to keep
+    // the columns usable, rather than clipping anything.
+    this.minTableWidth = '640px';
     this.columns = [
       {
         key: 'name',
         label: 'Name',
         sortable: true,
         minWidth: '160px',
-        maxWidth: '280px',
+        grow: true,
         pinned: true
       },
       {
@@ -174,7 +196,9 @@ export class FlowList extends ContentList<Flow> {
       case 'name': {
         const labels = item.labels || [];
         return html`<span class="flow-name"
-          >${item.name || ''}
+          ><span class="name" title="${item.name || ''}"
+            >${item.name || ''}</span
+          >
           ${item.has_issues
             ? html`<temba-icon
                 class="issue-icon"

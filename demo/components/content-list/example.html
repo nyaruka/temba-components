@@ -71,6 +71,7 @@
       JSON-driven CRUDL list. Subclasses (<code>temba-msg-list</code>,
       <code>temba-contact-list</code>, <code>temba-flow-list</code>,
       <code>temba-campaign-list</code>) define
+      <code>temba-trigger-list</code>) define
       columns and per-cell rendering; the base
       <code>temba-content-list</code> handles search, sort, multi-select,
       pagination, and bulk-action events.
@@ -203,6 +204,23 @@
         content-menu-endpoint="/demo/components/content-list/data/campaigns-menu.json"
       ></temba-campaign-list>
       <div class="events" id="campaigns-events">
+      <h3>Triggers</h3>
+      <p class="description">
+        Trigger list with leading type icons, per-type details (keyword
+        pills, schedules, referrers), group/channel filter pills, and the
+        flow each trigger starts. Rows fire
+        <code>temba-row-click</code> for the host to open the update
+        modal.
+      </p>
+      <temba-trigger-list
+        id="triggers"
+        list-title="Triggers"
+        subtitle="What starts your flows."
+        endpoint="/demo/components/content-list/data/triggers.json"
+        action-endpoint="/demo/components/content-list/trigger-list-action"
+        content-menu-endpoint="/demo/components/content-list/data/triggers-menu.json"
+      ></temba-trigger-list>
+      <div class="events" id="triggers-events">
         <div class="label">Events</div>
         (waiting)
       </div>
@@ -243,6 +261,7 @@
       wire('contacts-system', 'contacts-system-events');
       wire('flows', 'flows-events');
       wire('campaigns', 'campaigns-events');
+      wire('triggers', 'triggers-events');
 
       // Block real navigation so contact-row hrefs don't take you away
       document.addEventListener('click', (e) => {
