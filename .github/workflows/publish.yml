@@ -19,7 +19,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           configFile: .github/devcontainer/devcontainer.json
-          runCmd: pnpm install --frozen-lockfile && pnpm run build
+          runCmd: bun install --frozen-lockfile && bun run build
           push: never
           env: |
             CI=true

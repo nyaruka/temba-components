@@ -9,25 +9,25 @@
   "license": "AGPL-3.0-only",
   "repository": "https://github.com/nyaruka/temba-components/",
   "scripts": {
-    "start": "concurrently --kill-others --names tsc,web-dev-server \"pnpm tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --watch --port 3010 --esbuild-target auto\"",
+    "start": "concurrently --kill-others --names tsc,web-dev-server \"bun run tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --watch --port 3010 --esbuild-target auto\"",
     "tsc:watch": "tsc --watch",
-    "build": "rimraf dist && pnpm svg && tsc && rollup -c rollup.components.mjs ",
+    "build": "rimraf dist && bun run svg && tsc && rollup -c rollup.components.mjs ",
     "build-wc": "rollup -c rollup.webchat.mjs",
-    "dev": "pnpm build && cp -R ./dist/* ../temba/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
-    "pre-commit": "pnpm locale:extract && pnpm locale:build && pnpm svg && git add ./src/Icons.ts ./static/svg/index.svg ./xliff ./src/locales && lint-staged",
+    "dev": "bun run build && cp -R ./dist/* ../temba/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
+    "pre-commit": "bun run locale:extract && bun run locale:build && bun run svg && git add ./src/Icons.ts ./static/svg/index.svg ./xliff ./src/locales && lint-staged",
     "format:eslint": "eslint --ext .ts . --fix --ignore-path .gitignore --ignore-pattern \"src/locales/\"",
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" \"!src/locales/**\" --config .prettierrc --write --ignore-path .gitignore",
-    "format": "pnpm format:eslint && pnpm format:prettier",
+    "format": "bun run format:eslint && bun run format:prettier",
     "test": "wtr --node-resolve",
     "test:fast": "wtr --node-resolve --fast",
     "test:coverage": "wtr --node-resolve --coverage",
     "check-coverage": "node check-coverage.js",
-    "validate": "pnpm format && pnpm build && pnpm test:coverage && pnpm check-coverage",
+    "validate": "bun run format && bun run build && bun run test:coverage && bun run check-coverage",
     "test:watch": "wtr --node-resolve --watch",
     "stress-test": "node stress-test.js",
     "svg": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/index.svg' --usage='./src/Icons.ts'",
     "svg-wc": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/webchat.svg' --usage='./src/webchat/index.ts'",
-    "version": "pnpm run build && auto-changelog -p && git add CHANGELOG.md",
+    "version": "bun run build && auto-changelog -p && git add CHANGELOG.md",
     "locale:extract": "lit-localize extract --config localize.config.json",
     "locale:build": "echo 'Building localizations..' && lit-localize build --config localize.config.json > dist/locale.out 2>&1",
     "dev-data:sync": "node scripts/dev-data-sync.mjs copy",
@@ -112,14 +112,9 @@
     "typescript": "5.9.3",
     "yargs": "^17.7.2"
   },
-  "pnpm": {
-    "overrides": {
-      "trim": "^0.0.3",
-      "prismjs": "^1.23.0",
-      "@open-wc/testing-helpers": "3.0.0",
-      "@types/minimatch": "5.1.2",
-      "@types/chai": "4.3.20"
-    }
-  },
-  "packageManager": "pnpm@9.15.4"
+  "overrides": {
+    "@open-wc/testing-helpers": "3.0.0",
+    "@types/minimatch": "5.1.2",
+    "@types/chai": "4.3.20"
+  }
 }
