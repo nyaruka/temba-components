@@ -594,32 +594,34 @@ export class Dialog extends ResizeElement {
               <temba-loading units="6" size="8"></temba-loading>
             </div>
 
-            ${// the gutter check is render-time only (not reactive) - fine
-            // while consumers slot gutter content declaratively up front
-            this.buttons.length > 0 || this.querySelector('[slot="gutter"]')
-              ? html`<div class="dialog-footer">
-                  <div class="flex-grow">
-                    <slot name="gutter"></slot>
-                  </div>
-                  ${this.buttons.map(
-                    (button: DialogButton, index) => html`
-                      <temba-button
-                        name=${button.name}
-                        ?destructive=${button.type == 'primary' &&
-                        this.destructive}
-                        ?primary=${button.type == 'primary' &&
-                        !this.destructive}
-                        ?secondary=${button.type == 'secondary'}
-                        ?submitting=${this.submitting &&
-                        button.type == 'primary'}
-                        ?disabled=${this.disabled && !button.closes}
-                        index=${index}
-                        @click=${this.handleClick}
-                      ></temba-button>
-                    `
-                  )}
-                </div>`
-              : null}
+            ${
+              // the gutter check is render-time only (not reactive) - fine
+              // while consumers slot gutter content declaratively up front
+              this.buttons.length > 0 || this.querySelector('[slot="gutter"]')
+                ? html`<div class="dialog-footer">
+                    <div class="flex-grow">
+                      <slot name="gutter"></slot>
+                    </div>
+                    ${this.buttons.map(
+                      (button: DialogButton, index) => html`
+                        <temba-button
+                          name=${button.name}
+                          ?destructive=${button.type == 'primary' &&
+                          this.destructive}
+                          ?primary=${button.type == 'primary' &&
+                          !this.destructive}
+                          ?secondary=${button.type == 'secondary'}
+                          ?submitting=${this.submitting &&
+                          button.type == 'primary'}
+                          ?disabled=${this.disabled && !button.closes}
+                          index=${index}
+                          @click=${this.handleClick}
+                        ></temba-button>
+                      `
+                    )}
+                  </div>`
+                : null
+            }
           </div>
           <div class="grow-bottom"></div>
         </div>
