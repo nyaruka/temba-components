@@ -130,6 +130,7 @@ export class CardLayout extends RapidElement {
   static COMPACT_TABS_WIDTH = 560;
 
   private resizer: ResizeObserver;
+  private mutations: MutationObserver;
 
   private handleDetailsChanged = () => {
     // tab entries render card metadata (count/activity) by value — refresh
@@ -145,6 +146,16 @@ export class CardLayout extends RapidElement {
       CustomEventType.DetailsChanged,
       this.handleDetailsChanged
     );
+
+    // the wide render reprojects via its slotchange, but the narrow render
+    // has no default slot — watch for cards added/removed in either mode
+    this.mutations = new MutationObserver(() => {
+      this.applyProjection();
+      this.applyOrder();
+      this.requestUpdate();
+    });
+    this.mutations.observe(this, { childList: true });
+
     this.resizer = new ResizeObserver(() => {
       // defer out of the observer callback — flipping modes re-renders and
       // resizes us, which would otherwise trip the browser's RO loop guard
@@ -164,7 +175,8 @@ export class CardLayout extends RapidElement {
       CustomEventType.DetailsChanged,
       this.handleDetailsChanged
     );
-    this.resizer.disconnect();
+    this.resizer?.disconnect();
+    this.mutations?.disconnect();
     super.disconnectedCallback();
   }
 

@@ -547,25 +547,32 @@ export class SortableList extends RapidElement {
     // if we have a drag handle, only allow dragging from that element. The
     // handle may live inside a sortable child's shadow DOM (where event
     // retargeting hides it from event.target), so walk the composed path up
-    // to and including the .sortable host looking for it.
+    // to the first .sortable host looking for it — and require that host to
+    // actually be one of ours, so a same-named class elsewhere in the path
+    // can't start a drag.
     if (this.dragHandle) {
       const searchPath = path.length > 0 ? path : [target];
       let onHandle = false;
+      let handleHost: Element = null;
       for (const hop of searchPath) {
         // shadow roots appear as non-Element hops mid-path (e.g. an icon
         // inside the handle) — skip them rather than giving up
         if (!(hop instanceof Element)) {
           continue;
         }
-        if (hop.classList.contains(this.dragHandle)) {
+        if (!onHandle && hop.classList.contains(this.dragHandle)) {
           onHandle = true;
-          break;
         }
         if (hop.classList.contains('sortable')) {
+          handleHost = onHandle ? hop : null;
           break;
         }
       }
-      if (!onHandle) {
+      if (
+        !onHandle ||
+        !handleHost ||
+        !this.getSortableElements().includes(handleHost)
+      ) {
         return false;
       }
     }

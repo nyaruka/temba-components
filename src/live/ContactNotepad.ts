@@ -134,12 +134,14 @@ export class ContactNotepad extends ContactStoreElement {
   }
 
   public disconnectedCallback(): void {
-    this.resizer.disconnect();
+    this.resizer?.disconnect();
     super.disconnectedCallback();
   }
 
   private handleChange() {
     this.markDirty();
+    // surface the unsaved state so a wrapping card can show its dirty mark
+    this.fireCustomEvent(CustomEventType.DetailsChanged, { dirty: true });
     this.autosize();
   }
 
@@ -177,7 +179,8 @@ export class ContactNotepad extends ContactStoreElement {
           ? { ...this.data.notes[this.data.notes.length - 1] }
           : null;
       this.fireCustomEvent(CustomEventType.DetailsChanged, {
-        count: this.note && this.note.text.length > 0 ? 1 : 0
+        count: this.note && this.note.text.length > 0 ? 1 : 0,
+        dirty: false
       });
       this.markClean();
     }

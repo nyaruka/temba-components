@@ -51,6 +51,32 @@ describe('temba-contact-notepad', () => {
     ).to.be.lessThanOrEqual(2);
   });
 
+  it('reports dirty state for a wrapping card', async () => {
+    await loadStore();
+    const notepad = await getNotepad({
+      contact: 'notepad-contact',
+      autogrow: true
+    });
+
+    const textarea = notepad.shadowRoot.querySelector(
+      '.notepad'
+    ) as HTMLTextAreaElement;
+
+    const details = new Promise<CustomEvent>((resolve) => {
+      notepad.addEventListener(
+        'temba-details-changed',
+        (event) => resolve(event as CustomEvent),
+        { once: true }
+      );
+    });
+
+    textarea.value = 'edited';
+    textarea.dispatchEvent(new Event('input'));
+
+    const event = await details;
+    expect(event.detail.dirty).to.be.true;
+  });
+
   it('fills a bounded pane without overflowing it', async () => {
     // tab-mode arrangement: a plain bleed card of fixed height with the
     // notepad inside — the note surface fills the pane, toolbar at the

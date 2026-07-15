@@ -44,10 +44,11 @@ export class CardStack extends RapidElement {
   }
 
   private handleSlotChange() {
-    // children are expected to carry .sortable for SortableList; add it so
-    // consumers don't have to remember
+    // cards are expected to carry .sortable for SortableList; add it so
+    // consumers don't have to remember. Only actual cards — an incidental
+    // id'd element passing through the slot shouldn't become draggable.
     this.getAssigned().forEach((ele) => {
-      if (ele.id && !ele.classList.contains('drop-placeholder')) {
+      if (ele.tagName === 'TEMBA-CARD' && ele.id) {
         ele.classList.add('sortable');
       }
     });
