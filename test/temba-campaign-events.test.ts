@@ -450,6 +450,25 @@ describe(TAG, () => {
     expect(dialog.open).to.equal(false);
   });
 
+  it('closes the detail modal on a mask click', async () => {
+    await loadStore();
+    mockGET(/campaignevent\/fires\//, { fires: [] });
+    const events = await getEvents();
+
+    const dialog = events.shadowRoot.querySelector('temba-dialog') as any;
+    (
+      events.shadowRoot.querySelector('.event.clickable') as HTMLElement
+    ).click();
+    await events.updateComplete;
+    expect(dialog.open).to.equal(true);
+
+    // with no cancel button the dialog's own clickCancel is a no-op - the
+    // close relies on the component handling temba-dialog-hidden
+    (dialog.shadowRoot.querySelector('#dialog-mask') as HTMLElement).click();
+    await events.updateComplete;
+    expect(dialog.open).to.equal(false);
+  });
+
   it('renders slotted badges in their own row', async () => {
     await loadStore();
     mockGET(/campaign\/events\//, EVENTS);

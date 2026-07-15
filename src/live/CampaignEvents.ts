@@ -550,7 +550,9 @@ export class CampaignEvents extends EndpointMonitorElement {
 
   // the endpoint returns a custom {events: [...]} payload rather than the
   // paginated {results: [...]} shape that the store's fetch machinery
-  // expects, so we fetch and assign data ourselves
+  // expects, so we fetch and assign data ourselves. The base class's
+  // inherited `url` property is unsupported here - setting it would race
+  // its monitored fetch against ours.
   private getEndpoint(): string | null {
     if (this.endpoint) {
       return this.endpoint;
@@ -871,8 +873,8 @@ export class CampaignEvents extends EndpointMonitorElement {
 
   // the page header — title + content menu — is temba-page-header, the
   // same header the content lists embed, so a list page and this read
-  // page share one header treatment. It sits in its own card above the
-  // per-field cards.
+  // page share one header treatment. Slot presence is probed at render
+  // time (not reactive) - fine while hosts slot content declaratively.
   private renderHeader(): TemplateResult | null {
     const hasSubtitle =
       this.subtitle || this.querySelector('[slot="subtitle"]');
@@ -928,7 +930,8 @@ export class CampaignEvents extends EndpointMonitorElement {
   }
 
   // badges (the campaign's group, archived state) get their own row
-  // between the header and the cards
+  // between the header and the cards. Same render-time slot probe as the
+  // header - late-slotted badges won't toggle the row.
   private renderBadges(): TemplateResult | null {
     if (!this.querySelector('[slot="badges"]')) {
       return null;
@@ -1031,7 +1034,9 @@ export class CampaignEvents extends EndpointMonitorElement {
                     </div>
                     <div
                       class="detail-count"
-                      title=${this.lang_scheduled_contacts}
+                      title=${event.status === 'scheduling'
+                        ? ''
+                        : this.lang_scheduled_contacts}
                     >
                       ${event.status === 'scheduling'
                         ? html`${this.lang_scheduling}`
