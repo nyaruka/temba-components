@@ -8,7 +8,10 @@
       "contact": { "name": "Amelia Chen", "urn": "tel:+15551112222" },
       "text": "I'd like to know my account balance please. I have some many things to worry about because I spend all of my money on pokemon cards and matcha.",
       "attachments": [
-        "application/pdf:/demo/data/files/account-statement.pdf"
+        {
+          "content_type": "application/pdf",
+          "url": "/demo/data/files/account-statement.pdf"
+        }
       ],
       "labels": [
         { "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3", "name": "Follow Up" }
@@ -21,7 +24,9 @@
       "id": 1002,
       "contact": { "name": "Ben Okonkwo", "urn": "tel:+15553334444" },
       "text": "Yes I'd like to subscribe to the daily digest",
-      "attachments": ["audio/mpeg:/demo/data/files/voice-note.mp3"],
+      "attachments": [
+        { "content_type": "audio/mpeg", "url": "/demo/data/files/voice-note.mp3" }
+      ],
       "labels": [],
       "flow": { "uuid": "f-001", "name": "Subscription" },
       "msg_type": "text",
@@ -32,8 +37,8 @@
       "contact": { "name": "Daniel Park", "urn": "tel:+15557778888" },
       "text": "Here is the photo you asked for",
       "attachments": [
-        "image/jpeg:/demo/data/images/purrington.jpg",
-        "image/png:/demo/data/images/gus.png"
+        { "content_type": "image/jpeg", "url": "/demo/data/images/purrington.jpg" },
+        { "content_type": "image/png", "url": "/demo/data/images/gus.png" }
       ],
       "labels": [
         { "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde", "name": "Feedback" }
@@ -59,8 +64,8 @@
       "contact": { "name": "Farouk Ali", "urn": "tel:+15551110001" },
       "text": "Order received, thanks!",
       "attachments": [
-        "video/mp4:/demo/data/files/unboxing.mp4",
-        "application/pdf:/demo/data/files/invoice.pdf"
+        { "content_type": "video/mp4", "url": "/demo/data/files/unboxing.mp4" },
+        { "content_type": "application/pdf", "url": "/demo/data/files/invoice.pdf" }
       ],
       "labels": [],
       "flow": null,

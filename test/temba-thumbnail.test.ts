@@ -30,6 +30,66 @@ describe('temba-thumbnail', () => {
     expect(img.src).to.include('/13/'); // zoom level
   });
 
+  it('renders an image thumbnail for an image attachment', async () => {
+    const thumbnail = await getThumbnail({
+      attachment: 'image/jpeg:https://example.com/img.jpg'
+    });
+    await thumbnail.updateComplete;
+    expect(thumbnail.contentType).to.equal('image');
+    const img = thumbnail.shadowRoot.querySelector('img.thumb');
+    expect(img).to.exist;
+    expect((img as HTMLImageElement).src).to.include(
+      'https://example.com/img.jpg'
+    );
+  });
+
+  it('falls back to an icon when an image fails to load', async () => {
+    const thumbnail = await getThumbnail({
+      attachment: 'image/jpeg:https://example.com/does-not-exist.jpg'
+    });
+    await thumbnail.updateComplete;
+
+    // simulate the browser failing to load the image
+    const img = thumbnail.shadowRoot.querySelector(
+      'img.thumb'
+    ) as HTMLImageElement;
+    expect(img).to.exist;
+    img.dispatchEvent(new Event('error'));
+    await thumbnail.updateComplete;
+
+    // the broken <img> is gone, replaced by the attachment icon
+    expect(thumbnail.shadowRoot.querySelector('img.thumb')).to.not.exist;
+    expect(thumbnail.shadowRoot.querySelector('temba-icon')).to.exist;
+
+    // a new attachment resets the error state and tries the image again
+    thumbnail.attachment = 'image/png:https://example.com/other.png';
+    await thumbnail.updateComplete;
+    expect(thumbnail.shadowRoot.querySelector('img.thumb')).to.exist;
+  });
+
+  it('stops a thumbnail click from bubbling to a clickable ancestor', async () => {
+    // audio's wrapper click is a no-op, so this exercises the propagation
+    // guard without a window.open / lightbox side effect
+    const thumbnail = await getThumbnail({
+      attachment: 'audio/mpeg:https://example.com/voice.mp3'
+    });
+    await thumbnail.updateComplete;
+
+    let bubbled = false;
+    thumbnail.addEventListener('click', () => {
+      bubbled = true;
+    });
+
+    const wrapper = thumbnail.shadowRoot.querySelector(
+      '.wrapper'
+    ) as HTMLElement;
+    wrapper.click();
+
+    // the wrapper's handler calls stopPropagation, so the click never
+    // reaches a listener on the host (which stands in for a list row)
+    expect(bubbled).to.be.false;
+  });
+
   describe('latLngToTile', () => {
     it('converts coordinates at 0,0', async () => {
       const thumbnail = await getThumbnail();

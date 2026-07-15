@@ -151,7 +151,7 @@ export class ContactFields extends ContactStoreElement {
     const value = field.value;
 
     // TODO: Use contact.postChanges instead of postJSON
-    postJSON('/api/v2/contacts.json?uuid=' + this.data.uuid, {
+    postJSON(this.endpoint + this.data.uuid, {
       fields: { [field.key]: value }
     })
       .then((response: any) => {
