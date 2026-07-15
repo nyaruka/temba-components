@@ -126,6 +126,30 @@ describe('temba-card-layout', () => {
     expect(layout.shadowRoot.querySelector('temba-card-stack')).to.exist;
   });
 
+  it('refreshes tab badges when a projected panel reports details', async () => {
+    const layout = await createLayout(600);
+    expect(layout.narrow).to.be.true;
+
+    // card-b starts with count 3 on its tab
+    let tabs = layout.shadowRoot.querySelectorAll('temba-tab');
+    expect(tabs[2].getAttribute('count')).to.equal('3');
+
+    layout.querySelector('#panel-b').dispatchEvent(
+      new CustomEvent('temba-details-changed', {
+        detail: { count: 7 },
+        bubbles: true,
+        composed: true
+      })
+    );
+    await waitForCondition(() => {
+      const entries = layout.shadowRoot.querySelectorAll('temba-tab');
+      return entries[2].getAttribute('count') === '7';
+    });
+
+    tabs = layout.shadowRoot.querySelectorAll('temba-tab');
+    expect(tabs[2].getAttribute('count')).to.equal('7');
+  });
+
   it('shrinks tab labels when the pane is very tight', async () => {
     const layout = await createLayout(700);
     expect(layout.narrow).to.be.true;

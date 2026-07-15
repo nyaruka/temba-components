@@ -232,7 +232,15 @@ export class Card extends RapidElement {
     );
   }
 
-  private handleTransitionEnd() {
+  private handleTransitionEnd(event: TransitionEvent) {
+    // transitionend bubbles composed out of slotted content — only our own
+    // grid collapse animation should clear the clipping state
+    if (
+      event.target !== event.currentTarget ||
+      event.propertyName !== 'grid-template-rows'
+    ) {
+      return;
+    }
     this.animating = false;
     this.requestUpdate();
   }

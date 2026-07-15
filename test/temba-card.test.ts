@@ -131,7 +131,21 @@ describe('temba-card', () => {
     const body = card.shadowRoot.querySelector('.body') as HTMLElement;
     expect(body.classList.contains('animating')).to.be.true;
 
-    body.dispatchEvent(new Event('transitionend'));
+    // transitions from slotted content must not clear the clipping state
+    body.dispatchEvent(
+      new TransitionEvent('transitionend', {
+        propertyName: 'opacity',
+        bubbles: true
+      })
+    );
+    await card.updateComplete;
+    expect(body.classList.contains('animating')).to.be.true;
+
+    body.dispatchEvent(
+      new TransitionEvent('transitionend', {
+        propertyName: 'grid-template-rows'
+      })
+    );
     await card.updateComplete;
     expect(body.classList.contains('animating')).to.be.false;
   });

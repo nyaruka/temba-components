@@ -1,6 +1,7 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
+import { CustomEventType } from '../interfaces';
 import { Card } from './Card';
 
 /**
@@ -82,9 +83,6 @@ export class CardLayout extends RapidElement {
 
       temba-tabs {
         margin-top: var(--layout-spacing, 8px);
-      }
-
-      temba-tabs {
         flex-grow: 1;
         min-height: 0;
       }
@@ -133,8 +131,20 @@ export class CardLayout extends RapidElement {
 
   private resizer: ResizeObserver;
 
+  private handleDetailsChanged = () => {
+    // tab entries render card metadata (count/activity) by value — refresh
+    // them when a projected panel reports new details
+    if (this.narrow) {
+      this.requestUpdate();
+    }
+  };
+
   public connectedCallback(): void {
     super.connectedCallback();
+    this.addEventListener(
+      CustomEventType.DetailsChanged,
+      this.handleDetailsChanged
+    );
     this.resizer = new ResizeObserver(() => {
       // defer out of the observer callback — flipping modes re-renders and
       // resizes us, which would otherwise trip the browser's RO loop guard
@@ -150,6 +160,10 @@ export class CardLayout extends RapidElement {
   }
 
   public disconnectedCallback(): void {
+    this.removeEventListener(
+      CustomEventType.DetailsChanged,
+      this.handleDetailsChanged
+    );
     this.resizer.disconnect();
     super.disconnectedCallback();
   }

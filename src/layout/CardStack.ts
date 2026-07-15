@@ -79,7 +79,7 @@ export class CardStack extends RapidElement {
 
     // move within whatever parent actually holds the cards (this element,
     // or the wrapper host when cards arrive through a forwarded slot)
-    desired.forEach((card) => card.parentElement.appendChild(card));
+    desired.forEach((card) => card.parentElement?.appendChild(card));
   }
 
   private handleOrderChanged(event: CustomEvent) {
