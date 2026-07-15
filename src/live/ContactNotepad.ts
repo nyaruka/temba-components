@@ -173,7 +173,7 @@ export class ContactNotepad extends ContactStoreElement {
 
     if (changes.has('data')) {
       this.note =
-        this.data?.notes.length > 0
+        this.data?.notes?.length > 0
           ? { ...this.data.notes[this.data.notes.length - 1] }
           : null;
       this.fireCustomEvent(CustomEventType.DetailsChanged, {
