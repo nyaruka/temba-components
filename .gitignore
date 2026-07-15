@@ -1,23 +1,38 @@
-# General
-*~
-.DS_Store
-.vscode/
 .devcontainer
+/.vscode
 
-# AI
-.claude/
+## system files
+.DS_Store
+
 CLAUDE.md
-CODEX.md
 AGENTS.md
+start.sh
+setup-worktree.sh
+run.sh
 
-# Node
+## npm
 /node_modules
 /npm-debug.log
 
-# Project specific
-/dist/
-/out-tsc/
+## testing
 /coverage/
 /screenshots/test
-/screenshots/diff/
+
+## temp folders
+/.tmp/
+
+# build
+/_site/
+/dist/
+/out-tsc/
+
+
+# svg working directory
 /static/svg/work/
+
+# dont check in diffs
+/screenshots/diff/
+
+# codex local artifacts
+CODEX.md
+.claude/
