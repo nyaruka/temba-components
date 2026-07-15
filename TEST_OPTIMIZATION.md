@@ -9,9 +9,6 @@ This document outlines strategies for running tests efficiently and optimizing d
 # Run tests in fast mode (skips network idle waits)
 bun run test:fast
 
-# Run only unit tests (excludes visual regression tests)
-bun run test:unit
-
 # Watch mode for iterative development
 bun run test:watch
 ```

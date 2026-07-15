@@ -1,4 +1,6 @@
 node_modules
+bun.lock
+bunfig.toml
 .vscode/
 .DS_Store
 .devcontainer
