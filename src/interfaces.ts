@@ -120,6 +120,20 @@ export interface Flow {
   activity: number[];
 }
 
+/** A single row in the campaign CRUDL list
+ * (`campaigns/campaign_list.html`). */
+export interface Campaign {
+  uuid: string;
+  name: string;
+  /** The contact group the campaign schedules against. */
+  group: ObjectReference;
+  /** Number of events (messages / flow starts) in the campaign. */
+  events: number;
+  /** Contacts currently in the campaign's group. */
+  contacts: number;
+  modified_on: string;
+}
+
 /** A single row in the trigger CRUDL list
  * (`triggers/trigger_list.html`): what starts the flow (type +
  * per-type details), any channel / group filters, and the flow it
