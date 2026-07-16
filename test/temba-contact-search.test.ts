@@ -85,6 +85,23 @@ describe('temba-contact-search', () => {
     expect(search.shadowRoot.querySelector('temba-button.edit')).to.not.exist;
   });
 
+  it('excludes a contact in a flow from first render', async () => {
+    const search: ContactSearch = await fixture(
+      getHTML('temba-contact-search', {
+        fixed: true,
+        current_flow: 'Survey Flow',
+        in_a_flow: true,
+        recipients: JSON.stringify([
+          { id: 'contact-uuid', name: 'Ben Haggerty', type: 'contact' }
+        ])
+      })
+    );
+
+    await search.updateComplete;
+    expect(search.exclusions['in_a_flow']).to.equal(true);
+    expect(search.shadowRoot.querySelector('.interrupt-confirm')).to.exist;
+  });
+
   it('requires confirmation to interrupt a current flow', async () => {
     const search: ContactSearch = await fixture(
       getHTML('temba-contact-search', {
@@ -143,6 +160,8 @@ describe('temba-contact-search', () => {
     let detail = await eventPromise;
     expect(detail.total).to.equal(1);
     expect(search.exclusions['in_a_flow']).to.be.undefined;
+    expect(search.getDeserializedValue().exclusions['in_a_flow']).to.be
+      .undefined;
 
     // unconfirming puts it back
     eventPromise = new Promise<any>((resolve) =>
