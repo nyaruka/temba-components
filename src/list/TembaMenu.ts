@@ -33,7 +33,6 @@ export interface MenuItem {
   avatar?: string;
   trigger?: boolean;
   event?: string;
-  mobile?: boolean;
   initial?: string;
 }
 
@@ -401,27 +400,11 @@ export class TembaMenu extends ResizeElement {
         flex-direction: row;
       }
 
-      .root.fully-collapsed.mobile .level.level-0 > .item {
+      /* when collapsed on mobile, the only thing in the header is the
+         hamburger — any new direct child of level-0 must opt in with
+         the .top class to stay visible here */
+      .root.fully-collapsed.mobile .level.level-0 > *:not(.top) {
         display: none;
-      }
-
-      .root.fully-collapsed.mobile .level.level-0 > .empty {
-        display: block;
-        width: 100%;
-        min-width: inherit;
-        max-width: inherit;
-      }
-
-      .root .level.level-0 > .show-mobile {
-        display: none;
-      }
-
-      .root.mobile .level.level-0 > .show-mobile {
-        display: flex;
-      }
-
-      .root.fully-collapsed.mobile .level.level-0 > .show-mobile {
-        display: contents !important;
       }
 
       .root.fully-collapsed.mobile .level.level-0 .expand-icon {
@@ -455,25 +438,10 @@ export class TembaMenu extends ResizeElement {
         min-width: inherit;
       }
 
-      .mobile.fully-collapsed .item {
-      }
-
       .mobile .expand-icon {
         transition: none;
         transform: rotate(-90deg);
         align-self: center;
-      }
-
-      .mobile.fully-collapsed .level-0 .empty {
-        flex-grow: 1;
-      }
-
-      .mobile.fully-collapsed .top-spacer {
-        flex-grow: 0;
-      }
-
-      .mobile.fully-collapsed #dd-workspace {
-        display: none;
       }
 
       .mobile.fully-collapsed .expand-icon {
@@ -1203,8 +1171,7 @@ export class TembaMenu extends ResizeElement {
       expanding: this.expanding && this.expanding === menuItem.id,
       expanded: this.isExpanded(menuItem),
       iconless: !icon && !collapsedIcon && !menuItem.avatar,
-      pressed: this.pressedItem && this.pressedItem.id == menuItem.id,
-      'show-mobile': menuItem.mobile
+      pressed: this.pressedItem && this.pressedItem.id == menuItem.id
     });
 
     if (menuItem.avatar) {

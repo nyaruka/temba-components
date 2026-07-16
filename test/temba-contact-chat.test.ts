@@ -175,6 +175,33 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-for-blocked-contact', getClip(chat));
   });
 
+  it('reloads history when the same contact is set again after clearing', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-barack-archived'
+    });
+    expect(chat.currentContact).to.not.be.null;
+
+    // dismissing the chat (mobile back) clears everything
+    chat.contact = null;
+    chat.currentTicket = null;
+    chat.currentContact = null;
+    await chat.updateComplete;
+    expect(chat.data, 'data should clear with the contact').to.be.null;
+
+    // re-selecting the same ticket sets the same contact again
+    chat.contact = 'contact-barack-archived';
+    for (let i = 0; i < 40; i++) {
+      await waitFor(50);
+      clock.tick(0);
+      if (chat.currentContact && chat.blockFetching) break;
+    }
+
+    expect(chat.currentContact, 'contact should reload').to.not.be.null;
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    expect(inner.messageGroups.length).to.be.greaterThan(0);
+  });
+
   it('show history and hide chatbox if contact is stopped', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();

@@ -22,7 +22,10 @@ export class HeaderBar extends RapidElement {
         box-sizing: border-box;
         padding: 0 8px;
         background: var(--surface);
-        border-bottom: 1px solid var(--border);
+        /* the rule is a box-shadow, not a border — host pages (tailwind
+           preflight) reset border-width on every element, and outer-scope
+           element styles beat :host */
+        box-shadow: inset 0 -1px 0 0 var(--border);
       }
 
       ::slotted(*) {

@@ -220,6 +220,14 @@ export class TembaList extends RapidElement {
     return this.selected;
   }
 
+  /** Deselects without firing a change — e.g. mobile going back to the
+   *  list, so the same row can be selected again. */
+  public clearSelection() {
+    this.cursorIndex = -1;
+    this.selected = null;
+    this.value = null;
+  }
+
   public refresh(): void {
     this.refreshKey = 'requested_' + new Date().getTime();
   }
