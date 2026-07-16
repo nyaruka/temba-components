@@ -226,11 +226,32 @@ export class ContactSearch extends FieldElement {
         border: 1px solid var(--color-borders);
         border-radius: var(--curvature);
       }
+
+      .interrupt-confirm {
+        display: flex;
+        align-items: center;
+        margin-top: 0.5em;
+        margin-left: 0.6em;
+        cursor: pointer;
+      }
     `;
   }
 
   @property({ type: Boolean })
   in_a_flow: boolean;
+
+  // recipients are locked, e.g. starting a specific contact from their read page -
+  // no recipient editing, filters or query editing
+  @property({ type: Boolean })
+  fixed: boolean;
+
+  // name of the flow the fixed contact is currently in, if any
+  @property({ type: String, attribute: 'current_flow' })
+  currentFlow: string;
+
+  // whether the user has explicitly confirmed interrupting the current flow
+  @property({ type: Boolean })
+  interruptConfirmed = false;
 
   @property({ type: Boolean })
   started_previously: boolean;
@@ -310,17 +331,34 @@ export class ContactSearch extends FieldElement {
     }
   }
 
+  protected willUpdate(changedProperties: Map<string, any>) {
+    super.willUpdate(changedProperties);
+
+    // if we remove the in_a_flow option, make sure it's not part of our exclusions
+    if (changedProperties.has('in_a_flow') && !this.in_a_flow) {
+      delete this.exclusions['in_a_flow'];
+    }
+
+    // a fixed contact already in a flow stays excluded until interruption is confirmed
+    if (
+      this.fixed &&
+      this.currentFlow &&
+      (changedProperties.has('in_a_flow') ||
+        changedProperties.has('interruptConfirmed'))
+    ) {
+      if (this.in_a_flow && !this.interruptConfirmed) {
+        this.exclusions['in_a_flow'] = true;
+      } else {
+        delete this.exclusions['in_a_flow'];
+      }
+    }
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
     if (changedProperties.has('recipients')) {
       this.handleRecipientsChanged();
-    }
-
-    // if we remove the in_a_flow option, make sure it's not part of our exclusions
-    if (changedProperties.has('in_a_flow') && !this.in_a_flow) {
-      delete this.exclusions['in_a_flow'];
-      this.requestUpdate('exclusions');
     }
 
     if (
@@ -455,6 +493,28 @@ export class ContactSearch extends FieldElement {
     }
   }
 
+  private async handleInterruptChanged(evt: any) {
+    const checkbox = evt.target as Checkbox;
+    this.interruptConfirmed = checkbox.checked;
+
+    // wait for updated() to adjust our exclusions
+    await this.updateComplete;
+
+    this.setValue({
+      advanced: this.advanced,
+      query: this.query,
+      exclusions: this.exclusions,
+      recipients: this.recipients
+    });
+
+    // we already know whether our fixed contact will be included so no need to re-run the
+    // search - just let the modal know
+    this.fireCustomEvent(CustomEventType.ContentChanged, {
+      ...(this.summary || {}),
+      total: this.interruptConfirmed ? this.recipients.length : 0
+    });
+  }
+
   private handleExclusionChanged(evt: any) {
     if (evt.target.tagName === 'TEMBA-CHECKBOX') {
       const ex = JSON.stringify(this.exclusions);
@@ -487,7 +547,7 @@ export class ContactSearch extends FieldElement {
 
   public renderWidget(): TemplateResult {
     let summary: TemplateResult;
-    if (this.summary) {
+    if (this.summary && !this.fixed) {
       if (!this.summary.error) {
         const count = this.summary.total || 0;
 
@@ -544,132 +604,170 @@ export class ContactSearch extends FieldElement {
       )}`;
     }
 
+    const interruptConfirm =
+      this.fixed && this.currentFlow && this.in_a_flow && !this.fetching
+        ? html`<div
+            class="interrupt-confirm"
+            @click=${this.handleActivityLabelClicked}
+          >
+            <temba-checkbox
+              name="interrupt"
+              ?checked=${this.interruptConfirmed}
+              @change=${this.handleInterruptChanged}
+            ></temba-checkbox>
+            <div>
+              ${this.flow && this.flow.name === this.currentFlow
+                ? html`${msg("It's okay to restart")}
+                    <b>${this.currentFlow}</b> ${msg('from the beginning')}`
+                : html`${msg("It's okay to interrupt")}
+                    <b>${this.currentFlow}</b> ${msg('and start this one')}`}
+            </div>
+          </div>`
+        : null;
+
     return html`
       ${
-        this.advanced
-          ? html`<div class="query">
-              <temba-textinput
-                .helpText=${this.helpText}
-                .widgetOnly=${this.widgetOnly}
-                .errors=${this.errors}
-                name=${this.name}
-                .inputRoot=${this}
-                @input=${this.handleQueryChange}
-                placeholder=${this.placeholder}
-                .value=${this.query}
-                textarea
-                autogrow
-              >
-              </temba-textinput>
-            </div>`
-          : html`<temba-omnibox
-                placeholder="Search for contacts or groups"
-                widget_only=""
-                groups=""
-                contacts=""
-                label="Recipients"
-                help_text="The contacts to send the message to."
-                .errors=${this.errors}
-                id="recipients"
-                name="recipients"
-                .values=${this.recipients}
-                endpoint="/contact/omnibox/?"
-                @change=${this.handleRecipientsChanged}
-              >
-              </temba-omnibox>
+        this.fixed
+          ? null
+          : this.advanced
+            ? html`<div class="query">
+                <temba-textinput
+                  .helpText=${this.helpText}
+                  .widgetOnly=${this.widgetOnly}
+                  .errors=${this.errors}
+                  name=${this.name}
+                  .inputRoot=${this}
+                  @input=${this.handleQueryChange}
+                  placeholder=${this.placeholder}
+                  .value=${this.query}
+                  textarea
+                  autogrow
+                >
+                </temba-textinput>
+              </div>`
+            : html`<temba-omnibox
+                  placeholder="Search for contacts or groups"
+                  widget_only=""
+                  groups=""
+                  contacts=""
+                  label="Recipients"
+                  help_text="The contacts to send the message to."
+                  .errors=${this.errors}
+                  id="recipients"
+                  name="recipients"
+                  .values=${this.recipients}
+                  endpoint="/contact/omnibox/?"
+                  @change=${this.handleRecipientsChanged}
+                >
+                </temba-omnibox>
 
-              ${this.not_seen_since_days ||
-              this.in_a_flow ||
-              this.started_previously
-                ? html`
-                    <div class="filters">
-                      <div
-                        style="display:flex;font-size:1em;margin-bottom:0.5em"
-                      >
-                        <temba-icon size="1" name="filter"></temba-icon>
-                        <div style="margin-left:0.5em">
-                          Only include contacts who...
+                ${this.not_seen_since_days ||
+                this.in_a_flow ||
+                this.started_previously
+                  ? html`
+                      <div class="filters">
+                        <div
+                          style="display:flex;font-size:1em;margin-bottom:0.5em"
+                        >
+                          <temba-icon size="1" name="filter"></temba-icon>
+                          <div style="margin-left:0.5em">
+                            Only include contacts who...
+                          </div>
                         </div>
-                      </div>
-                      ${this.in_a_flow
-                        ? html`<temba-checkbox
-                            name="in_a_flow"
-                            label="${msg('Are not currently in a flow')}"
-                            ?checked=${this.exclusions['in_a_flow']}
-                            @change=${this.handleExclusionChanged}
-                          ></temba-checkbox>`
-                        : null}
-                      ${this.not_seen_since_days
-                        ? html`
-                            <div
-                              class="activity-select"
-                              @click=${this.handleActivityLabelClicked}
-                            >
-                              <temba-checkbox
-                                style="display:inline;"
-                                name="not_seen_since_days"
-                                ?checked=${notSeenSinceDays}
-                                @change=${this.handleExclusionChanged}
+                        ${this.in_a_flow
+                          ? html`<temba-checkbox
+                              name="in_a_flow"
+                              label="${msg('Are not currently in a flow')}"
+                              ?checked=${this.exclusions['in_a_flow']}
+                              @change=${this.handleExclusionChanged}
+                            ></temba-checkbox>`
+                          : null}
+                        ${this.not_seen_since_days
+                          ? html`
+                              <div
+                                class="activity-select"
+                                @click=${this.handleActivityLabelClicked}
                               >
-                              </temba-checkbox>
+                                <temba-checkbox
+                                  style="display:inline;"
+                                  name="not_seen_since_days"
+                                  ?checked=${notSeenSinceDays}
+                                  @change=${this.handleExclusionChanged}
+                                >
+                                </temba-checkbox>
 
-                              <div>
-                                ${msg('Have sent a message in the last')}
+                                <div>
+                                  ${msg('Have sent a message in the last')}
+                                </div>
+
+                                <temba-select
+                                  style="margin-left:0.5em"
+                                  class="small-select"
+                                  @change=${this.handleActivityLevelChanged}
+                                  ?disabled=${!notSeenSinceDays}
+                                >
+                                  <temba-option
+                                    name="90 days"
+                                    value="90"
+                                    ?selected=${notSeenSinceDays === 90}
+                                  ></temba-option>
+                                  <temba-option
+                                    name="180 days"
+                                    value="180"
+                                    ?selected=${notSeenSinceDays === 180}
+                                  ></temba-option>
+                                  <temba-option
+                                    name="Year"
+                                    value="365"
+                                    ?selected=${notSeenSinceDays === 365}
+                                  ></temba-option>
+                                </temba-select>
+                                <div></div>
                               </div>
-
-                              <temba-select
-                                style="margin-left:0.5em"
-                                class="small-select"
-                                @change=${this.handleActivityLevelChanged}
-                                ?disabled=${!notSeenSinceDays}
-                              >
-                                <temba-option
-                                  name="90 days"
-                                  value="90"
-                                  ?selected=${notSeenSinceDays === 90}
-                                ></temba-option>
-                                <temba-option
-                                  name="180 days"
-                                  value="180"
-                                  ?selected=${notSeenSinceDays === 180}
-                                ></temba-option>
-                                <temba-option
-                                  name="Year"
-                                  value="365"
-                                  ?selected=${notSeenSinceDays === 365}
-                                ></temba-option>
-                              </temba-select>
-                              <div></div>
-                            </div>
-                          `
-                        : null}
-                      ${this.started_previously
-                        ? html`<temba-checkbox
-                            name="started_previously"
-                            label="${msg(
-                              'Have not started this flow in the last 90 days'
-                            )}"
-                            ?checked=${this.exclusions['started_previously']}
-                            @change=${this.handleExclusionChanged}
-                          ></temba-checkbox>`
-                        : null}
-                    </div>
-                  `
-                : null} `
+                            `
+                          : null}
+                        ${this.started_previously
+                          ? html`<temba-checkbox
+                              name="started_previously"
+                              label="${msg(
+                                'Have not started this flow in the last 90 days'
+                              )}"
+                              ?checked=${this.exclusions['started_previously']}
+                              @change=${this.handleExclusionChanged}
+                            ></temba-checkbox>`
+                          : null}
+                      </div>
+                    `
+                  : null} `
       }
               </div>
-      <div
-        class="results ${getClasses({
-          fetching: this.fetching,
-          initialized: this.initialized || this.fetching,
-          empty:
-            ((this.summary && this.summary.error) || !this.summary) &&
-            !this.fetching
-        })}"
-      >
-        <temba-loading units="6" size="8"></temba-loading>
-        <div class="summary ${this.expanded ? 'expanded' : ''}">${summary}</div>
-      </div>
+      ${interruptConfirm}
+      ${
+        this.fixed
+          ? html`<div
+              class="results ${getClasses({
+                fetching: this.fetching,
+                initialized: this.fetching,
+                empty: !this.fetching
+              })}"
+            >
+              <temba-loading units="6" size="8"></temba-loading>
+            </div>`
+          : html`<div
+              class="results ${getClasses({
+                fetching: this.fetching,
+                initialized: this.initialized || this.fetching,
+                empty:
+                  ((this.summary && this.summary.error) || !this.summary) &&
+                  !this.fetching
+              })}"
+            >
+              <temba-loading units="6" size="8"></temba-loading>
+              <div class="summary ${this.expanded ? 'expanded' : ''}">
+                ${summary}
+              </div>
+            </div>`
+      }
       ${blockers}
       ${
         !blockers && this.summary && this.summary.warnings
