@@ -71,6 +71,37 @@ describe('temba-list', () => {
     await assertScreenshot('list/items-selected', getClip(list));
   });
 
+  it('clears selection without firing change', async () => {
+    const list: TembaList = await getList({
+      endpoint: '/test-assets/list/temba-list.json'
+    });
+
+    list.cursorIndex = 1;
+    await list.updateComplete;
+    expect(list.getSelection()).to.not.be.null;
+
+    let fired = false;
+    list.addEventListener('change', () => {
+      fired = true;
+    });
+
+    list.clearSelection();
+    await list.updateComplete;
+
+    expect(list.cursorIndex).to.equal(-1);
+    expect(list.getSelection()).to.be.null;
+    expect(fired).to.equal(false);
+
+    // selecting the same item again fires change
+    const changeTest = new Promise<void>((resolve) => {
+      list.addEventListener('change', () => {
+        resolve();
+      });
+    });
+    list.cursorIndex = 1;
+    await changeTest;
+  });
+
   it('fires change when first element changes after fetch', async () => {
     const list: TembaList = await getList({
       endpoint: '/test-assets/list/temba-list.json'

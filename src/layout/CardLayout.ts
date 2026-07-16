@@ -88,13 +88,13 @@ export class CardLayout extends RapidElement {
         /* the column soaks up whatever the main view doesn't take. Its
            scrollport runs the full height (the host supplies no vertical
            padding) so the scrollbar bleeds top to bottom, while the inner
-           padding aligns the first card with the main view and doubles as
-           room for card shadows. */
+           padding aligns the cards with the main view — including below,
+           so the last card scrolls to rest level with the bottom of the
+           main view — and doubles as room for card shadows. */
         flex: 1 0 var(--card-column-width, 360px);
         min-height: 0;
         overflow-y: auto;
         padding: var(--layout-spacing, 8px);
-        padding-bottom: 0;
       }
 
       temba-tabs {

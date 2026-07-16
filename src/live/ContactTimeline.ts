@@ -115,7 +115,9 @@ export class ContactTimeline extends EndpointMonitorElement {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        padding: 7em 1em 4em;
+        /* a host card sets --empty-padding to compact this treatment —
+           the default suits a full-height tab pane */
+        padding: var(--empty-padding, 7em 1em 4em);
         color: var(--text-color);
       }
 
@@ -124,9 +126,17 @@ export class ContactTimeline extends EndpointMonitorElement {
         --icon-color: var(--text-3, #7b8593);
       }
 
+      /* the icon / blurb / link around the title — a host card hides
+         these so the empty card is just the stylized message */
+      .empty-extras {
+        display: var(--empty-extras-display, contents);
+      }
+
       .empty-title {
         font-weight: 600;
         margin-bottom: 0.4em;
+        font-size: var(--empty-title-size, inherit);
+        color: var(--empty-title-color, inherit);
       }
 
       .empty-help {
@@ -547,7 +557,14 @@ export class ContactTimeline extends EndpointMonitorElement {
             : Array.isArray(this.data.future)
               ? this.data.future.length
               : 0;
-        this.fireCustomEvent(CustomEventType.DetailsChanged, { count });
+        // empty mirrors the render()'s empty-state condition so a host
+        // card can drop its chrome entirely when there's nothing to show
+        const empty =
+          count === 0 &&
+          !(Array.isArray(this.data.campaigns) && this.data.campaigns.length) &&
+          !(Array.isArray(this.data.future) && this.data.future.length) &&
+          !(Array.isArray(this.data.past) && this.data.past.length);
+        this.fireCustomEvent(CustomEventType.DetailsChanged, { count, empty });
       }
     }
   }
@@ -810,12 +827,16 @@ export class ContactTimeline extends EndpointMonitorElement {
     ) {
       return html`<div class="empty">
         <slot name="empty">
-          <temba-icon name=${Icon.schedule} size="2"></temba-icon>
+          <div class="empty-extras">
+            <temba-icon name=${Icon.schedule} size="2"></temba-icon>
+          </div>
           <div class="empty-title">${this.lang_empty}</div>
-          <div class="empty-help">${this.lang_empty_help}</div>
-          <a class="empty-link" href="/campaign/" onclick="goto(event, this)"
-            >${this.lang_campaigns_link}</a
-          >
+          <div class="empty-extras">
+            <div class="empty-help">${this.lang_empty_help}</div>
+            <a class="empty-link" href="/campaign/" onclick="goto(event, this)"
+              >${this.lang_campaigns_link}</a
+            >
+          </div>
         </slot>
       </div>`;
     }

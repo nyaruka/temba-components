@@ -38,7 +38,7 @@ export class ContactDetails extends ContactStoreElement {
 
       .row .label {
         color: var(--text-2);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: var(--w-medium);
         margin-top: 0.25em;
         margin-left: 0.25em;
@@ -46,7 +46,7 @@ export class ContactDetails extends ContactStoreElement {
 
       .row .value {
         margin-left: 0.25em;
-        margin-top: 0.1em;
+        margin-top: 0.35em;
         min-height: 1.75em;
         display: flex;
         flex-wrap: wrap;
@@ -54,6 +54,12 @@ export class ContactDetails extends ContactStoreElement {
       }
 
       .group {
+      }
+
+      /* the last row needs no separator — the card edge closes it off */
+      temba-contact-field:last-of-type {
+        --contact-field-separator: none;
+        margin-bottom: 0;
       }
     `;
   }
@@ -70,6 +76,17 @@ export class ContactDetails extends ContactStoreElement {
 
     return html`
       <div class="wrapper">
+        ${this.data.urns.map((urn) => {
+          let scheme = SCHEMES[urn.scheme];
+          if (!scheme) {
+            scheme = capitalize(urn.scheme as any);
+          }
+          return html`<temba-contact-field
+            name=${scheme}
+            value=${urn.display || urn.path}
+            disabled
+          ></temba-contact-field>`;
+        })}
         ${this.data.groups.length > 0
           ? html` <div class="row">
               <div class="label">Groups</div>
@@ -89,17 +106,6 @@ export class ContactDetails extends ContactStoreElement {
               </div>
             </div>`
           : null}
-        ${this.data.urns.map((urn) => {
-          let scheme = SCHEMES[urn.scheme];
-          if (!scheme) {
-            scheme = capitalize(urn.scheme as any);
-          }
-          return html`<temba-contact-field
-            name=${scheme}
-            value=${urn.display || urn.path}
-            disabled
-          ></temba-contact-field>`;
-        })}
         ${this.data.ref
           ? html`<temba-contact-field
               name="Ref"

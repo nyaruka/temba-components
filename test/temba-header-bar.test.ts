@@ -13,9 +13,10 @@ describe('temba-header-bar', () => {
 
     const styles = getComputedStyle(bar);
 
-    // the 52px strip plus its full-bleed 1px rule
+    // the 52px strip plus its full-bleed 1px rule — an inset box-shadow
+    // so host-page border resets (tailwind preflight) can't strip it
     expect(styles.height).to.equal('53px');
-    expect(styles.borderBottomWidth).to.equal('1px');
+    expect(styles.boxShadow).to.contain('inset');
     expect(styles.display).to.equal('flex');
 
     // slotted content stretches to fill the strip

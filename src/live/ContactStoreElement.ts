@@ -66,7 +66,8 @@ export class ContactStoreElement extends EndpointMonitorElement {
   }
 
   public willUpdate(changed: PropertyValues): void {
-    super.willUpdate(changed);
+    // derive our url before the base class runs so it sees the url change
+    // in this same pass (clearing stale data when the contact is unset)
     if (changed.has('contact') || changed.has('endpoint')) {
       if (this.contact) {
         this.url = `${this.endpoint}${this.contact}`;
@@ -74,5 +75,6 @@ export class ContactStoreElement extends EndpointMonitorElement {
         this.url = null;
       }
     }
+    super.willUpdate(changed);
   }
 }
