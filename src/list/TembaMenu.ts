@@ -400,7 +400,9 @@ export class TembaMenu extends ResizeElement {
         flex-direction: row;
       }
 
-      /* when collapsed on mobile, the only thing in the header is the hamburger */
+      /* when collapsed on mobile, the only thing in the header is the
+         hamburger — any new direct child of level-0 must opt in with
+         the .top class to stay visible here */
       .root.fully-collapsed.mobile .level.level-0 > *:not(.top) {
         display: none;
       }

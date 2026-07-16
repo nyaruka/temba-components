@@ -463,6 +463,10 @@ export class Compose extends FieldElement {
     }
 
     if (evt.key === 'Enter' && !evt.shiftKey) {
+      // an Enter confirming an IME composition belongs to the editor
+      if (evt.isComposing || evt.keyCode === 229) {
+        return;
+      }
       if (this.showShortcuts) {
         return;
       }

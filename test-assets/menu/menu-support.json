@@ -13,7 +13,6 @@
       "name": "Support",
       "icon": "help",
       "bottom": true,
-      "mobile": true,
       "event": "temba-show-support"
     },
     {

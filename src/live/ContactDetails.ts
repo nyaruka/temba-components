@@ -57,7 +57,7 @@ export class ContactDetails extends ContactStoreElement {
       }
 
       /* the last row needs no separator — the card edge closes it off */
-      temba-contact-field:last-of-type {
+      temba-contact-field.last-field {
         --contact-field-separator: none;
         margin-bottom: 0;
       }
@@ -134,6 +134,7 @@ export class ContactDetails extends ContactStoreElement {
           disabled
         ></temba-contact-field>
         <temba-contact-field
+          class="last-field"
           name="Last Seen"
           value=${this.data.last_seen_on}
           type="datetime"
