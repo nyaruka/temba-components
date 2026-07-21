@@ -192,6 +192,58 @@ export interface Trigger {
   created_on?: string;
 }
 
+/** A single row in the broadcast CRUDL lists — both the scheduled
+ * list (`msgs/broadcast_scheduled.html`) and the sent list
+ * (`msgs/broadcast_list.html`). Broadcasts key off the numeric id;
+ * content fields carry the base-language translation. */
+export interface Broadcast {
+  id: number;
+  /** Server status slug — `pending`, `queued`, `started`,
+   * `completed`, `failed` or `interrupted`. Scheduled broadcasts
+   * that haven't fired yet sit at `pending`. */
+  status?: string;
+  /** Send progress for an in-flight broadcast — total recipients
+   * (-1 until the org's contact count resolves) and messages
+   * created so far. */
+  progress?: { total: number; started: number };
+  /** Base-language message text. */
+  text?: string;
+  /** Base-language attachments (`{content_type, url}` objects or
+   * `contentType:url` strings). */
+  attachments?: (string | Attachment)[];
+  /** Base-language quick replies. */
+  quick_replies?: string[];
+  /** The opt-in the broadcast requests, when it is one. */
+  optin?: ObjectReference | null;
+  /** The WhatsApp template the broadcast sends, when it uses one. */
+  template?: ObjectReference | null;
+  /** Recipient groups. */
+  groups?: ObjectReference[];
+  /** Recipient contacts. */
+  contacts?: ObjectReference[];
+  /** Raw recipient URNs (editors/admins only). */
+  urns?: string[];
+  /** Recipient contact query, for query-addressed broadcasts. */
+  query?: string | null;
+  /** Human-readable exclusion descriptions ("Skip inactive
+   * contacts", ...) rendered in the detail view. */
+  exclusions?: string[];
+  /** Scheduled broadcasts only — `display` is the server-rendered
+   * human repeat ("each week on Monday, Wednesday"); `next_fire` is
+   * null once the schedule is exhausted or paused. */
+  schedule?: {
+    repeat_period?: string;
+    display?: string;
+    next_fire?: string | null;
+  } | null;
+  /** Messages created by a sent broadcast. */
+  msg_count?: number;
+  created_on?: string;
+  /** Email of the user who created the broadcast. */
+  created_by?: string | null;
+  modified_on?: string;
+}
+
 export interface Msg {
   /** Numeric id — present on persisted messages (the CRUDL list
    * keys rows off it); absent on outbound drafts. */

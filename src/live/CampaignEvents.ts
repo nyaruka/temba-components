@@ -95,9 +95,6 @@ export class CampaignEvents extends EndpointMonitorElement {
   lang_scheduled_contacts = 'Contacts scheduled for this event';
 
   @property({ type: String })
-  lang_okay = 'Okay';
-
-  @property({ type: String })
   lang_send_message = 'Send Message';
 
   @property({ type: String })
@@ -494,14 +491,28 @@ export class CampaignEvents extends EndpointMonitorElement {
         line-height: 1.5;
       }
 
-      /* our own footer so the Okay button follows the same horizontal
-         padding as the header - its right edge lines up with Delete. A
-         full-bleed rule mirrors the header's. */
-      .detail-footer {
-        display: flex;
-        justify-content: flex-end;
-        padding: 1em;
-        border-top: 1px solid var(--border, #e4e7ec);
+      /* the close (✕) in the header's upper right - the square
+         hover-wash button treatment (the pager buttons'), sitting
+         just outboard of the action buttons */
+      .detail-close {
+        flex-shrink: 0;
+        margin-left: -4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: var(--r-sm);
+        color: var(--text-3, #7b8593);
+        cursor: pointer;
+        user-select: none;
+      }
+      .detail-close:hover {
+        background: var(--sunken);
+        color: var(--text-1);
+      }
+      .detail-close temba-icon {
+        --icon-color: currentColor;
       }
 
       .detail-section-title {
@@ -1017,6 +1028,17 @@ export class CampaignEvents extends EndpointMonitorElement {
                           : null}
                       </div>`
                     : null}
+                  <div
+                    class="detail-close"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Close"
+                    @click=${this.handleDetailClosed}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this.handleActivationKey(e, this.handleDetailClosed)}
+                  >
+                    <temba-icon name=${Icon.close} size="1.4"></temba-icon>
+                  </div>
                 </div>
 
                 <div class="detail-body">
@@ -1071,14 +1093,6 @@ export class CampaignEvents extends EndpointMonitorElement {
                   </div>
 
                   ${this.renderFires()}
-                </div>
-
-                <div class="detail-footer">
-                  <temba-button
-                    primary
-                    name=${this.lang_okay}
-                    @click=${this.handleDetailClosed}
-                  ></temba-button>
                 </div>
               </div>
             `

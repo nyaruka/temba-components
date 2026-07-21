@@ -243,10 +243,10 @@ describe(TAG, () => {
     expect(dialog.open).to.equal(true);
 
     // page-like: no colored dialog header, our own title row instead with
-    // a separating rule and an Okay button in our own footer
+    // a separating rule and a close (✕) in its upper right
     expect(dialog.header).to.not.be.ok;
     expect(
-      events.shadowRoot.querySelector('.detail-footer temba-button')
+      events.shadowRoot.querySelector('.detail-header .detail-close')
     ).to.not.equal(null);
     const detail = events.shadowRoot.querySelector('.detail');
     // the campaign is the title so the modal carries context on any page,
@@ -402,7 +402,7 @@ describe(TAG, () => {
     ).to.not.contain('Recent Contacts');
   });
 
-  it('reopens the detail modal after a button close', async () => {
+  it('reopens the detail modal after an ✕ close', async () => {
     await loadStore();
     mockGET(/campaignevent\/fires\//, { fires: [] });
     const events = await getEvents();
@@ -416,10 +416,10 @@ describe(TAG, () => {
     await events.updateComplete;
     expect(dialog.open).to.equal(true);
 
-    // these page-like modals close from the footer Okay button
+    // these page-like modals close from the header's ✕
     (
       events.shadowRoot.querySelector(
-        '.detail-footer temba-button'
+        '.detail-header .detail-close'
       ) as HTMLElement
     ).click();
     await events.updateComplete;
