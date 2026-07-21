@@ -28,6 +28,55 @@ export function validateWith(
   };
 }
 
+/**
+ * Validates a mixed recipients list (contacts, groups and expressions) against
+ * the engine's limits: at most 100 of each kind and expressions at most 1000
+ * characters. Returns an error message or null if the list is valid. The type
+ * predicates mirror how fromFormData partitions the list into the action's
+ * contacts / groups / legacy_vars.
+ */
+export function validateRecipients(recipients: any[]): string | null {
+  const contacts = recipients.filter(
+    (r: any) => r.type === 'contact' || (!r.type && !r.expression && r.id)
+  );
+  const groups = recipients.filter((r: any) => r.type === 'group');
+  const expressions = recipients.filter(
+    (r: any) => r.type === 'expression' || r.expression
+  );
+
+  if (contacts.length > 100) {
+    return 'You can only add up to 100 contacts';
+  }
+  if (groups.length > 100) {
+    return 'You can only add up to 100 groups';
+  }
+  if (expressions.length > 100) {
+    return 'You can only add up to 100 expressions';
+  }
+  const tooLong = expressions.some((e: any) => {
+    const value = e.value || e.name || e.id || '';
+    return typeof value === 'string' && value.length > 1000;
+  });
+  if (tooLong) {
+    return 'Expressions must be no more than 1000 characters';
+  }
+  return null;
+}
+
+/**
+ * Validates template variables against the engine's limit of 10000 characters
+ * per variable. Returns an error message or null if they're valid.
+ */
+export function validateTemplateVariables(variables: any[]): string | null {
+  const tooLong = variables.some(
+    (v: any) => typeof v === 'string' && v.length > 10000
+  );
+  if (tooLong) {
+    return 'Template variables must be no more than 10000 characters';
+  }
+  return null;
+}
+
 function makeTextToLocalizationFormData(fields: readonly string[]) {
   return (
     action: { uuid: string },

@@ -25,6 +25,7 @@ export const play_audio: ActionConfig = {
       type: 'text',
       label: 'Recording URL',
       required: true,
+      maxLength: 2048,
       evaluated: true
     }
   },

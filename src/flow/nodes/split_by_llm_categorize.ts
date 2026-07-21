@@ -33,6 +33,7 @@ export const split_by_llm_categorize: NodeConfig = {
       helpText: 'The input to categorize (usually @input)',
       required: true,
       evaluated: true,
+      maxLength: 10000,
       placeholder: '@input'
     },
     categories: {

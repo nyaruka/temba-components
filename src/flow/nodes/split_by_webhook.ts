@@ -79,6 +79,7 @@ export const split_by_webhook: NodeConfig = {
       type: 'text',
       required: true,
       evaluated: true,
+      maxLength: 2048,
       placeholder: 'https://example.com/webhook'
     },
     headers: {
@@ -86,6 +87,9 @@ export const split_by_webhook: NodeConfig = {
       sortable: true,
       keyPlaceholder: 'Header name',
       valuePlaceholder: 'Header value',
+      maxItems: 100,
+      keyMaxLength: 100,
+      valueMaxLength: 1000,
       minRows: 0,
       dependsOn: ['method'],
       computeValue: (
@@ -108,6 +112,7 @@ export const split_by_webhook: NodeConfig = {
     body: {
       type: 'textarea',
       evaluated: true,
+      maxLength: 10000,
       placeholder: 'Request body content (JSON, XML, etc.)',
       minHeight: 200,
       dependsOn: ['method'],

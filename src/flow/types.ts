@@ -257,6 +257,9 @@ export interface KeyValueFieldConfig extends BaseFieldConfig {
   valuePlaceholder?: string;
   minRows?: number;
   readOnlyKeys?: boolean;
+  maxItems?: number;
+  keyMaxLength?: number;
+  valueMaxLength?: number;
 }
 
 export interface ArrayFieldConfig extends BaseFieldConfig {

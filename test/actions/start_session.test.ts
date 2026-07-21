@@ -136,6 +136,45 @@ describe('start_session action config', () => {
     );
   });
 
+  it('validates recipient counts against engine limits', async () => {
+    const base = {
+      uuid: 'start-uuid',
+      flow: [{ uuid: 'flow-uuid', name: 'Registration Flow' }],
+      startType: [{ value: 'manual', name: 'Select contacts and groups' }]
+    };
+
+    // more than 100 contacts is rejected
+    let result = start_session.validate({
+      ...base,
+      recipients: Array.from({ length: 101 }, (_, i) => ({
+        id: `contact-${i}`,
+        name: `Contact ${i}`,
+        type: 'contact'
+      }))
+    });
+    expect(result.valid).to.be.false;
+    expect(result.errors.recipients).to.exist;
+
+    // an expression over 1000 chars is rejected
+    result = start_session.validate({
+      ...base,
+      recipients: [{ id: '@' + 'x'.repeat(1000), name: '', type: 'expression' }]
+    });
+    expect(result.valid).to.be.false;
+    expect(result.errors.recipients).to.exist;
+
+    // 100 contacts passes
+    result = start_session.validate({
+      ...base,
+      recipients: Array.from({ length: 100 }, (_, i) => ({
+        id: `contact-${i}`,
+        name: `Contact ${i}`,
+        type: 'contact'
+      }))
+    });
+    expect(result.valid).to.be.true;
+  });
+
   it('validates query requires contact_query value', async () => {
     const formData = {
       uuid: 'start-uuid',
