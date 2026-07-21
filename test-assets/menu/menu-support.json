@@ -1,0 +1,32 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": "tasks",
+      "name": "Tasks",
+      "icon": "icon.tickets_mine",
+      "endpoint": "/test-assets/menu/menu-tasks.json"
+    },
+    {
+      "id": "support",
+      "name": "Support",
+      "icon": "help",
+      "bottom": true,
+      "event": "temba-show-support"
+    },
+    {
+      "id": "notifications",
+      "name": "Notifications",
+      "icon": "notification",
+      "bottom": true,
+      "popup": true,
+      "items": [
+        {
+          "id": "latest",
+          "name": "Latest"
+        }
+      ]
+    }
+  ]
+}

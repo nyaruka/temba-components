@@ -61,7 +61,7 @@ export class ContactFieldEditor extends RapidElement {
         --color-widget-bg-focused: #fff;
         --widget-box-shadow: none;
         padding-bottom: 0.6em;
-        border-bottom: 1px solid #ececec;
+        border-bottom: var(--contact-field-separator, 1px solid #ececec);
       }
 
       .wrapper.disabled {
@@ -108,9 +108,12 @@ export class ContactFieldEditor extends RapidElement {
         text-overflow: ellipsis;
       }
 
+      /* read-only rows set the label clearly apart from the value — the
+         same quiet label treatment as .field-label on the editable rows,
+         a touch smaller, over a full-color value */
       .label .name {
         color: var(--text-2);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: var(--w-medium);
       }
 
@@ -120,8 +123,9 @@ export class ContactFieldEditor extends RapidElement {
       }
 
       .disabled .value {
+        color: var(--text-1);
         margin-left: 0.25em;
-        margin-top: 0.1em;
+        margin-top: 0.35em;
         min-height: 1.75em;
       }
 

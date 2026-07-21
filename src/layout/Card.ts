@@ -20,6 +20,12 @@ export class Card extends RapidElement {
         display: block;
       }
 
+      /* an empty panel drops its card entirely — in tab (plain) mode the
+         pane still renders so the tab keeps working */
+      :host([empty]:not([plain])) {
+        display: none;
+      }
+
       /* The chrome lives on an inner frame rather than the host so
          document-level universal rules (e.g. tailwind's preflight
          border-color) can't override it. */
@@ -130,6 +136,16 @@ export class Card extends RapidElement {
         padding: 0 10px 10px;
       }
 
+      /* card chrome bounds the panel tightly — slotted panels scale their
+         empty-state treatment down from the roomy tab-pane default to a
+         single quiet line */
+      :host(:not([plain])) .content ::slotted(*) {
+        --empty-padding: 1em;
+        --empty-extras-display: none;
+        --empty-title-size: 0.9em;
+        --empty-title-color: var(--text-3);
+      }
+
       /* bleed mode: the body content runs edge-to-edge so a panel with its
          own surface (e.g. the notepad) fills the card, clipped to the card
          radius. The footer of such content sits on the card's bottom edge. */
@@ -210,6 +226,12 @@ export class Card extends RapidElement {
   @property({ type: Boolean, reflect: true })
   bleed = false;
 
+  // the slotted panel reported (via temba-details-changed) that it has
+  // nothing to show — the card hides entirely in card mode, though its
+  // tab remains available in narrow mode
+  @property({ type: Boolean, reflect: true })
+  empty = false;
+
   // named surface treatments, e.g. "note" for the sticky-note look
   @property({ type: String, reflect: true })
   variant = '';
@@ -251,6 +273,9 @@ export class Card extends RapidElement {
     }
     if ('count' in event.detail) {
       this.count = event.detail.count;
+    }
+    if ('empty' in event.detail) {
+      this.empty = event.detail.empty;
     }
   }
 

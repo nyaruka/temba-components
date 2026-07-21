@@ -406,11 +406,25 @@ export class Compose extends FieldElement {
     if (!this.hasAttribute('tabindex')) {
       this.setAttribute('tabindex', '-1');
     }
+    // both phases: capture claims a send-Enter before the rich editor's
+    // own keydown inserts a newline (which would flash before the send
+    // clears it); bubble keeps Enter-to-send working from anywhere else
+    // in the compose after inner widgets have had their shot at it
+    this.addEventListener(
+      'keydown',
+      this.handleHostKeyDown as EventListener,
+      true
+    );
     this.addEventListener('keydown', this.handleHostKeyDown as EventListener);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this.removeEventListener(
+      'keydown',
+      this.handleHostKeyDown as EventListener,
+      true
+    );
     this.removeEventListener(
       'keydown',
       this.handleHostKeyDown as EventListener
@@ -449,10 +463,23 @@ export class Compose extends FieldElement {
     }
 
     if (evt.key === 'Enter' && !evt.shiftKey) {
+      // an Enter confirming an IME composition belongs to the editor
+      if (evt.isComposing || evt.keyCode === 229) {
+        return;
+      }
       if (this.showShortcuts) {
         return;
       }
       const editor = this.getMessageEditor();
+      // during capture only editor presses are claimed — anything else
+      // (quick replies, attachments) waits for the bubble so the widget
+      // it targets keeps first claim on the event
+      if (
+        evt.eventPhase === Event.CAPTURING_PHASE &&
+        !(editor && evt.composedPath().includes(editor))
+      ) {
+        return;
+      }
       if (editor) {
         const richEdit = editor.getRichEditor();
         if (richEdit && richEdit.hasVisibleOptions()) {
@@ -460,7 +487,10 @@ export class Compose extends FieldElement {
         }
       }
       evt.preventDefault();
-      evt.stopPropagation();
+      // immediate: the handler is registered for both phases, and an
+      // at-target event would otherwise reach the second registration
+      // and send twice
+      evt.stopImmediatePropagation();
       this.triggerSend();
     }
   };
