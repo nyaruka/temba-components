@@ -24,7 +24,7 @@ import { defaultReporter, summaryReporter } from '@web/test-runner';
 //
 //   - Gated on `WTR_COVERAGE_SHIM` (defaults on when --coverage is in
 //     argv; can be force-disabled by setting it to "0") so it never
-//     runs in plain `pnpm test`, only in the coverage path.
+//     runs in plain `bun run test`, only in the coverage path.
 //   - Sentinel is a runtime-random string, so a fixture/cached body
 //     containing the literal can't collide.
 //   - `__pendingCoverages` is cleared on every parse — matched OR not —

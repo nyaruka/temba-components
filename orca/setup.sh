@@ -3,7 +3,7 @@
 # Orca setup hook for a temba-components worktree.
 # Symlinks shared utility files from nyaruka/utils, ensures the devcontainer
 # is built/running (recreating it if the bind mounts are stale), and installs
-# pnpm dependencies inside the worktree.
+# bun dependencies inside the worktree.
 #
 # Usage:
 #   ./orca/setup.sh                  # run directly
@@ -75,7 +75,7 @@ esac
 # Install dependencies inside the worktree.
 docker exec "$CONTAINER_NAME" bash -c '
     cd "/workspaces/worktrees/temba-components/'"$WORKSPACE_NAME"'"
-    pnpm install
+    bun install
 '
 
 echo "Worktree '$WORKSPACE_NAME' ready for development"

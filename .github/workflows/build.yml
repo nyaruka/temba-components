@@ -25,7 +25,7 @@ jobs:
         with:
           configFile: .github/devcontainer/devcontainer.json
           runCmd: |
-            pnpm install --frozen-lockfile && pnpm validate 2>&1 | tee validate_output.log
+            bun install --frozen-lockfile && bun run validate 2>&1 | tee validate_output.log
             exit ${PIPESTATUS[0]}
           push: never
           env: |

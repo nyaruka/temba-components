@@ -22,10 +22,10 @@ Some of the components:
 
 ## Install
 
-We use pnpm, so you'll want to install with that if you care about our lock file.
+We use [bun](https://bun.com), so you'll want to install with that if you care about our lock file.
 
 ```bash
-% pnpm install
+% bun install
 ```
 
 ## Demo
@@ -33,7 +33,7 @@ We use pnpm, so you'll want to install with that if you care about our lock file
 To view the interactive demo, use start.
 
 ```bash
-% pnpm start
+% bun run start
 ```
 
 ## Testing
@@ -43,7 +43,7 @@ comparision under [/screenshots](screenshots/truth). Running tests requires that
 installed.
 
 ```bash
-% pnpm test
+% bun run test
 ```
 
 ## Usage
