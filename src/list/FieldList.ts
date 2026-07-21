@@ -16,16 +16,17 @@ const TYPE_NAMES = {
   district: 'District'
 };
 
+// display name for a field's value type, falling back to the raw type
+// rather than rendering "undefined" for an unmapped type
+const typeName = (field: ContactField): string =>
+  TYPE_NAMES[field.value_type] || field.value_type || '';
+
 const matches = (field: ContactField, query: string): boolean => {
   if (!query) {
     return true;
   }
-  const search = (
-    field.label +
-    field.key +
-    TYPE_NAMES[field.value_type]
-  ).toLowerCase();
-  return search.indexOf(query) > -1;
+  const search = (field.label + field.key + typeName(field)).toLowerCase();
+  return search.indexOf(query.toLowerCase()) > -1;
 };
 
 // referenced flow / group / campaign in the detail modal's usages
@@ -494,9 +495,15 @@ export class FieldList extends EndpointMonitorElement {
   private savePriorities() {
     postJSON(this.priorityEndpoint, {
       featured: this.featuredFields.map((field) => field.key)
-    }).then(() => {
-      this.store.refreshFields();
-    });
+    })
+      .then(() => {
+        this.store.refreshFields();
+      })
+      .catch(() => {
+        // reconcile the optimistic featured/order state back to server
+        // truth - the refetch recomputes both lists via filterFields
+        this.store.refreshFields();
+      });
   }
 
   private isFeatured(key: string): boolean {
@@ -569,10 +576,19 @@ export class FieldList extends EndpointMonitorElement {
     this.toggleFeatured(field.key);
   }
 
+  // keyboard activation of the star must not also fire the row's keydown
+  // (which would open the detail modal), so swallow the event here
+  private handleStarKeydown(event: KeyboardEvent, field: ContactField) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.stopPropagation();
+    }
+    this.handleActivationKey(event, () => this.toggleFeatured(field.key));
+  }
+
   private handleSearchInput(event: InputEvent) {
-    this.query = ((event.target as HTMLInputElement).value || '')
-      .trim()
-      .toLowerCase();
+    // keep the visible text verbatim - matches() lowercases the query
+    // itself, so no trim/lowercase here that would mutate what's typed
+    this.query = (event.target as HTMLInputElement).value || '';
   }
 
   private toggleSearch() {
@@ -704,8 +720,14 @@ export class FieldList extends EndpointMonitorElement {
         name=${featured ? Icon.featured_filled : Icon.featured}
         size="1.1"
         clickable
+        role="button"
+        tabindex="0"
         title=${featured ? 'Featured' : 'Not featured'}
+        aria-label=${featured
+          ? `Unfeature ${field.label}`
+          : `Feature ${field.label}`}
         @click=${(e: MouseEvent) => this.handleStarClicked(e, field)}
+        @keydown=${(e: KeyboardEvent) => this.handleStarKeydown(e, field)}
       ></temba-icon>
     `;
   }
@@ -717,7 +739,6 @@ export class FieldList extends EndpointMonitorElement {
       <div
         class="field ${sortable ? 'sortable' : ''}"
         id="${field.key}"
-        role="button"
         tabindex="0"
         @click=${() => this.handleFieldClicked(field)}
         @keydown=${(e: KeyboardEvent) =>
@@ -731,7 +752,7 @@ export class FieldList extends EndpointMonitorElement {
           : null}
         <div class="name">${field.label}</div>
         <div class="expression">@fields.${field.key}</div>
-        <div class="type">${TYPE_NAMES[field.value_type]}</div>
+        <div class="type">${typeName(field)}</div>
         ${this.renderStar(field)}
       </div>
     `;
@@ -947,8 +968,17 @@ export class FieldList extends EndpointMonitorElement {
                                 : Icon.featured}
                               size="1.3"
                               clickable
+                              role="button"
+                              tabindex="0"
                               title=${featured ? 'Featured' : 'Not featured'}
+                              aria-label=${featured
+                                ? `Unfeature ${field.label}`
+                                : `Feature ${field.label}`}
                               @click=${this.handleToggleFeatured}
+                              @keydown=${(e: KeyboardEvent) =>
+                                this.handleActivationKey(e, () =>
+                                  this.handleToggleFeatured()
+                                )}
                             ></temba-icon>`
                           : null}
                         ${this.detail.can_edit
@@ -985,7 +1015,7 @@ export class FieldList extends EndpointMonitorElement {
                 <div class="detail-body">
                   <div class="detail-meta">
                     <div class="expression">@fields.${field.key}</div>
-                    <div>${TYPE_NAMES[field.value_type]}</div>
+                    <div>${typeName(field)}</div>
                   </div>
                   ${this.renderUsages()}
                 </div>
