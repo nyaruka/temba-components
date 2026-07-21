@@ -25,7 +25,10 @@ const matches = (field: ContactField, query: string): boolean => {
   if (!query) {
     return true;
   }
-  const search = (field.label + field.key + typeName(field)).toLowerCase();
+  // separate the haystack parts so a query can't match across them
+  const search = [field.label, field.key, typeName(field)]
+    .join(' ')
+    .toLowerCase();
   return search.indexOf(query.toLowerCase()) > -1;
 };
 
@@ -496,12 +499,13 @@ export class FieldList extends EndpointMonitorElement {
     postJSON(this.priorityEndpoint, {
       featured: this.featuredFields.map((field) => field.key)
     })
-      .then(() => {
-        this.store.refreshFields();
+      .catch((error) => {
+        console.warn('Failed to save featured fields', error);
       })
-      .catch(() => {
-        // reconcile the optimistic featured/order state back to server
-        // truth - the refetch recomputes both lists via filterFields
+      .finally(() => {
+        // reconcile the optimistic featured/order state with server
+        // truth on success and failure alike - the refetch recomputes
+        // both lists via filterFields
         this.store.refreshFields();
       });
   }

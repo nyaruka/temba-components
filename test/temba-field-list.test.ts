@@ -266,6 +266,54 @@ describe(TAG, () => {
     await assertScreenshot('list/field-list-starred', getClip(list));
   });
 
+  it('features a field with the keyboard', async () => {
+    const list = await getList();
+    mockFieldsRefresh(['rating', 'ward', 'age']);
+
+    getRowStar(list, 'age').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+    );
+    await list.updateComplete;
+
+    // the star toggles without also activating the row
+    await waitForCondition(() => getPriorityPosts().length > 0);
+    expect(getPriorityPosts()[0]).to.deep.equal(['rating', 'ward', 'age']);
+    expect(
+      (list.shadowRoot.querySelector('temba-dialog') as any).open
+    ).to.not.equal(true);
+
+    // activating the row itself opens the detail modal
+    getRow(list, 'gender').dispatchEvent(
+      new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+    );
+    await list.updateComplete;
+    await waitForCondition(
+      () => (list.shadowRoot.querySelector('temba-dialog') as any).open === true
+    );
+  });
+
+  it('reconciles a failed save back to server truth', async () => {
+    const list = await getList();
+
+    // the save fails - the store refetch (still the original state)
+    // should snap the optimistic change back
+    clearMockPosts();
+    mockPOST(PRIORITY_URL, { status: 'ERROR' }, {}, '500');
+
+    getRowStar(list, 'age').dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+    await list.updateComplete;
+
+    // optimistically featured, then reverted once the refresh lands
+    expect(list.otherFieldKeys).to.not.contain('age');
+    await waitForCondition(() => list.otherFieldKeys.includes('age'));
+    expect(list.featuredFields.map((f) => f.key)).to.deep.equal([
+      'rating',
+      'ward'
+    ]);
+  });
+
   it('unfeatures a field with its row star', async () => {
     const list = await getList();
     mockFieldsRefresh(['ward']);
@@ -312,6 +360,66 @@ describe(TAG, () => {
     expect(detail.textContent).to.contain('and 2 more');
 
     await assertScreenshot('list/field-list-detail', getClip(list));
+  });
+
+  it('navigates from a usage pill, closing the detail first', async () => {
+    const list = await getList();
+
+    let selected = null;
+    list.addEventListener('temba-selection', (e: CustomEvent) => {
+      selected = e.detail;
+    });
+
+    await openDetail(list, 'age');
+    (
+      list.shadowRoot.querySelector('.usage-rows temba-label') as HTMLElement
+    ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await list.updateComplete;
+
+    expect(selected).to.deep.equal({
+      uuid: 'flow-1',
+      name: 'Registration',
+      url: '/flow/editor/flow-1/'
+    });
+    expect(
+      (list.shadowRoot.querySelector('temba-dialog') as any).open
+    ).to.equal(false);
+  });
+
+  it('closes search with escape and with the cancel icon', async () => {
+    const list = await getList();
+
+    const openSearch = async () => {
+      (
+        list.shadowRoot.querySelector('.header-actions .action') as HTMLElement
+      ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await list.updateComplete;
+    };
+
+    await openSearch();
+    const input = list.shadowRoot.querySelector(
+      '.searchbar input'
+    ) as HTMLInputElement;
+    input.value = 'at';
+    input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    await list.updateComplete;
+    expect(list.otherFieldKeys.length).to.equal(2);
+
+    // escape closes the search and clears the filter
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    await list.updateComplete;
+    expect(list.shadowRoot.querySelector('.searchbar')).to.not.exist;
+    expect(list.otherFieldKeys.length).to.equal(6);
+
+    // as does the cancel icon
+    await openSearch();
+    (
+      list.shadowRoot.querySelector('.search-cancel') as HTMLElement
+    ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await list.updateComplete;
+    expect(list.shadowRoot.querySelector('.searchbar')).to.not.exist;
   });
 
   it('fires selection events for edit and delete from the detail', async () => {
