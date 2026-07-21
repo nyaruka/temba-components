@@ -438,9 +438,10 @@ export class BroadcastList extends ContentList<Broadcast> {
     }
   };
 
-  // the dialog closes itself on ESC / mask clicks (temba-dialog-hidden)
-  // - our open state must reset on every path or the next open is a
-  // no-op change and the dialog never reopens
+  // closes arrive from the header ✕, our own @keyup ESC handler, and
+  // mask clicks (which fire temba-dialog-hidden) - our open state must
+  // reset on every path or the next open is a no-op change and the
+  // dialog never reopens
   private handleDetailClosed = (): void => {
     this.detailBroadcast = null;
   };
