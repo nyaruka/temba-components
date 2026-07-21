@@ -334,22 +334,23 @@ export class ContactSearch extends FieldElement {
   protected willUpdate(changedProperties: Map<string, any>) {
     super.willUpdate(changedProperties);
 
-    // if we remove the in_a_flow option, make sure it's not part of our exclusions
-    if (changedProperties.has('in_a_flow') && !this.in_a_flow) {
-      delete this.exclusions['in_a_flow'];
-    }
-
-    // a fixed contact already in a flow stays excluded until interruption is confirmed
+    // reconcile the in_a_flow exclusion; outside of fixed mode it is user-controlled
+    // via the filter checkbox, so we only ever clear it when the option goes away
     if (
-      this.fixed &&
-      this.currentFlow &&
-      (changedProperties.has('in_a_flow') ||
-        changedProperties.has('interruptConfirmed'))
+      changedProperties.has('in_a_flow') ||
+      changedProperties.has('interruptConfirmed') ||
+      changedProperties.has('fixed') ||
+      changedProperties.has('currentFlow')
     ) {
-      if (this.in_a_flow && !this.interruptConfirmed) {
-        this.exclusions['in_a_flow'] = true;
-      } else {
+      if (!this.in_a_flow) {
         delete this.exclusions['in_a_flow'];
+      } else if (this.fixed && this.currentFlow) {
+        // a fixed contact already in a flow stays excluded until interruption is confirmed
+        if (this.interruptConfirmed) {
+          delete this.exclusions['in_a_flow'];
+        } else {
+          this.exclusions['in_a_flow'] = true;
+        }
       }
     }
   }
@@ -497,7 +498,7 @@ export class ContactSearch extends FieldElement {
     const checkbox = evt.target as Checkbox;
     this.interruptConfirmed = checkbox.checked;
 
-    // wait for updated() to adjust our exclusions
+    // wait for willUpdate() to reconcile our exclusions
     await this.updateComplete;
 
     this.setValue({
@@ -507,11 +508,15 @@ export class ContactSearch extends FieldElement {
       recipients: this.recipients
     });
 
-    // we already know whether our fixed contact will be included so no need to re-run the
-    // search - just let the modal know
+    // we already know whether our fixed contacts will be included so no need to re-run
+    // the search - just let the modal know, counting contacts only since a group entry
+    // doesn't tell us its membership size
+    const contactCount = this.recipients.filter(
+      (value: OmniOption) => value.type === 'contact'
+    ).length;
     this.fireCustomEvent(CustomEventType.ContentChanged, {
       ...(this.summary || {}),
-      total: this.interruptConfirmed ? this.recipients.length : 0
+      total: this.interruptConfirmed ? contactCount : 0
     });
   }
 

@@ -26,6 +26,18 @@
 <trans-unit id="s81f17cfc89a04338">
   <source>Interrupt flow</source>
 </trans-unit>
+<trans-unit id="s122d4de68bcfcdf4">
+  <source>It's okay to restart</source>
+</trans-unit>
+<trans-unit id="s3eb2567092b4d7c1">
+  <source>from the beginning</source>
+</trans-unit>
+<trans-unit id="s28f37776b3901438">
+  <source>It's okay to interrupt</source>
+</trans-unit>
+<trans-unit id="s6838d20b10f7512a">
+  <source>and start this one</source>
+</trans-unit>
 </body>
 </file>
 </xliff>
