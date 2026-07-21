@@ -92,6 +92,7 @@ export class SortableList extends RapidElement {
 
   draggingIdx = -1;
   draggingEle = null;
+  ghostOriginalDisplay = '';
   dropPlaceholder: HTMLDivElement = null;
   pendingDropIndex = -1;
   pendingTargetElement: HTMLElement = null;
@@ -729,8 +730,11 @@ export class SortableList extends RapidElement {
         this.isExternalDrag = true;
         this.hideDropPlaceholder();
 
-        // hide the ghost element when dragging externally
+        // hide the ghost element when dragging externally, remembering its
+        // display (inlined from the original's computed style) so re-entry
+        // can restore it - forcing 'block' would break flex-laid-out ghosts
         if (this.ghostElement) {
+          this.ghostOriginalDisplay = this.ghostElement.style.display;
           this.ghostElement.style.display = 'none';
         }
 
@@ -745,7 +749,8 @@ export class SortableList extends RapidElement {
 
         // show the ghost element again when dragging internally
         if (this.ghostElement) {
-          this.ghostElement.style.display = 'block';
+          this.ghostElement.style.display =
+            this.ghostOriginalDisplay || 'block';
         }
 
         this.fireCustomEvent(CustomEventType.DragInternal, {
