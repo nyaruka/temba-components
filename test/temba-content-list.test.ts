@@ -129,7 +129,9 @@ describe('temba-content-list', () => {
   it('folds the committed search into the content-menu-endpoint', async () => {
     const list = (await getList({
       endpoint: '/test-assets/content-list/items.json',
-      'content-menu-endpoint': '/contact/active/?'
+      // hosts bake the original request's query string into the
+      // attribute, so a deep-linked search arrives pre-folded
+      'content-menu-endpoint': '/contact/active/?search=stale'
     })) as ContentList;
 
     const header = () =>
@@ -137,8 +139,10 @@ describe('temba-content-list', () => {
         .shadowRoot!.querySelector('temba-page-header')!
         .getAttribute('content-menu-endpoint');
 
-    // no search → the menu endpoint is untouched
-    expect(header()).to.equal('/contact/active/?');
+    // no committed search → any search baked into the attribute is
+    // stripped, so search-dependent items (e.g. Create Smart Group)
+    // don't linger once the search is gone
+    expect(header()).to.equal('/contact/active/');
 
     // a committed search is folded in so the server's build_context_menu
     // sees it (and can surface e.g. the Create Smart Group button)
@@ -146,10 +150,10 @@ describe('temba-content-list', () => {
     await list.updateComplete;
     expect(header()).to.contain('search=age');
 
-    // clearing the search reverts the endpoint
+    // clearing the search strips it again
     (list as any).search = '';
     await list.updateComplete;
-    expect(header()).to.equal('/contact/active/?');
+    expect(header()).to.equal('/contact/active/');
   });
 
   it('marks the frame scrolled-down so the header gets a scroll shadow', async () => {
@@ -1092,6 +1096,23 @@ describe('temba-content-list', () => {
     const searchEvent = events[events.length - 1];
     expect(searchEvent.replace).to.equal(false);
     expect(searchEvent.state.search).to.equal('a');
+    // the event carries the address-bar URL for the new state so the
+    // host can reflect it when it pushes the history entry
+    expect(searchEvent.url).to.contain('search=a');
+
+    // clearing the search drops the param from the bubbled URL
+    events.length = 0;
+    const onClear = new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    (list as any).clearSearch();
+    await onClear;
+
+    const clearEvent = events[events.length - 1];
+    expect(clearEvent.state.search).to.equal('');
+    expect(clearEvent.url).to.not.contain('search=');
   });
 
   it('restores from history.state and re-fetches on popstate', async () => {
@@ -1124,6 +1145,44 @@ describe('temba-content-list', () => {
 
     expect((list as any).sort).to.equal('name');
     expect((list as any).search).to.equal('');
+  });
+
+  it('falls back to URL params when history has no stash for the key', async () => {
+    const originalUrl = window.location.pathname + window.location.search;
+    // Fresh navigation: no stash for this key yet, but the link itself
+    // deep-links a search (e.g. /contact/?search=age%3E10).
+    history.replaceState({}, '', '?search=age+%3E+10&sort=-name');
+    try {
+      const list = (await getList({
+        endpoint: '/test-assets/content-list/items.json',
+        'history-state-key': 'contacts'
+      })) as ContentList;
+      list.columns = [{ key: 'name', label: 'Name' }];
+      await list.updateComplete;
+
+      expect((list as any).search).to.equal('age > 10');
+      expect((list as any).sort).to.equal('-name');
+      // the search bar opens showing the active query
+      expect((list as any).searchOpen).to.equal(true);
+      expect((list as any).searchDraft).to.equal('age > 10');
+      // and the fetch carried it to the endpoint
+      expect((list as any).currentUrl).to.contain('search=');
+
+      // Once a stash exists for the key it wins over the (now stale)
+      // query string still sitting in the URL.
+      history.replaceState({ contacts: { page: 1, sort: '', search: '' } }, '');
+      const onFetch = new Promise<void>((resolve) => {
+        list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+          once: true
+        });
+      });
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      await onFetch;
+      expect((list as any).search).to.equal('');
+      expect((list as any).searchOpen).to.equal(false);
+    } finally {
+      history.replaceState({}, '', originalUrl);
+    }
   });
 
   it('toggles sort direction on header click', async () => {

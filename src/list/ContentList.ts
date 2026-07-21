@@ -1151,12 +1151,19 @@ export class ContentList<T = any> extends RapidElement {
    * page-header attribute to this (rather than the raw endpoint) makes
    * the menu re-fetch whenever the committed search changes. */
   private contentMenuEndpointWithSearch(): string {
-    if (!this.contentMenuEndpoint || !this.search) {
+    if (!this.contentMenuEndpoint) {
       return this.contentMenuEndpoint;
     }
     try {
       const url = new URL(this.contentMenuEndpoint, window.location.origin);
-      url.searchParams.set('search', this.search);
+      // With no committed search, *strip* any search param rather than
+      // passing the endpoint through — hosts typically bake the
+      // original request's query string into the attribute (so a
+      // deep-linked search seeds the menu), and clearing the search in
+      // the list must also clear it from the menu fetch or
+      // search-dependent items (e.g. "Create Smart Group") linger.
+      if (this.search) url.searchParams.set('search', this.search);
+      else url.searchParams.delete('search');
       return url.pathname + url.search;
     } catch {
       return this.contentMenuEndpoint;
@@ -1589,6 +1596,20 @@ export class ContentList<T = any> extends RapidElement {
   private writeUrlState(replace = false): void {
     this.bubbleHistoryState(replace);
     if (!this.urlState) return;
+    const url = this.buildBrowserUrl();
+    if (replace) {
+      window.history.replaceState({}, '', url);
+    } else {
+      window.history.pushState({}, '', url);
+    }
+  }
+
+  /** The address-bar URL reflecting the current list state: the
+   * page's path with the list's search/sort/page params folded into
+   * the existing query string (set when active, removed when not —
+   * so a cleared search drops its param). Params the list doesn't
+   * own are preserved. */
+  private buildBrowserUrl(): string {
     const params = new URLSearchParams(window.location.search);
     const k = (name: string) =>
       this.urlParamPrefix ? `${this.urlParamPrefix}_${name}` : name;
@@ -1602,12 +1623,7 @@ export class ContentList<T = any> extends RapidElement {
     setOrDelete(k('page'), this.page > 1 ? String(this.page) : '');
 
     const qs = params.toString();
-    const url = window.location.pathname + (qs ? '?' + qs : '');
-    if (replace) {
-      window.history.replaceState({}, '', url);
-    } else {
-      window.history.pushState({}, '', url);
-    }
+    return window.location.pathname + (qs ? '?' + qs : '');
   }
 
   /** Read saved list state out of the host's history entry under
@@ -1620,7 +1636,19 @@ export class ContentList<T = any> extends RapidElement {
   private readHistoryState(): void {
     const key = this.historyStateKey;
     if (!key) return;
-    const stash = (window.history.state || {})[key] || {};
+    const state = window.history.state || {};
+    // A fresh navigation has no stash for this list yet, but the link
+    // itself may deep-link a query (e.g. /contact/?search=age%3E10) —
+    // fall back to the URL params so the list initializes on them.
+    // Once the list has bubbled state for this entry the stash exists
+    // (even with an empty search) and takes precedence, so a cleared
+    // search isn't resurrected by a stale query string.
+    if (!(key in state)) {
+      this.restoreUrl = '';
+      this.readUrlState();
+      return;
+    }
+    const stash = state[key] || {};
     const previousSearch = this.search;
     this.search = typeof stash.search === 'string' ? stash.search : '';
     this.sort = typeof stash.sort === 'string' ? stash.sort : '';
@@ -1670,10 +1698,18 @@ export class ContentList<T = any> extends RapidElement {
     if (this.cursorMode && this.currentUrl) {
       state.url = this.currentUrl;
     }
+    // `url` (distinct from `state.url`, the fetch cursor) is the
+    // address-bar URL for this list state — the host should pass it
+    // as the url argument of its pushState/replaceState so a
+    // committed or cleared search is reflected in the address bar,
+    // while keeping its own stashed page URL (frame.js's
+    // `state.url`) stable so in-list back/forward isn't mistaken
+    // for a cross-page navigation.
     this.fireCustomEvent(CustomEventType.HistoryChange, {
       key: this.historyStateKey,
       state,
-      replace
+      replace,
+      url: this.buildBrowserUrl()
     });
   }
 
