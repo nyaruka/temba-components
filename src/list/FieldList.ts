@@ -614,9 +614,13 @@ export class FieldList extends EndpointMonitorElement {
     if (!this.detailEndpoint) {
       return;
     }
+    // tolerate a host passing the base path without a trailing slash
+    const base = this.detailEndpoint.endsWith('/')
+      ? this.detailEndpoint
+      : `${this.detailEndpoint}/`;
     try {
       const response = await this.store.getUrl(
-        `${this.detailEndpoint}${encodeURIComponent(field.key)}/`,
+        `${base}${encodeURIComponent(field.key)}/`,
         { force: true }
       );
       if (this.detailField !== field) {
@@ -627,6 +631,13 @@ export class FieldList extends EndpointMonitorElement {
       // leave the modal usable with just the store's data
     }
   }
+
+  // Everything the host must dispatch flows through temba-selection with
+  // one of three payload shapes, matching the campaign events contract:
+  // a content-menu item ({item, event, ...}) from the embedded page
+  // header, a row action ({key, action: 'update'|'delete'}) to open the
+  // edit/delete modals, or a usage reference ({uuid, name, url}) to
+  // navigate to.
 
   // edit / delete close the detail modal before the host opens the edit
   // or delete-confirm modal in its place - modals never stack
