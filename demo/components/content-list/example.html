@@ -224,6 +224,45 @@
         <div class="label">Events</div>
         (waiting)
       </div>
+
+      <h3>Broadcasts (sent)</h3>
+      <p class="description">
+        Sent broadcasts, one row each: the message with attachment
+        thumbnails and template / opt-in pills, the recipients, the
+        message count (or in-flight status), and when it was sent.
+        Clicking a row opens the floating detail dialog.
+      </p>
+      <temba-broadcast-list
+        id="broadcasts"
+        list-title="Broadcasts"
+        subtitle="Messages sent to more than one contact."
+        endpoint="/demo/components/content-list/data/broadcasts.json"
+      ></temba-broadcast-list>
+      <div class="events" id="broadcasts-events">
+        <div class="label">Events</div>
+        (waiting)
+      </div>
+
+      <h3>Broadcasts (scheduled)</h3>
+      <p class="description">
+        Scheduled broadcasts with the human repeat and next send time.
+        The detail dialog carries Edit / Delete actions (permission
+        flags set via <code>can-edit</code> / <code>can-delete</code>)
+        that fire <code>temba-selection</code> for the host.
+      </p>
+      <temba-broadcast-list
+        id="broadcasts-scheduled"
+        mode="scheduled"
+        can-edit
+        can-delete
+        list-title="Scheduled Broadcasts"
+        subtitle="Messages that will be sent later."
+        endpoint="/demo/components/content-list/data/broadcasts-scheduled.json"
+      ></temba-broadcast-list>
+      <div class="events" id="broadcasts-scheduled-events">
+        <div class="label">Events</div>
+        (waiting)
+      </div>
     </div>
 
     <script type="module">
@@ -262,6 +301,8 @@
       wire('flows', 'flows-events');
       wire('campaigns', 'campaigns-events');
       wire('triggers', 'triggers-events');
+      wire('broadcasts', 'broadcasts-events');
+      wire('broadcasts-scheduled', 'broadcasts-scheduled-events');
 
       // Block real navigation so contact-row hrefs don't take you away
       document.addEventListener('click', (e) => {

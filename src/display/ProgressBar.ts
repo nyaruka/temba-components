@@ -108,6 +108,12 @@ export class ProgressBar extends RapidElement {
       transition: flex-basis 2s;
     }
 
+    /* At 0% an animated meter keeps a sliver of bar so its moving
+       stripes show the work is underway rather than a dead track. */
+    .meter.zero > span {
+      min-width: 1.25em;
+    }
+
     .meter .incomplete {
       flex-grow: 1;
     }
@@ -163,6 +169,11 @@ export class ProgressBar extends RapidElement {
   @property({ type: Boolean })
   showPercentage = false;
 
+  /** Suppresses the trailing percentage / countdown box outright —
+   * for compact placements where the meter alone is the display. */
+  @property({ type: Boolean })
+  hidePercentage = false;
+
   @property({ type: String })
   message: string;
 
@@ -194,7 +205,8 @@ export class ProgressBar extends RapidElement {
     const meterClasses = [
       'meter',
       this.done ? 'done' : '',
-      this.animated ? '' : 'static'
+      this.animated ? '' : 'static',
+      this.animated && !this.done && this.pct === 0 ? 'zero' : ''
     ]
       .filter(Boolean)
       .join(' ');
@@ -208,7 +220,8 @@ export class ProgressBar extends RapidElement {
         <div class="incomplete"></div>
       </div>
 
-      ${this.showPercentage || this.showEstimatedCompletion
+      ${(this.showPercentage || this.showEstimatedCompletion) &&
+      !this.hidePercentage
         ? html`<div class="etc">
             <div>
               ${this.estimatedCompletionDate &&
