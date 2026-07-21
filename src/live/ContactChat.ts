@@ -605,7 +605,13 @@ export class ContactChat extends ContactStoreElement {
     const channels = new Set<string>();
     if (this.isConnected && this.currentContact) {
       channels.add(`history:${this.currentContact.uuid}`);
-      if (this.currentTicket) {
+
+      // on a contact switch the new ticket is set before the new contact has
+      // finished fetching, so hold off on the ticket channel until they match
+      // - a ticket paired with another contact's channel is denied server-side
+      const contactPending =
+        this.contact && this.contact !== this.currentContact.uuid;
+      if (this.currentTicket && !contactPending) {
         channels.add(
           `history:${this.currentContact.uuid}:${this.currentTicket.uuid}`
         );

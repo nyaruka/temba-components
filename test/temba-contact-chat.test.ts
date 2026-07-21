@@ -591,6 +591,58 @@ describe('temba-contact-chat', () => {
     expect(contactSub.unsubscribed).to.be.false;
   });
 
+  it('never pairs a ticket with the previous contact during a contact switch', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const makeTicket = (uuid: string) =>
+      ({
+        uuid,
+        topic: { uuid: 'topic-1', name: 'General' },
+        assignee: null,
+        closed_on: null
+      }) as any;
+
+    chat.currentTicket = makeTicket('ticket-dave');
+    await chat.updateComplete;
+    expect(mockSocket.activeChannels()).to.deep.equal([
+      'history:contact-dave-active',
+      'history:contact-dave-active:ticket-dave'
+    ]);
+
+    // the agent clicks a ticket for a different contact - the new ticket is
+    // set synchronously while the new contact is still fetching
+    chat.contact = 'contact-barack-archived';
+    chat.currentTicket = makeTicket('ticket-barack');
+    await chat.updateComplete;
+
+    // the ticket channel is held back until the contact catches up
+    expect(mockSocket.activeChannels()).to.deep.equal([
+      'history:contact-dave-active'
+    ]);
+
+    // let the contact fetch land
+    for (let i = 0; i < 40; i++) {
+      await waitFor(50);
+      clock.tick(0);
+      if (chat.currentContact?.uuid === 'contact-barack-archived') break;
+    }
+    await chat.updateComplete;
+
+    expect(mockSocket.activeChannels()).to.deep.equal([
+      'history:contact-barack-archived',
+      'history:contact-barack-archived:ticket-barack'
+    ]);
+
+    // at no point was the new ticket paired with the old contact
+    const mismatched = mockSocket.subs.filter(
+      (sub) => sub.channel === 'history:contact-dave-active:ticket-barack'
+    );
+    expect(mismatched).to.be.empty;
+  });
+
   it('fills in missing user avatars from the store cache', async () => {
     await loadStore();
     const chat: ContactChat = await getContactChat({
