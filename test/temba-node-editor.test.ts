@@ -584,7 +584,8 @@ describe('temba-node-editor', () => {
   });
 
   it('enforces goflow length limits on array item sub-fields', async () => {
-    // goflow caps case arguments at 10000 chars and category names at 36
+    // goflow caps case arguments at 10000 chars and category names at 64 (the
+    // editor's own category limit is stricter at 36)
     const node = {
       uuid: 'len-3',
       actions: [],
