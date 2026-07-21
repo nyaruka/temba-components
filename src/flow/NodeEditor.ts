@@ -1269,17 +1269,17 @@ export class NodeEditor extends RapidElement {
           // array/object handling, an over-long value here is emitted into the definition
           // and rejected by the backend (goflow caps result names at 64 and quick replies
           // at 1000 chars).
+          const itemLength = (item: any): number => {
+            if (typeof item === 'string') return item.length;
+            if (item && typeof item === 'object') {
+              const text = item.value ?? item.name;
+              return typeof text === 'string' ? text.length : 0;
+            }
+            return 0;
+          };
+
           const maxLength = (fieldConfig as any).maxLength;
           if (maxLength) {
-            const itemLength = (item: any): number => {
-              if (typeof item === 'string') return item.length;
-              if (item && typeof item === 'object') {
-                const text = item.value ?? item.name;
-                return typeof text === 'string' ? text.length : 0;
-              }
-              return 0;
-            };
-
             const exceedsMax = Array.isArray(value)
               ? value.some((item) => itemLength(item) > maxLength)
               : itemLength(value) > maxLength;
@@ -1313,11 +1313,12 @@ export class NodeEditor extends RapidElement {
                   if (visible && !visible(item)) {
                     return false;
                   }
+                  // measure like the top-level check so option-object values
+                  // (e.g. a select or tag input inside an array) are covered
                   const subValue = item?.[subFieldName];
-                  return (
-                    typeof subValue === 'string' &&
-                    subValue.length > subMaxLength
-                  );
+                  return Array.isArray(subValue)
+                    ? subValue.some((sub) => itemLength(sub) > subMaxLength)
+                    : itemLength(subValue) > subMaxLength;
                 });
                 if (exceeds) {
                   errors[fieldName] = `${

@@ -87,6 +87,7 @@ export const split_by_airtime: NodeConfig = {
 
     if (duplicates.length > 0) {
       errors.amounts = `Duplicate currencies found: ${duplicates.join(', ')}`;
+      return;
     }
 
     for (const item of validAmounts) {
