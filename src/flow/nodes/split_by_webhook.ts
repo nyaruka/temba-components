@@ -79,7 +79,7 @@ export const split_by_webhook: NodeConfig = {
       type: 'text',
       required: true,
       evaluated: true,
-      maxLength: 2048,
+      maxLength: 8192,
       placeholder: 'https://example.com/webhook'
     },
     headers: {
