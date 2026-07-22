@@ -49,6 +49,12 @@ export class ContactList extends ContentList<Contact> {
   @property({ type: String, attribute: 'fields-endpoint' })
   fieldsEndpoint = '/api/v2/fields.json';
 
+  /** Anonymous workspaces mask URN values, so instead of the URN
+   * column the list shows each contact's ref (served as its own
+   * anon-only key by the endpoint). */
+  @property({ type: Boolean })
+  anon = false;
+
   @state()
   private featuredFields: any[] = [];
 
@@ -89,6 +95,16 @@ export class ContactList extends ContentList<Contact> {
       this.pendingFieldsController = undefined;
     }
     super.disconnectedCallback();
+  }
+
+  protected willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
+    // Rebuilding here (rather than in updated()) means a mounted
+    // anon attribute is reflected in the first paint instead of
+    // flashing the URN header for a frame.
+    if (changes.has('anon')) {
+      this.columns = this.buildColumns();
+    }
   }
 
   protected updated(changes: PropertyValues): void {
@@ -168,12 +184,19 @@ export class ContactList extends ContentList<Contact> {
         maxWidth: '260px',
         pinned: true
       },
-      {
-        key: 'urn',
-        label: 'URN',
-        minWidth: '120px',
-        maxWidth: '190px'
-      },
+      this.anon
+        ? {
+            key: 'ref',
+            label: 'Ref',
+            minWidth: '120px',
+            maxWidth: '190px'
+          }
+        : {
+            key: 'urn',
+            label: 'URN',
+            minWidth: '120px',
+            maxWidth: '190px'
+          },
       ...fieldColumns,
       {
         key: 'last_seen_on',
@@ -232,6 +255,10 @@ export class ContactList extends ContentList<Contact> {
         return html`<span class="contact-urn"
           >${this.primaryUrn(item) || EMPTY}</span
         >`;
+      case 'ref':
+        return html`<span class="contact-urn"
+          >${(item as any).ref || EMPTY}</span
+        >`;
       case 'last_seen_on':
         return item.last_seen_on
           ? html`<temba-date
@@ -281,7 +308,11 @@ export class ContactList extends ContentList<Contact> {
 
   private primaryUrn(item: Contact): string {
     const i = item as any;
-    if (i.urn) return i.urn;
+    if (i.urn) {
+      // served as {scheme, display} by the list endpoint, but tolerate
+      // a plain string (e.g. the public API's urn field)
+      return typeof i.urn === 'string' ? i.urn : i.urn.display || '';
+    }
     if (Array.isArray(i.urns) && i.urns.length > 0) {
       const u = i.urns[0];
       return typeof u === 'string'
