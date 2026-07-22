@@ -68,6 +68,9 @@ export class TembaList extends RapidElement {
 
   reverseRefresh = true;
 
+  // subclasses that get realtime updates can opt out of interval polling
+  protected pollingEnabled = true;
+
   // our next page from our endpoint
   nextPage: string = null;
 
@@ -108,14 +111,17 @@ export class TembaList extends RapidElement {
 
   public connectedCallback() {
     super.connectedCallback();
-    this.refreshInterval = setInterval(() => {
-      if (!this.paused) {
-        this.refreshKey = 'default_' + new Date().getTime();
-      }
-    }, DEFAULT_REFRESH);
+    if (this.pollingEnabled) {
+      this.refreshInterval = setInterval(() => {
+        if (!this.paused) {
+          this.refreshKey = 'default_' + new Date().getTime();
+        }
+      }, DEFAULT_REFRESH);
+    }
   }
 
   public disconnectedCallback() {
+    super.disconnectedCallback();
     clearInterval(this.refreshInterval);
   }
 

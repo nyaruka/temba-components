@@ -1,12 +1,7 @@
 import { SinonStub, useFakeTimers } from 'sinon';
 import { Compose } from '../src/form/Compose';
 import { ContactChat } from '../src/live/ContactChat';
-import {
-  PublicationHandler,
-  setSocketProvider,
-  SocketProvider,
-  SocketSubscription
-} from '../src/live/SocketService';
+import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import { Attachment, CustomEventType } from '../src/interfaces';
 import {
   assertScreenshot,
@@ -20,64 +15,13 @@ import {
   mockGET,
   mockNow,
   mockPOST,
+  MockSocketProvider,
   updateComponent
 } from '../test/utils.test';
 
 import { expect, oneEvent } from '@open-wc/testing';
 
 let clock: any;
-
-interface MockSubscription {
-  channel: string;
-  onPublication: PublicationHandler;
-  onSubscribed?: () => void;
-  unsubscribed: boolean;
-}
-
-class MockSocketProvider implements SocketProvider {
-  public subs: MockSubscription[] = [];
-
-  public subscribe(
-    channel: string,
-    onPublication: PublicationHandler,
-    onSubscribed?: () => void
-  ): SocketSubscription {
-    const sub: MockSubscription = {
-      channel,
-      onPublication,
-      onSubscribed,
-      unsubscribed: false
-    };
-    this.subs.push(sub);
-
-    // confirm the subscription asynchronously like a real socket would
-    if (onSubscribed) {
-      setTimeout(() => {
-        if (!sub.unsubscribed) {
-          sub.onSubscribed();
-        }
-      }, 0);
-    }
-
-    return {
-      unsubscribe: () => {
-        sub.unsubscribed = true;
-      }
-    };
-  }
-
-  public publish(channel: string, data: any) {
-    this.subs
-      .filter((sub) => sub.channel === channel && !sub.unsubscribed)
-      .forEach((sub) => sub.onPublication(data));
-  }
-
-  public activeChannels(): string[] {
-    return this.subs
-      .filter((sub) => !sub.unsubscribed)
-      .map((sub) => sub.channel);
-  }
-}
 
 let mockSocket: MockSocketProvider;
 let previousSocketProvider: SocketProvider;

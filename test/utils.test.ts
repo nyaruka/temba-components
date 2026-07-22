@@ -35,6 +35,63 @@ import { Select, SelectOption } from '../src/form/select/Select';
 import { Options } from '../src/display/Options';
 import { Attachment } from '../src/interfaces';
 import { Compose } from '../src/form/Compose';
+import {
+  PublicationHandler,
+  SocketProvider,
+  SocketSubscription
+} from '../src/live/SocketService';
+
+export interface MockSubscription {
+  channel: string;
+  onPublication: PublicationHandler;
+  onSubscribed?: () => void;
+  unsubscribed: boolean;
+}
+
+export class MockSocketProvider implements SocketProvider {
+  public subs: MockSubscription[] = [];
+
+  public subscribe(
+    channel: string,
+    onPublication: PublicationHandler,
+    onSubscribed?: () => void
+  ): SocketSubscription {
+    const sub: MockSubscription = {
+      channel,
+      onPublication,
+      onSubscribed,
+      unsubscribed: false
+    };
+    this.subs.push(sub);
+
+    // confirm the subscription asynchronously like a real socket would
+    if (onSubscribed) {
+      setTimeout(() => {
+        if (!sub.unsubscribed) {
+          sub.onSubscribed();
+        }
+      }, 0);
+    }
+
+    return {
+      unsubscribe: () => {
+        sub.unsubscribed = true;
+      }
+    };
+  }
+
+  public publish(channel: string, data: any) {
+    this.subs
+      .filter((sub) => sub.channel === channel && !sub.unsubscribed)
+      .forEach((sub) => sub.onPublication(data));
+  }
+
+  public activeChannels(): string[] {
+    return this.subs
+      .filter((sub) => !sub.unsubscribed)
+      .map((sub) => sub.channel);
+  }
+}
 
 export interface CodeMock {
   endpoint: RegExp;

@@ -22,6 +22,7 @@ import {
   DirtyTrackable
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
+import { setRealtimeContext } from '../live/Realtime';
 import { lru } from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';
@@ -107,6 +108,14 @@ export class Store extends RapidElement {
 
   @property({ type: String, attribute: 'shortcuts' })
   shortcutsEndpoint: string;
+
+  // current workspace and user uuids, used to address user-scoped realtime
+  // channels - hydrated by the page template
+  @property({ type: String })
+  org: string;
+
+  @property({ type: String })
+  user: string;
 
   @property({ type: String })
   brand = '';
@@ -266,6 +275,9 @@ export class Store extends RapidElement {
   }
 
   public firstUpdated() {
+    if (this.org && this.user) {
+      setRealtimeContext({ org: this.org, user: this.user });
+    }
     this.reset();
   }
 

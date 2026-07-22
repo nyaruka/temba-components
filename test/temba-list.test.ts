@@ -54,6 +54,16 @@ describe('temba-list', () => {
     await assertScreenshot('list/items', getClip(list));
   });
 
+  it('polls for changes', async () => {
+    const list: TembaList = await getList({
+      endpoint: '/test-assets/list/temba-list.json'
+    });
+
+    const refreshKey = list.refreshKey;
+    clock.tick(10001);
+    expect(list.refreshKey).to.not.equal(refreshKey);
+  });
+
   it('fires change event on cursor change', async () => {
     const list: TembaList = await getList({
       endpoint: '/test-assets/list/temba-list.json'
