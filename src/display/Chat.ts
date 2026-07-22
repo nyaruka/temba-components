@@ -923,6 +923,14 @@ export class Chat extends RapidElement {
   // discarded rather than re-merged into the fresh view
   private resetGeneration = 0;
 
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    // clear pending typing decay timers so no callback fires on a detached
+    // element (typingEvents/msgMap are left intact for a possible reconnect)
+    this.typingTimeouts.forEach((timeout) => window.clearTimeout(timeout));
+    this.typingTimeouts.clear();
+  }
+
   public firstUpdated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {

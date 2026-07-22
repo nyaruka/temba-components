@@ -863,4 +863,47 @@ describe('temba-contact-chat', () => {
     expect(mockSocket.published.length).to.equal(1);
     expect(mockSocket.published[0].data.type).to.equal('typing_started');
   });
+
+  it('publishes typing_stopped when a send empties the compose', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    await setComposeText(chat, 'hello there');
+    expect(mockSocket.published.length).to.equal(1);
+    expect(mockSocket.published[0].data.type).to.equal('typing_started');
+
+    // a successful send resets the compose, which fires a content-changed with
+    // the (now empty) language entry dropped entirely - model that here
+    const compose = chat.shadowRoot.querySelector('temba-compose');
+    compose.dispatchEvent(
+      new CustomEvent(CustomEventType.ContentChanged, { detail: {} })
+    );
+    await waitFor(1);
+
+    expect(mockSocket.published.length).to.equal(2);
+    expect(mockSocket.published[1].data.type).to.equal('typing_stopped');
+  });
+
+  it('publishes pulses for a non-default compose language', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const channel = `history:${chat.currentContact.uuid}`;
+
+    // composing in a non-'und' language must still drive pulses
+    const compose = chat.shadowRoot.querySelector('temba-compose');
+    compose.dispatchEvent(
+      new CustomEvent(CustomEventType.ContentChanged, {
+        detail: { eng: { text: 'hola' } }
+      })
+    );
+    await waitFor(1);
+
+    expect(mockSocket.published.length).to.equal(1);
+    expect(mockSocket.published[0].channel).to.equal(channel);
+    expect(mockSocket.published[0].data.type).to.equal('typing_started');
+  });
 });

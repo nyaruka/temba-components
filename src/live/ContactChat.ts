@@ -715,8 +715,12 @@ export class ContactChat extends ContactStoreElement {
    * emptying the box (including via a send) publishes typing_stopped.
    */
   private handleComposeChanged(evt: CustomEvent) {
-    const value = evt.detail?.und;
-    const composing = !!(value && value.text && value.text.trim().length > 0);
+    // temba-compose's ContentChanged detail is its langValues map keyed by
+    // language, and it drops a language entry when that value empties. Derive
+    // composing across all languages so this doesn't hinge on a hardcoded key.
+    const composing = Object.values(evt.detail || {}).some((v: any) =>
+      v?.text?.trim()
+    );
     if (composing) {
       this.startTyping();
     } else {
@@ -747,6 +751,10 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private sendTypingPulse() {
+    // the interval can fire once after clearTypingPulse() nulled the channel
+    if (!this.typingChannel) {
+      return;
+    }
     publishToSocket(
       this.typingChannel,
       this.getTypingPayload('typing_started')
