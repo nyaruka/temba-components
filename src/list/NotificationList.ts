@@ -158,7 +158,16 @@ export class NotificationList extends TembaList {
   }
 
   private handleNotification(notification: Notification) {
-    // always announce arrival, even mid-fetch - e.g. the menu's unseen badge
+    // ignore redeliveries of notifications we already have so e.g. the
+    // menu's unseen badge only lights for genuinely new ones
+    if (
+      this.items.some((item) => item.url === notification.url) ||
+      this.pendingPubs.some((item) => item.url === notification.url)
+    ) {
+      return;
+    }
+
+    // announce arrival, even mid-fetch - e.g. the menu's unseen badge
     this.fireCustomEvent(CustomEventType.NotificationReceived, {
       notification
     });
@@ -210,9 +219,16 @@ export class NotificationList extends TembaList {
     }
 
     const unseen = this.items.filter((item) => !item.is_seen);
-    this.seenUrls = new Set(unseen.map((item) => item.url));
     if (unseen.length > 0 && this.endpoint) {
-      deleteRequest(this.endpoint);
+      // only advance our seen state if the server actually recorded it,
+      // otherwise we'd unbold items the server still considers unseen
+      deleteRequest(this.endpoint)
+        .then((response) => {
+          if (response.ok) {
+            this.seenUrls = new Set(unseen.map((item) => item.url));
+          }
+        })
+        .catch(() => {});
     }
   }
 

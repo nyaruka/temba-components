@@ -148,6 +148,33 @@ describe('temba-notification-list', () => {
     expect(list.items[1].url).to.equal('/notification/read/4/');
   });
 
+  it('keeps published items through a reconnect refetch', async () => {
+    const list = await getList();
+    clock.tick(0);
+
+    // a notification arrives, then the connection bounces and the catch-up
+    // refetch merges page one - the published item must survive
+    mockSocket.publish(CHANNEL, newNotification(4));
+    await list.updateComplete;
+
+    mockSocket.subs[0].onSubscribed();
+    await new Promise<void>((resolve) => {
+      list.addEventListener(
+        CustomEventType.Refreshed,
+        () => {
+          resolve();
+        },
+        { once: true }
+      );
+    });
+    await list.updateComplete;
+
+    expect(list.items.length).to.equal(4);
+    expect(
+      list.items.some((item) => item.url === '/notification/read/4/')
+    ).to.equal(true);
+  });
+
   it('marks seen without refetching, unbolding on the next call', async () => {
     mockPOST(/test-assets\/list\/notifications\.json/, {});
     const list = await getList();
