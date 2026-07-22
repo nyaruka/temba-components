@@ -755,18 +755,24 @@ export class ContactChat extends ContactStoreElement {
     if (!this.typingChannel) {
       return;
     }
-    publishToSocket(
-      this.typingChannel,
-      this.getTypingPayload('typing_started')
-    ).catch((error: any) => {
-      // a temporary server error just costs us this pulse - a denial means
-      // something is genuinely wrong with this conversation, so silently
-      // stop pulsing for it
-      if (!error?.temporary) {
-        this.typingDisabled = true;
-        this.clearTypingPulse();
+    const channel = this.typingChannel;
+    publishToSocket(channel, this.getTypingPayload('typing_started')).catch(
+      (error: any) => {
+        // a temporary server error just costs us this pulse - a denial means
+        // something is genuinely wrong with this conversation, so silently
+        // stop pulsing for it. The handler runs async, so don't clobber a
+        // fresh conversation's state with an error for a stale one.
+        if (!error?.temporary && this.isCurrentTypingChannel(channel)) {
+          this.typingDisabled = true;
+          this.clearTypingPulse();
+        }
       }
-    });
+    );
+  }
+
+  // whether the channel belongs to the contact currently being viewed
+  private isCurrentTypingChannel(channel: string) {
+    return channel === `history:${this.currentContact?.uuid}`;
   }
 
   private clearTypingPulse() {
@@ -786,7 +792,9 @@ export class ContactChat extends ContactStoreElement {
     this.clearTypingPulse();
     publishToSocket(channel, this.getTypingPayload('typing_stopped')).catch(
       (error: any) => {
-        if (!error?.temporary) {
+        // on a contact switch this stop targets the old conversation - a
+        // denial for it must not disable typing for the new one
+        if (!error?.temporary && this.isCurrentTypingChannel(channel)) {
           this.typingDisabled = true;
         }
       }

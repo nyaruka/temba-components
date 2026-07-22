@@ -756,6 +756,31 @@ describe('temba-contact-chat', () => {
     expect(await getTypingRow(chat)).to.not.exist;
   });
 
+  it('shows and clears contact typing with no user attached', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const channel = `history:${chat.currentContact.uuid}`;
+
+    // contact typing events arrive with a direction but no _user
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000004444',
+      type: 'typing_started',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      direction: 'incoming'
+    });
+    expect(await getTypingRow(chat)).to.exist;
+
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000005555',
+      type: 'typing_stopped',
+      created_on: '2025-09-25T12:00:01.000000+00:00',
+      direction: 'incoming'
+    });
+    expect(await getTypingRow(chat)).to.not.exist;
+  });
+
   it('decays a typing indicator without fresh pulses', async () => {
     await loadStore();
     const chat: ContactChat = await getContactChat({

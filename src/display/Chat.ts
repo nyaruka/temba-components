@@ -1084,7 +1084,12 @@ export class Chat extends RapidElement {
    */
   public setTyping(event: TypingEvent) {
     const key = getTypingKey(event);
-    if (!this.typingEvents.has(key)) {
+    const shown = this.typingEvents.get(key);
+    if (shown) {
+      // keep the indicator's timestamp fresh so a long-lived one doesn't
+      // drift across the grouping time window and split into its own group
+      shown.created_on = event.created_on;
+    } else {
       this.typingEvents.set(key, event);
       this.addMessage(event);
       this.insertGroups(this.groupMessages([event.uuid]), true);
