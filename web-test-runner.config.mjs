@@ -432,6 +432,8 @@ export default {
   files: ['**/test/**/*.test.ts', '!**/test/utils.test.ts'],
   nodeResolve: true,
   concurrency: 4,
+  // screenshot-heavy test files can exceed the default 120s on slower CI runners
+  testsFinishTimeout: 240000,
   filterBrowserLogs(log) {
     return !log.args.some(
       (arg) => typeof arg === 'string' && arg.includes('Lit is in dev mode')
