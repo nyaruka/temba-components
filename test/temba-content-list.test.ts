@@ -529,6 +529,43 @@ describe('temba-content-list', () => {
     await assertScreenshot('content-list/contacts', getClip(list));
   });
 
+  it('renders a custom urn column header via urn-label', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      {
+        endpoint: '/test-assets/content-list/contacts.json',
+        'urn-label': 'Ref'
+      },
+      '',
+      1100
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    // the attribute maps through to the urn column's label...
+    const urnColumn = (list as any).columns.find((c: any) => c.key === 'urn');
+    expect(urnColumn.label).to.equal('Ref');
+
+    // ...and the rendered header shows it in place of the default
+    const headers = Array.from(
+      list.shadowRoot!.querySelectorAll('th .label')
+    ).map((el) => el.textContent?.trim());
+    expect(headers).to.include('Ref');
+    expect(headers).to.not.include('URN');
+
+    // a later attribute change rebuilds the columns
+    list.setAttribute('urn-label', 'ID');
+    await list.updateComplete;
+    expect(
+      (list as any).columns.find((c: any) => c.key === 'urn').label
+    ).to.equal('ID');
+  });
+
   it('overlays the bulk action bar on the column header when rows are selected (screenshot)', async () => {
     await loadStore();
     const list = (await getComponent(

@@ -97,13 +97,20 @@ export class ContactList extends ContentList<Contact> {
     super.disconnectedCallback();
   }
 
+  protected willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
+    // Rebuilding here (rather than in updated()) means a mounted
+    // urn-label is reflected in the first paint instead of flashing
+    // the default header for a frame.
+    if (changes.has('urnLabel')) {
+      this.columns = this.buildColumns();
+    }
+  }
+
   protected updated(changes: PropertyValues): void {
     super.updated(changes);
     if (changes.has('fieldsEndpoint') && this.fieldsEndpoint) {
       this.loadFields();
-    }
-    if (changes.has('urnLabel')) {
-      this.columns = this.buildColumns();
     }
   }
 
