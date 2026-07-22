@@ -339,8 +339,11 @@ export class ContactChat extends ContactStoreElement {
         margin: 0.5em;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.75);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        /* tests set --test-backdrop-filter to none - the blur layer's
+           fractional offset rasterizes nondeterministically in headless
+           screenshots */
+        backdrop-filter: var(--test-backdrop-filter, blur(8px));
+        -webkit-backdrop-filter: var(--test-backdrop-filter, blur(8px));
         box-shadow: var(--shadow-1);
       }
 

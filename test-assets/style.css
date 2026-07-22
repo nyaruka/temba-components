@@ -79,6 +79,7 @@
   --transition-speed: 0ms !important;
   --test-animation-duration: 0s !important;
   --test-animation-play-state: paused !important;
+  --test-backdrop-filter: none !important;
   caret-color: transparent;
 }
 
