@@ -27,7 +27,13 @@ import {
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose, ComposeValue } from '../form/Compose';
 import { ContactHistoryPage } from '../events';
-import { Chat, MessageType, ContactEvent } from '../display/Chat';
+import {
+  Chat,
+  MessageType,
+  ContactEvent,
+  MsgEvent,
+  TypingEvent
+} from '../display/Chat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
 import { Select } from '../form/select/Select';
@@ -36,7 +42,15 @@ import {
   renderTicketAction,
   renderTicketAssigneeChanged
 } from '../events/eventRenderers';
-import { subscribeToSocket, SocketSubscription } from './SocketService';
+import {
+  publishToSocket,
+  subscribeToSocket,
+  SocketSubscription
+} from './SocketService';
+
+// how often we re-publish typing_started while composing - just inside the
+// tightest platform sustain interval (Telegram's indicator lapses after 5s)
+const TYPING_PULSE_INTERVAL = 4000;
 
 // re-export for backwards compatibility
 export { renderTicketAction, renderTicketAssigneeChanged };
@@ -456,6 +470,11 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: String })
   agent = '';
 
+  // uuid of the logged-in user, used to filter out our own typing events
+  // (publications are echoed to all subscribers, including the publisher)
+  @property({ type: String, attribute: 'user' })
+  userUuid = '';
+
   @property({ type: Boolean })
   blockFetching = false;
 
@@ -526,6 +545,18 @@ export class ContactChat extends ContactStoreElement {
   private subscriptions = new Map<string, SocketSubscription>();
   private fetchingMissed = false;
 
+  // the contact's most recent incoming message, tracked for the external id
+  // that typing publications carry (WhatsApp expresses typing as an operation
+  // on the contact's last incoming message)
+  private lastIncomingMsgOn: Date = null;
+  private lastIncomingMsgExternalId: string = null;
+
+  // typing publication state - the pulse interval while the agent is
+  // composing, and whether publishing was denied for this conversation
+  private typingChannel: string = null;
+  private typingPulse: number = null;
+  private typingDisabled = false;
+
   constructor() {
     super();
   }
@@ -560,6 +591,7 @@ export class ContactChat extends ContactStoreElement {
 
   public disconnectedCallback() {
     super.disconnectedCallback();
+    this.stopTyping();
     this.unsubscribeAll();
   }
 
@@ -649,10 +681,108 @@ export class ContactChat extends ContactStoreElement {
       return;
     }
 
+    // typing events are ephemeral indicator state, not history
+    if (event.type === 'typing_started' || event.type === 'typing_stopped') {
+      this.handleTypingEvent(event);
+      return;
+    }
+
     const messages = this.createMessages({ events: [event], next: null });
     if (messages.length > 0) {
       this.chat.addMessages(messages, null, true);
     }
+  }
+
+  private handleTypingEvent(event: TypingEvent) {
+    // our own publications are echoed back to us - ignore them
+    if (event._user && this.userUuid && event._user.uuid === this.userUuid) {
+      return;
+    }
+
+    event.created_on = new Date(event.created_on);
+    this.resolveUserAvatar(event);
+
+    if (event.type === 'typing_started') {
+      this.chat.setTyping(event);
+    } else {
+      this.chat.clearTyping(event);
+    }
+  }
+
+  /**
+   * Fired as the agent edits the compose box. Composing (any text present)
+   * keeps typing_started pulses going on the contact's history channel;
+   * emptying the box (including via a send) publishes typing_stopped.
+   */
+  private handleComposeChanged(evt: CustomEvent) {
+    const value = evt.detail?.und;
+    const composing = !!(value && value.text && value.text.trim().length > 0);
+    if (composing) {
+      this.startTyping();
+    } else {
+      this.stopTyping();
+    }
+  }
+
+  private getTypingPayload(type: string) {
+    const payload: any = { type };
+    if (this.lastIncomingMsgExternalId) {
+      payload.msg_external_id = this.lastIncomingMsgExternalId;
+    }
+    return payload;
+  }
+
+  private startTyping() {
+    if (this.typingDisabled || this.typingPulse || !this.currentContact) {
+      return;
+    }
+
+    // publications are only allowed on the contact-level channel
+    this.typingChannel = `history:${this.currentContact.uuid}`;
+    this.sendTypingPulse();
+    this.typingPulse = window.setInterval(
+      () => this.sendTypingPulse(),
+      TYPING_PULSE_INTERVAL
+    );
+  }
+
+  private sendTypingPulse() {
+    publishToSocket(
+      this.typingChannel,
+      this.getTypingPayload('typing_started')
+    ).catch((error: any) => {
+      // a temporary server error just costs us this pulse - a denial means
+      // something is genuinely wrong with this conversation, so silently
+      // stop pulsing for it
+      if (!error?.temporary) {
+        this.typingDisabled = true;
+        this.clearTypingPulse();
+      }
+    });
+  }
+
+  private clearTypingPulse() {
+    if (this.typingPulse) {
+      window.clearInterval(this.typingPulse);
+      this.typingPulse = null;
+    }
+    this.typingChannel = null;
+  }
+
+  private stopTyping() {
+    if (!this.typingPulse) {
+      return;
+    }
+
+    const channel = this.typingChannel;
+    this.clearTypingPulse();
+    publishToSocket(channel, this.getTypingPayload('typing_stopped')).catch(
+      (error: any) => {
+        if (!error?.temporary) {
+          this.typingDisabled = true;
+        }
+      }
+    );
   }
 
   private reset() {
@@ -663,6 +793,13 @@ export class ContactChat extends ContactStoreElement {
     this.beforeUUID = null;
     this.afterUUID = null;
     this.fetchingMissed = false;
+
+    // let the old conversation know we stopped composing and start the new
+    // one with a clean typing slate
+    this.stopTyping();
+    this.typingDisabled = false;
+    this.lastIncomingMsgOn = null;
+    this.lastIncomingMsgExternalId = null;
 
     const compose = this.shadowRoot.querySelector('temba-compose') as Compose;
     if (compose) {
@@ -1067,6 +1204,19 @@ export class ContactChat extends ContactStoreElement {
         // convert to dates
         event.created_on = new Date(event.created_on);
 
+        // track the contact's most recent incoming message for the external
+        // id our typing publications carry
+        if (event.type === 'msg_received') {
+          if (
+            !this.lastIncomingMsgOn ||
+            event.created_on > this.lastIncomingMsgOn
+          ) {
+            this.lastIncomingMsgOn = event.created_on;
+            this.lastIncomingMsgExternalId =
+              (event as MsgEvent).msg?.external_id || null;
+          }
+        }
+
         if (
           event.type === 'msg_created' ||
           event.type === 'msg_received' ||
@@ -1286,6 +1436,7 @@ export class ContactChat extends ContactStoreElement {
           shortcuts
           min-height="75"
           @temba-submitted=${this.handleSend.bind(this)}
+          @temba-content-changed=${this.handleComposeChanged.bind(this)}
         >
         </temba-compose>
         ${this.errorMessage

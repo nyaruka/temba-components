@@ -66,7 +66,25 @@ class MockSocketProvider implements SocketProvider {
     };
   }
 
-  public publish(channel: string, data: any) {
+  // client publications recorded for assertions
+  public published: { channel: string; data: any }[] = [];
+
+  // when set, client publications reject with this centrifuge-style error
+  public publishError: { code: number; message: string; temporary?: boolean } =
+    null;
+
+  public publish(channel: string, data: any): Promise<void> {
+    if (this.publishError) {
+      return Promise.reject(this.publishError);
+    }
+    this.published.push({ channel, data });
+    // the server echoes publications to all subscribers, incl. the publisher
+    this.serverPublish(channel, data);
+    return Promise.resolve();
+  }
+
+  // delivers an event to subscribers as if published by the server
+  public serverPublish(channel: string, data: any) {
     this.subs
       .filter((sub) => sub.channel === channel && !sub.unsubscribed)
       .forEach((sub) => sub.onPublication(data));
@@ -687,5 +705,162 @@ describe('temba-contact-chat', () => {
     expect(mockSocket.activeChannels().length).to.equal(1);
     chat.remove();
     expect(mockSocket.activeChannels().length).to.equal(0);
+  });
+
+  const getTembaChat = (chat: ContactChat) =>
+    chat.shadowRoot.querySelector('temba-chat') as any;
+
+  const getTypingRow = async (chat: ContactChat) => {
+    const tembaChat = getTembaChat(chat);
+    await tembaChat.updateComplete;
+    return tembaChat.shadowRoot.querySelector('.row.typing');
+  };
+
+  const serverTyping = (
+    chat: ContactChat,
+    type: string,
+    user = { uuid: 'user-bob', name: 'Bob' }
+  ) => {
+    mockSocket.serverPublish(`history:${chat.currentContact.uuid}`, {
+      uuid: `01998888-0000-7000-8000-00000000${
+        type === 'typing_started' ? '1111' : '2222'
+      }`,
+      type,
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      _user: user,
+      direction: 'outgoing'
+    });
+  };
+
+  const setComposeText = async (chat: ContactChat, text: string) => {
+    const compose = chat.shadowRoot.querySelector('temba-compose');
+    compose.dispatchEvent(
+      new CustomEvent(CustomEventType.ContentChanged, {
+        detail: { und: { text } }
+      })
+    );
+    // let publish promises settle
+    await waitFor(1);
+  };
+
+  it('shows and clears a typing indicator from socket typing events', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    serverTyping(chat, 'typing_started');
+    expect(await getTypingRow(chat)).to.exist;
+
+    serverTyping(chat, 'typing_stopped');
+    expect(await getTypingRow(chat)).to.not.exist;
+  });
+
+  it('decays a typing indicator without fresh pulses', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    serverTyping(chat, 'typing_started');
+    expect(await getTypingRow(chat)).to.exist;
+
+    clock.tick(10001);
+    expect(await getTypingRow(chat)).to.not.exist;
+  });
+
+  it('ignores echoes of our own typing events', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      user: 'user-me'
+    });
+
+    serverTyping(chat, 'typing_started', { uuid: 'user-me', name: 'Me' });
+    expect(await getTypingRow(chat)).to.not.exist;
+  });
+
+  it('publishes typing pulses while composing and a stop when emptied', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const channel = `history:${chat.currentContact.uuid}`;
+
+    await setComposeText(chat, 'hello there');
+    expect(mockSocket.published.length).to.equal(1);
+    expect(mockSocket.published[0].channel).to.equal(channel);
+    expect(mockSocket.published[0].data.type).to.equal('typing_started');
+
+    // pulses repeat while composing
+    clock.tick(4000);
+    expect(mockSocket.published.length).to.equal(2);
+    expect(mockSocket.published[1].data.type).to.equal('typing_started');
+
+    // emptying the box stops pulsing and publishes a stop
+    await setComposeText(chat, '');
+    expect(mockSocket.published.length).to.equal(3);
+    expect(mockSocket.published[2].data.type).to.equal('typing_stopped');
+
+    clock.tick(8000);
+    expect(mockSocket.published.length).to.equal(3);
+  });
+
+  it('includes the external id of the last incoming message in pulses', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    // an incoming message with an external id arrives
+    mockSocket.serverPublish(`history:${chat.currentContact.uuid}`, {
+      uuid: '01998888-0000-7000-8000-000000003333',
+      type: 'msg_received',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      msg: { text: 'hi', external_id: 'ex123' }
+    });
+
+    await setComposeText(chat, 'typing away');
+    expect(mockSocket.published.length).to.equal(1);
+    expect(mockSocket.published[0].data.msg_external_id).to.equal('ex123');
+  });
+
+  it('silently disables pulsing when publishes are denied', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    mockSocket.publishError = { code: 103, message: 'permission denied' };
+    await setComposeText(chat, 'hello');
+
+    // the denial disabled pulsing - no retries, no stop event
+    clock.tick(20000);
+    await setComposeText(chat, 'hello again');
+    await setComposeText(chat, '');
+    expect(mockSocket.published.length).to.equal(0);
+  });
+
+  it('keeps pulsing through temporary publish errors', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    // the first pulse hits a temporary server error
+    mockSocket.publishError = {
+      code: 100,
+      message: 'internal server error',
+      temporary: true
+    };
+    await setComposeText(chat, 'hello');
+    expect(mockSocket.published.length).to.equal(0);
+
+    // the server recovers and the next pulse goes through
+    mockSocket.publishError = null;
+    clock.tick(4000);
+    await waitFor(1);
+    expect(mockSocket.published.length).to.equal(1);
+    expect(mockSocket.published[0].data.type).to.equal('typing_started');
   });
 });

@@ -11,6 +11,10 @@ const BATCH_TIME_WINDOW = 60 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 200; // pixels from top
 const MIN_FETCH_TIME = 250;
 
+// how long a typing indicator lives without a fresh pulse - stop events can
+// be missed (they're excluded from history recovery) so indicators decay
+const TYPING_TIMEOUT = 10 * 1000;
+
 const getUnsendableReasonMessage = (reason: string): string => {
   switch (reason) {
     case 'no_route':
@@ -80,6 +84,7 @@ export interface Msg {
   urn: string;
   direction: string;
   type: string;
+  external_id?: string;
   attachments: string[];
   unsendable_reason?:
     | 'no_route'
@@ -113,6 +118,28 @@ export interface MsgEvent extends ContactEvent {
   };
   _logs_url?: string;
 }
+
+export interface TypingEvent extends ContactEvent {
+  direction?: string;
+}
+
+// typing indicators group and side with real messages: a user typing
+// (outgoing) behaves like a reply, a contact typing (incoming) like a
+// received message
+const effectiveType = (event: ContactEvent): string => {
+  if (event.type === 'typing_started') {
+    return (event as TypingEvent).direction === 'incoming'
+      ? 'msg_received'
+      : 'msg_created';
+  }
+  return event.type;
+};
+
+// identifies who a typing indicator belongs to - the user when stamped,
+// otherwise the contact
+const getTypingKey = (event: TypingEvent): string => {
+  return event._user?.uuid || 'contact';
+};
 
 // whether a message has nothing to show in its bubble (and isn't deleted)
 const isEmptyMsg = (event: MsgEvent): boolean =>
@@ -369,6 +396,43 @@ export class Chat extends RapidElement {
       .deleted .bubble .name,
       .empty .bubble .name {
         color: #aaa;
+      }
+
+      .typing-dots {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 0;
+      }
+
+      .typing-dots span {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.4;
+        animation: typing-bounce 1.2s ease-in-out infinite;
+      }
+
+      .typing-dots span:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+
+      .typing-dots span:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+
+      @keyframes typing-bounce {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.4;
+        }
+        30% {
+          transform: translateY(-3px);
+          opacity: 1;
+        }
       }
 
       .message-text {
@@ -849,6 +913,12 @@ export class Chat extends RapidElement {
   private msgMap = new Map<string, ContactEvent>();
   private metadataCache = new Map<string, ContactEvent>();
 
+  // ephemeral typing indicators by author key - they live in msgMap and
+  // messageGroups like real messages (so they group and render normally)
+  // but are added and removed through setTyping / clearTyping
+  private typingEvents = new Map<string, TypingEvent>();
+  private typingTimeouts = new Map<string, number>();
+
   // bumped on reset so deferred addMessages work from before a reset is
   // discarded rather than re-merged into the fresh view
   private resetGeneration = 0;
@@ -911,8 +981,20 @@ export class Chat extends RapidElement {
         const isScrolledAway =
           scrollableHeight > 0 && Math.abs(ele.scrollTop) > 50;
 
+        // a real message from someone typing replaces their indicator, and
+        // any remaining indicators re-float below the appended messages
+        if (append) {
+          this.clearTypingForAuthors(
+            newMessages.map((uuid) => this.msgMap.get(uuid))
+          );
+        }
+
         const grouped = this.groupMessages(newMessages);
         this.insertGroups(grouped, append);
+
+        if (append) {
+          this.refloatTyping();
+        }
 
         // show notification if new messages are appended and user is scrolled away from bottom
         // but not during search (searchHighlight is set)
@@ -986,6 +1068,110 @@ export class Chat extends RapidElement {
     return isNew;
   }
 
+  /**
+   * Shows a typing indicator for the event's author, appended to the
+   * newest messages so it groups with them. Repeat pulses from the same
+   * author just refresh the decay timer; without fresh pulses or an
+   * explicit clearTyping the indicator decays on its own.
+   */
+  public setTyping(event: TypingEvent) {
+    const key = getTypingKey(event);
+    if (!this.typingEvents.has(key)) {
+      this.typingEvents.set(key, event);
+      this.addMessage(event);
+      this.insertGroups(this.groupMessages([event.uuid]), true);
+    }
+
+    const existing = this.typingTimeouts.get(key);
+    if (existing) {
+      window.clearTimeout(existing);
+    }
+    this.typingTimeouts.set(
+      key,
+      window.setTimeout(() => this.removeTyping(key), TYPING_TIMEOUT)
+    );
+  }
+
+  /**
+   * Clears the typing indicator for the event's author, or all indicators
+   * when no event is given.
+   */
+  public clearTyping(event?: TypingEvent) {
+    if (event) {
+      this.removeTyping(getTypingKey(event));
+    } else {
+      for (const key of [...this.typingEvents.keys()]) {
+        this.removeTyping(key);
+      }
+    }
+  }
+
+  private removeTyping(key: string) {
+    const timeout = this.typingTimeouts.get(key);
+    if (timeout) {
+      window.clearTimeout(timeout);
+      this.typingTimeouts.delete(key);
+    }
+
+    const event = this.typingEvents.get(key);
+    if (event) {
+      this.typingEvents.delete(key);
+      this.removeEvent(event.uuid);
+    }
+  }
+
+  private removeEvent(uuid: string) {
+    this.msgMap.delete(uuid);
+    for (let i = 0; i < this.messageGroups.length; i++) {
+      const group = this.messageGroups[i];
+      const idx = group.messages.indexOf(uuid);
+      if (idx >= 0) {
+        group.messages.splice(idx, 1);
+        if (group.messages.length === 0) {
+          this.messageGroups.splice(i, 1);
+        }
+        break;
+      }
+    }
+    this.requestUpdate('messageGroups');
+  }
+
+  // an author's real message replaces their typing indicator
+  private clearTypingForAuthors(events: ContactEvent[]) {
+    for (const event of events) {
+      if (event.type === 'typing_started') {
+        continue;
+      }
+      const key = event._user?.uuid
+        ? event._user.uuid
+        : event.type === 'msg_received'
+          ? 'contact'
+          : null;
+      if (key && this.typingEvents.has(key)) {
+        this.removeTyping(key);
+      }
+    }
+  }
+
+  // re-appends active typing indicators so they always sit below the
+  // newest messages
+  private refloatTyping() {
+    if (this.typingEvents.size === 0) {
+      return;
+    }
+    const events = [...this.typingEvents.values()];
+    for (const event of events) {
+      this.removeEvent(event.uuid);
+    }
+    for (const event of events) {
+      this.addMessage(event);
+    }
+    this.insertGroups(
+      this.groupMessages(events.map((event) => event.uuid)),
+      true
+    );
+  }
+
   public messageExists(msg: ContactEvent): boolean {
     return this.msgMap.has(msg.uuid);
   }
@@ -1002,18 +1188,19 @@ export class Chat extends RapidElement {
     // for type equivalence, treat all non-message types as the same.
     // Notes are treated like messages so they group with other notes
     // only when type + author match (and split from non-note events).
+    const type1 = effectiveType(msg1);
+    const type2 = effectiveType(msg2);
     const isMsg1 =
-      msg1.type === 'msg_created' ||
-      msg1.type === 'msg_received' ||
-      msg1.type === 'ivr_created' ||
-      msg1.type === 'ticket_note_added';
+      type1 === 'msg_created' ||
+      type1 === 'msg_received' ||
+      type1 === 'ivr_created' ||
+      type1 === 'ticket_note_added';
     const isMsg2 =
-      msg2.type === 'msg_created' ||
-      msg2.type === 'msg_received' ||
-      msg2.type === 'ivr_created' ||
-      msg2.type === 'ticket_note_added';
-    const typeMatch =
-      isMsg1 && isMsg2 ? msg1.type === msg2.type : isMsg1 === isMsg2;
+      type2 === 'msg_created' ||
+      type2 === 'msg_received' ||
+      type2 === 'ivr_created' ||
+      type2 === 'ticket_note_added';
+    const typeMatch = isMsg1 && isMsg2 ? type1 === type2 : isMsg1 === isMsg2;
 
     // check time first - if BATCH_TIME_WINDOW has passed since last time_elapsed reason
     // compare the current message (msg1) against the last break point to detect
@@ -1233,17 +1420,18 @@ export class Chat extends RapidElement {
     const mostRecentId = msgIds[msgIds.length - 1];
     const currentMsg = this.msgMap.get(mostRecentId);
 
+    const currentType = effectiveType(currentMsg);
     const incoming = this.agent
-      ? currentMsg.type !== 'msg_received'
-      : currentMsg.type === 'msg_received';
+      ? currentType !== 'msg_received'
+      : currentType === 'msg_received';
 
     const name = currentMsg._user?.name;
 
     const isMessageType =
-      currentMsg.type === 'msg_received' ||
-      currentMsg.type === 'msg_created' ||
-      currentMsg.type === 'ivr_created' ||
-      currentMsg.type === 'ticket_note_added';
+      currentType === 'msg_received' ||
+      currentType === 'msg_created' ||
+      currentType === 'ivr_created' ||
+      currentType === 'ticket_note_added';
     const showAvatar =
       this.avatars && ((isMessageType && this.agent) || !incoming);
 
@@ -1255,7 +1443,7 @@ export class Chat extends RapidElement {
     // messages carry no `_user`, so first_name/last_name aren't available and
     // getFullName falls back to `name`); the fallback only applies when there
     // is no `_user` on the event.
-    const fromContact = currentMsg.type === 'msg_received' && !currentMsg._user;
+    const fromContact = currentType === 'msg_received' && !currentMsg._user;
     const avatarName = currentMsg._user
       ? currentMsg._user.name
       : fromContact
@@ -1340,10 +1528,11 @@ export class Chat extends RapidElement {
               const latestClass = index === msgIds.length - 1 ? 'latest' : '';
               const eventClass = msg._rendered ? 'is-event' : '';
               const noteClass = msg.type === 'ticket_note_added' ? 'note' : '';
+              const typingClass = msg.type === 'typing_started' ? 'typing' : '';
               const matchClass =
                 this.highlightMessageUuid === msg.uuid ? 'search-match' : '';
               return html`<div
-                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${emptyClass} ${latestClass} ${eventClass} ${noteClass} ${matchClass}"
+                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${emptyClass} ${latestClass} ${eventClass} ${noteClass} ${typingClass} ${matchClass}"
                 data-uuid=${msg.uuid || nothing}
               >
                 ${this.renderMessage(
@@ -1410,6 +1599,15 @@ export class Chat extends RapidElement {
 
     if (event.type === 'ticket_note_added') {
       return this.renderNote(event as TicketEvent, name, isLast);
+    }
+
+    if (event.type === 'typing_started') {
+      return html`<div class="bubble-wrap">
+        <div class="bubble">
+          ${name ? html`<div class="name">${name}</div>` : null}
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>`;
     }
 
     const message = event as MsgEvent;
@@ -1521,6 +1719,9 @@ export class Chat extends RapidElement {
 
   public reset() {
     this.resetGeneration++;
+    this.typingTimeouts.forEach((timeout) => window.clearTimeout(timeout));
+    this.typingTimeouts.clear();
+    this.typingEvents.clear();
     this.msgMap.clear();
     this.metadataCache.clear();
     this.messageGroups = [];
