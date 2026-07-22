@@ -661,7 +661,7 @@ describe('temba-node-editor', () => {
 
   it('enforces goflow limits on webhook headers', async () => {
     // goflow caps webhook headers at 100 entries, names at 100 chars and
-    // values at 1000 chars
+    // values at 8192 chars
     const node = {
       uuid: 'len-4',
       actions: [
@@ -727,7 +727,7 @@ describe('temba-node-editor', () => {
     // an over-long header value is rejected
     (el as any).formData = {
       ...base,
-      headers: [{ key: 'X-Data', value: 'v'.repeat(1001) }]
+      headers: [{ key: 'X-Data', value: 'v'.repeat(8193) }]
     };
     result = (el as any).validateForm();
     expect(result.valid).to.be.false;

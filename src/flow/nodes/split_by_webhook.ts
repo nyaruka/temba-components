@@ -89,7 +89,7 @@ export const split_by_webhook: NodeConfig = {
       valuePlaceholder: 'Header value',
       maxItems: 100,
       keyMaxLength: 100,
-      valueMaxLength: 1000,
+      valueMaxLength: 8192,
       minRows: 0,
       dependsOn: ['method'],
       computeValue: (
@@ -112,7 +112,7 @@ export const split_by_webhook: NodeConfig = {
     body: {
       type: 'textarea',
       evaluated: true,
-      maxLength: 10000,
+      maxLength: 20000,
       placeholder: 'Request body content (JSON, XML, etc.)',
       minHeight: 200,
       dependsOn: ['method'],
