@@ -6,6 +6,16 @@ class FakeSub {
   public state = 'unsubscribed';
   public subscribeCalls = 0;
   public unsubscribeCalls = 0;
+  public published: any[] = [];
+  public denyPublishes = false;
+
+  public publish(data: any): Promise<any> {
+    if (this.denyPublishes) {
+      return Promise.reject(new Error('permission denied'));
+    }
+    this.published.push(data);
+    return Promise.resolve({});
+  }
 
   public on(event: string, fn: (ctx: any) => void) {
     this.handlers[event] = this.handlers[event] || [];
@@ -38,6 +48,12 @@ class FakeSub {
 class FakeCentrifuge {
   public subs = new Map<string, FakeSub>();
   public removed: FakeSub[] = [];
+  public published: { channel: string; data: any }[] = [];
+
+  public publish(channel: string, data: any): Promise<any> {
+    this.published.push({ channel, data });
+    return Promise.resolve({});
+  }
 
   public getSubscription(channel: string) {
     return this.subs.get(channel) || null;
@@ -148,5 +164,40 @@ describe('SocketManager', () => {
 
     sub.emit('publication', { data: 'again' });
     assert.deepEqual(seen, ['again']);
+  });
+
+  it('publishes through the channel subscription when subscribed', async () => {
+    const { fake, manager } = createManager();
+
+    manager.subscribe('history:abc', () => {});
+    await manager.publish('history:abc', { type: 'typing_started' });
+
+    const sub = fake.subs.get('history:abc');
+    assert.deepEqual(sub.published, [{ type: 'typing_started' }]);
+    assert.deepEqual(fake.published, []);
+  });
+
+  it('publishes through the client without a subscription', async () => {
+    const { fake, manager } = createManager();
+
+    await manager.publish('history:abc', { type: 'typing_started' });
+    assert.deepEqual(fake.published, [
+      { channel: 'history:abc', data: { type: 'typing_started' } }
+    ]);
+  });
+
+  it('propagates publish denials', async () => {
+    const { fake, manager } = createManager();
+
+    manager.subscribe('history:abc', () => {});
+    fake.subs.get('history:abc').denyPublishes = true;
+
+    let denied = false;
+    await manager
+      .publish('history:abc', { type: 'typing_started' })
+      .catch(() => {
+        denied = true;
+      });
+    assert.isTrue(denied);
   });
 });

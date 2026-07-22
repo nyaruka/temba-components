@@ -1,31 +1,28 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { TembaList } from './TembaList';
 import { Options } from '../display/Options';
 import { Icon } from '../Icons';
-
-interface Notification {
-  created_on: string;
-  type: string;
-  url: string;
-  is_seen: boolean;
-  export?: {
-    type: string;
-    num_records: number;
-  };
-  import?: {
-    type: string;
-    num_records: number;
-  };
-  incident?: {
-    type: string;
-    started_on: string;
-    ended_on?: string;
-  };
-}
+import { CustomEventType, Notification } from '../interfaces';
+import {
+  RealtimeSubscription,
+  subscribeToNotifications
+} from '../live/Realtime';
+import { deleteRequest } from '../utils';
 
 export class NotificationList extends TembaList {
   reverseRefresh = false;
   internalFocusDisabled = true;
+
+  // fed by socket publications instead of interval polling
+  protected pollingEnabled = false;
+
+  private realtimeSubscription: RealtimeSubscription = null;
+
+  // publications that arrived before the initial fetch completed - a direct
+  // prepend would be clobbered when the fetch lands, so they wait for it
+  private pendingPubs: Notification[] = [];
+  private fetchedOnce = false;
+  private subscribedOnce = false;
   static get styles() {
     return css`
       :host {
@@ -132,6 +129,119 @@ export class NotificationList extends TembaList {
         </div>
       </div>`;
     };
+  }
+
+  public connectedCallback() {
+    super.connectedCallback();
+    this.realtimeSubscription = subscribeToNotifications(
+      (notification) => this.handleNotification(notification),
+      () => this.handleSubscribed()
+    );
+  }
+
+  public disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
+      this.realtimeSubscription = null;
+    }
+  }
+
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('loading') && !this.loading) {
+      this.fetchedOnce = true;
+      const pending = this.pendingPubs;
+      this.pendingPubs = [];
+      pending.forEach((notification) => this.prependNotification(notification));
+    }
+  }
+
+  private handleNotification(notification: Notification) {
+    // ignore redeliveries of notifications we already have so e.g. the
+    // menu's unseen badge only lights for genuinely new ones
+    if (
+      this.items.some((item) => item.url === notification.url) ||
+      this.pendingPubs.some((item) => item.url === notification.url)
+    ) {
+      return;
+    }
+
+    // announce arrival, even mid-fetch - e.g. the menu's unseen badge
+    this.fireCustomEvent(CustomEventType.NotificationReceived, {
+      notification
+    });
+
+    if (this.loading || !this.fetchedOnce) {
+      this.pendingPubs.push(notification);
+    } else {
+      this.prependNotification(notification);
+    }
+  }
+
+  private prependNotification(notification: Notification) {
+    // dedupe by url (our valueKey) and prepend
+    this.items = [
+      notification,
+      ...this.items.filter((item) => item.url !== notification.url)
+    ];
+    this.mostRecentItem = notification;
+  }
+
+  /**
+   * Fires on every (re)subscribe including after reconnects. The initial
+   * endpoint fetch covers the first one regardless of which completes first,
+   * so only refetch page one on resubscribes, to catch anything missed
+   * while offline.
+   */
+  private handleSubscribed() {
+    if (this.subscribedOnce && this.fetchedOnce) {
+      this.refresh();
+    }
+    this.subscribedOnce = true;
+  }
+
+  // urls marked seen on the server but still shown bold for this viewing
+  private seenUrls = new Set<string>();
+
+  /**
+   * Marks everything currently unseen as seen on the server, without any
+   * refetching - the socket keeps our items current and seen state is fully
+   * known here. Items stay bold for the current viewing and unbold on the
+   * next call (e.g. the next popup open). Resolves false if the server
+   * didn't record it, in which case nothing advances and the next call
+   * retries.
+   */
+  public markSeen(): Promise<boolean> {
+    // unbold whatever was marked seen last time
+    if (this.seenUrls.size > 0) {
+      this.items = this.items.map((item) =>
+        this.seenUrls.has(item.url) ? { ...item, is_seen: true } : item
+      );
+    }
+
+    const unseen = this.items.filter((item) => !item.is_seen);
+    if (unseen.length === 0 || !this.endpoint) {
+      return Promise.resolve(true);
+    }
+
+    // only advance our seen state if the server actually recorded it,
+    // otherwise we'd unbold items the server still considers unseen
+    return deleteRequest(this.endpoint)
+      .then((response) => {
+        if (!response.ok) {
+          console.warn(
+            `failed marking notifications seen (${response.status})`
+          );
+          return false;
+        }
+        this.seenUrls = new Set(unseen.map((item) => item.url));
+        return true;
+      })
+      .catch((error) => {
+        console.warn('failed marking notifications seen', error);
+        return false;
+      });
   }
 
   public renderHeader(): TemplateResult {

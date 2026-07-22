@@ -339,6 +339,10 @@ export const postJSON = (url: string, payload: any): Promise<WebResponse> => {
   return postUrl(url, JSON.stringify(payload), false, 'application/json');
 };
 
+export const deleteRequest = (url: string): Promise<Response> => {
+  return fetch(url, { method: 'DELETE', headers: getHeaders() });
+};
+
 export const postFormData = (
   url: string,
   formData: FormData,
