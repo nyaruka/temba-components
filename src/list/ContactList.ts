@@ -49,6 +49,12 @@ export class ContactList extends ContentList<Contact> {
   @property({ type: String, attribute: 'fields-endpoint' })
   fieldsEndpoint = '/api/v2/fields.json';
 
+  /** Header for the primary URN column. Anonymous workspaces pass
+   * "Ref" since their endpoint serves contact refs in place of the
+   * (masked) URNs. */
+  @property({ type: String, attribute: 'urn-label' })
+  urnLabel = 'URN';
+
   @state()
   private featuredFields: any[] = [];
 
@@ -95,6 +101,9 @@ export class ContactList extends ContentList<Contact> {
     super.updated(changes);
     if (changes.has('fieldsEndpoint') && this.fieldsEndpoint) {
       this.loadFields();
+    }
+    if (changes.has('urnLabel')) {
+      this.columns = this.buildColumns();
     }
   }
 
@@ -170,7 +179,7 @@ export class ContactList extends ContentList<Contact> {
       },
       {
         key: 'urn',
-        label: 'URN',
+        label: this.urnLabel,
         minWidth: '120px',
         maxWidth: '190px'
       },
