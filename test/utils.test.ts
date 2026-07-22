@@ -80,7 +80,25 @@ export class MockSocketProvider implements SocketProvider {
     };
   }
 
-  public publish(channel: string, data: any) {
+  // client publications recorded for assertions
+  public published: { channel: string; data: any }[] = [];
+
+  // when set, client publications reject with this centrifuge-style error
+  public publishError: { code: number; message: string; temporary?: boolean } =
+    null;
+
+  public publish(channel: string, data: any): Promise<void> {
+    if (this.publishError) {
+      return Promise.reject(this.publishError);
+    }
+    this.published.push({ channel, data });
+    // the server echoes publications to all subscribers, incl. the publisher
+    this.serverPublish(channel, data);
+    return Promise.resolve();
+  }
+
+  // delivers an event to subscribers as if published by the server
+  public serverPublish(channel: string, data: any) {
     this.subs
       .filter((sub) => sub.channel === channel && !sub.unsubscribed)
       .forEach((sub) => sub.onPublication(data));

@@ -34,6 +34,8 @@ export interface SocketProvider {
     onPublication: PublicationHandler,
     onSubscribed?: () => void
   ): SocketSubscription;
+
+  publish(channel: string, data: any): Promise<void>;
 }
 
 interface ChannelEntry {
@@ -57,6 +59,24 @@ export class SocketManager implements SocketProvider {
         socket.connect();
         return socket;
       });
+  }
+
+  /**
+   * Publishes data on a channel. The server proxies client publications
+   * (e.g. typing events on history channels) to mailroom for authorization
+   * and fan-out; a rejection means the publication was denied.
+   */
+  public publish(channel: string, data: any): Promise<void> {
+    if (!this.socket) {
+      this.socket = this.createSocket();
+    }
+
+    // prefer the channel's live subscription when we have one
+    const entry = this.channels.get(channel);
+    const published = entry
+      ? entry.sub.publish(data)
+      : this.socket.publish(channel, data);
+    return published.then(() => undefined);
   }
 
   public subscribe(
@@ -148,6 +168,10 @@ export const subscribeToSocket = (
     onPublication,
     onSubscribed
   );
+};
+
+export const publishToSocket = (channel: string, data: any): Promise<void> => {
+  return (provider || getManager()).publish(channel, data);
 };
 
 // for tests to swap in a mock provider, returns the previous provider
