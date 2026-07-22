@@ -208,9 +208,11 @@ export class NotificationList extends TembaList {
    * Marks everything currently unseen as seen on the server, without any
    * refetching - the socket keeps our items current and seen state is fully
    * known here. Items stay bold for the current viewing and unbold on the
-   * next call (e.g. the next popup open).
+   * next call (e.g. the next popup open). Resolves false if the server
+   * didn't record it, in which case nothing advances and the next call
+   * retries.
    */
-  public markSeen() {
+  public markSeen(): Promise<boolean> {
     // unbold whatever was marked seen last time
     if (this.seenUrls.size > 0) {
       this.items = this.items.map((item) =>
@@ -219,17 +221,27 @@ export class NotificationList extends TembaList {
     }
 
     const unseen = this.items.filter((item) => !item.is_seen);
-    if (unseen.length > 0 && this.endpoint) {
-      // only advance our seen state if the server actually recorded it,
-      // otherwise we'd unbold items the server still considers unseen
-      deleteRequest(this.endpoint)
-        .then((response) => {
-          if (response.ok) {
-            this.seenUrls = new Set(unseen.map((item) => item.url));
-          }
-        })
-        .catch(() => {});
+    if (unseen.length === 0 || !this.endpoint) {
+      return Promise.resolve(true);
     }
+
+    // only advance our seen state if the server actually recorded it,
+    // otherwise we'd unbold items the server still considers unseen
+    return deleteRequest(this.endpoint)
+      .then((response) => {
+        if (!response.ok) {
+          console.warn(
+            `failed marking notifications seen (${response.status})`
+          );
+          return false;
+        }
+        this.seenUrls = new Set(unseen.map((item) => item.url));
+        return true;
+      })
+      .catch((error) => {
+        console.warn('failed marking notifications seen', error);
+        return false;
+      });
   }
 
   public renderHeader(): TemplateResult {

@@ -38,9 +38,12 @@ let context: RealtimeContext = null;
 const pending: PendingSubscription[] = [];
 
 /**
- * Sets (or clears, with null) the page's realtime identity, flushing any
- * subscriptions that were waiting on it. Set once per page load - an org
- * switch is a full page load. Returns the previous context.
+ * Sets the page's realtime identity, flushing any subscriptions that were
+ * waiting on it. Set once per page load - an org switch is a full page
+ * load, so a real page never changes or clears its context. Passing null is
+ * a full reset for tests: it discards the context AND any still-queued
+ * subscriptions, so handles handed out before the reset never activate.
+ * Returns the previous context.
  */
 export const setRealtimeContext = (
   ctx: RealtimeContext | null

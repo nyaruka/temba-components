@@ -6,6 +6,7 @@ import { setRealtimeContext } from '../src/live/Realtime';
 import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import {
   assertScreenshot,
+  clearMockPosts,
   getClip,
   getComponent,
   mockPOST,
@@ -56,6 +57,7 @@ const newNotification = (id: number, seen = false): Notification => {
 describe('temba-notification-list', () => {
   beforeEach(() => {
     clock = useFakeTimers();
+    clearMockPosts();
     mockSocket = new MockSocketProvider();
     previousProvider = setSocketProvider(mockSocket);
     setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
@@ -201,6 +203,26 @@ describe('temba-notification-list', () => {
     await list.updateComplete;
     expect(list.items.filter((item) => !item.is_seen).length).to.equal(0);
     expect((window.fetch as any).getCalls().length).to.equal(fetchCount + 1);
+  });
+
+  it('keeps items bold and retries when marking seen fails', async () => {
+    mockPOST(/test-assets\/list\/notifications\.json/, {}, {}, '500');
+    const list = await getList();
+
+    const fetchCount = (window.fetch as any).getCalls().length;
+
+    // the server refuses, so nothing advances
+    expect(await list.markSeen()).to.equal(false);
+    expect(await list.markSeen()).to.equal(false);
+    await list.updateComplete;
+    expect(list.items.filter((item) => !item.is_seen).length).to.equal(1);
+
+    // and each call retried the delete
+    const deletes = (window.fetch as any)
+      .getCalls()
+      .slice(fetchCount)
+      .filter((call: any) => call.args[1]?.method === 'DELETE');
+    expect(deletes.length).to.equal(2);
   });
 
   it('refetches on resubscribe but not on the initial subscribe', async () => {

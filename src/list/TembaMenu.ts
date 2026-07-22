@@ -803,12 +803,22 @@ export class TembaMenu extends ResizeElement {
       return;
     }
 
-    lists.forEach((list: NotificationList) => list.markSeen());
-
-    if (menuItem.bubble) {
+    // clear the badge optimistically, restoring it if marking seen fails so
+    // the unseen indicator isn't silently lost
+    const bubble = menuItem.bubble;
+    if (bubble) {
       menuItem.bubble = null;
       this.requestUpdate('root');
     }
+
+    lists.forEach((list: NotificationList) => {
+      list.markSeen().then((marked) => {
+        if (!marked && bubble && !menuItem.bubble) {
+          menuItem.bubble = bubble;
+          this.requestUpdate('root');
+        }
+      });
+    });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function

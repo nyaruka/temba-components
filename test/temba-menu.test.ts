@@ -8,6 +8,7 @@ import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import { CustomEventType } from '../src/interfaces';
 import {
   assertScreenshot,
+  clearMockPosts,
   getClip,
   getComponent,
   mockPOST,
@@ -140,6 +141,7 @@ describe('temba-menu notifications', () => {
     setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
 
     // the mark-all-seen delete fired on popup open
+    clearMockPosts();
     mockPOST(/test-assets\/list\/notifications\.json/, {});
   });
 
@@ -230,6 +232,31 @@ describe('temba-menu notifications', () => {
     expect(deleted.length).to.equal(1);
     expect(deleted[0].args[0]).to.equal(list.endpoint);
     expect(getNotificationsItem(menu).bubble).to.equal(null);
+  });
+  it('restores the badge when marking seen fails', async () => {
+    clearMockPosts();
+    mockPOST(/test-assets\/list\/notifications\.json/, {}, {}, '500');
+
+    const { menu } = await getNotificationsMenu();
+
+    mockSocket.publish(CHANNEL, {
+      type: 'tickets:activity',
+      created_on: '2021-03-31T00:00:00.000000Z',
+      url: '/notification/read/4/',
+      is_seen: false
+    });
+    await menu.updateComplete;
+    expect(getNotificationsItem(menu).bubble).to.equal('tomato');
+
+    const toggle = menu.shadowRoot.querySelector(
+      '#dd-notifications div[slot="toggle"]'
+    ) as HTMLDivElement;
+    toggle.click();
+
+    // the delete failed, so once it settles the badge comes back
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await menu.updateComplete;
+    expect(getNotificationsItem(menu).bubble).to.equal('tomato');
   });
 });
 
