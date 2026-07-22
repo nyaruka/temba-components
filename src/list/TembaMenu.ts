@@ -787,16 +787,29 @@ export class TembaMenu extends ResizeElement {
     }
 
     this.loadItems(item);
-
-    // refresh any embedded lists
-    this.shadowRoot
-      .querySelectorAll('temba-notification-list')
-      .forEach((ele: NotificationList) => {
-        ele.refresh();
-      });
   }
 
   public refresh = debounce(this.doRefresh, 200);
+
+  /**
+   * Opening a popup with notifications in it marks them all seen - the badge
+   * clears now, the items unbold next open. No fetching; the socket keeps
+   * the list itself current.
+   */
+  private handlePopupOpened(event: CustomEvent, menuItem: MenuItem) {
+    const dropdown = event.currentTarget as HTMLElement;
+    const lists = dropdown.querySelectorAll('temba-notification-list');
+    if (lists.length === 0) {
+      return;
+    }
+
+    lists.forEach((list: NotificationList) => list.markSeen());
+
+    if (menuItem.bubble) {
+      menuItem.bubble = null;
+      this.requestUpdate('root');
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private loadItems(item: MenuItem, event: MouseEvent = null) {
@@ -1111,6 +1124,13 @@ export class TembaMenu extends ResizeElement {
     if (menuItem.type === 'temba-notification-list') {
       return html`<temba-notification-list
         endpoint=${menuItem.href}
+        @temba-notification=${() => {
+          // light the unseen badge on our popup item as they arrive
+          if (parent && parent.bubble !== 'tomato') {
+            parent.bubble = 'tomato';
+            this.requestUpdate('root');
+          }
+        }}
       ></temba-notification-list>`;
     }
 
@@ -1254,7 +1274,11 @@ export class TembaMenu extends ResizeElement {
 
     if (menuItem.popup) {
       return html`
-        <temba-dropdown id="dd-${menuItem.id}">
+        <temba-dropdown
+          id="dd-${menuItem.id}"
+          @temba-opened=${(event: CustomEvent) =>
+            this.handlePopupOpened(event, menuItem)}
+        >
           <div slot="toggle">${item}</div>
 
           <div slot="dropdown">

@@ -1,6 +1,11 @@
 import { assert, fixture } from '@open-wc/testing';
 import { Store } from '../src/store/Store';
-import './utils.test';
+import {
+  setRealtimeContext,
+  subscribeToNotifications
+} from '../src/live/Realtime';
+import { setSocketProvider } from '../src/live/SocketService';
+import { MockSocketProvider } from './utils.test';
 
 const createStore = async (def: string): Promise<Store> => {
   const store = (await fixture(def)) as Store;
@@ -41,5 +46,26 @@ describe('temba-store', () => {
     const store = await createStore('<temba-store></temba-store>');
     const response = await store.postUrl('/no-endpoint');
     assert.equal(response.status, 404);
+  });
+
+  it('sets the realtime context from org and user', async () => {
+    const mockSocket = new MockSocketProvider();
+    const previousProvider = setSocketProvider(mockSocket);
+
+    try {
+      // subscribe before the store exists, it should be waiting on context
+      subscribeToNotifications(() => {});
+      assert.deepEqual(mockSocket.activeChannels(), []);
+
+      await createStore(
+        "<temba-store org='org-uuid' user='user-uuid'></temba-store>"
+      );
+      assert.deepEqual(mockSocket.activeChannels(), [
+        'notifications:org-uuid:user-uuid'
+      ]);
+    } finally {
+      setRealtimeContext(null);
+      setSocketProvider(previousProvider);
+    }
   });
 });

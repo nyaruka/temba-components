@@ -1,0 +1,192 @@
+import { expect, oneEvent } from '@open-wc/testing';
+import { useFakeTimers } from 'sinon';
+import { CustomEventType, Notification } from '../src/interfaces';
+import { NotificationList } from '../src/list/NotificationList';
+import { setRealtimeContext } from '../src/live/Realtime';
+import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
+import {
+  assertScreenshot,
+  getClip,
+  getComponent,
+  mockPOST,
+  MockSocketProvider
+} from './utils.test';
+
+let clock: any;
+let mockSocket: MockSocketProvider;
+let previousProvider: SocketProvider;
+
+const TAG = 'temba-notification-list';
+const CHANNEL = 'notifications:org-uuid:user-uuid';
+const ENDPOINT = '/test-assets/list/notifications.json';
+
+const createList = async (attrs: any = {}) => {
+  return (await getComponent(TAG, attrs, '', 350)) as NotificationList;
+};
+
+const getList = async (attrs: any = {}) => {
+  attrs['endpoint'] = ENDPOINT;
+  const list = await createList(attrs);
+  await new Promise<void>((resolve) => {
+    list.addEventListener(
+      CustomEventType.FetchComplete,
+      () => {
+        resolve();
+      },
+      { once: true }
+    );
+  });
+  await list.updateComplete;
+  return list;
+};
+
+const newNotification = (id: number, seen = false): Notification => {
+  return {
+    type: 'export:finished',
+    created_on: '2021-03-31T00:00:00.000000Z',
+    url: `/notification/read/${id}/`,
+    is_seen: seen,
+    export: {
+      type: 'message',
+      num_records: 35
+    }
+  };
+};
+
+describe('temba-notification-list', () => {
+  beforeEach(() => {
+    clock = useFakeTimers();
+    mockSocket = new MockSocketProvider();
+    previousProvider = setSocketProvider(mockSocket);
+    setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+  });
+
+  afterEach(() => {
+    setRealtimeContext(null);
+    setSocketProvider(previousProvider);
+    clock.restore();
+  });
+
+  it('renders items from the endpoint', async () => {
+    const list = await getList();
+    expect(list.items.length).to.equal(3);
+    await assertScreenshot('list/notifications', getClip(list));
+  });
+
+  it('subscribes to the notifications channel', async () => {
+    const list = await getList();
+    expect(mockSocket.activeChannels()).to.deep.equal([CHANNEL]);
+
+    // and unsubscribes when removed from the dom
+    list.remove();
+    expect(mockSocket.activeChannels()).to.deep.equal([]);
+  });
+
+  it('does not poll', async () => {
+    const list = await getList();
+
+    // flush the initial subscribe confirmation
+    clock.tick(0);
+
+    const refreshKey = list.refreshKey;
+    clock.tick(30000);
+    expect(list.refreshKey).to.equal(refreshKey);
+  });
+
+  it('prepends publications and fires an event', async () => {
+    const list = await getList();
+
+    const eventReceived = oneEvent(
+      list,
+      CustomEventType.NotificationReceived,
+      false
+    );
+    mockSocket.publish(CHANNEL, newNotification(4));
+
+    const event = await eventReceived;
+    expect(event.detail.notification.url).to.equal('/notification/read/4/');
+
+    await list.updateComplete;
+    expect(list.items.length).to.equal(4);
+    expect(list.items[0].url).to.equal('/notification/read/4/');
+    await assertScreenshot('list/notifications-published', getClip(list));
+  });
+
+  it('dedupes publications by url', async () => {
+    const list = await getList();
+
+    mockSocket.publish(CHANNEL, newNotification(4));
+    mockSocket.publish(CHANNEL, newNotification(4));
+    await list.updateComplete;
+
+    expect(list.items.length).to.equal(4);
+    expect(list.items[0].url).to.equal('/notification/read/4/');
+  });
+
+  it('buffers publications that arrive before the initial fetch', async () => {
+    const list = await createList({ endpoint: ENDPOINT });
+
+    // publish while the initial fetch is still in flight, including a dupe
+    // of something in the fetch itself
+    mockSocket.publish(CHANNEL, newNotification(4));
+    mockSocket.publish(CHANNEL, newNotification(3));
+
+    await new Promise<void>((resolve) => {
+      list.addEventListener(
+        CustomEventType.FetchComplete,
+        () => {
+          resolve();
+        },
+        { once: true }
+      );
+    });
+    await list.updateComplete;
+
+    // both applied, neither duplicated
+    expect(list.items.length).to.equal(4);
+    expect(list.items[0].url).to.equal('/notification/read/3/');
+    expect(list.items[1].url).to.equal('/notification/read/4/');
+  });
+
+  it('marks seen without refetching, unbolding on the next call', async () => {
+    mockPOST(/test-assets\/list\/notifications\.json/, {});
+    const list = await getList();
+
+    // one unseen item from the fetch, plus one arriving over the socket
+    mockSocket.publish(CHANNEL, newNotification(4));
+    await list.updateComplete;
+    expect(list.items.filter((item) => !item.is_seen).length).to.equal(2);
+
+    const fetchCount = (window.fetch as any).getCalls().length;
+
+    // first viewing marks them seen on the server but they stay bold
+    list.markSeen();
+    await list.updateComplete;
+    expect(list.items.filter((item) => !item.is_seen).length).to.equal(2);
+
+    const calls = (window.fetch as any).getCalls().slice(fetchCount);
+    expect(calls.length).to.equal(1);
+    expect(calls[0].args[1]?.method).to.equal('DELETE');
+
+    // the next viewing unbolds them, and with nothing newly unseen there's
+    // no request at all
+    list.markSeen();
+    await list.updateComplete;
+    expect(list.items.filter((item) => !item.is_seen).length).to.equal(0);
+    expect((window.fetch as any).getCalls().length).to.equal(fetchCount + 1);
+  });
+
+  it('refetches on resubscribe but not on the initial subscribe', async () => {
+    const list = await getList();
+
+    // the initial subscribe confirmation typically arrives after the fetch
+    // has already completed - it should never trigger a second fetch
+    const refreshKey = list.refreshKey;
+    clock.tick(0);
+    expect(list.refreshKey).to.equal(refreshKey);
+
+    // but a reconnect should refetch to catch up
+    mockSocket.subs[0].onSubscribed();
+    expect(list.refreshKey).to.not.equal(refreshKey);
+  });
+});
