@@ -42,11 +42,8 @@ import {
   renderTicketAction,
   renderTicketAssigneeChanged
 } from '../events/eventRenderers';
-import {
-  publishToSocket,
-  subscribeToSocket,
-  SocketSubscription
-} from './SocketService';
+import { publishToSocket } from './SocketService';
+import { subscribeToContactHistory, RealtimeSubscription } from './Realtime';
 
 // how often we re-publish typing_started while composing - just inside the
 // tightest platform sustain interval (Telegram's indicator lapses after 5s)
@@ -541,8 +538,8 @@ export class ContactChat extends ContactStoreElement {
   beforeUUID: string = null; // for scrolling back through history
   afterUUID: string = null; // newest event seen, for catch-up fetches
 
-  // live socket subscriptions by channel for the current contact (and ticket)
-  private subscriptions = new Map<string, SocketSubscription>();
+  // live history subscriptions by topic for the current contact (and ticket)
+  private subscriptions = new Map<string, RealtimeSubscription>();
   private fetchingMissed = false;
 
   // the contact's most recent incoming message, tracked for the external id
@@ -634,37 +631,39 @@ export class ContactChat extends ContactStoreElement {
    * continuously subscribed with no gap in delivery.
    */
   private updateSubscriptions() {
-    const channels = new Set<string>();
+    const topics = new Map<string, { contact: string; ticket: string }>();
     if (this.isConnected && this.currentContact) {
-      channels.add(`history:${this.currentContact.uuid}`);
+      const contact = this.currentContact.uuid;
+      topics.set(contact, { contact, ticket: null });
 
       // on a contact switch the new ticket is set before the new contact has
       // finished fetching, so hold off on the ticket channel until they match
       // - a ticket paired with another contact's channel is denied server-side
-      const contactPending =
-        this.contact && this.contact !== this.currentContact.uuid;
+      const contactPending = this.contact && this.contact !== contact;
       if (this.currentTicket && !contactPending) {
-        channels.add(
-          `history:${this.currentContact.uuid}:${this.currentTicket.uuid}`
-        );
+        topics.set(`${contact}:${this.currentTicket.uuid}`, {
+          contact,
+          ticket: this.currentTicket.uuid
+        });
       }
     }
 
     // drop subscriptions we no longer need
-    this.subscriptions.forEach((sub, channel) => {
-      if (!channels.has(channel)) {
+    this.subscriptions.forEach((sub, key) => {
+      if (!topics.has(key)) {
         sub.unsubscribe();
-        this.subscriptions.delete(channel);
+        this.subscriptions.delete(key);
       }
     });
 
     // add any new ones
-    channels.forEach((channel) => {
-      if (!this.subscriptions.has(channel)) {
+    topics.forEach((topic, key) => {
+      if (!this.subscriptions.has(key)) {
         this.subscriptions.set(
-          channel,
-          subscribeToSocket(
-            channel,
+          key,
+          subscribeToContactHistory(
+            topic.contact,
+            topic.ticket,
             (data: any) => this.handleSocketEvent(data),
             // on every (re)subscribe fetch anything we might have missed
             () => this.fetchMissedEvents()

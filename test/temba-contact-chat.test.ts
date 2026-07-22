@@ -1,12 +1,7 @@
 import { SinonStub, useFakeTimers } from 'sinon';
 import { Compose } from '../src/form/Compose';
 import { ContactChat } from '../src/live/ContactChat';
-import {
-  PublicationHandler,
-  setSocketProvider,
-  SocketProvider,
-  SocketSubscription
-} from '../src/live/SocketService';
+import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import { Attachment, CustomEventType } from '../src/interfaces';
 import {
   assertScreenshot,
@@ -20,82 +15,13 @@ import {
   mockGET,
   mockNow,
   mockPOST,
+  MockSocketProvider,
   updateComponent
 } from '../test/utils.test';
 
 import { expect, oneEvent } from '@open-wc/testing';
 
 let clock: any;
-
-interface MockSubscription {
-  channel: string;
-  onPublication: PublicationHandler;
-  onSubscribed?: () => void;
-  unsubscribed: boolean;
-}
-
-class MockSocketProvider implements SocketProvider {
-  public subs: MockSubscription[] = [];
-
-  public subscribe(
-    channel: string,
-    onPublication: PublicationHandler,
-    onSubscribed?: () => void
-  ): SocketSubscription {
-    const sub: MockSubscription = {
-      channel,
-      onPublication,
-      onSubscribed,
-      unsubscribed: false
-    };
-    this.subs.push(sub);
-
-    // confirm the subscription asynchronously like a real socket would
-    if (onSubscribed) {
-      setTimeout(() => {
-        if (!sub.unsubscribed) {
-          sub.onSubscribed();
-        }
-      }, 0);
-    }
-
-    return {
-      unsubscribe: () => {
-        sub.unsubscribed = true;
-      }
-    };
-  }
-
-  // client publications recorded for assertions
-  public published: { channel: string; data: any }[] = [];
-
-  // when set, client publications reject with this centrifuge-style error
-  public publishError: { code: number; message: string; temporary?: boolean } =
-    null;
-
-  public publish(channel: string, data: any): Promise<void> {
-    if (this.publishError) {
-      return Promise.reject(this.publishError);
-    }
-    this.published.push({ channel, data });
-    // the server echoes publications to all subscribers, incl. the publisher
-    this.serverPublish(channel, data);
-    return Promise.resolve();
-  }
-
-  // delivers an event to subscribers as if published by the server
-  public serverPublish(channel: string, data: any) {
-    this.subs
-      .filter((sub) => sub.channel === channel && !sub.unsubscribed)
-      .forEach((sub) => sub.onPublication(data));
-  }
-
-  public activeChannels(): string[] {
-    return this.subs
-      .filter((sub) => !sub.unsubscribed)
-      .map((sub) => sub.channel);
-  }
-}
 
 let mockSocket: MockSocketProvider;
 let previousSocketProvider: SocketProvider;

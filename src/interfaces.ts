@@ -18,6 +18,26 @@ export interface Language {
   name: string;
 }
 
+export interface Notification {
+  created_on: string;
+  type: string;
+  url: string;
+  is_seen: boolean;
+  export?: {
+    type: string;
+    num_records: number;
+  };
+  import?: {
+    type: string;
+    num_records: number;
+  };
+  incident?: {
+    type: string;
+    started_on: string;
+    ended_on?: string;
+  };
+}
+
 export interface Attachment {
   uuid: string;
   content_type: string;
@@ -468,6 +488,7 @@ export enum CustomEventType {
   Error = 'temba-error',
   Interrupt = 'temba-interrupt',
   Opened = 'temba-opened',
+  NotificationReceived = 'temba-notification',
   TicketUpdated = 'temba-ticket-updated',
   Moved = 'temba-moved',
   DateRangeChanged = 'temba-date-range-changed',
