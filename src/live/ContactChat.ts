@@ -8,7 +8,7 @@ import {
   TemplateResult
 } from 'lit';
 import { property } from 'lit/decorators.js';
-import { msg } from '@lit/localize';
+import { msg, str } from '@lit/localize';
 import {
   Contact,
   CustomEventType,
@@ -26,7 +26,11 @@ import {
 } from '../utils';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose, ComposeValue } from '../form/Compose';
-import { ContactHistoryPage } from '../events';
+import {
+  ContactFlowChangedEvent,
+  ContactHistoryPage,
+  ContactLastSeenChangedEvent
+} from '../events';
 import {
   Chat,
   MessageType,
@@ -38,16 +42,22 @@ import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
 import { Select } from '../form/select/Select';
 import {
+  Events,
   renderEvent,
   renderTicketAction,
   renderTicketAssigneeChanged
 } from '../events/eventRenderers';
 import { publishToSocket } from './SocketService';
 import { subscribeToContactHistory, RealtimeSubscription } from './Realtime';
+import { DateTime } from 'luxon';
 
 // how often we re-publish typing_started while composing - just inside the
 // tightest platform sustain interval (Telegram's indicator lapses after 5s)
 const TYPING_PULSE_INTERVAL = 4000;
+
+// how often we re-render idle conversations so the last seen duration
+// doesn't go stale
+const STATE_REFRESH_INTERVAL = 60000;
 
 // re-export for backwards compatibility
 export { renderTicketAction, renderTicketAssigneeChanged };
@@ -101,7 +111,33 @@ export class ContactChat extends ContactStoreElement {
         --compose-border: 1px solid #e1e1e1;
         --compose-curvature: 6px;
         margin: 0.5em;
-        background: #f9f9f9;
+        /* white keeps the input readable as a card against the tinted
+           chat box region behind it - rounded to match the compose
+           container so the corners don't bleed past its border */
+        background: #fff;
+        border-radius: var(--compose-curvature);
+      }
+
+      /* The chat box focuses with a solid outline and no exterior
+         glow - just this control, other widgets keep the design-system
+         halo. The focus vars must be set on temba-compose itself - its
+         shadow :host declares them via the design tokens, which beats
+         anything inherited from .compose. */
+      .compose temba-compose {
+        --color-focus: var(--focus, rgb(91, 156, 229));
+        --widget-box-shadow-focused: none;
+      }
+
+      /* While the contact is in a flow the compose outline carries the
+         flow hue: resting border matches the flow pill border, focus
+         goes solid flow green */
+      .in-flow .compose {
+        --compose-border: 1px solid
+          color-mix(in srgb, var(--flow, #16a34a) 25%, white);
+      }
+
+      .in-flow .compose temba-compose {
+        --color-focus: var(--flow, #16a34a);
       }
 
       .closed-footer {
@@ -134,12 +170,6 @@ export class ContactChat extends ContactStoreElement {
         --color-widget-bg-focused: transparent;
       }
 
-      .border {
-      }
-
-      temba-compose {
-      }
-
       .error-gutter {
         display: flex;
         padding: 0.5em 1em;
@@ -154,11 +184,20 @@ export class ContactChat extends ContactStoreElement {
         align-self: center;
       }
 
+      /* The history draws no bottom border - each strip below it
+         (ticket bar, status row, chat box) owns its top border
+         instead, so the separator always belongs to the strip it
+         introduces. The status row's goes flow-green while the
+         contact is in a flow, which places the green line below the
+         ticket bar when there is one and directly below the history
+         when there isn't. */
       temba-chat {
-        border-bottom: 1px solid #ddd;
         background: linear-gradient(0deg, #fff, #fff);
         --chat-border-in: 1px solid #eee;
         --color-chat-out: var(--color-message);
+        /* nothing floats over the bottom of the history anymore - the
+           status area below holds that content, so no reserved space */
+        --chat-bottom-padding: 1em;
         transition: opacity 0.15s ease;
       }
 
@@ -323,100 +362,136 @@ export class ContactChat extends ContactStoreElement {
         border-color: #ccc;
       }
 
-      /* "Currently in [flow]" treatment.
-         Lives in the chat footer to advertise the active run with an
-         optional Interrupt action (the chip's X). Sized to its
-         contents only (inline-flex) so the chat scrollbar to the
-         right remains clickable, and pointer-events:none on the
-         wrapping footer means the rest of the row doesn't intercept
-         scrollbar drags either. Translucent white bg + backdrop
-         blur keeps the chat history legible through the chip. */
-      .in-flow {
-        display: inline-flex;
+      /* The single status area above the chat box. Holds the ticket
+         controls (assignee / topic / close) and the contact status
+         (last seen, current flow) as stacked rows sharing one tint so
+         everything about the conversation's state lives in one place,
+         between the history and the compose. */
+      .status-area {
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      /* the compose drops its top margin so the status area hugs the
+         chat box instead of floating above it */
+      .status-area + .chat-box .compose {
+        margin-top: 0;
+      }
+
+      /* Insets match .ticket-controls (px, not em - the rows have
+         different font sizes and em padding would drift the edges
+         apart) so the last seen lines up with the assignee widget box
+         and the Interrupt button sits flush with the Close button. */
+      .contact-status {
+        display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 0.4em 0.75em;
-        margin: 0.5em;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.75);
-        /* tests set --test-backdrop-filter to none - the blur layer's
-           fractional offset rasterizes nondeterministically in headless
-           screenshots */
-        backdrop-filter: var(--test-backdrop-filter, blur(8px));
-        -webkit-backdrop-filter: var(--test-backdrop-filter, blur(8px));
-        box-shadow: var(--shadow-1);
-      }
-
-      .flow-footer {
-        text-align: center;
-        pointer-events: none;
-        /* The chat history has a scrollbar on the right edge; the
-           footer overlay spans the full container width, so centering
-           inside it lands the chip slightly right-of-center relative
-           to the visible message area. Reserve the scrollbar width on
-           the right so the chip is centered to what the user sees. */
-        padding-right: 15px;
-      }
-
-      .flow-footer .in-flow {
-        pointer-events: auto;
-      }
-
-      .in-flow .flow-name {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        /* Match the chat history event text — same hue + size — so
-           the "Currently in" line reads as one of the events rather
-           than its own UI chrome. */
-        font-size: 13.5px;
+        justify-content: space-between;
+        /* px so the guaranteed breathing room between last seen and
+           the flow doesn't scale down with the row's small font - the
+           flow name ellipsizes before this gap ever compresses */
+        gap: 24px;
+        padding: 5px 8px;
+        font-size: 11.5px;
         color: #8e8e93;
+        border-top: 1px solid #ddd;
       }
 
-      .in-flow .interrupt {
-        text-align: center;
-        align-self: stretch;
+      /* While the contact is in a flow the row takes the flow pill's
+         wash and foreground (see pillVariants .pill-flow) so it reads
+         as flow-tinted - the ticket controls above keep the plain
+         status-area grey. Fallbacks match the --flow design token for
+         pages without tokens. */
+      .in-flow .contact-status {
+        background: color-mix(in srgb, var(--flow, #16a34a) 12%, white);
+        color: var(--flow, #16a34a);
+        --icon-color: var(--flow, #16a34a);
+        border-top-color: color-mix(in srgb, var(--flow, #16a34a) 25%, white);
+      }
+
+      /* compact the interrupt button to the row's caption scale */
+      .contact-status temba-button {
+        --button-small-height: 20px;
+        --button-small-x-pad: 6px;
+        --button-small-font-size: 11px;
+      }
+
+      .contact-status .last-seen {
+        white-space: nowrap;
+        /* last seen always reads in full - the flow side gives way */
+        flex-shrink: 0;
+      }
+
+      .contact-status .current-flow {
         display: flex;
         align-items: center;
-        cursor: pointer;
-        justify-content: center;
-        padding: 0.5em 1em;
-        font-weight: bold;
+        gap: 0.5em;
+        /* the flow name can be long - let it ellipsize instead of
+           crowding out the last seen side */
+        min-width: 0;
+        margin-left: auto;
       }
 
-      .in-flow .interrupt:hover {
-        background: rgba(var(--error-rgb), 0.92);
+      .contact-status .current-flow .flow-link {
+        display: flex;
+        align-items: center;
+        gap: 0.35em;
+        color: inherit;
+        font-weight: 500;
+        text-decoration: none;
+        min-width: 0;
       }
 
-      .in-flow temba-icon,
-      .in-ticket temba-icon {
-        margin-right: 0.5em;
+      .contact-status .current-flow .flow-link .flow-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        /* shrinks with the bar but keeps a couple of characters plus
+           the ellipsis so the name never collapses entirely */
+        min-width: 2em;
       }
 
-      .in-ticket-wrapper {
+      .contact-status .current-flow .flow-link:hover .flow-name {
+        text-decoration: underline;
       }
 
-      .in-ticket {
-        box-shadow: none;
-        padding: 0.5em 0.5em;
+      .contact-status .current-flow temba-button {
+        flex-shrink: 0;
+        margin-left: 0.25em;
+      }
+
+      /* The compose region shares the status area tint so the panel is
+         framed by the same treatment top and bottom. */
+      .chat-box {
+        background: rgba(0, 0, 0, 0.02);
+        border-top: 1px solid #ddd;
+      }
+
+      /* the status row and chat box share one tinted region - no line
+         between them */
+      .status-area + .chat-box {
+        border-top: none;
+      }
+
+      .in-flow .chat-box {
+        background: color-mix(in srgb, var(--flow, #16a34a) 12%, white);
+      }
+
+      .ticket-controls {
+        padding: 8px;
         text-align: center;
         align-items: center;
-        border-bottom: 1px solid #ddd;
         display: flex;
-        box-shadow: none;
-        margin: 0em;
-        background: rgba(0, 0, 0, 0.03);
+        border-top: 1px solid #ddd;
       }
 
       /* Keep the assignment + topic controls the same height as the
          Close button so the row reads as one strip. Shrink the user
          avatars (--temba-scale) so they fit in the smaller box. */
-      .in-ticket temba-user-select,
-      .in-ticket temba-select {
+      .ticket-controls temba-user-select,
+      .ticket-controls temba-select {
         --temba-select-min-height: 28px;
       }
 
-      .in-ticket temba-user-select {
+      .ticket-controls temba-user-select {
         --temba-scale: 0.75;
       }
 
@@ -557,6 +632,10 @@ export class ContactChat extends ContactStoreElement {
   private typingPulse: number = null;
   private typingDisabled = false;
 
+  // periodic re-render keeping the last seen duration fresh while the
+  // conversation is idle
+  private stateRefresh: number = null;
+
   constructor() {
     super();
   }
@@ -587,12 +666,18 @@ export class ContactChat extends ContactStoreElement {
     super.connectedCallback();
     this.chat = this.shadowRoot.querySelector('temba-chat');
     this.updateSubscriptions();
+    this.stateRefresh = window.setInterval(
+      () => this.requestUpdate(),
+      STATE_REFRESH_INTERVAL
+    );
   }
 
   public disconnectedCallback() {
     super.disconnectedCallback();
     this.stopTyping();
     this.unsubscribeAll();
+    window.clearInterval(this.stateRefresh);
+    this.stateRefresh = null;
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -677,9 +762,23 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private handleSocketEvent(event: any) {
+    if (!this.currentContact) {
+      return;
+    }
+
+    // ephemeral contact state updates - they don't touch the history view
+    // so they apply even while searching
+    if (
+      event.type === Events.CONTACT_LAST_SEEN_CHANGED ||
+      event.type === Events.CONTACT_FLOW_CHANGED
+    ) {
+      this.handleContactStateEvent(event);
+      return;
+    }
+
     // while searching we're viewing an arbitrary point in history, new
     // events will be picked up by the refetch when search closes
-    if (!this.chat || this.searchMode || !this.currentContact) {
+    if (!this.chat || this.searchMode) {
       return;
     }
 
@@ -693,6 +792,51 @@ export class ContactChat extends ContactStoreElement {
     if (messages.length > 0) {
       this.chat.addMessages(messages, null, true);
     }
+  }
+
+  /**
+   * Ephemeral events that update contact state rather than record history.
+   * They are never persisted, so this is the only place they can be applied.
+   * The current contact is the store's cached copy of the contact, so
+   * updating it in place also keeps the cache fresh for later readers.
+   */
+  private handleContactStateEvent(
+    event: ContactFlowChangedEvent | ContactLastSeenChangedEvent
+  ) {
+    const contact = this.currentContact;
+    if (event.type === Events.CONTACT_LAST_SEEN_CHANGED) {
+      const lastSeenOn = (event as ContactLastSeenChangedEvent).last_seen_on;
+      // last seen only ever moves forward - ignore out of order deliveries
+      if (
+        !contact.last_seen_on ||
+        new Date(lastSeenOn) > new Date(contact.last_seen_on)
+      ) {
+        contact.last_seen_on = lastSeenOn;
+      }
+    } else {
+      contact.flow = (event as ContactFlowChangedEvent).flow || null;
+    }
+    this.requestUpdate();
+  }
+
+  private getLastSeen(): { duration: string; title: string } | null {
+    const lastSeenOn = this.currentContact?.last_seen_on;
+    if (!lastSeenOn || !this.store) {
+      return null;
+    }
+
+    // recent activity speaks for itself in the chat - only surface last
+    // seen once the contact has been quiet for at least an hour
+    const lastSeen = DateTime.fromISO(lastSeenOn);
+    const minutes = DateTime.now().diff(lastSeen, 'minutes').minutes;
+    if (minutes < 60) {
+      return null;
+    }
+
+    return {
+      duration: this.store.getShortDuration(lastSeen),
+      title: lastSeen.toLocaleString(DateTime.DATETIME_SHORT)
+    };
   }
 
   private handleTypingEvent(event: TypingEvent) {
@@ -1445,7 +1589,7 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getCompose(): TemplateResult {
-    return html`<div class="border"></div>
+    return html`<div class="chat-box">
       <div class="compose">
         <temba-compose
           attachments
@@ -1466,7 +1610,8 @@ export class ContactChat extends ContactStoreElement {
               ></temba-button>
             </div>`
           : null}
-      </div>`;
+      </div>
+    </div>`;
   }
 
   private handleAssignmentChanged(evt: CustomEvent) {
@@ -1570,11 +1715,12 @@ export class ContactChat extends ContactStoreElement {
 
   public render(): TemplateResult {
     const inFlow = this.currentContact && this.currentContact.flow;
+    const lastSeen = this.getLastSeen();
 
     const inTicket = this.currentTicket;
     const ticketClosed = this.currentTicket && this.currentTicket.closed_on;
 
-    return html`<div class="chat-wrapper">
+    return html`<div class="chat-wrapper ${inFlow ? 'in-flow' : ''}">
       ${this.currentContact
         ? html`<div class="chat-container">
               ${this.showSearch && this.searchMode
@@ -1658,34 +1804,8 @@ export class ContactChat extends ContactStoreElement {
                 contactUuid=${this.currentContact?.uuid ?? nothing}
                 agent
                 avatars
-                ?hasFooter=${inFlow}
                 .showMessageLogsAfter=${this.showMessageLogsAfter}
               >
-                ${inFlow
-                  ? html`
-                      <div slot="footer" class="flow-footer">
-                        <div class="in-flow">
-                          <div class="flow-name">
-                            <span>Currently in</span>
-                            <a
-                              href="/flow/editor/${this.currentContact.flow
-                                .uuid}/"
-                              onclick="goto(event, this)"
-                              ><temba-label
-                                type="flow"
-                                clickable
-                                ?removable=${this.showInterrupt}
-                                removeLabel=${msg('Interrupt flow')}
-                                @temba-remove=${this.handleInterrupt}
-                                >${this.currentContact.flow.name}</temba-label
-                              ></a
-                            >
-                          </div>
-                        </div>
-                      </div>
-                    `
-                  : null}
-                <div slot="footer"></div>
               </temba-chat>
               ${this.searchNoResults
                 ? html`<div class="search-no-results">
@@ -1694,47 +1814,82 @@ export class ContactChat extends ContactStoreElement {
                   </div>`
                 : null}
             </div>
-            ${inTicket
-              ? html`<div class="in-ticket-wrapper">
-                  <div class="in-ticket">
-                    <temba-user-select
-                      placeholder="Assign to.."
-                      searchable
-                      searchOnFocus
-                      clearable
-                      .values=${this.currentTicket.assignee
-                        ? [this.currentTicket.assignee]
-                        : []}
-                      @change=${this.handleAssignmentChanged}
-                      ?disabled=${ticketClosed || this.disableAssign}
-                    ></temba-user-select>
+            ${inTicket || inFlow || lastSeen
+              ? html`<div class="status-area">
+                  ${inTicket
+                    ? html`<div class="ticket-controls">
+                        <temba-user-select
+                          placeholder="Assign to.."
+                          searchable
+                          searchOnFocus
+                          clearable
+                          .values=${this.currentTicket.assignee
+                            ? [this.currentTicket.assignee]
+                            : []}
+                          @change=${this.handleAssignmentChanged}
+                          ?disabled=${ticketClosed || this.disableAssign}
+                        ></temba-user-select>
 
-                    <temba-select
-                      style="margin:0 0.5em; flex-grow:1"
-                      endpoint="/api/v2/topics.json"
-                      searchable
-                      valuekey="uuid"
-                      .values=${[this.currentTicket.topic]}
-                      @change=${this.handleTopicChanged}
-                      ?disabled=${ticketClosed}
-                    ></temba-select>
+                        <temba-select
+                          style="margin:0 0.5em; flex-grow:1"
+                          endpoint="/api/v2/topics.json"
+                          searchable
+                          valuekey="uuid"
+                          .values=${[this.currentTicket.topic]}
+                          @change=${this.handleTopicChanged}
+                          ?disabled=${ticketClosed}
+                        ></temba-select>
 
-                    ${this.currentTicket.closed_on
-                      ? html`
-                          <temba-button
-                            name="Reopen"
-                            @click=${this.handleReopen}
-                          ></temba-button>
-                        `
-                      : html`
-                          <temba-button
-                            name="Close"
-                            destructive
-                            @click=${this.handleClose}
-                          ></temba-button>
-                        `}
-                  </div>
-                </div> `
+                        ${this.currentTicket.closed_on
+                          ? html`
+                              <temba-button
+                                name="Reopen"
+                                @click=${this.handleReopen}
+                              ></temba-button>
+                            `
+                          : html`
+                              <temba-button
+                                name="Close"
+                                destructive
+                                @click=${this.handleClose}
+                              ></temba-button>
+                            `}
+                      </div>`
+                    : null}
+                  ${inFlow || lastSeen
+                    ? html`<div class="contact-status">
+                        ${lastSeen
+                          ? html`<div class="last-seen" title=${lastSeen.title}>
+                              ${msg(str`Last seen ${lastSeen.duration}`)}
+                            </div>`
+                          : null}
+                        ${inFlow
+                          ? html`<div class="current-flow">
+                              <a
+                                class="flow-link"
+                                href="/flow/editor/${this.currentContact.flow
+                                  .uuid}/"
+                                onclick="goto(event, this)"
+                                title=${this.currentContact.flow.name}
+                              >
+                                <temba-icon name="flow"></temba-icon>
+                                <div class="flow-name">
+                                  ${this.currentContact.flow.name}
+                                </div>
+                              </a>
+                              ${this.showInterrupt
+                                ? html`<temba-button
+                                    small
+                                    light
+                                    name=${msg('Interrupt')}
+                                    @click=${this.handleInterrupt}
+                                  ></temba-button>`
+                                : null}
+                            </div>`
+                          : null}
+                      </div>`
+                    : null}
+                </div>`
               : null}
             ${this.getTembaCompose()}`
         : null}

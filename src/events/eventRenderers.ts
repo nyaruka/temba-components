@@ -26,8 +26,12 @@ export enum Events {
   CALL_RECEIVED = 'call_received',
   CHAT_STARTED = 'chat_started',
   CONTACT_FIELD_CHANGED = 'contact_field_changed',
+  // ephemeral, updates contact state instead of rendering as history
+  CONTACT_FLOW_CHANGED = 'contact_flow_changed',
   CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
   CONTACT_LANGUAGE_CHANGED = 'contact_language_changed',
+  // ephemeral, updates contact state instead of rendering as history
+  CONTACT_LAST_SEEN_CHANGED = 'contact_last_seen_changed',
   CONTACT_NAME_CHANGED = 'contact_name_changed',
   CONTACT_STATUS_CHANGED = 'contact_status_changed',
   CONTACT_URNS_CHANGED = 'contact_urns_changed',
@@ -73,25 +77,40 @@ const renderEntityPill = (
   name: string,
   opts: { href?: string; icon?: string } = {}
 ): TemplateResult => {
+  // max-width lets a long name (flows especially) ellipsize inside the
+  // pill instead of blowing out the event line; title recovers the full
+  // name on hover. The wrapping anchor needs the same cap plus
+  // min-width:0 — as a flex item it would otherwise refuse to shrink
+  // below the pill's full content size, defeating the ellipsis.
+  // --label-min-width keeps a couple of characters visible when a pill
+  // is squeezed here, so it never collapses to bare chrome (icon +
+  // ellipsis) in a tight event line.
+  const pillStyle =
+    'margin: 1px 2px; vertical-align: middle; max-width: 100%; --label-min-width: 2em;';
   const pill = opts.icon
     ? html`<temba-label
         icon=${opts.icon}
         type=${pillType}
         ?clickable=${!!opts.href}
-        style="margin: 1px 2px; vertical-align: middle;"
+        title=${name}
+        style=${pillStyle}
         >${name}</temba-label
       >`
     : html`<temba-label
         type=${pillType}
         ?clickable=${!!opts.href}
-        style="margin: 1px 2px; vertical-align: middle;"
+        title=${name}
+        style=${pillStyle}
         >${name}</temba-label
       >`;
+  // text-decoration: none matters here - flex blockifies the label,
+  // and unlike the old inline layout an anchor's underline propagates
+  // into block-level children, underlining the pill text.
   return opts.href
     ? html`<a
         href=${opts.href}
         onclick="goto(event, this)"
-        style="vertical-align: middle;"
+        style="vertical-align: middle; display: inline-flex; min-width: 0; max-width: 100%; text-decoration: none;"
         >${pill}</a
       >`
     : pill;

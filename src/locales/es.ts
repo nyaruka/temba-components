@@ -3,7 +3,7 @@
     // Re-generate this file by running lit-localize
 
     
-    
+    import {str} from '@lit/localize';
 
     /* eslint-disable no-irregular-whitespace */
     /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -12,7 +12,8 @@
       'scf1453991c986b25': `Tab para completar, enter para seleccionar`,
 's73b4d70c02f4b4e0': `No options`,
 'sbc913d7dc0f33877': `to add`,
-'s81f17cfc89a04338': `Interrupt flow`,
+'s7722a91d3a512442': str`Last seen ${0}`,
+'s22965bb9808befb0': `Interrupt`,
 's122d4de68bcfcdf4': `It's okay to restart`,
 's3eb2567092b4d7c1': `from the beginning`,
 's28f37776b3901438': `It's okay to interrupt`,
