@@ -355,11 +355,14 @@ describe('temba-contact-chat', () => {
       showSearch: true
     });
 
-    // click the search toggle button
+    // the closed state shows the search trigger chip over the history
     const searchToggle = chat.shadowRoot.querySelector(
       '.search-toggle'
     ) as HTMLElement;
     expect(searchToggle).to.exist;
+    await assertScreenshot('contacts/chat-search-toggle', getClip(chat));
+
+    // click the search toggle button
     searchToggle.click();
 
     // wait for search mode to activate, the input to render and the 150ms
@@ -400,6 +403,104 @@ describe('temba-contact-chat', () => {
     await chat.updateComplete;
 
     await assertScreenshot('contacts/chat-search-result', getClip(chat));
+  });
+
+  it('clears stale results when the query changes or is emptied', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showSearch: true
+    });
+
+    // open search and run a query with results
+    (chat.shadowRoot.querySelector('.search-toggle') as HTMLElement).click();
+    await waitFor(200);
+    clock.tick(100);
+    await chat.updateComplete;
+
+    const textInput = chat.shadowRoot.querySelector('.search-input') as any;
+    textInput.value = 'primus';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await chat.updateComplete;
+    (chat.shadowRoot.querySelector('.search-go') as HTMLElement).click();
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+    expect(chat.shadowRoot.querySelector('.match-pager')).to.exist;
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    expect(inner.searchHighlight).to.equal('primus');
+
+    // editing the query invalidates its results — the match stepper and
+    // the highlights in the history both go away
+    textInput.value = 'primu';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await chat.updateComplete;
+
+    expect(chat.searchResults.length).to.equal(0);
+    expect(chat.searchIndex).to.equal(-1);
+    expect(chat.shadowRoot.querySelector('.match-pager')).to.not.exist;
+    expect(inner.searchHighlight).to.be.null;
+
+    // and backspacing to empty is just an empty search — no run-search
+    // affordance either
+    textInput.value = '';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await chat.updateComplete;
+
+    expect(chat.searchResults.length).to.equal(0);
+    expect(chat.shadowRoot.querySelector('.match-pager')).to.not.exist;
+    expect(chat.shadowRoot.querySelector('.search-go')).to.not.exist;
+  });
+
+  it('restores the unsearched history when the query changes after a search', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=xyznotfound/,
+      '/test-assets/contacts/chat-search-empty.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showSearch: true
+    });
+
+    // open search and run a query with no matches — the history view is
+    // reset and left empty behind the no-results message
+    (chat.shadowRoot.querySelector('.search-toggle') as HTMLElement).click();
+    await waitFor(200);
+    clock.tick(100);
+    await chat.updateComplete;
+
+    const textInput = chat.shadowRoot.querySelector('.search-input') as any;
+    textInput.value = 'xyznotfound';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await chat.updateComplete;
+    (chat.shadowRoot.querySelector('.search-go') as HTMLElement).click();
+    await settle(() => chat.searchNoResults, 50, 30);
+    await chat.updateComplete;
+
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    expect(inner.shadowRoot.querySelectorAll('.row').length).to.equal(0);
+
+    // editing the query reloads the normal history view
+    textInput.value = 'xyznotfoun';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    clock.tick(100);
+    await settle(
+      () => inner.shadowRoot.querySelectorAll('.row').length > 0,
+      50,
+      30
+    );
+    expect(chat.searchNoResults).to.be.false;
   });
 
   it('shows no results message when search has no matches', async () => {
