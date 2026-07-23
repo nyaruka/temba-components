@@ -8,7 +8,7 @@ import {
   TemplateResult
 } from 'lit';
 import { property } from 'lit/decorators.js';
-import { msg } from '@lit/localize';
+import { msg, str } from '@lit/localize';
 import {
   Contact,
   CustomEventType,
@@ -168,9 +168,6 @@ export class ContactChat extends ContactStoreElement {
         --widget-box-shadow-focused: none;
         --color-focus: transparent;
         --color-widget-bg-focused: transparent;
-      }
-
-      temba-compose {
       }
 
       .error-gutter {
@@ -1809,7 +1806,6 @@ export class ContactChat extends ContactStoreElement {
                 avatars
                 .showMessageLogsAfter=${this.showMessageLogsAfter}
               >
-                <div slot="footer"></div>
               </temba-chat>
               ${this.searchNoResults
                 ? html`<div class="search-no-results">
@@ -1864,7 +1860,7 @@ export class ContactChat extends ContactStoreElement {
                     ? html`<div class="contact-status">
                         ${lastSeen
                           ? html`<div class="last-seen" title=${lastSeen.title}>
-                              ${msg('Last seen')} ${lastSeen.duration}
+                              ${msg(str`Last seen ${lastSeen.duration}`)}
                             </div>`
                           : null}
                         ${inFlow

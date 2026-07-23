@@ -29,12 +29,13 @@ export default class Label extends LitElement {
         overflow-x: hidden;
         text-overflow: ellipsis;
         display: block;
-        /* The floor here (instead of min-width:0) lets the slot — as a
-           flex item inside .mask — shrink far enough below its content
-           size for the overflow/ellipsis to engage, while keeping a
-           couple of characters visible so a squeezed pill never
-           collapses to bare chrome. */
-        min-width: 2em;
+        /* min-width:0 lets the slot — as a flex item inside .mask —
+           shrink below its content size so the overflow/ellipsis can
+           engage. The default is 0 so every label can collapse fully;
+           a consumer that wants a squeezed pill to keep a couple of
+           characters visible (rather than collapsing to bare chrome)
+           opts in by setting --label-min-width (e.g. 2em). */
+        min-width: var(--label-min-width, 0);
       }
 
       .mask {

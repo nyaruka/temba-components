@@ -82,7 +82,11 @@ const renderEntityPill = (
   // name on hover. The wrapping anchor needs the same cap plus
   // min-width:0 — as a flex item it would otherwise refuse to shrink
   // below the pill's full content size, defeating the ellipsis.
-  const pillStyle = 'margin: 1px 2px; vertical-align: middle; max-width: 100%;';
+  // --label-min-width keeps a couple of characters visible when a pill
+  // is squeezed here, so it never collapses to bare chrome (icon +
+  // ellipsis) in a tight event line.
+  const pillStyle =
+    'margin: 1px 2px; vertical-align: middle; max-width: 100%; --label-min-width: 2em;';
   const pill = opts.icon
     ? html`<temba-label
         icon=${opts.icon}
