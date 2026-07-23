@@ -432,10 +432,7 @@ export default {
   files: ['**/test/**/*.test.ts', '!**/test/utils.test.ts'],
   nodeResolve: true,
   concurrency: 4,
-  // temba-contact-chat.test.ts runs ~70s+ since the realtime/typing changes
-  // and intermittently exceeds the default 120s per-file limit on CI runners.
-  // Stopgap until that suite is sped up - individual tests still time out
-  // at 10s via testFramework.config.timeout below.
+  // screenshot-heavy test files can exceed the default 120s on slower CI runners
   testsFinishTimeout: 240000,
   filterBrowserLogs(log) {
     return !log.args.some(

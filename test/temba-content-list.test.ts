@@ -529,6 +529,65 @@ describe('temba-content-list', () => {
     await assertScreenshot('content-list/contacts', getClip(list));
   });
 
+  it('shows a Ref column instead of URN for anon workspaces', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      {
+        endpoint: '/test-assets/content-list/contacts-anon.json',
+        anon: true
+      },
+      '',
+      1100
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    // the urn column is replaced by a ref column...
+    const colKeys = (list as any).columns.map((c: any) => c.key);
+    expect(colKeys).to.include('ref');
+    expect(colKeys).to.not.include('urn');
+    const headers = Array.from(
+      list.shadowRoot!.querySelectorAll('th .label')
+    ).map((el) => el.textContent?.trim());
+    expect(headers).to.include('Ref');
+    expect(headers).to.not.include('URN');
+
+    // ...whose cells render each contact's ref, not the masked urn
+    const cells = Array.from(
+      list.shadowRoot!.querySelectorAll('td .contact-urn')
+    ).map((el) => el.textContent?.trim());
+    expect(cells).to.include('S5XQ4X');
+    expect(cells).to.include('WG67XY');
+    expect(cells).to.not.include('********');
+  });
+
+  it('renders the primary urn display from the urn object', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      { endpoint: '/test-assets/content-list/contacts.json' },
+      '',
+      1100
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    expect((list as any).columns.map((c: any) => c.key)).to.include('urn');
+    const cells = Array.from(
+      list.shadowRoot!.querySelectorAll('td .contact-urn')
+    ).map((el) => el.textContent?.trim());
+    expect(cells).to.include('+15551112222');
+  });
+
   it('overlays the bulk action bar on the column header when rows are selected (screenshot)', async () => {
     await loadStore();
     const list = (await getComponent(

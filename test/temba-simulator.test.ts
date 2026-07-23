@@ -206,6 +206,12 @@ const getMessageCount = (simulator: Simulator): number => {
   );
 };
 
+// the chat component renders messages asynchronously (batched via setTimeout),
+// so poll rather than counting immediately after opening the simulator
+const waitForMessages = async (simulator: Simulator, minCount: number = 1) => {
+  await waitForCondition(() => getMessageCount(simulator) >= minCount, 40, 50);
+};
+
 // mock responses for simulation endpoints
 const mockSimulatorStart = () => {
   const response = {
@@ -406,6 +412,7 @@ describe('temba-simulator', () => {
     expect(phoneScreen).to.exist;
 
     // verify initial message is displayed via chat component
+    await waitForMessages(simulator);
     const messageCount = getMessageCount(simulator);
     expect(messageCount).to.be.greaterThan(0);
 
@@ -422,7 +429,8 @@ describe('temba-simulator', () => {
     await simulator.updateComplete;
     await openSimulator(simulator);
 
-    // count initial messages
+    // count initial messages once the initial message has rendered
+    await waitForMessages(simulator);
     const initialCount = getMessageCount(simulator);
 
     // mock the resume response
@@ -543,7 +551,8 @@ describe('temba-simulator', () => {
     simulator.resetAttachmentIndices();
     await openSimulator(simulator);
 
-    // count initial messages
+    // count initial messages once the initial message has rendered
+    await waitForMessages(simulator);
     const initialCount = getMessageCount(simulator);
 
     // mock the response for image attachment
@@ -741,6 +750,9 @@ describe('temba-simulator', () => {
     await simulator.updateComplete;
     await openSimulator(simulator);
 
+    // wait for the initial message to render before sending
+    await waitForMessages(simulator);
+
     // send a message first
     mockSimulatorResume('Response to test message');
     const input = simulator.shadowRoot.querySelector(
@@ -755,7 +767,8 @@ describe('temba-simulator', () => {
     });
     input.dispatchEvent(enterEvent);
 
-    await delay(1000);
+    // wait for the sent message and response to render
+    await waitForMessages(simulator, 2);
     await simulator.updateComplete;
 
     // verify we have multiple messages
@@ -775,7 +788,15 @@ describe('temba-simulator', () => {
     expect(resetButton).to.exist;
     resetButton.click();
 
-    await delay(100);
+    // wait for the chat to be cleared and the initial message to re-render
+    await waitForCondition(
+      () => {
+        const count = getMessageCount(simulator);
+        return count > 0 && count < messageCountBefore;
+      },
+      40,
+      50
+    );
     await simulator.updateComplete;
 
     // verify messages are reset - should go back to just initial message
@@ -949,6 +970,7 @@ describe('temba-simulator', () => {
     await openSimulator(simulator);
 
     // verify events are displayed via chat component (field change + message = 2 events)
+    await waitForMessages(simulator);
     const messageCount = getMessageCount(simulator);
     expect(messageCount).to.be.greaterThan(0);
 
