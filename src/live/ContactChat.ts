@@ -917,6 +917,9 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private handleSearchClose() {
+    // supersede any in-flight match navigation right away — its chain
+    // must not re-assert highlights over the restored view below
+    this.searchGeneration++;
     this.searchClosing = true;
     window.setTimeout(() => {
       this.searchClosing = false;
@@ -944,6 +947,7 @@ export class ContactChat extends ContactStoreElement {
       // only reload the view when a search had actually run — while
       // typing a fresh query the history is already showing it
       const hadSearch = this.lastSearchedQuery !== '';
+      this.searchGeneration++;
       this.searchResults = [];
       this.searchIndex = -1;
       this.searchNoResults = false;
@@ -956,6 +960,13 @@ export class ContactChat extends ContactStoreElement {
 
   // tracks the query that produced the current searchResults
   private lastSearchedQuery = '';
+
+  // bumped whenever the current search is superseded (new search, query
+  // edit, close) — navigateToResult's async fade/load chain captures the
+  // value at entry and bails at each step once it goes stale, so a chain
+  // already in flight can't re-assert highlights or scroll position over
+  // a view the user has since moved on from
+  private searchGeneration = 0;
 
   private handleSearchKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
@@ -980,6 +991,8 @@ export class ContactChat extends ContactStoreElement {
       return;
     }
 
+    // a fresh search supersedes any navigation still in flight
+    this.searchGeneration++;
     this.searchLoading = true;
     this.searchResults = [];
     this.searchIndex = -1;
@@ -1003,7 +1016,15 @@ export class ContactChat extends ContactStoreElement {
         if (this.lastSearchedQuery !== query || !this.searchMode) {
           return;
         }
-        this.searchResults = response.json.results || [];
+        // the stepper walks newest → oldest ("older match" steps forward
+        // through the list), so order the results newest-first here rather
+        // than depending on the endpoint's ordering (uuid v7 sorts
+        // chronologically, matching the uuid comparisons used elsewhere)
+        this.searchResults = (
+          (response.json.results || []) as SearchResult[]
+        ).sort((a, b) =>
+          b.uuid.toLowerCase().localeCompare(a.uuid.toLowerCase())
+        );
         if (this.searchResults.length > 0) {
           this.searchNoResults = false;
           this.searchIndex = 0;
@@ -1043,6 +1064,12 @@ export class ContactChat extends ContactStoreElement {
       return;
     }
 
+    // the chain below spans fade timers and fetches — capture the current
+    // generation so each step can bail if the search is superseded
+    // (closed, edited, or re-run) while it's still in flight
+    const generation = this.searchGeneration;
+    const stale = () => generation !== this.searchGeneration;
+
     // highlight the query that produced these results, not the current input
     // text — a draft edit mid-navigation must not mislabel the highlights.
     this.chat.searchHighlight = this.lastSearchedQuery;
@@ -1065,6 +1092,13 @@ export class ContactChat extends ContactStoreElement {
     this.chat.style.opacity = '0';
 
     window.setTimeout(() => {
+      // superseded while fading out — leave the view to whatever
+      // superseded us and just undo our fade
+      if (stale()) {
+        this.chat.style.opacity = '1';
+        return;
+      }
+
       // fully hidden (including scrollbar) during content swap
       this.chat.style.visibility = 'hidden';
       this.chat.reset();
@@ -1082,6 +1116,12 @@ export class ContactChat extends ContactStoreElement {
       let navigationCompleted = false;
       Promise.all([beforePromise, afterPromise])
         .then(([beforePage, afterPage]) => {
+          // superseded while the pages were loading — the finally below
+          // restores visibility since navigationCompleted is still false
+          if (stale()) {
+            return;
+          }
+
           const afterMessages = this.createMessages(afterPage);
           afterMessages.reverse();
 
@@ -1125,6 +1165,16 @@ export class ContactChat extends ContactStoreElement {
             window.setTimeout(() => {
               if (!this.chat) return;
 
+              // superseded after the messages rendered — don't re-assert
+              // the highlight or scroll over the restored view, but do
+              // undo our hide (navigationCompleted is already true, so
+              // the finally won't)
+              if (stale()) {
+                this.chat.style.visibility = 'visible';
+                this.chat.style.opacity = '1';
+                return;
+              }
+
               // position internal scroll only — never use scrollIntoView
               // which can move ancestor containers
               this.chat.highlightMessageUuid = result.uuid;
@@ -1166,6 +1216,10 @@ export class ContactChat extends ContactStoreElement {
           });
         })
         .catch(() => {
+          // superseded — whatever superseded us already owns the reload
+          if (stale()) {
+            return;
+          }
           this.blockFetching = false;
           this.blockFetchingNewer = false;
           this.fetchingNewer = false;
@@ -1669,6 +1723,7 @@ export class ContactChat extends ContactStoreElement {
         class="search-input"
         type="text"
         placeholder="Search messages"
+        aria-label="Search messages"
         .value=${this.searchQuery}
         @input=${this.handleSearchInput}
         @keydown=${this.handleSearchKeydown}

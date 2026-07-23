@@ -503,6 +503,66 @@ describe('temba-contact-chat', () => {
     expect(inner.searchHighlight).to.be.null;
   });
 
+  it('abandons an in-flight match navigation when search is closed', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showSearch: true
+    });
+
+    // open search and run a query with results, letting the first
+    // navigation fully settle
+    (chat.shadowRoot.querySelector('.search-toggle') as HTMLElement).click();
+    await waitFor(200);
+    clock.tick(100);
+    await chat.updateComplete;
+
+    const textInput = chat.shadowRoot.querySelector('.search-input') as any;
+    textInput.value = 'primus';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await chat.updateComplete;
+    (chat.shadowRoot.querySelector('.search-go') as HTMLElement).click();
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    await settle(() => inner.style.opacity === '1', 50, 30);
+    await chat.updateComplete;
+
+    // step to the next match (starting a fresh fade/load chain) and close
+    // search before that chain can finish
+    (chat.shadowRoot.querySelector('.page-btn') as HTMLElement).click();
+    (chat.shadowRoot.querySelector('.search-cancel') as HTMLElement).click();
+
+    // flush the abandoned chain's timers, the close timer, and the
+    // restore fetch
+    await settle(
+      () =>
+        !chat.searchMode &&
+        inner.shadowRoot.querySelectorAll('.row').length > 0,
+      50,
+      30
+    );
+    await waitFor(100);
+    clock.tick(200);
+    await chat.updateComplete;
+
+    // the abandoned navigation must not have re-asserted its highlight or
+    // left the chat hidden over the restored view
+    expect(inner.searchHighlight).to.be.null;
+    expect(inner.highlightMessageUuid).to.be.null;
+    expect(inner.style.visibility).to.not.equal('hidden');
+    expect(inner.style.opacity).to.equal('1');
+  });
+
   it('restores the unsearched history when the query changes after a search', async () => {
     await loadStore();
 
