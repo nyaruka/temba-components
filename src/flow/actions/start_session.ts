@@ -10,7 +10,8 @@ import { Node, StartSession } from '../../store/flow-definition';
 import {
   renderMixedList,
   renderFlowLinks,
-  renderHighlightedText
+  renderHighlightedText,
+  validateRecipients
 } from '../utils';
 import { Icon } from '../../Icons';
 import { CustomEventType } from '../../interfaces';
@@ -158,6 +159,7 @@ export const start_session: ActionConfig = {
       evaluated: true,
       label: 'Contact Query',
       helpText: 'Only one matching contact will be started',
+      maxLength: 10000,
       placeholder: 'household_id = @fields.household_id',
       conditions: {
         visible: (formData: FormData) => {
@@ -192,6 +194,13 @@ export const start_session: ActionConfig = {
       (!formData.recipients || formData.recipients.length === 0)
     ) {
       errors.recipients = 'At least one contact or group must be selected';
+    }
+
+    if (startType === 'manual') {
+      const recipientsError = validateRecipients(formData.recipients || []);
+      if (recipientsError) {
+        errors.recipients = recipientsError;
+      }
     }
 
     // Check if query has a query string

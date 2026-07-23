@@ -4,7 +4,10 @@ import { Node, SendBroadcast } from '../../store/flow-definition';
 import {
   renderMixedList,
   renderClamped,
-  renderHighlightedText
+  renderHighlightedText,
+  validateRecipients,
+  validateTemplateVariables,
+  validateWith
 } from '../utils';
 import { Icon } from '../../Icons';
 import { CustomEventType } from '../../interfaces';
@@ -182,6 +185,19 @@ export const send_broadcast: ActionConfig = {
       formData.text = formData.text.trim();
     }
   },
+  validate: validateWith((formData, errors) => {
+    const recipientsError = validateRecipients(formData.recipients || []);
+    if (recipientsError) {
+      errors.recipients = recipientsError;
+    }
+
+    const templateVariablesError = validateTemplateVariables(
+      formData.template_variables || []
+    );
+    if (templateVariablesError) {
+      errors.template = templateVariablesError;
+    }
+  }),
   localizable: ['text', 'attachments'],
   toLocalizationFormData: (
     action: SendBroadcast,

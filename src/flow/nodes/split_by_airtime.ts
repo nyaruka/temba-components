@@ -87,12 +87,18 @@ export const split_by_airtime: NodeConfig = {
 
     if (duplicates.length > 0) {
       errors.amounts = `Duplicate currencies found: ${duplicates.join(', ')}`;
+      return;
     }
 
     for (const item of validAmounts) {
       const amount = item.amount.trim();
       if (isNaN(Number(amount)) || Number(amount) <= 0) {
         errors.amounts = 'All amounts must be valid positive numbers';
+        return;
+      }
+      // the engine caps amounts at 1e15
+      if (Number(amount) > 1e15) {
+        errors.amounts = 'Amounts must be 1,000,000,000,000,000 or less';
         return;
       }
     }

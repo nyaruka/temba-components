@@ -57,6 +57,7 @@ export const split_by_llm: NodeConfig = {
       helpText: 'The input the AI will process',
       required: true,
       evaluated: true,
+      maxLength: 10000,
       placeholder: '@input'
     },
     instructions: {
@@ -66,6 +67,7 @@ export const split_by_llm: NodeConfig = {
         'Tell the AI what to do with the input. The result can be referenced as **`@locals._llm_output`**',
       required: true,
       evaluated: true,
+      maxLength: 10000,
       placeholder: 'Enter instructions for the AI model...',
       minHeight: 130
     }

@@ -1269,17 +1269,17 @@ export class NodeEditor extends RapidElement {
           // array/object handling, an over-long value here is emitted into the definition
           // and rejected by the backend (goflow caps result names at 64 and quick replies
           // at 1000 chars).
+          const itemLength = (item: any): number => {
+            if (typeof item === 'string') return item.length;
+            if (item && typeof item === 'object') {
+              const text = item.value ?? item.name;
+              return typeof text === 'string' ? text.length : 0;
+            }
+            return 0;
+          };
+
           const maxLength = (fieldConfig as any).maxLength;
           if (maxLength) {
-            const itemLength = (item: any): number => {
-              if (typeof item === 'string') return item.length;
-              if (item && typeof item === 'object') {
-                const text = item.value ?? item.name;
-                return typeof text === 'string' ? text.length : 0;
-              }
-              return 0;
-            };
-
             const exceedsMax = Array.isArray(value)
               ? value.some((item) => itemLength(item) > maxLength)
               : itemLength(value) > maxLength;
@@ -1288,6 +1288,79 @@ export class NodeEditor extends RapidElement {
               errors[fieldName] = `${
                 (fieldConfig as any).label || fieldName
               } must be no more than ${maxLength} characters`;
+            }
+          }
+
+          // Check maxLength declared on array item sub-fields (e.g. rule categories,
+          // case arguments) - these live in itemConfig which the top-level check
+          // above doesn't reach, so without this an over-long value is emitted into
+          // the definition and rejected by the backend.
+          if (
+            fieldConfig.type === 'array' &&
+            fieldConfig.itemConfig &&
+            Array.isArray(value)
+          ) {
+            Object.entries(fieldConfig.itemConfig).forEach(
+              ([subFieldName, subFieldConfig]) => {
+                const subMaxLength = (subFieldConfig as any).maxLength;
+                if (!subMaxLength || errors[fieldName]) {
+                  return;
+                }
+                const exceeds = value.some((item: any) => {
+                  // skip sub-fields hidden for this item (e.g. a rule value for
+                  // an operator that takes no operands) - they aren't emitted
+                  const visible = (subFieldConfig as any).conditions?.visible;
+                  if (visible && !visible(item)) {
+                    return false;
+                  }
+                  // measure like the top-level check so option-object values
+                  // (e.g. a select or tag input inside an array) are covered
+                  const subValue = item?.[subFieldName];
+                  return Array.isArray(subValue)
+                    ? subValue.some((sub) => itemLength(sub) > subMaxLength)
+                    : itemLength(subValue) > subMaxLength;
+                });
+                if (exceeds) {
+                  errors[fieldName] = `${
+                    (subFieldConfig as any).label || subFieldName
+                  } must be no more than ${subMaxLength} characters`;
+                }
+              }
+            );
+          }
+
+          // Check key-value fields against their declared limits (e.g. goflow caps
+          // webhook headers at 100 entries, names at 100 chars and values at 1000).
+          if (fieldConfig.type === 'key-value' && Array.isArray(value)) {
+            const rows = value.filter(
+              (item: any) =>
+                ((item?.key || '') as string).trim() !== '' ||
+                ((item?.value || '') as string).trim() !== ''
+            );
+            const label = (fieldConfig as any).label || fieldName;
+            if (fieldConfig.maxItems && rows.length > fieldConfig.maxItems) {
+              errors[fieldName] =
+                `${label} can have no more than ${fieldConfig.maxItems} entries`;
+            } else if (
+              fieldConfig.keyMaxLength &&
+              rows.some(
+                (item: any) =>
+                  (item.key || '').length > fieldConfig.keyMaxLength
+              )
+            ) {
+              errors[fieldName] = `${
+                fieldConfig.keyPlaceholder || 'Key'
+              } must be no more than ${fieldConfig.keyMaxLength} characters`;
+            } else if (
+              fieldConfig.valueMaxLength &&
+              rows.some(
+                (item: any) =>
+                  (item.value || '').length > fieldConfig.valueMaxLength
+              )
+            ) {
+              errors[fieldName] = `${
+                fieldConfig.valuePlaceholder || 'Value'
+              } must be no more than ${fieldConfig.valueMaxLength} characters`;
             }
           }
         });

@@ -51,6 +51,7 @@ export const set_run_result: ActionConfig = {
       helpText: 'The value to save for this result (can use expressions)',
       required: false,
       evaluated: true,
+      maxLength: 10000,
       placeholder: 'Enter value...'
     },
     category: {
