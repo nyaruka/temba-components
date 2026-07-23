@@ -460,6 +460,49 @@ describe('temba-contact-chat', () => {
     expect(chat.shadowRoot.querySelector('.search-go')).to.not.exist;
   });
 
+  it('ignores a stale search response after the query is edited mid-flight', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showSearch: true
+    });
+
+    // open search and type a query
+    (chat.shadowRoot.querySelector('.search-toggle') as HTMLElement).click();
+    await waitFor(200);
+    clock.tick(100);
+    await chat.updateComplete;
+
+    const textInput = chat.shadowRoot.querySelector('.search-input') as any;
+    textInput.value = 'primus';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await chat.updateComplete;
+
+    // kick off the search, then — synchronously, before the response can
+    // resolve — edit the query. handleSearchInput clears lastSearchedQuery,
+    // so the in-flight response is now for a superseded query.
+    (chat.shadowRoot.querySelector('.search-go') as HTMLElement).click();
+    expect(chat.searchLoading).to.equal(true);
+    textInput.value = 'primu';
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // let the stale response land
+    await settle(() => chat.searchLoading === false, 0, 400);
+
+    // the superseded response must not repopulate results, move the index, or
+    // scroll/highlight the history
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    expect(chat.searchResults.length).to.equal(0);
+    expect(chat.searchIndex).to.equal(-1);
+    expect(inner.searchHighlight).to.be.null;
+  });
+
   it('restores the unsearched history when the query changes after a search', async () => {
     await loadStore();
 

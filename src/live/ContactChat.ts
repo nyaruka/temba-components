@@ -995,6 +995,14 @@ export class ContactChat extends ContactStoreElement {
     getUrl(url)
       .then((response: WebResponse) => {
         this.searchLoading = false;
+        // ignore a response the user has already moved past — editing the
+        // query (handleSearchInput clears lastSearchedQuery) or closing search
+        // (handleSearchClose flips searchMode off) can land before a slow
+        // response; applying it here would repopulate results for and scroll to
+        // a superseded query.
+        if (this.lastSearchedQuery !== query || !this.searchMode) {
+          return;
+        }
         this.searchResults = response.json.results || [];
         if (this.searchResults.length > 0) {
           this.searchNoResults = false;
@@ -1007,6 +1015,9 @@ export class ContactChat extends ContactStoreElement {
       })
       .catch(() => {
         this.searchLoading = false;
+        if (this.lastSearchedQuery !== query || !this.searchMode) {
+          return;
+        }
         this.searchResults = [];
         this.searchIndex = -1;
         this.searchNoResults = false;
@@ -1032,7 +1043,9 @@ export class ContactChat extends ContactStoreElement {
       return;
     }
 
-    this.chat.searchHighlight = this.searchQuery.trim();
+    // highlight the query that produced these results, not the current input
+    // text — a draft edit mid-navigation must not mislabel the highlights.
+    this.chat.searchHighlight = this.lastSearchedQuery;
 
     // start fetches immediately (in parallel with fade-out)
     const beforePromise = fetchContactHistory(
