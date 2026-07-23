@@ -156,21 +156,31 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-for-stopped-contact', getClip(chat));
   });
 
-  it('keeps flow footer from blocking scrollbar drag interactions', async () => {
+  it('lays out last seen and current flow side by side without overlap', async () => {
+    // push now past dave's last seen so both sides of the bar render
+    mockedNow.restore();
+    mockedNow = mockNow('2022-08-01T00:00:00.000-00:00');
+
     await loadStore();
     const chat: ContactChat = await getContactChat({
       contact: 'contact-dave-active'
     });
 
-    const flowFooter = chat.shadowRoot.querySelector(
-      '.flow-footer'
+    const contactStatus = chat.shadowRoot.querySelector(
+      '.contact-status'
     ) as HTMLElement;
-    const inFlow = flowFooter.querySelector('.in-flow') as HTMLElement;
+    const lastSeen = contactStatus.querySelector('.last-seen') as HTMLElement;
+    const currentFlow = contactStatus.querySelector(
+      '.current-flow'
+    ) as HTMLElement;
 
-    expect(flowFooter).to.exist;
-    expect(inFlow).to.exist;
-    expect(getComputedStyle(flowFooter).pointerEvents).to.equal('none');
-    expect(getComputedStyle(inFlow).pointerEvents).to.equal('auto');
+    expect(lastSeen).to.exist;
+    expect(currentFlow).to.exist;
+
+    // the two sit in the same row but never overlap
+    const seenRect = lastSeen.getBoundingClientRect();
+    const flowRect = currentFlow.getBoundingClientRect();
+    expect(seenRect.right).to.be.lessThan(flowRect.left);
   });
 
   it('sends text without attachments', async () => {
@@ -856,5 +866,211 @@ describe('temba-contact-chat', () => {
     expect(mockSocket.published.length).to.equal(1);
     expect(mockSocket.published[0].channel).to.equal(channel);
     expect(mockSocket.published[0].data.type).to.equal('typing_started');
+  });
+
+  const getCurrentFlow = (chat: ContactChat) =>
+    chat.shadowRoot.querySelector('.contact-status .current-flow');
+
+  const getLastSeen = (chat: ContactChat) =>
+    chat.shadowRoot.querySelector('.contact-status .last-seen');
+
+  it('updates the current flow from socket contact_flow_changed events', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const channel = `history:${chat.currentContact.uuid}`;
+
+    // the fetched contact is in a flow
+    expect(getCurrentFlow(chat).textContent).to.contain('Daily Flow');
+
+    // moving to another flow renames the chip
+    const before = chat.afterUUID;
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000006666',
+      type: 'contact_flow_changed',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      flow: { uuid: 'flow-registration', name: 'Registration' }
+    });
+    await chat.updateComplete;
+    expect(getCurrentFlow(chat).textContent).to.contain('Registration');
+
+    // ephemeral events are state, not history - the newest-seen anchor
+    // must not advance and nothing renders in the chat itself
+    expect(chat.afterUUID).to.equal(before);
+    const tembaChat = getTembaChat(chat);
+    expect(
+      tembaChat.shadowRoot.querySelector(
+        '.row[data-uuid="01998888-0000-7000-8000-000000006666"]'
+      )
+    ).to.not.exist;
+
+    // leaving the flow removes the chip entirely
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000007777',
+      type: 'contact_flow_changed',
+      created_on: '2025-09-25T12:01:00.000000+00:00',
+      flow: null
+    });
+    await chat.updateComplete;
+    expect(getCurrentFlow(chat)).to.not.exist;
+  });
+
+  it('ellipsizes long flow names in the status bar', async () => {
+    // push now past dave's last seen so both sides of the bar render
+    mockedNow.restore();
+    mockedNow = mockNow('2022-08-01T00:00:00.000-00:00');
+
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    mockSocket.serverPublish(`history:${chat.currentContact.uuid}`, {
+      uuid: '01998888-0000-7000-8000-00000000bbbb',
+      type: 'contact_flow_changed',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      flow: {
+        uuid: 'flow-long',
+        name: 'Customer Satisfaction Survey Follow Up For Returning Subscribers 2025'
+      }
+    });
+    await chat.updateComplete;
+
+    const contactStatus = chat.shadowRoot.querySelector(
+      '.contact-status'
+    ) as HTMLElement;
+    const currentFlow = getCurrentFlow(chat) as HTMLElement;
+    const flowName = currentFlow.querySelector('.flow-name') as HTMLElement;
+
+    // the name shrank to fit - it stays inside the bar and clear of
+    // the last seen side
+    const barRect = contactStatus.getBoundingClientRect();
+    const flowRect = currentFlow.getBoundingClientRect();
+    const seenRect = getLastSeen(chat).getBoundingClientRect();
+    expect(flowRect.right).to.be.at.most(barRect.right + 1);
+
+    // the flow gave way before ever compressing the guaranteed gap
+    expect(flowRect.left - seenRect.right).to.be.at.least(23);
+
+    // and the name is actually ellipsized rather than resized to fit
+    expect(flowName.scrollWidth).to.be.greaterThan(flowName.clientWidth);
+
+    await assertScreenshot('contacts/chat-status-long-flow', getClip(chat));
+  });
+
+  it('fires an interrupt event from the status area', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showInterrupt: true
+    });
+
+    const interrupt = chat.shadowRoot.querySelector(
+      '.contact-status .current-flow temba-button'
+    ) as HTMLElement;
+    expect(interrupt).to.exist;
+    await assertScreenshot('contacts/chat-status-interrupt', getClip(chat));
+
+    const listener = oneEvent(chat, CustomEventType.Interrupt, false);
+    interrupt.click();
+    const event = await listener;
+    expect(event.detail.contact.uuid).to.equal('contact-dave-active');
+  });
+
+  it('shows last seen in the status bar and updates it from socket events', async () => {
+    // dave was last seen 2022-07-08 - view him the next morning
+    mockedNow.restore();
+    mockedNow = mockNow('2022-07-09T00:00:00.000-00:00');
+
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const channel = `history:${chat.currentContact.uuid}`;
+
+    expect(getLastSeen(chat).textContent).to.contain('hours ago');
+
+    // the contact was seen an hour ago
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000008888',
+      type: 'contact_last_seen_changed',
+      created_on: '2022-07-08T23:00:00.000000+00:00',
+      last_seen_on: '2022-07-08T23:00:00.000000+00:00'
+    });
+    await chat.updateComplete;
+    expect(getLastSeen(chat).textContent).to.contain('1 hour ago');
+
+    // an out of order (older) last seen is ignored
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000009999',
+      type: 'contact_last_seen_changed',
+      created_on: '2022-07-01T00:00:00.000000+00:00',
+      last_seen_on: '2022-07-01T00:00:00.000000+00:00'
+    });
+    await chat.updateComplete;
+    expect(getLastSeen(chat).textContent).to.contain('1 hour ago');
+
+    // checking in just now hides last seen entirely - it only shows
+    // once the contact has been quiet for at least an hour
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-00000000cccc',
+      type: 'contact_last_seen_changed',
+      created_on: '2022-07-09T00:00:00.000000+00:00',
+      last_seen_on: '2022-07-09T00:00:00.000000+00:00'
+    });
+    await chat.updateComplete;
+    expect(getLastSeen(chat)).to.not.exist;
+  });
+
+  it('shows ticket controls and contact status in one area above the chat box', async () => {
+    // push now past dave's last seen so the contact status renders too
+    mockedNow.restore();
+    mockedNow = mockNow('2022-08-01T00:00:00.000-00:00');
+
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showInterrupt: true
+    });
+
+    chat.currentTicket = {
+      uuid: 'ticket-1',
+      topic: { uuid: 'topic-1', name: 'General' },
+      assignee: null,
+      closed_on: null
+    } as any;
+    await chat.updateComplete;
+
+    const statusArea = chat.shadowRoot.querySelector(
+      '.status-area'
+    ) as HTMLElement;
+
+    // both the ticket controls and the contact status live in the area
+    expect(statusArea.querySelector('.ticket-controls')).to.exist;
+    expect(statusArea.querySelector('.contact-status .last-seen')).to.exist;
+    expect(statusArea.querySelector('.contact-status .current-flow')).to.exist;
+
+    // and the area sits between the chat history and the compose box
+    const areaRect = statusArea.getBoundingClientRect();
+    const historyRect = chat.shadowRoot
+      .querySelector('temba-chat')
+      .getBoundingClientRect();
+    const composeRect = chat.shadowRoot
+      .querySelector('.compose')
+      .getBoundingClientRect();
+    expect(areaRect.top).to.be.at.least(historyRect.bottom - 1);
+    expect(areaRect.bottom).to.be.at.most(composeRect.top + 1);
+
+    // the interrupt button right-aligns with the close button above it
+    const closeRect = statusArea
+      .querySelector('.ticket-controls temba-button')
+      .getBoundingClientRect();
+    const interruptRect = statusArea
+      .querySelector('.current-flow temba-button')
+      .getBoundingClientRect();
+    expect(Math.abs(closeRect.right - interruptRect.right)).to.be.at.most(1);
+
+    await assertScreenshot('contacts/chat-ticket-status-area', getClip(chat));
   });
 });
