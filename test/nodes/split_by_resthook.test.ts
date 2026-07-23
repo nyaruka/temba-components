@@ -110,7 +110,9 @@ describe('temba-split-by-resthook', () => {
     expect(action.type).to.equal('call_resthook');
 
     expect(resultNode.router!.type).to.equal('switch');
-    expect(resultNode.router!.operand).to.equal('@webhook.status');
+    expect(resultNode.router!.operand).to.equal(
+      '@(default(webhook.status, 0))'
+    );
     expect(resultNode.router!.categories).to.have.lengthOf(2); // Success + Failure
     expect(resultNode.exits).to.have.lengthOf(2); // Success + Failure
 
@@ -276,7 +278,9 @@ describe('temba-split-by-resthook', () => {
     const resultNode = split_by_resthook.fromFormData!(formData, originalNode);
 
     // operand and case should be normalised to the canonical shape
-    expect(resultNode.router!.operand).to.equal('@webhook.status');
+    expect(resultNode.router!.operand).to.equal(
+      '@(default(webhook.status, 0))'
+    );
     expect(resultNode.router!.cases).to.have.lengthOf(1);
     expect(resultNode.router!.cases![0].type).to.equal('has_number_between');
     expect(resultNode.router!.cases![0].arguments).to.deep.equal([
