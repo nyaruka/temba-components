@@ -36,11 +36,11 @@
 <trans-unit id="s6838d20b10f7512a">
   <source>and start this one</source>
 </trans-unit>
-<trans-unit id="saa8939ac88a76f98">
-  <source>Last seen</source>
-</trans-unit>
 <trans-unit id="s22965bb9808befb0">
   <source>Interrupt</source>
+</trans-unit>
+<trans-unit id="s7722a91d3a512442">
+  <source>Last seen <x id="0" equiv-text="${lastSeen.duration}"/></source>
 </trans-unit>
 </body>
 </file>
