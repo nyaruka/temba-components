@@ -27,6 +27,35 @@ let mockSocket: MockSocketProvider;
 let previousSocketProvider: SocketProvider;
 
 const TAG = 'temba-contact-chat';
+
+// polls with short real sleeps (so mocked HTTP roundtrips can complete) while
+// advancing fake timers, until the predicate holds
+const settle = async (
+  predicate: () => boolean,
+  tickMs = 0,
+  maxAttempts = 400
+) => {
+  for (let i = 0; i < maxAttempts; i++) {
+    await waitFor(10);
+    clock.tick(tickMs);
+    if (predicate()) {
+      return;
+    }
+  }
+  throw new Error('Condition not met while settling');
+};
+
+// the contact and its history have loaded and rendered
+const chatLoaded = (chat: ContactChat) => {
+  const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+  return !!(
+    chat.currentContact &&
+    inner &&
+    !inner.fetching &&
+    inner.messageGroups.length > 0
+  );
+};
+
 const getContactChat = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
   // add some sizes and styles to force our chat history to scroll
@@ -39,13 +68,9 @@ const getContactChat = async (attrs: any = {}) => {
     'display:flex;flex-direction:column;flex-grow:1;min-height:0;'
   )) as ContactChat;
 
-  // wait for contact data and history to load (real HTTP)
-  // and flush fake timers so addMessages' setTimeout(fn, 0) fires
-  for (let i = 0; i < 40; i++) {
-    await waitFor(50);
-    clock.tick(0);
-    if (chat.currentContact && chat.blockFetching) break;
-  }
+  // wait for contact data and history to load (real HTTP), flushing fake
+  // timers so addMessages' setTimeout(fn, 0) fires
+  await settle(() => chatLoaded(chat));
   return chat;
 };
 
@@ -63,6 +88,11 @@ describe('temba-contact-chat', () => {
   beforeEach(() => {
     mockedNow = mockNow('2021-03-31T00:31:00.000-00:00');
     clearMockPosts();
+
+    // the catch-up fetch on subscribe (after=) finds nothing new - without
+    // this it races the initial history fetch for the same page of events and
+    // the rendered grouping depends on which one lands first
+    mockGET(/\/contact\/chat\/contact-.*\?after=/, { events: [], next: null });
     mockGET(
       /\/contact\/chat\/contact-.*/,
       '/test-assets/contacts/history.json'
@@ -86,8 +116,7 @@ describe('temba-contact-chat', () => {
     setSocketProvider(previousSocketProvider);
   });
 
-  // temporarily disabled as it's too flaky in CI
-  xit('show history and show chatbox if contact is active', async () => {
+  it('show history and show chatbox if contact is active', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -135,11 +164,7 @@ describe('temba-contact-chat', () => {
 
     // re-selecting the same ticket sets the same contact again
     chat.contact = 'contact-barack-archived';
-    for (let i = 0; i < 40; i++) {
-      await waitFor(50);
-      clock.tick(0);
-      if (chat.currentContact && chat.blockFetching) break;
-    }
+    await settle(() => chatLoaded(chat));
 
     expect(chat.currentContact, 'contact should reload').to.not.be.null;
     const inner = chat.shadowRoot.querySelector('temba-chat') as any;
@@ -347,8 +372,9 @@ describe('temba-contact-chat', () => {
     expect(searchToggle).to.exist;
     searchToggle.click();
 
-    // wait for search mode to activate and input to render
-    await waitFor(100);
+    // wait for search mode to activate, the input to render and the 150ms
+    // slide-in animation (real time) to finish
+    await waitFor(200);
     clock.tick(100);
     await chat.updateComplete;
 
@@ -367,22 +393,21 @@ describe('temba-contact-chat', () => {
     searchGo.click();
 
     // wait for the search API response and results to load
-    for (let i = 0; i < 30; i++) {
-      await waitFor(50);
-      clock.tick(50);
-      await chat.updateComplete;
-      if (chat.searchResults && chat.searchResults.length > 0) break;
-    }
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
 
     expect(chat.searchResults.length).to.equal(2);
     expect(chat.searchIndex).to.equal(0);
 
-    // wait for the navigation to settle (fade out + load + fade in)
-    for (let i = 0; i < 20; i++) {
-      await waitFor(50);
-      clock.tick(50);
-      await chat.updateComplete;
-    }
+    // wait for the navigation to settle (fade out + load + fade in), then
+    // give the 150ms opacity transition (real time) room to finish
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    await settle(() => inner.style.opacity === '1', 50, 30);
+    await waitFor(200);
+    await chat.updateComplete;
 
     await assertScreenshot('contacts/chat-search-result', getClip(chat));
   });
@@ -406,7 +431,8 @@ describe('temba-contact-chat', () => {
       '.search-toggle'
     ) as HTMLElement;
     searchToggle.click();
-    await waitFor(100);
+    // include real time for the 150ms slide-in animation before screenshots
+    await waitFor(200);
     clock.tick(100);
     await chat.updateComplete;
 
@@ -422,12 +448,8 @@ describe('temba-contact-chat', () => {
     searchGo.click();
 
     // wait for the search API response
-    for (let i = 0; i < 30; i++) {
-      await waitFor(50);
-      clock.tick(50);
-      await chat.updateComplete;
-      if (chat.searchNoResults) break;
-    }
+    await settle(() => chat.searchNoResults, 50, 30);
+    await chat.updateComplete;
 
     expect(chat.searchResults.length).to.equal(0);
     expect(chat.searchNoResults).to.be.true;
@@ -465,17 +487,19 @@ describe('temba-contact-chat', () => {
     });
 
     // flush the render timeouts in addMessages
-    for (let i = 0; i < 10; i++) {
-      await waitFor(50);
-      clock.tick(50);
-      await chat.updateComplete;
-    }
+    const tembaChat = chat.shadowRoot.querySelector('temba-chat');
+    await settle(
+      () =>
+        !!tembaChat.shadowRoot.querySelector(`.row[data-uuid="${eventUUID}"]`),
+      50,
+      10
+    );
+    await chat.updateComplete;
 
     // the event was ingested and is now our newest seen event
     expect(chat.afterUUID).to.equal(eventUUID);
 
     // and it rendered in the chat
-    const tembaChat = chat.shadowRoot.querySelector('temba-chat');
     const row = tembaChat.shadowRoot.querySelector(
       `.row[data-uuid="${eventUUID}"]`
     );
@@ -494,7 +518,7 @@ describe('temba-contact-chat', () => {
       '.search-toggle'
     ) as HTMLElement;
     searchToggle.click();
-    await waitFor(100);
+    await waitFor(10);
     clock.tick(100);
     await chat.updateComplete;
 
@@ -578,11 +602,7 @@ describe('temba-contact-chat', () => {
     ]);
 
     // let the contact fetch land
-    for (let i = 0; i < 40; i++) {
-      await waitFor(50);
-      clock.tick(0);
-      if (chat.currentContact?.uuid === 'contact-barack-archived') break;
-    }
+    await settle(() => chat.currentContact?.uuid === 'contact-barack-archived');
     await chat.updateComplete;
 
     expect(mockSocket.activeChannels()).to.deep.equal([
