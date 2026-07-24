@@ -788,16 +788,16 @@ describe('temba-simulator', () => {
     expect(resetButton).to.exist;
     resetButton.click();
 
-    // wait for the chat to be cleared and the initial message to re-render
-    await waitForCondition(
-      () => {
-        const count = getMessageCount(simulator);
-        return count > 0 && count < messageCountBefore;
-      },
-      40,
-      50
-    );
+    // wait for the chat to be cleared and the initial message to re-render —
+    // the restarted flow has exactly one message, so anything more is a
+    // leftover from the pre-reset chat still mid-teardown
+    await waitForCondition(() => getMessageCount(simulator) === 1, 40, 50);
     await simulator.updateComplete;
+
+    // a stale sprint reply from before the reset must not sneak back in —
+    // give the (discarded) 400ms typing delay time to fire before comparing
+    await delay(600);
+    expect(getMessageCount(simulator)).to.equal(1);
 
     // verify messages are reset - should go back to just initial message
     const messageCountAfter = getMessageCount(simulator);

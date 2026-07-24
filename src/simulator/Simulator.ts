@@ -822,6 +822,10 @@ export class Simulator extends RapidElement {
   private previousEventCount = 0;
   private chat: Chat = null;
 
+  // bumped on reset so in-flight sprint responses started against the old
+  // session are discarded instead of polluting the restarted one
+  private sessionGeneration = 0;
+
   @property({ type: Object })
   private session: Session | null = null;
 
@@ -1207,10 +1211,17 @@ export class Simulator extends RapidElement {
       }
     };
 
+    const generation = this.sessionGeneration;
     try {
       const response = await postJSON(this.endpoint, body);
+      if (generation !== this.sessionGeneration) {
+        return;
+      }
       this.updateRunContext(response.json as RunContext);
     } catch (error) {
+      if (generation !== this.sessionGeneration) {
+        return;
+      }
       console.error('Failed to start simulation:', error);
       const errorEvent = {
         uuid: generateUUIDv7(),
@@ -1510,6 +1521,9 @@ export class Simulator extends RapidElement {
   }
 
   private async handleReset() {
+    // invalidate any in-flight sprint responses from the old session
+    this.sessionGeneration++;
+
     // reset simulation state
     this.events = [];
     this.session = null;
@@ -2068,15 +2082,25 @@ export class Simulator extends RapidElement {
       }
     };
 
+    const generation = this.sessionGeneration;
     try {
       const response = await postJSON(this.endpoint, body);
 
       // add a small delay before showing the reply to simulate typing
       await new Promise((resolve) => setTimeout(resolve, 400));
 
+      // the simulation was reset while we were waiting, this reply belongs
+      // to the old session
+      if (generation !== this.sessionGeneration) {
+        return;
+      }
+
       // pass null for msgInEvt since we already added it
       this.updateRunContext(response.json as RunContext, null);
     } catch (error) {
+      if (generation !== this.sessionGeneration) {
+        return;
+      }
       console.error('Failed to resume simulation:', error);
       const errorEvent = {
         uuid: generateUUIDv7(),

@@ -8,7 +8,9 @@ export class Tip extends RapidElement {
   static get styles() {
     return css`
       .tip {
-        transition: opacity 120ms cubic-bezier(0.2, 0, 0, 1);
+        transition:
+          opacity 120ms cubic-bezier(0.2, 0, 0, 1),
+          transform 120ms cubic-bezier(0.2, 0, 0, 1);
         margin: 0px;
         position: fixed;
         opacity: 0;
@@ -44,9 +46,38 @@ export class Tip extends RapidElement {
         transition: none;
       }
 
+      /* hidden tips sit a few px toward their anchor so showing slides
+         them into position — up, down, or over based on the side */
+      .tip,
+      .tip.side-top {
+        transform: translateY(6px);
+      }
+
+      .tip.side-bottom {
+        transform: translateY(-6px);
+      }
+
+      .tip.side-left {
+        transform: translateX(6px);
+      }
+
+      .tip.side-right {
+        transform: translateX(-6px);
+      }
+
       .show {
         opacity: 1;
         z-index: 2147483647;
+      }
+
+      .tip.show {
+        transform: translate(0, 0);
+      }
+
+      /* interactive tips accept the mouse while shown so their
+         contents can be selected or clicked */
+      .tip.interactive.show {
+        pointer-events: auto;
       }
 
       .slot {
@@ -61,20 +92,27 @@ export class Tip extends RapidElement {
         line-height: 0px;
       }
 
+      /* squash the glyphs along their pointing axis (and widen the
+         base a touch) so the arrows read fat and stubby rather than
+         long and pointy */
       .◀ {
         text-shadow: -1px 2px 2px rgba(0, 0, 0, 0.1);
+        transform: scale(0.6, 1.15);
       }
 
       .▶ {
         text-shadow: 1px 2px 2px rgba(0, 0, 0, 0.1);
+        transform: scale(0.6, 1.15);
       }
 
       .▼ {
         text-shadow: 0px 3px 3px rgba(0, 0, 0, 0.1);
+        transform: scale(1.15, 0.6);
       }
 
       .▲ {
         text-shadow: 0px -1px 1px rgba(0, 0, 0, 0.1);
+        transform: scale(1.15, 0.6);
       }
     `;
   }
@@ -90,6 +128,20 @@ export class Tip extends RapidElement {
 
   @property({ type: String })
   position = 'auto';
+
+  // gap in px between the anchor and the tip edge; when unset, each
+  // side keeps its historical default (10-12px)
+  @property({ type: Number })
+  distance: number = null;
+
+  // font-size of the arrow glyph; offsets scale with it
+  @property({ type: Number, attribute: 'arrow-size' })
+  arrowSize = 10;
+
+  // interactive tips stay open while the mouse is over them so their
+  // contents can be selected or clicked
+  @property({ type: Boolean })
+  interactive = false;
 
   @property({ type: Boolean })
   hideOnChange: boolean;
@@ -114,6 +166,10 @@ export class Tip extends RapidElement {
   arrowLeft: number;
   arrowDirection: string;
 
+  // the side the tip last popped on, driving which direction it
+  // slides in from
+  side: string;
+
   showTimer = 0;
   hideTimer = 0;
 
@@ -121,6 +177,50 @@ export class Tip extends RapidElement {
     super.willUpdate(changed);
     if (changed.has('text') && this.hideOnChange) {
       this.visible = false;
+    }
+
+    // stamp the placement side before the show transition starts so
+    // the very first pop already slides in from the correct direction
+    if (changed.has('visible') && this.visible) {
+      this.prepareSide();
+    }
+  }
+
+  /**
+   * Measures where the tip will pop and applies the matching side-*
+   * class while the tip is still hidden, flushing styles so the slide
+   * animation starts from that side's offset rather than the default.
+   */
+  private prepareSide() {
+    const tipEl = this.getDiv('.tip') as HTMLElement;
+    const anchorEl = this.getDiv('.slot') as HTMLElement;
+    if (!tipEl || !anchorEl) {
+      return;
+    }
+
+    const side = this.chooseSide(
+      this.position,
+      anchorEl.getBoundingClientRect(),
+      tipEl.getBoundingClientRect(),
+      8
+    );
+
+    if (side !== this.side) {
+      this.side = side;
+      // snap (not animate) the hidden tip to the new side's offset so
+      // the show transition starts from there — without suppressing
+      // the transition, the class swap itself animates and the show
+      // retargets from the old offset mid-flight
+      tipEl.style.transition = 'none';
+      tipEl.classList.remove(
+        'side-top',
+        'side-bottom',
+        'side-left',
+        'side-right'
+      );
+      tipEl.classList.add(`side-${side}`);
+      void tipEl.offsetWidth;
+      tipEl.style.transition = '';
     }
   }
 
@@ -144,38 +244,46 @@ export class Tip extends RapidElement {
         tipBounds,
         viewportPadding
       );
+      this.side = side;
 
       this.arrowLeft = 0;
       this.arrowTop = 0;
 
+      // arrow offsets scale with the glyph size; the constants
+      // reproduce the historical values at the default size of 10
+      const arrow = this.arrowSize;
+
       if (side === 'left') {
-        this.left = anchorBounds.left - tipBounds.width - 10;
+        this.left = anchorBounds.left - tipBounds.width - (this.distance ?? 10);
         this.top = getMiddle(anchorBounds, tipBounds);
 
-        // position our arrow
+        // center the glyph box on the tip edge so the arrow always
+        // touches the tip regardless of glyph metrics
         this.arrowTop = tipBounds.height / 2;
-        this.arrowLeft = tipBounds.width + 2;
+        this.arrowLeft = tipBounds.width - arrow * 0.5;
         this.arrow = '▶';
       } else if (side === 'right') {
-        this.left = anchorBounds.right + 12;
+        this.left = anchorBounds.right + (this.distance ?? 12);
         this.top = getMiddle(anchorBounds, tipBounds);
 
         this.arrowTop = tipBounds.height / 2;
-        this.arrowLeft = -8;
+        this.arrowLeft = -arrow * 0.5;
         this.arrow = '◀';
       } else if (side === 'top') {
-        this.top = anchorBounds.top - tipBounds.height - 12;
+        this.top = anchorBounds.top - tipBounds.height - (this.distance ?? 12);
         this.left = getCenter(anchorBounds, tipBounds);
 
-        this.arrowTop = tipBounds.height + 2;
-        this.arrowLeft = tipBounds.width / 2 - 4;
+        // tucked in slightly so the squashed glyph's base stays
+        // buried under the tip edge
+        this.arrowTop = tipBounds.height + arrow * 0.1;
+        this.arrowLeft = tipBounds.width / 2 - arrow * 0.4;
         this.arrow = '▼';
       } else if (side === 'bottom') {
-        this.top = anchorBounds.bottom + 10;
+        this.top = anchorBounds.bottom + (this.distance ?? 10);
         this.left = getCenter(anchorBounds, tipBounds);
 
-        this.arrowTop = -2;
-        this.arrowLeft = tipBounds.width / 2 - 3;
+        this.arrowTop = -arrow * 0.1;
+        this.arrowLeft = tipBounds.width / 2 - arrow * 0.3;
         this.arrow = '▲';
       }
 
@@ -194,7 +302,11 @@ export class Tip extends RapidElement {
 
       if (side === 'top' || side === 'bottom') {
         this.arrowLeft -= leftDelta;
-        this.arrowLeft = this.clamp(this.arrowLeft, 8, tipBounds.width - 14);
+        this.arrowLeft = this.clamp(
+          this.arrowLeft,
+          8,
+          tipBounds.width - (arrow + 4)
+        );
       } else {
         this.arrowTop -= topDelta;
         this.arrowTop = this.clamp(this.arrowTop, 8, tipBounds.height - 8);
@@ -207,6 +319,13 @@ export class Tip extends RapidElement {
       this.arrowLeft = Math.round(this.arrowLeft);
 
       // directly update DOM to avoid scheduling another update
+      tipEl.classList.remove(
+        'side-top',
+        'side-bottom',
+        'side-left',
+        'side-right'
+      );
+      tipEl.classList.add(`side-${side}`);
       tipEl.style.top = `${this.top}px`;
       tipEl.style.left = `${this.left}px`;
       arrowEl.style.top = `${this.arrowTop}px`;
@@ -291,13 +410,25 @@ export class Tip extends RapidElement {
   private handleMouseLeave() {
     window.clearTimeout(this.showTimer);
     window.clearTimeout(this.hideTimer);
-    if (this.hideDelay > 0) {
+
+    // interactive tips linger long enough for the mouse to travel from
+    // the anchor into the tip itself
+    const hideDelay = this.interactive
+      ? Math.max(this.hideDelay, 300)
+      : this.hideDelay;
+
+    if (hideDelay > 0) {
       this.hideTimer = window.setTimeout(() => {
         this.visible = false;
-      }, this.hideDelay);
+      }, hideDelay);
       return;
     }
     this.visible = false;
+  }
+
+  private handleTipMouseEnter() {
+    // the mouse made it into the tip — cancel any pending hide
+    window.clearTimeout(this.hideTimer);
   }
 
   public render(): TemplateResult {
@@ -308,7 +439,8 @@ export class Tip extends RapidElement {
 
     const arrowStyle: any = {
       top: this.arrowTop ? `${this.arrowTop}px` : '0px',
-      left: this.arrowLeft ? `${this.arrowLeft}px` : '0px'
+      left: this.arrowLeft ? `${this.arrowLeft}px` : '0px',
+      fontSize: `${this.arrowSize}px`
     };
 
     if (this.width) {
@@ -319,7 +451,9 @@ export class Tip extends RapidElement {
       tip: true,
       show: this.visible,
       top: this.poppedTop,
-      'hide-on-change': this.hideOnChange
+      interactive: this.interactive,
+      'hide-on-change': this.hideOnChange,
+      [`side-${this.side}`]: !!this.side
     });
 
     return html`
@@ -331,7 +465,12 @@ export class Tip extends RapidElement {
       >
         <slot></slot>
       </div>
-      <div class="${classes}" style=${styleMap(tipStyle)}>
+      <div
+        class="${classes}"
+        style=${styleMap(tipStyle)}
+        @mouseenter=${this.handleTipMouseEnter}
+        @mouseleave=${this.handleMouseLeave}
+      >
         ${this.content ?? this.text}
         <div class="arrow" style=${styleMap(arrowStyle)}></div>
       </div>

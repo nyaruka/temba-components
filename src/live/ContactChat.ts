@@ -157,7 +157,6 @@ export class ContactChat extends ContactStoreElement {
       temba-chat {
         border-bottom: 1px solid #ddd;
         background: linear-gradient(0deg, #fff, #fff);
-        --chat-border-in: 1px solid #eee;
         --color-chat-out: var(--color-message);
         transition: opacity 0.15s ease;
       }
@@ -1193,15 +1192,18 @@ export class ContactChat extends ContactStoreElement {
   /**
    * Keeps the store's avatar cache fresh from server-hydrated user refs and
    * fills in refs that arrive without one - events published over sockets
-   * carry only a user's uuid and name.
+   * carry only a user's uuid and name. Ticket assignment events carry a
+   * second user ref (the assignee) whose avatar feeds the event's hover
+   * tooltip.
    */
   private resolveUserAvatar(event: any) {
-    const user = event._user;
-    if (user && user.uuid && this.store) {
-      if (user.avatar) {
-        this.store.setUserAvatar(user.uuid, user.avatar);
-      } else {
-        user.avatar = this.store.getUserAvatar(user.uuid);
+    for (const user of [event._user, event.assignee]) {
+      if (user && user.uuid && this.store) {
+        if (user.avatar) {
+          this.store.setUserAvatar(user.uuid, user.avatar);
+        } else {
+          user.avatar = this.store.getUserAvatar(user.uuid);
+        }
       }
     }
   }

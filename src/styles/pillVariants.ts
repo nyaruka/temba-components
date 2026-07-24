@@ -43,7 +43,8 @@ export const PILL_TYPES: ReadonlySet<string> = new Set([
   'keyword',
   'channel',
   'topic',
-  'campaign'
+  'campaign',
+  'removed'
 ]);
 
 /** Default icon name for each pill variant. Used when a consumer
@@ -144,6 +145,17 @@ export const pillVariants = css`
     color: #854d0e;
     border-color: #fde68a;
     --icon-color: var(--field);
+  }
+  .pill-removed {
+    /* Removal pill — used when an entity is taken away (e.g. removed
+       from a group in the chat history). Fixed at the Tailwind red
+       ramp (red-100 bg / red-200 border / red-800 text) for the same
+       reason .pill-field is fixed at yellow: color-mixing a light red
+       into white washes out before it reads as "red". */
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+    --icon-color: #991b1b;
   }
   .pill-keyword {
     background: var(--sunken);
