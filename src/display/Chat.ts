@@ -2053,6 +2053,8 @@ export class Chat extends RapidElement {
     this.typingEvents.clear();
     this.msgMap.clear();
     this.metadataCache.clear();
+    this.expandedEventChunks.clear();
+    this.collapsingEventChunks.clear();
     this.messageGroups = [];
     this.hideBottomScroll = true;
     this.hideTopScroll = true;

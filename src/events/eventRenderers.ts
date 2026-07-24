@@ -433,7 +433,7 @@ export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
 export const renderContactGroupsEvent = (
   event: ContactGroupsEvent,
   withTooltips = false
-): TemplateResult => {
+): TemplateResult | null => {
   // a group event can carry several groups — with tooltips on (the
   // contact chat), each pill gets its own tip anchored to the hovered
   // pill, so the tips wrap per-pill here rather than renderEvent
@@ -581,7 +581,7 @@ export const renderContactStatusChangedEvent = (
   </div>`;
 };
 
-export const renderCallEvent = (event: CallEvent): TemplateResult => {
+export const renderCallEvent = (event: CallEvent): TemplateResult | null => {
   let label: string = null;
   let icon: string = null;
   if (event.type === Events.CALL_CREATED) {
