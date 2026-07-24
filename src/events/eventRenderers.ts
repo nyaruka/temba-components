@@ -1,4 +1,5 @@
 import { html, TemplateResult } from 'lit';
+import { ifDefined } from 'lit-html/directives/if-defined.js';
 import {
   AirtimeCreatedEvent,
   AirtimeTransferredEvent,
@@ -15,7 +16,6 @@ import {
   URNsChangedEvent
 } from '../events';
 import { getLanguageName } from '../languages';
-import { oxfordFn } from '../utils';
 
 export enum Events {
   AIRTIME_CREATED = 'airtime_created',
@@ -67,26 +67,27 @@ export enum Events {
  * rendered inline as a plain pill. Single source of truth for the
  * "entity pill in chat history" look — inline margin keeps wrapping
  * airy, and inline style works regardless of host-page Tailwind reach.
+ *
+ * Pills carry no native `title` — hover detail (verb, actor, time)
+ * lives in the rich tooltip renderEvent wraps around each event.
  */
 const renderEntityPill = (
   pillType: string,
   name: string,
-  opts: { href?: string; icon?: string } = {}
+  opts: {
+    href?: string;
+    icon?: string;
+    prefixIcon?: string;
+  } = {}
 ): TemplateResult => {
-  const pill = opts.icon
-    ? html`<temba-label
-        icon=${opts.icon}
-        type=${pillType}
-        ?clickable=${!!opts.href}
-        style="margin: 1px 2px; vertical-align: middle;"
-        >${name}</temba-label
-      >`
-    : html`<temba-label
-        type=${pillType}
-        ?clickable=${!!opts.href}
-        style="margin: 1px 2px; vertical-align: middle;"
-        >${name}</temba-label
-      >`;
+  const pill = html`<temba-label
+    type=${pillType}
+    icon=${ifDefined(opts.icon)}
+    prefix-icon=${ifDefined(opts.prefixIcon)}
+    ?clickable=${!!opts.href}
+    style="margin: 1px 2px; vertical-align: middle;"
+    >${name}</temba-label
+  >`;
   return opts.href
     ? html`<a
         href=${opts.href}
@@ -97,17 +98,26 @@ const renderEntityPill = (
     : pill;
 };
 
-const groupPill = (item: any) =>
-  renderEntityPill('group', item.name, {
-    href: `/contact/group/${item.uuid}/`
+/**
+ * Renders a single group addition or removal as a self-contained
+ * pill linking to the group, following the fixed pill convention:
+ * the group name on the left, the bold verb on the right — " Drivers
+ * | Added " / " Farmers | Removed " — with the red removal variant
+ * reinforcing removals (it has no default icon, so the group icon is
+ * set explicitly there).
+ */
+const groupPill = (group: any, removed = false): TemplateResult =>
+  attributePill(group.name, removed ? 'Removed' : 'Added', {
+    type: removed ? 'removed' : 'group',
+    icon: removed ? 'group' : undefined,
+    href: `/contact/group/${group.uuid}/`
   });
 
-const flowPill = (flow: any) =>
+const flowPill = (flow: any, opts: { prefixIcon?: string } = {}) =>
   renderEntityPill('flow', flow.name, {
-    href: `/flow/editor/${flow.uuid}/`
+    href: `/flow/editor/${flow.uuid}/`,
+    ...opts
   });
-
-const fieldPill = (field: any) => renderEntityPill('field', field.name);
 
 const topicPill = (topic: any) =>
   renderEntityPill('topic', topic.name, {
@@ -115,39 +125,89 @@ const topicPill = (topic: any) =>
   });
 
 /**
- * Renders a user as a plain text link to the "All" ticket folder
- * filtered by that assignee. Used for actor attribution in the
- * chat history (ticket assigned / opened / closed events).
- *
- * The richer avatar-chip variant is parked in git history (see
- * userPill) — we'll bring it back if denser surfaces need it.
+ * Renders a ticket lifecycle change as a self-contained pill linking
+ * to the ticket, following the fixed pill convention: label on the
+ * left (a user or "Ticket") and the bold verb on the right, e.g.
+ * " Sally Sue | Assigned ". Uses the topic (orange) variant so
+ * everything ticket-related shares one color, with the agent icon
+ * marking these as the ticket itself rather than a topic change.
+ * The acting user is named (with an avatar) in the rich hover
+ * tooltip renderEvent attaches.
  */
-const userLink = (user: any): TemplateResult => {
-  const name =
-    user.name || [user.first_name, user.last_name].filter(Boolean).join(' ');
-  return html`<a
-    href="/ticket/all/open/?assignee=${user.uuid}"
-    onclick="goto(event, this)"
-    title=${name}
-    >${name}</a
-  >`;
-};
+const ticketPill = (opts: {
+  uuid: string;
+  name?: string;
+  folder?: string;
+  verb: string;
+}) =>
+  attributePill(opts.name || 'Ticket', opts.verb, {
+    type: 'topic',
+    icon: 'tickets',
+    href: `/ticket/all/${opts.folder || 'open'}/${opts.uuid}/`
+  });
+
+const getUserName = (user: any): string =>
+  user.name || [user.first_name, user.last_name].filter(Boolean).join(' ');
+
+// thin currentColor rule separating the attribute name from its value
+// inside an attribute pill — picks up each variant's text color
+const attributeDividerStyle =
+  'display: inline-block; width: 1px; height: 11px; background: currentColor; opacity: 0.3; margin: 0 6px; vertical-align: -2px;';
+
+// either half of an attribute pill — capped so a long name or value
+// can't stretch the pill across the chat
+const attributeSideStyle = (maxWidth = '18em') =>
+  `display: inline-block; max-width: ${maxWidth}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;`;
 
 /**
- * Renders a contact-data value (field text, name, URN, language,
- * status, amount, etc.) as bold inline text, truncated with an
- * ellipsis past a reasonable width. Pills are reserved for system-
- * level objects (group, flow, field, topic, …) — these are just
- * values, so the chip chrome would over-state them. The full value
- * is exposed via `title` for hover inspection.
+ * Renders a name/value pair as a single self-contained pill: the
+ * name, a thin divider, then the bolded value — e.g. " Age | 43 " or
+ * " Update Info | Completed ". The layout is a fixed convention
+ * across every event pill: label on the left, value on the right,
+ * bold on the right. A null value renders as an italic "cleared".
+ * Both sides truncate — the full text lives in the rich hover
+ * tooltip renderEvent attaches, so no native titles here.
+ * TemplateResult values (e.g. a temba-date) are passed through
+ * bolded. With `href` the pill wraps in a navigation anchor, same
+ * as renderEntityPill.
  */
-const valueText = (value: string | number) => {
-  const str = String(value);
-  return html`<span
-    title=${str}
-    style="display: inline-block; max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; font-weight: 600;"
-    >${str}</span
+const attributePill = (
+  name: string,
+  value: string | TemplateResult | null,
+  opts: {
+    type?: string;
+    icon?: string;
+    href?: string;
+    nameMaxWidth?: string;
+  } = {}
+): TemplateResult => {
+  const valueContent =
+    value === null
+      ? html`<span style="font-style: italic; opacity: 0.7;">cleared</span>`
+      : typeof value === 'string'
+        ? html`<span style="${attributeSideStyle()} font-weight: 600;"
+            >${value}</span
+          >`
+        : html`<span style="font-weight: 600;">${value}</span>`;
+  const nameContent = html`<span style=${attributeSideStyle(opts.nameMaxWidth)}
+    >${name}</span
   >`;
+  const pill = html`<temba-label
+    type=${opts.type || 'neutral'}
+    icon=${ifDefined(opts.icon)}
+    ?clickable=${!!opts.href}
+    style="margin: 1px 2px; vertical-align: middle;"
+    >${nameContent}<span style=${attributeDividerStyle}></span
+    >${valueContent}</temba-label
+  >`;
+  return opts.href
+    ? html`<a
+        href=${opts.href}
+        onclick="goto(event, this)"
+        style="vertical-align: middle;"
+        >${pill}</a
+      >`
+    : pill;
 };
 
 /**
@@ -164,56 +224,50 @@ const valueText = (value: string | number) => {
 const eventLineStyle =
   'display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 2px 4px; min-height: 24px;';
 
-const renderInfoList = (
-  singular: string,
-  plural: string,
-  items: any[]
-): TemplateResult => {
-  if (items.length === 1) {
-    return html`<div style=${eventLineStyle}>
-      ${singular} ${groupPill(items[0])}
-    </div>`;
-  }
-  if (items.length === 2) {
-    return html`<div style=${eventLineStyle}>
-      ${plural} ${groupPill(items[0])} and ${groupPill(items[1])}
-    </div>`;
-  }
-  // No commas between pills — the flex `gap` on eventLineStyle
-  // already provides visual separation, and a pill list reads as a
-  // single "set" rather than a sentence.
-  const middle = items.slice(0, -1).map((item) => groupPill(item));
-  const last = items[items.length - 1];
-  return html`<div style=${eventLineStyle}>
-    ${plural} ${middle} and ${groupPill(last)}
-  </div>`;
-};
-
 export const renderRunEvent = (event: RunEvent): TemplateResult => {
+  // follows the fixed pill convention: label (flow name) on the
+  // left, bold value (the run state) on the right — " Update Info |
+  // Completed " — matching how field pills read. Runs cut short
+  // (interrupted / expired) use the red removal variant, matching
+  // group removals; that variant has no default icon so the flow
+  // icon is set explicitly.
   let verb = 'Started';
+  let cutShort = false;
   if (event.type === Events.RUN_ENDED) {
     if (event.status === 'completed') {
       verb = 'Completed';
     } else if (event.status === 'expired') {
-      verb = 'Expired from';
+      verb = 'Expired';
+      cutShort = true;
     } else {
       verb = 'Interrupted';
+      cutShort = true;
     }
   }
 
   return html`<div style=${eventLineStyle}>
-    ${verb} ${flowPill(event.flow)}
+    ${attributePill(event.flow.name, verb, {
+      type: cutShort ? 'removed' : 'flow',
+      icon: cutShort ? 'flow' : undefined,
+      href: `/flow/editor/${event.flow.uuid}/`,
+      // flow names run long — cap them harder than other pill labels
+      nameMaxWidth: '160px'
+    })}
   </div>`;
 };
 
 export const renderChatStartedEvent = (
   event: ChatStartedEvent
 ): TemplateResult => {
-  if (event.params) {
-    return html`<div>Chat referral</div>`;
-  } else {
-    return html`<div>Chat started</div>`;
-  }
+  return html`<div style=${eventLineStyle}>
+    ${renderEntityPill(
+      'neutral',
+      event.params ? 'Chat referral' : 'Chat started',
+      {
+        icon: 'message'
+      }
+    )}
+  </div>`;
 };
 
 export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
@@ -221,35 +275,38 @@ export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
   // cleared field — backfill / reset payloads sometimes arrive as
   // `value: { text: '' }`, which would otherwise render with an
   // empty value pill.
-  return event.value && event.value.text
-    ? html`<div style=${eventLineStyle}>
-        Updated ${fieldPill(event.field)} to ${valueText(event.value.text)}
-      </div>`
-    : html`<div style=${eventLineStyle}>
-        Cleared ${fieldPill(event.field)}
-      </div>`;
+  const value = event.value;
+  let display: string | TemplateResult | null = null;
+  if (value && value.text) {
+    // date values carry a typed datetime alongside the raw text — show
+    // those through temba-date for short, locale-aware formatting
+    display = value.datetime
+      ? html`<temba-date value=${value.datetime} display="day"></temba-date>`
+      : value.text;
+  }
+  return html`<div style=${eventLineStyle}>
+    ${attributePill(event.field.name, display, { type: 'field' })}
+  </div>`;
 };
 
 export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
-  if (!event.name) {
-    return html`<div style=${eventLineStyle}>Cleared name</div>`;
-  }
   return html`<div style=${eventLineStyle}>
-    Updated name to ${valueText(event.name)}
+    ${attributePill('Name', event.name || null, { icon: 'contact' })}
   </div>`;
 };
 
 export const renderContactURNsChanged = (
   event: URNsChangedEvent
 ): TemplateResult => {
-  if (!event.urns || event.urns.length === 0) {
-    return html`<div style=${eventLineStyle}>Cleared URNs</div>`;
-  }
+  // URNs are replaced as a set, so the whole set shares one pill —
+  // the value truncates past 18em with the full list on hover
+  const urns = (event.urns || []).map(
+    (urn: string) => urn.split(':')[1].split('?')[0]
+  );
   return html`<div style=${eventLineStyle}>
-    Updated URNs to
-    ${oxfordFn(event.urns, (urn: string) =>
-      valueText(urn.split(':')[1].split('?')[0])
-    )}
+    ${attributePill('URNs', urns.length ? urns.join(', ') : null, {
+      icon: 'at-sign'
+    })}
   </div>`;
 };
 
@@ -273,102 +330,215 @@ export const renderTicketAction = (
   }
 
   // closed → ticket is in the closed folder now; reopened → it's
-  // back in open. Linking the word "ticket" lets a reader jump to
-  // wherever the ticket actually lives.
+  // back in open, so the pill links to wherever the ticket actually
+  // lives. Tickets are always closed by someone, so that user's name
+  // is the pill's label ("Adam Ant | Closed") rather than a generic
+  // "Ticket" — with the generic fallback kept for defensive safety.
   const folder = action === 'closed' ? 'closed' : 'open';
-  const href = `/ticket/all/${folder}/${ticketUUID}/`;
-  return event._user
-    ? html`<div style=${eventLineStyle}>
-        ${userLink(event._user)} ${action} a <a href=${href}>ticket</a>
-      </div>`
-    : html`<div style=${eventLineStyle}>
-        A <a href=${href}>ticket</a> was ${action}
-      </div>`;
+  const verb = action === 'closed' ? 'Closed' : 'Reopened';
+  return html`<div style=${eventLineStyle}>
+    ${ticketPill({
+      uuid: ticketUUID,
+      name:
+        action === 'closed' && event._user
+          ? getUserName(event._user)
+          : undefined,
+      folder,
+      verb
+    })}
+  </div>`;
 };
 
 export const renderTicketAssigneeChanged = (
   event: TicketEvent
 ): TemplateResult => {
   const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
-  // Link the word "ticket" in assignee events too, so the noun is
-  // consistently interactive across open / close / reopen / assigned
-  // rows (the contact-history page can show events from any of the
-  // contact's tickets, so the jump-to-ticket affordance is useful).
-  const ticketLink = html`<a href="/ticket/all/open/${ticketUUID}/">ticket</a>`;
-  const ticketLinkCapitalized = html`<a href="/ticket/all/open/${ticketUUID}/"
-    >This ticket</a
-  >`;
-  if (event._user) {
-    if (event.assignee) {
-      // Self-assignment ("took the ticket") reads naturally as one
-      // user link + verb, rather than "<user> assigned to <same user>".
-      // Match on uuid when present, falling back to email — depending
-      // on the API surface a user payload may carry one or the other.
-      const sameUser =
-        (event._user.uuid && event._user.uuid === event.assignee.uuid) ||
-        (event._user.email && event._user.email === event.assignee.email);
-      if (sameUser) {
-        return html`<div style=${eventLineStyle}>
-          ${userLink(event._user)} took this ${ticketLink}
-        </div>`;
-      }
-      return html`<div style=${eventLineStyle}>
-        ${userLink(event._user)} assigned this ${ticketLink} to
-        ${userLink(event.assignee)}
-      </div>`;
-    } else {
-      return html`<div style=${eventLineStyle}>
-        ${userLink(event._user)} unassigned this ${ticketLink}
-      </div>`;
-    }
-  } else {
-    if (event.assignee) {
-      return html`<div style=${eventLineStyle}>
-        ${ticketLinkCapitalized} was assigned to ${userLink(event.assignee)}
-      </div>`;
-    } else {
-      return html`<div style=${eventLineStyle}>
-        ${ticketLinkCapitalized} was unassigned
-      </div>`;
-    }
+  if (event.assignee) {
+    // the assignee is the pill's label — who owns the ticket now is
+    // the fact that matters. Who did the assigning lives in the
+    // hover tooltip.
+    return html`<div style=${eventLineStyle}>
+      ${ticketPill({
+        uuid: ticketUUID,
+        name: getUserName(event.assignee),
+        verb: 'Assigned'
+      })}
+    </div>`;
   }
+  return html`<div style=${eventLineStyle}>
+    ${ticketPill({
+      uuid: ticketUUID,
+      verb: 'Unassigned'
+    })}
+  </div>`;
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  const ticketUUID = event.ticket.uuid;
-  const href = `/ticket/all/open/${ticketUUID}/`;
-  // ticket.topic is optional in events.ts — guard so a payload
-  // without one degrades to "A ticket was opened" rather than
-  // throwing inside topicPill.
+  // the opened pill leads with the topic behind its topic icon, then
+  // the assignee behind an inline agent icon when the event carries
+  // one, each segment split by the standard divider before the bold
+  // verb — e.g. " (topic) Billing | (agent) Sally Sue | Opened ".
+  // Without a topic the assignee (behind the label-level agent icon)
+  // is the whole label, and with neither it falls back to the
+  // generic ticket pill. ticket_opened carries its assignee inside
+  // the ticket envelope (unlike ticket_assignee_changed, where it's
+  // on the event itself).
   const topic = event.ticket.topic;
-  const tail = topic ? html` in ${topicPill(topic)}` : null;
-  return event._user
-    ? html`<div style=${eventLineStyle}>
-        ${userLink(event._user)} opened a <a href=${href}>ticket</a>${tail}
-      </div>`
-    : html`<div style=${eventLineStyle}>
-        A <a href=${href}>ticket</a> was opened${tail}
-      </div>`;
+  const assignee = event.ticket.assignee || event.assignee;
+
+  if (!topic && !assignee) {
+    return html`<div style=${eventLineStyle}>
+      ${ticketPill({
+        uuid: event.ticket.uuid,
+        verb: 'Opened'
+      })}
+    </div>`;
+  }
+
+  // an inline agent icon marking the assignee segment when the topic
+  // occupies the pill's leading (label-level) icon slot — aligned to
+  // match the divider
+  const inlineAgentIcon = html`<temba-icon
+    name="tickets"
+    style="display: inline-block; vertical-align: -2px; margin-right: 4px;"
+  ></temba-icon>`;
+
+  const pill = html`<temba-label
+    type="topic"
+    icon=${topic ? 'topic' : 'tickets'}
+    clickable
+    style="margin: 1px 2px; vertical-align: middle;"
+    >${topic
+      ? html`<span style=${attributeSideStyle()}>${topic.name}</span>`
+      : null}${assignee
+      ? html`${topic
+            ? html`<span style=${attributeDividerStyle}></span>`
+            : null}${inlineAgentIcon}<span style=${attributeSideStyle()}
+            >${getUserName(assignee)}</span
+          >`
+      : null}<span style=${attributeDividerStyle}></span
+    ><span style="font-weight: 600;">Opened</span></temba-label
+  >`;
+
+  return html`<div style=${eventLineStyle}>
+    <a
+      href=${`/ticket/all/open/${event.ticket.uuid}/`}
+      onclick="goto(event, this)"
+      style="vertical-align: middle;"
+      >${pill}</a
+    >
+  </div>`;
 };
 
 export const renderContactGroupsEvent = (
-  event: ContactGroupsEvent
+  event: ContactGroupsEvent,
+  withTooltips = false
 ): TemplateResult => {
-  if (event.groups_added) {
-    return renderInfoList('Added to', 'Added to', event.groups_added);
-  } else if (event.groups_removed) {
-    return renderInfoList('Removed from', 'Removed from', event.groups_removed);
+  // a group event can carry several groups — with tooltips on (the
+  // contact chat), each pill gets its own tip anchored to the hovered
+  // pill, so the tips wrap per-pill here rather than renderEvent
+  // wrapping the whole line
+  const wrap = (pill: TemplateResult): TemplateResult =>
+    withTooltips
+      ? html`<temba-tip
+          style="display: inline-block; max-width: 100%;"
+          position="top"
+          distance="4"
+          arrow-size="18"
+          interactive
+          .content=${renderEventTooltip(event)}
+          >${pill}</temba-tip
+        >`
+      : pill;
+
+  const pills = [
+    ...(event.groups_added || []).map((group) => wrap(groupPill(group))),
+    ...(event.groups_removed || []).map((group) => wrap(groupPill(group, true)))
+  ];
+  if (pills.length === 0) {
+    return null;
   }
+  return html`<div style=${eventLineStyle}>${pills}</div>`;
+};
+
+/**
+ * Renders a run of informational events as a single collapsed
+ * summary pill — the unique set of icons for what's inside followed
+ * by the total event count, e.g. " ⌄ ⚡👤 12 ". The pill is
+ * stateless; the chat wires `onExpand` and swaps in the detailed
+ * pills when clicked.
+ */
+export const renderEventSummary = (
+  events: any[],
+  onExpand: () => void
+): TemplateResult => {
+  // one icon per kind of thing inside, deduped, in order of first
+  // appearance
+  const icons: string[] = [];
+  const addIcon = (icon: string) => {
+    if (!icons.includes(icon)) {
+      icons.push(icon);
+    }
+  };
+  for (const event of events) {
+    switch (event.type) {
+      case Events.RUN_STARTED:
+      case Events.RUN_ENDED:
+      case Events.FLOW_ENTERED:
+      case Events.SESSION_TRIGGERED:
+        addIcon('flow');
+        break;
+      case Events.CONTACT_GROUPS_CHANGED:
+        addIcon('group');
+        break;
+      case Events.CONTACT_FIELD_CHANGED:
+      case Events.CONTACT_NAME_CHANGED:
+      case Events.CONTACT_LANGUAGE_CHANGED:
+      case Events.CONTACT_STATUS_CHANGED:
+      case Events.CONTACT_URNS_CHANGED:
+        addIcon('fields');
+        break;
+      case Events.TICKET_OPENED:
+      case Events.TICKET_CLOSED:
+      case Events.TICKET_REOPENED:
+      case Events.TICKET_ASSIGNEE_CHANGED:
+      case Events.TICKET_TOPIC_CHANGED:
+        addIcon('tickets');
+        break;
+      default:
+        addIcon('event');
+    }
+  }
+
+  return html`<temba-label
+    type="neutral"
+    icon="down"
+    title="Show details"
+    clickable
+    style="margin: 1px 2px; vertical-align: middle;"
+    @click=${onExpand}
+    >${icons.map(
+      (icon) =>
+        html`<temba-icon
+          name=${icon}
+          style="display: inline-block; vertical-align: -2px; margin-right: 3px;"
+        ></temba-icon>`
+    )}<span style="font-weight: 600; margin-left: 2px;"
+      >${events.length}</span
+    ></temba-label
+  >`;
 };
 
 export const renderAirtimeTransferredEvent = (
   event: AirtimeTransferredEvent
 ): TemplateResult => {
-  if (parseFloat(event.amount) === 0) {
-    return html`<div>Airtime transfer failed</div>`;
-  }
+  const failed = parseFloat(event.amount) === 0;
   return html`<div style=${eventLineStyle}>
-    Transferred ${valueText(event.amount)} ${event.currency} of airtime
+    ${failed
+      ? attributePill('Airtime', 'failed', { icon: 'airtime' })
+      : attributePill('Airtime', `${event.amount} ${event.currency}`, {
+          icon: 'airtime'
+        })}
   </div>`;
 };
 
@@ -376,67 +546,83 @@ export const renderAirtimeCreatedEvent = (
   event: AirtimeCreatedEvent
 ): TemplateResult => {
   const status = event._status?.status ?? 'created';
-  const amount = html`${valueText(event.amount)} ${event.currency}`;
+  let value = `${event.amount} ${event.currency}`;
 
   switch (status) {
     case 'reversed':
-      return html`<div>Airtime transfer reversed</div>`;
+      value = 'reversed';
+      break;
     case 'rejected':
     case 'cancelled':
     case 'declined':
-      return html`<div>Airtime transfer failed</div>`;
-    case 'completed':
-      return html`<div style=${eventLineStyle}>
-        Transferred ${amount} of airtime
-      </div>`;
-    default:
-      return html`<div style=${eventLineStyle}>
-        Sending ${amount} of airtime
-      </div>`;
+      value = 'failed';
+      break;
   }
+
+  return html`<div style=${eventLineStyle}>
+    ${attributePill('Airtime', value, { icon: 'airtime' })}
+  </div>`;
 };
 
 export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): TemplateResult => {
-  if (!event.language) {
-    return html`<div style=${eventLineStyle}>Cleared language</div>`;
-  }
+  const language = event.language ? getLanguageName(event.language) : null;
   return html`<div style=${eventLineStyle}>
-    Language updated to ${valueText(getLanguageName(event.language))}
+    ${attributePill('Language', language, { icon: 'language' })}
   </div>`;
 };
 
 export const renderContactStatusChangedEvent = (
   event: ContactStatusChangedEvent
 ): TemplateResult => {
-  if (!event.status) {
-    return html`<div style=${eventLineStyle}>Cleared status</div>`;
-  }
   return html`<div style=${eventLineStyle}>
-    Status updated to ${valueText(event.status)}
+    ${attributePill('Status', event.status || null)}
   </div>`;
 };
 
 export const renderCallEvent = (event: CallEvent): TemplateResult => {
+  let label: string = null;
+  let icon: string = null;
   if (event.type === Events.CALL_CREATED) {
-    return html`<div>Call started</div>`;
+    label = 'Call started';
+    icon = 'call';
   } else if (event.type === Events.CALL_MISSED) {
-    return html`<div>Call missed</div>`;
+    label = 'Call missed';
+    icon = 'missed_call';
   } else if (event.type === Events.CALL_RECEIVED) {
-    return html`<div>Call answered</div>`;
+    label = 'Call answered';
+    icon = 'incoming_call';
   }
+  if (!label) {
+    return null;
+  }
+  return html`<div style=${eventLineStyle}>
+    ${renderEntityPill('neutral', label, { icon })}
+  </div>`;
 };
 
 export const renderOptInEvent = (event: OptInEvent): TemplateResult => {
+  // opt-out gets the red removal treatment to mirror group removal;
+  // the hover tooltip and icon carry the verb in all three cases
   if (event.type === Events.OPTIN_REQUESTED) {
-    return html`<div>
-      Requested opt-in for <strong>${event.optin.name}</strong>
+    return html`<div style=${eventLineStyle}>
+      ${renderEntityPill('neutral', event.optin.name, {
+        icon: 'optin_requested'
+      })}
     </div>`;
   } else if (event.type === Events.OPTIN_STARTED) {
-    return html`<div>Opted in to <strong>${event.optin.name}</strong></div>`;
+    return html`<div style=${eventLineStyle}>
+      ${renderEntityPill('neutral', event.optin.name, {
+        icon: 'optin'
+      })}
+    </div>`;
   } else if (event.type === Events.OPTIN_STOPPED) {
-    return html`<div>Opted out of <strong>${event.optin.name}</strong></div>`;
+    return html`<div style=${eventLineStyle}>
+      ${renderEntityPill('removed', event.optin.name, {
+        icon: 'optout'
+      })}
+    </div>`;
   }
 };
 
@@ -469,85 +655,65 @@ export const renderDiagnosticEvent = (
   return null;
 };
 
-export const renderRunResultChanged = (
-  event: any,
-  isSimulation: boolean = false
-): TemplateResult | null => {
-  const val = String(event.value);
-  const MAX_LEN = isSimulation ? 30 : 100;
-
-  if (val.length > MAX_LEN) {
-    const displayVal = val.substring(0, MAX_LEN) + '...';
-    return html`<div>
-      Set result <strong>${event.name}</strong> to "<span
-        title="${val}"
-        style="cursor: help; border-bottom: 1px dotted #999;"
-        >${displayVal}</span
-      >"
-    </div>`;
-  }
-  return html`<div>Set result <strong>${event.name}</strong> to "${val}"</div>`;
+export const renderRunResultChanged = (event: any): TemplateResult | null => {
+  // attributePill truncates long values; the hover tooltip carries
+  // the full text
+  return html`<div style=${eventLineStyle}>
+    ${attributePill(event.name, String(event.value))}
+  </div>`;
 };
 
 export const renderInputLabelsAdded = (event: any): TemplateResult | null => {
   const labels = event.labels || [];
-  if (labels.length > 0) {
-    const labelList = labels.map((l: any) => l.name);
-    if (labelList.length === 1) {
-      return html`<div>
-        Message labeled with <strong>${labelList[0]}</strong>
-      </div>`;
-    } else {
-      const last = labelList.pop();
-      return html`<div>
-        Message labeled with
-        ${labelList.map(
-          (name: string, index: number) =>
-            html`<strong>${name}</strong>${index < labelList.length - 1
-                ? ', '
-                : ''}`
-        )}
-        and <strong>${last}</strong>
-      </div>`;
-    }
+  if (labels.length === 0) {
+    return null;
   }
-  return null;
+  return html`<div style=${eventLineStyle}>
+    ${labels.map((l: any) => renderEntityPill('label', l.name))}
+  </div>`;
 };
 
 export const renderEmailSent = (event: any): TemplateResult | null => {
   const recipients = event.to || event.addresses || [];
-  const subject = event.subject;
-  if (recipients.length > 0) {
-    const recipientList = recipients.join(', ');
-    return html`<div>
-      Sent email to <strong>${recipientList}</strong> with subject "${subject}"
-    </div>`;
+  if (recipients.length === 0) {
+    return null;
   }
-  return null;
+  return html`<div style=${eventLineStyle}>
+    ${renderEntityPill('neutral', recipients.join(', '), {
+      icon: 'email'
+    })}
+  </div>`;
 };
 
 export const renderBroadcastCreated = (event: any): TemplateResult | null => {
-  const translations = event.translations;
-  const baseLanguage = event.base_language;
-  if (translations && translations[baseLanguage]) {
-    return html`<div>
-      Sent broadcast: "${translations[baseLanguage].text}"
-    </div>`;
-  }
-  return html`<div>Sent broadcast</div>`;
+  const text = event.translations?.[event.base_language]?.text;
+  const maxLen = 50;
+  const display =
+    text && text.length > maxLen ? text.slice(0, maxLen) + '...' : text;
+  return html`<div style=${eventLineStyle}>
+    ${renderEntityPill('neutral', display || 'Broadcast', {
+      icon: 'broadcast'
+    })}
+  </div>`;
 };
 
 export const renderSessionTriggered = (event: any): TemplateResult | null => {
   const flow = event.flow;
   if (flow) {
-    return html`<div>Started somebody else in ${flowPill(flow)}</div>`;
+    return html`<div style=${eventLineStyle}>
+      ${flowPill(flow, {
+        prefixIcon: 'contact'
+      })}
+    </div>`;
   }
   return null;
 };
 
 export const renderResthookCalled = (event: any): TemplateResult | null => {
-  return html`<div>
-    Triggered flow event <strong>${event.resthook}</strong>
+  return html`<div style=${eventLineStyle}>
+    ${renderEntityPill('neutral', event.resthook, {
+      icon: 'resthooks'
+    })}
   </div>`;
 };
 
@@ -557,15 +723,212 @@ export const renderWebhookCalled = (event: any): TemplateResult | null => {
     event.url && event.url.length > maxLen
       ? event.url.slice(0, maxLen) + '...'
       : event.url;
-  return html`<div>Called <strong>${displayUrl}</strong></div>`;
+  return html`<div style=${eventLineStyle}>
+    ${renderEntityPill('neutral', displayUrl, {
+      icon: 'webhook'
+    })}
+  </div>`;
 };
 
 export const renderServiceCalled = (event: any): TemplateResult | null => {
-  const service = event.service;
-  if (service === 'classifier') {
-    return html`<div>Called classifier</div>`;
+  return html`<div style=${eventLineStyle}>
+    ${renderEntityPill('neutral', event.service, {
+      icon: 'service'
+    })}
+  </div>`;
+};
+
+// ---------------------------------------------------------------------------
+// Rich hover tooltips
+//
+// Every inline event pill in the contact chat gets a temba-tip that
+// only adds what the pill can't already show: the full text of a
+// value the pill truncates (or the nicely formatted date and time
+// behind a date field's short day), the acting user (avatar on the
+// left, name beside the timestamp) and the detailed timestamp. A
+// pill with nothing else to add still shows the timestamp alone.
+// This replaces the native `title` attributes the pills used to
+// carry.
+// ---------------------------------------------------------------------------
+
+const tooltipAvatar = (user: any): TemplateResult =>
+  html`<temba-user
+    name=${ifDefined(user.name)}
+    first_name=${ifDefined(user.first_name)}
+    last_name=${ifDefined(user.last_name)}
+    email=${ifDefined(user.email)}
+    avatar=${ifDefined(user.avatar)}
+  ></temba-user>`;
+
+// pill sides ellipsize at 18em — roughly this many characters at the
+// pill font size. Values within the cap are already fully visible in
+// the pill, so the tooltip only repeats ones longer than this.
+const PILL_VALUE_CHARS = 32;
+
+const fullValue = (
+  value: string | undefined,
+  visibleChars = PILL_VALUE_CHARS
+): string[] => (value && value.length > visibleChars ? [value] : []);
+
+/**
+ * The detail lines an event's tooltip adds beyond the pill itself —
+ * just the values the pill truncates. Most events add nothing (their
+ * pill already says it all); returns null for events that don't
+ * render as pills at all.
+ */
+const getEventTooltipLines = (
+  event: any
+): (string | TemplateResult)[] | null => {
+  switch (event.type) {
+    case Events.CONTACT_FIELD_CHANGED: {
+      const value = event.value;
+      // date fields render as a short day in the pill — the tooltip
+      // carries the full date and time, formatted rather than a raw
+      // iso string
+      if (value?.datetime) {
+        return [
+          html`<temba-date
+            value=${value.datetime}
+            display="datetime"
+          ></temba-date>`
+        ];
+      }
+      return fullValue(value?.text);
+    }
+    case Events.CONTACT_NAME_CHANGED:
+      return fullValue(event.name);
+    case Events.CONTACT_URNS_CHANGED: {
+      const urns = (event.urns || []).map(
+        (urn: string) => urn.split(':')[1].split('?')[0]
+      );
+      return fullValue(urns.join(', '));
+    }
+    case Events.RUN_RESULT_CHANGED:
+      return fullValue(String(event.value));
+    case Events.EMAIL_CREATED:
+    case Events.EMAIL_SENT: {
+      const recipients = event.to || event.addresses || [];
+      // the subject is never in the pill; recipients only repeat when
+      // the pill truncates them
+      return [
+        ...fullValue(recipients.join(', ')),
+        ...(event.subject ? [event.subject] : [])
+      ];
+    }
+    // these two pills cut their value at 50 characters themselves
+    case Events.BROADCAST_CREATED:
+      return fullValue(event.translations?.[event.base_language]?.text, 50);
+    case Events.WEBHOOK_CALLED:
+      return fullValue(event.url, 50);
+    // diagnostics render as banners and notes as chat bubbles — no
+    // pill, so no pill tooltip
+    case Events.ERROR:
+    case Events.FAILURE:
+    case Events.WARNING:
+    case Events.TICKET_NOTE_ADDED:
+      return null;
+    default:
+      return [];
   }
-  return html`<div>Called <strong>${service}</strong></div>`;
+};
+
+// a detail line in the tooltip: short values stay on one line (the
+// tooltip hugs them), while runaway ones (a paragraph-sized field
+// value, a long URL) wrap for a few lines within the container's cap
+// and then ellipsize
+const tooltipLineStyle =
+  'white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden;';
+
+/**
+ * Lays out tooltip content: the acting user's avatar on the left
+ * (when there is one) with a hairline rule, then the detail column —
+ * truncated-value lines set apart on a tinted, padded block, then a
+ * metadata line with the user's name (slightly heavier) and the
+ * detailed timestamp separated by a middle dot. When the metadata is
+ * all there is, the name and time stack on two lines instead to
+ * balance against the avatar. Without a user it's just the time.
+ */
+const renderTooltipContent = (
+  event: any,
+  lines: (string | TemplateResult)[]
+): TemplateResult | null => {
+  const user = event._user;
+  const createdOn = event.created_on;
+  const iso = !createdOn
+    ? null
+    : typeof createdOn === 'string'
+      ? createdOn
+      : createdOn.toISOString();
+
+  if (!user && lines.length === 0 && !iso) {
+    return null;
+  }
+
+  // the hairline rule gets equal breathing room from the flex gap and
+  // stretches to the row height. The avatar column is pinned to the
+  // circle's 26px width because temba-user carries a trailing margin
+  // (meant for an inline name) that would otherwise push the rule
+  // off-balance.
+  return html`<div
+    style="display: flex; align-items: center; gap: 8px; text-align: left; font-size: 12px; line-height: 1.45; padding: 4px 2px; max-width: 340px;"
+  >
+    ${user
+      ? html`<div style="flex-shrink: 0; width: 26px;">
+            ${tooltipAvatar(user)}
+          </div>
+          <div
+            style="align-self: stretch; width: 1px; background: rgba(0, 0, 0, 0.08); flex-shrink: 0;"
+          ></div>`
+      : null}
+    <div style="min-width: 0;">
+      ${lines.length > 0
+        ? html`<div
+            style="background: #f3f3f3; border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;"
+          >
+            ${lines.map(
+              (line) => html`<div style=${tooltipLineStyle}>${line}</div>`
+            )}
+          </div>`
+        : null}
+      ${lines.length === 0 && user && iso
+        ? html`<div style="font-size: 11px;">
+            <div style="font-weight: 500;">${getUserName(user)}</div>
+            <div><temba-date value=${iso} display="datetime"></temba-date></div>
+          </div>`
+        : user || iso
+          ? html`<div
+              style="font-size: 11px; display: flex; align-items: center; gap: 5px;"
+            >
+              ${user
+                ? html`<div style="font-weight: 500;">
+                    ${getUserName(user)}
+                  </div>`
+                : null}
+              ${user && iso
+                ? html`<div style="font-size: 16px; line-height: 1;">·</div>`
+                : null}
+              ${iso
+                ? html`<temba-date
+                    value=${iso}
+                    display="datetime"
+                  ></temba-date>`
+                : null}
+            </div>`
+          : null}
+    </div>
+  </div>`;
+};
+
+/**
+ * Builds the rich tooltip content for an event pill. Returns null for
+ * events that don't render as pills.
+ */
+export const renderEventTooltip = (event: any): TemplateResult | null => {
+  const lines = getEventTooltipLines(event);
+  if (lines === null) {
+    return null;
+  }
+  return renderTooltipContent(event, lines);
 };
 
 /**
@@ -604,7 +967,12 @@ export const renderEvent = (
       content = renderUpdateEvent(event as UpdateFieldEvent);
       break;
     case Events.CONTACT_GROUPS_CHANGED:
-      content = renderContactGroupsEvent(event as ContactGroupsEvent);
+      // in the chat, tooltips attach per group pill (each speaks only
+      // to its own group), so the whole-line wrap below is skipped
+      content = renderContactGroupsEvent(
+        event as ContactGroupsEvent,
+        !isSimulation
+      );
       break;
     case Events.CONTACT_LANGUAGE_CHANGED:
       content = renderContactLanguageChangedEvent(
@@ -626,7 +994,7 @@ export const renderEvent = (
       content = renderInputLabelsAdded(event);
       break;
     case Events.RUN_RESULT_CHANGED:
-      content = renderRunResultChanged(event, isSimulation);
+      content = renderRunResultChanged(event);
       break;
     case Events.OPTIN_REQUESTED:
     case Events.OPTIN_STARTED:
@@ -675,11 +1043,11 @@ export const renderEvent = (
     case Events.TICKET_TOPIC_CHANGED: {
       // event.topic is optional — guard so a payload without one
       // degrades cleanly instead of throwing inside topicPill.
+      // The topic pill (icon + topic color) is self-contained enough
+      // to stand alone without a "Topic changed to" sentence.
       const newTopic = (event as TicketEvent).topic;
       content = newTopic
-        ? html`<div style=${eventLineStyle}>
-            Topic changed to ${topicPill(newTopic)}
-          </div>`
+        ? html`<div style=${eventLineStyle}>${topicPill(newTopic)}</div>`
         : null;
       break;
     }
@@ -693,6 +1061,30 @@ export const renderEvent = (
 
   // wrap in a div with appropriate font size
   const fontSize = isSimulation ? '11px' : '14px';
+
+  // in the contact chat, hovering an event pill pops our own rich
+  // tooltip (verbose detail, avatars, detailed time). The simulator
+  // keeps its click-to-inspect event details instead, and group
+  // events carry per-pill tips (see renderContactGroupsEvent). width:
+  // fit-content keeps the hover area hugging the pills rather than
+  // spanning the row.
+  const tooltip =
+    isSimulation || event.type === Events.CONTACT_GROUPS_CHANGED
+      ? null
+      : renderEventTooltip(event);
+  if (tooltip) {
+    return html`<div style="font-size: ${fontSize}">
+      <temba-tip
+        style="display: block; width: fit-content; max-width: 100%; margin: 0 auto;"
+        position="top"
+        distance="4"
+        arrow-size="18"
+        interactive
+        .content=${tooltip}
+        >${content}</temba-tip
+      >
+    </div>`;
+  }
   return html`<div style="font-size: ${fontSize}">${content}</div>`;
 };
 

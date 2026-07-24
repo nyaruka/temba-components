@@ -92,8 +92,17 @@ export class TembaDate extends RapidElement {
         formatted = this.store.getShortDuration(this.datetime);
       } else if (this.display === Display.countdown) {
         formatted = this.store.getCountdown(this.datetime);
-      } else if (this.display === Display.day) {
-        formatted = this.datetime.toLocaleString(Display.day);
+      } else if (this.display === 'day') {
+        // the display attribute carries the key ('day'), and Display.day
+        // is a luxon format string ('LLL d') rather than an Intl options
+        // object, so it must go through toFormat — matching how the
+        // timedate branch renders the same format above. The short
+        // month-day form is only unambiguous for dates in the current
+        // year; anything else falls back to the locale date with year.
+        formatted =
+          this.datetime.year === DateTime.now().year
+            ? this.datetime.toFormat(Display.day)
+            : this.datetime.toLocaleString(Display.date);
       } else {
         formatted = this.datetime.toLocaleString(Display[this.display]);
       }

@@ -29,17 +29,25 @@ let previousSocketProvider: SocketProvider;
 const TAG = 'temba-contact-chat';
 
 // polls with short real sleeps (so mocked HTTP roundtrips can complete) while
-// advancing fake timers, until the predicate holds
+// advancing fake timers, until the predicate holds for stableFor consecutive
+// iterations
 const settle = async (
   predicate: () => boolean,
   tickMs = 0,
-  maxAttempts = 400
+  maxAttempts = 400,
+  stableFor = 1
 ) => {
+  let stable = 0;
   for (let i = 0; i < maxAttempts; i++) {
     await waitFor(10);
     clock.tick(tickMs);
     if (predicate()) {
-      return;
+      stable++;
+      if (stable >= stableFor) {
+        return;
+      }
+    } else {
+      stable = 0;
     }
   }
   throw new Error('Condition not met while settling');
@@ -56,6 +64,15 @@ const chatLoaded = (chat: ContactChat) => {
   );
 };
 
+// waits for history to load and the fetch chain to drain. when the loaded
+// view isn't scrollable the chat keeps requesting older pages, and each
+// completion is deferred by up to MIN_FETCH_TIME of (faked) time — so tick
+// generously and require the loaded state to survive several ticks before
+// calling it settled
+const settleLoaded = async (chat: ContactChat) => {
+  await settle(() => chatLoaded(chat), 150, 400, 5);
+};
+
 const getContactChat = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
   // add some sizes and styles to force our chat history to scroll
@@ -70,7 +87,7 @@ const getContactChat = async (attrs: any = {}) => {
 
   // wait for contact data and history to load (real HTTP), flushing fake
   // timers so addMessages' setTimeout(fn, 0) fires
-  await settle(() => chatLoaded(chat));
+  await settleLoaded(chat);
   return chat;
 };
 
@@ -127,6 +144,185 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-for-active-contact', getClip(chat));
   });
 
+  it('condenses info events into wrapping pill runs', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+
+    // this contact id deliberately doesn't match the generic
+    // /contact\/chat\/contact-.*/ mocks above so we can feed it an
+    // event-heavy history; the after= mock must be registered first
+    // since the generic history pattern would also match that URL
+    mockGET(/\/contact\/chat\/events-dude\/\?after=/, {
+      events: [],
+      next: null
+    });
+    mockGET(
+      /\/contact\/chat\/events-dude\//,
+      '/test-assets/contacts/history-events.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'events-dude'
+    });
+
+    await assertScreenshot('contacts/chat-condensed-events', getClip(chat));
+  });
+
+  it('expands the event summary into detailed pills on click', async () => {
+    await loadStore();
+    mockGET(/\/contact\/chat\/events-dude\/\?after=/, {
+      events: [],
+      next: null
+    });
+    mockGET(
+      /\/contact\/chat\/events-dude\//,
+      '/test-assets/contacts/history-events.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'events-dude'
+    });
+
+    // the run of info events renders collapsed as a summary pill —
+    // clicking it swaps in the detailed pills
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    const summary = inner.shadowRoot.querySelector(
+      'temba-label[title="Show details"]'
+    ) as HTMLElement;
+    expect(summary).to.not.equal(null);
+    expect(inner.shadowRoot.querySelector('.condensed-events')).to.equal(null);
+
+    summary.click();
+    await inner.updateComplete;
+    expect(inner.shadowRoot.querySelector('.condensed-events')).to.not.equal(
+      null
+    );
+
+    await assertScreenshot(
+      'contacts/chat-condensed-events-expanded',
+      getClip(chat)
+    );
+  });
+
+  it('shows a rich tooltip when hovering an event pill', async () => {
+    await loadStore();
+
+    // a dedicated contact whose history has a single ticket assignment
+    // event — hovering its pill should pop our rich tooltip with the
+    // acting user (avatar + name) above the detailed timestamp
+    mockGET(/\/test-assets\/contacts\/tooltip-dude/, {
+      next: null,
+      previous: null,
+      results: [
+        {
+          uuid: 'tooltip-dude',
+          name: 'Tina Tooltips',
+          status: 'active',
+          urns: [],
+          groups: [],
+          fields: {},
+          created_on: '2021-01-15T19:16:49.377501Z',
+          modified_on: '2021-03-30T02:01:09.120952Z',
+          last_seen_on: '2021-03-30T02:01:09.120952Z',
+          blocked: false,
+          stopped: false
+        }
+      ]
+    });
+    mockGET(/\/contact\/chat\/tooltip-dude\/\?after=/, {
+      events: [],
+      next: null
+    });
+    mockGET(/\/contact\/chat\/tooltip-dude\//, {
+      events: [
+        {
+          uuid: 'evt-tip-2',
+          type: 'ticket_assignee_changed',
+          created_on: '2021-03-31T00:15:00.000Z',
+          ticket: { uuid: 'ticket-1' },
+          _user: {
+            uuid: 'u-adam',
+            name: 'Adam Ant',
+            email: 'adam@nyaruka.com'
+          },
+          assignee: {
+            uuid: 'u-sally',
+            name: 'Sally Seashell',
+            email: 'sally@nyaruka.com'
+          }
+        },
+        {
+          uuid: 'evt-tip-1',
+          type: 'msg_received',
+          created_on: '2021-03-31T00:10:00.000Z',
+          msg: { text: 'Can somebody help me?' }
+        }
+      ],
+      next: null
+    });
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'tooltip-dude'
+    });
+
+    // each inline event is wrapped in a temba-tip carrying the rich
+    // tooltip content; hovering past the show delay pops it
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    const tip = inner.shadowRoot.querySelector('temba-tip') as any;
+    expect(tip).to.not.equal(null);
+
+    tip.shadowRoot
+      .querySelector('.slot')
+      .dispatchEvent(new Event('mouseenter'));
+    clock.tick(400);
+    await tip.updateComplete;
+    expect(tip.visible).to.equal(true);
+
+    const tipEle = tip.shadowRoot.querySelector('.tip');
+    expect(tipEle.textContent).to.contain('Adam Ant');
+    // the assignee is already visible in the pill, so the tooltip
+    // only carries the actor and the timestamp
+    expect(tipEle.textContent).to.not.contain('Sally');
+    expect(tipEle.querySelector('temba-user')).to.not.equal(null);
+
+    // let the tip's opacity transition finish before comparing pixels
+    await waitFor(300);
+    await assertScreenshot('contacts/chat-event-tooltip', getClip(chat));
+  });
+
+  it('pins the day marker while scrolling back through history', async () => {
+    await loadStore();
+    mockGET(/\/contact\/chat\/events-dude\/\?after=/, {
+      events: [],
+      next: null
+    });
+    mockGET(
+      /\/contact\/chat\/events-dude\//,
+      '/test-assets/contacts/history-events.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'events-dude'
+    });
+
+    // expand the summary so there's enough history to scroll, then
+    // scroll partway back — the current section's day marker should
+    // float pinned at the top of the chat window
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    const summary = inner.shadowRoot.querySelector(
+      'temba-label[title="Show details"]'
+    ) as HTMLElement;
+    summary.click();
+    await inner.updateComplete;
+
+    const scroll = inner.shadowRoot.querySelector('.scroll') as HTMLElement;
+    // column-reverse scroller: 0 is the bottom, negative scrolls back
+    scroll.scrollTop = -(scroll.scrollHeight - scroll.clientHeight) / 2;
+    await waitFor(100);
+
+    await assertScreenshot('contacts/chat-day-marker-pinned', getClip(chat));
+  });
+
   it('show history and hide chatbox if contact is archived', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
@@ -164,7 +360,7 @@ describe('temba-contact-chat', () => {
 
     // re-selecting the same ticket sets the same contact again
     chat.contact = 'contact-barack-archived';
-    await settle(() => chatLoaded(chat));
+    await settleLoaded(chat);
 
     expect(chat.currentContact, 'contact should reload').to.not.be.null;
     const inner = chat.shadowRoot.querySelector('temba-chat') as any;

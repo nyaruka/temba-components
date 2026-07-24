@@ -18,6 +18,11 @@ export class Card extends RapidElement {
 
       :host {
         display: block;
+        /* as a grid/flex item (cards flatten into the card stack's
+           grid through its slots) the automatic minimum is
+           min-content — allow shrinking so long unbreakable content
+           inside ellipsizes instead of widening the card */
+        min-width: 0;
       }
 
       /* an empty panel drops its card entirely — in tab (plain) mode the
@@ -115,6 +120,10 @@ export class Card extends RapidElement {
       .body {
         display: grid;
         grid-template-rows: 1fr;
+        /* the implicit column track is auto-sized and would grow to
+           the content's max-content (one long unbreakable line widens
+           the card instead of ellipsizing) — pin it to the card width */
+        grid-template-columns: minmax(0, 1fr);
         transition: grid-template-rows 200ms ease;
       }
 
