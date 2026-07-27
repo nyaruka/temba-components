@@ -13,7 +13,9 @@ import {
   getComponent,
   loadStore,
   mockGET,
-  mockNow
+  mockNow,
+  mockPOST,
+  waitForCondition
 } from './utils.test';
 
 const TAG = 'temba-content-list';
@@ -26,6 +28,14 @@ const getList = async (attrs: any = {}) => {
       once: true
     });
   });
+};
+
+const getResizeHandle = (header: HTMLElement): HTMLElement | null => {
+  return (
+    header.nextElementSibling?.querySelector<HTMLElement>(
+      '.resize-handle.leading'
+    ) ?? header.querySelector<HTMLElement>('.resize-handle.trailing')
+  );
 };
 
 describe('temba-content-list', () => {
@@ -65,6 +75,7 @@ describe('temba-content-list', () => {
     expect(rows.length).to.equal(3);
     // first row should mention "Alpha"
     expect(rows[0].textContent).to.contain('Alpha');
+    expect(list.shadowRoot!.querySelector('.resize-handle')).to.equal(null);
   });
 
   it('fires temba-bulk-action when an action is clicked', async () => {
@@ -381,6 +392,418 @@ describe('temba-content-list', () => {
     expect(scroll.scrollWidth).to.be.at.most(scroll.clientWidth + 1);
   });
 
+  it('resizes the pinned message contact column by dragging', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-msg-list',
+      { endpoint: '/test-assets/content-list/messages.json' },
+      '',
+      520
+    )) as MsgList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    await list.updateComplete;
+
+    const contactHeader = list.shadowRoot!.querySelector(
+      'th.head-cell.pin-last'
+    ) as HTMLElement;
+    const handle = getResizeHandle(contactHeader) as HTMLElement;
+    const initialWidth = (
+      contactHeader.querySelector('.head-inner') as HTMLElement
+    ).getBoundingClientRect().width;
+    assert.exists(handle, 'the Contact header should have a resize handle');
+    expect(getComputedStyle(handle, '::after').opacity).to.equal('1');
+
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 200,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: 340,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointerup', {
+        clientX: 340,
+        pointerType: 'mouse'
+      })
+    );
+    await list.updateComplete;
+
+    const resizedWidth = (
+      list.shadowRoot!.querySelector(
+        'th.head-cell.pin-last .head-inner'
+      ) as HTMLElement
+    ).getBoundingClientRect().width;
+    expect(resizedWidth).to.be.closeTo(initialWidth + 140, 1);
+
+    // Resizing changes the pinned cell's width contract, but not its
+    // sticky behavior: horizontal scrolling still leaves it anchored.
+    const resizedHeader = list.shadowRoot!.querySelector(
+      'th.head-cell.pin-last'
+    ) as HTMLElement;
+    const resizedCell = list.shadowRoot!.querySelector(
+      'tr.row td.cell.pin-last'
+    ) as HTMLElement;
+    expect(getComputedStyle(resizedHeader).position).to.equal('sticky');
+    expect(getComputedStyle(resizedCell).position).to.equal('sticky');
+    const leftBeforeScroll = resizedHeader.getBoundingClientRect().left;
+    const cellLeftBeforeScroll = resizedCell.getBoundingClientRect().left;
+    const scroll = list.shadowRoot!.querySelector(
+      '.table-scroll'
+    ) as HTMLElement;
+    expect(scroll.scrollWidth).to.be.greaterThan(scroll.clientWidth);
+    scroll.scrollLeft = 80;
+    scroll.dispatchEvent(new Event('scroll'));
+    await new Promise(requestAnimationFrame);
+    expect(
+      Math.abs(
+        (
+          list.shadowRoot!.querySelector('th.head-cell.pin-last') as HTMLElement
+        ).getBoundingClientRect().left - leftBeforeScroll
+      )
+    ).to.be.lessThan(1.5);
+    expect(
+      Math.abs(
+        (
+          list.shadowRoot!.querySelector(
+            'tr.row td.cell.pin-last'
+          ) as HTMLElement
+        ).getBoundingClientRect().left - cellLeftBeforeScroll
+      )
+    ).to.be.lessThan(1.5);
+  });
+
+  it('does not sort when a resize is released over the column label', async () => {
+    const list = await getList();
+    list.columns = [
+      {
+        key: 'name',
+        label: 'Name',
+        sortable: true,
+        width: '140px',
+        resizable: true
+      },
+      { key: 'details', label: 'Details', grow: true }
+    ];
+    await list.updateComplete;
+
+    const header = list.shadowRoot!.querySelector(
+      'th.head-cell.sortable'
+    ) as HTMLElement;
+    const handle = getResizeHandle(header) as HTMLElement;
+    const label = header.querySelector('.label') as HTMLElement;
+
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 140,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: 200,
+        pointerType: 'mouse'
+      })
+    );
+    label.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        composed: true,
+        clientX: 200,
+        pointerType: 'mouse'
+      })
+    );
+    label.click();
+
+    expect((list as any).sort).to.equal('');
+
+    // Only the synthesized post-resize click is consumed.
+    label.click();
+    expect((list as any).sort).to.equal('name');
+  });
+
+  it('uses a wider native table allocation as the resize floor', async () => {
+    const list = await getList();
+    list.columns = [
+      { key: 'name', label: 'Name', width: '140px', resizable: true },
+      { key: 'status', label: 'Status', width: '100px' }
+    ];
+    await list.updateComplete;
+
+    const header = list.shadowRoot!.querySelector(
+      'th.head-cell'
+    ) as HTMLElement;
+    const handle = getResizeHandle(header) as HTMLElement;
+    const inner = header.querySelector('.head-inner') as HTMLElement;
+    const style = getComputedStyle(header);
+    const nativeWidth =
+      header.getBoundingClientRect().width -
+      Number.parseFloat(style.paddingLeft) -
+      Number.parseFloat(style.paddingRight);
+    expect(nativeWidth).to.be.greaterThan(140);
+
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 400,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: 300,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointerup', {
+        clientX: 300,
+        pointerType: 'mouse'
+      })
+    );
+    await list.updateComplete;
+
+    // The prescribed value stays intact, so auto layout keeps the same
+    // native boundary instead of feeding its extra allocation back in.
+    expect(inner.style.width).to.equal('140px');
+    expect(header.getBoundingClientRect().width).to.be.closeTo(
+      nativeWidth +
+        Number.parseFloat(style.paddingLeft) +
+        Number.parseFloat(style.paddingRight),
+      1
+    );
+
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 400,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: 450,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointerup', {
+        clientX: 450,
+        pointerType: 'mouse'
+      })
+    );
+    await list.updateComplete;
+
+    // Growing starts from the rendered boundary, not the stale 140px
+    // prescription, so the handle tracks the pointer without jumping.
+    expect(Number.parseFloat(inner.style.width)).to.be.closeTo(
+      nativeWidth + 50,
+      1
+    );
+  });
+
+  it('auto-fits a column to its content within its min and max widths', async () => {
+    const list = await getList();
+    list.columns = [
+      {
+        key: 'name',
+        label: 'Name',
+        minWidth: '100px',
+        maxWidth: '180px',
+        resizable: true
+      },
+      { key: 'details', label: 'Details', grow: true }
+    ];
+    (list as any).items = [
+      {
+        name: 'A contact name that is much wider than the maximum column width',
+        details: ''
+      }
+    ];
+    await list.updateComplete;
+
+    let header = list.shadowRoot!.querySelector('th.head-cell') as HTMLElement;
+    let handle = getResizeHandle(header) as HTMLElement;
+    handle.dispatchEvent(
+      new MouseEvent('dblclick', { bubbles: true, composed: true })
+    );
+    await list.updateComplete;
+    expect(
+      (header.querySelector('.head-inner') as HTMLElement).style.width
+    ).to.equal('180px');
+
+    (list as any).items = [{ name: 'A', details: '' }];
+    await list.updateComplete;
+    header = list.shadowRoot!.querySelector('th.head-cell') as HTMLElement;
+    handle = getResizeHandle(header) as HTMLElement;
+    handle.dispatchEvent(
+      new MouseEvent('dblclick', { bubbles: true, composed: true })
+    );
+    await list.updateComplete;
+    expect(
+      (header.querySelector('.head-inner') as HTMLElement).style.width
+    ).to.equal('100px');
+  });
+
+  it('allows a saved contact name width to shrink to its minimum', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      { endpoint: '/test-assets/content-list/contacts.json' },
+      '',
+      1100
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    list.historyStateKey = 'contacts';
+    list.columnWidthSettings = { contacts: { name: 240 } };
+    await list.updateComplete;
+
+    const header = list.shadowRoot!.querySelector(
+      'th.head-cell.pinned'
+    ) as HTMLElement;
+    const handle = getResizeHandle(header) as HTMLElement;
+    const inner = header.querySelector('.head-inner') as HTMLElement;
+    const style = getComputedStyle(header);
+    const initialWidth =
+      header.getBoundingClientRect().width -
+      Number.parseFloat(style.paddingLeft) -
+      Number.parseFloat(style.paddingRight);
+
+    const handleBounds = handle.getBoundingClientRect();
+    const handleX = handleBounds.left + handleBounds.width / 2;
+    const handleY = handleBounds.top + handleBounds.height / 2;
+    const separatorStyle = getComputedStyle(handle, '::after');
+    expect(Number.parseFloat(separatorStyle.left)).to.be.closeTo(
+      handleBounds.width / 2,
+      0.1
+    );
+    expect(separatorStyle.width).to.equal('1px');
+    expect(list.shadowRoot!.elementFromPoint(handleX - 3, handleY)).to.equal(
+      handle
+    );
+    expect(list.shadowRoot!.elementFromPoint(handleX + 3, handleY)).to.equal(
+      handle
+    );
+    await moveMouse(handleX, handleY);
+    await waitForCondition(
+      () => getComputedStyle(handle, '::after').width === '3px'
+    );
+    expect(list.shadowRoot!.elementFromPoint(handleX, handleY)).to.equal(
+      handle
+    );
+    await mouseDown();
+    expect(list.hasAttribute('column-resizing')).to.be.true;
+    expect(
+      list.shadowRoot!.querySelectorAll('.resize-handle.resizing').length
+    ).to.equal(1);
+    const otherHandle = Array.from(
+      list.shadowRoot!.querySelectorAll<HTMLElement>('.resize-handle')
+    ).find((candidate) => candidate !== handle)!;
+    expect(getComputedStyle(otherHandle, '::after').width).to.equal('1px');
+    await moveMouse(handleX - 60, handleY);
+    await list.updateComplete;
+    const activeHandle = list.shadowRoot!.querySelector<HTMLElement>(
+      '.resize-handle.resizing'
+    )!;
+    expect(getComputedStyle(activeHandle, '::after').width).to.equal('3px');
+    expect(
+      Array.from(
+        list.shadowRoot!.querySelectorAll<HTMLElement>(
+          '.resize-handle:not(.resizing)'
+        )
+      ).every(
+        (candidate) => getComputedStyle(candidate, '::after').width === '1px'
+      )
+    ).to.be.true;
+    await mouseUp();
+    await list.updateComplete;
+
+    expect(Number.parseFloat(inner.style.width)).to.be.closeTo(
+      Math.max(initialWidth - 60, 150),
+      1
+    );
+  });
+
+  it('persists resizable columns independently for each list', async () => {
+    const settingsUrl = /\/user\/settings\/$/;
+    mockPOST(settingsUrl, { settings: {} });
+    const getPosts = () =>
+      (window.fetch as any)
+        .getCalls()
+        .filter(
+          (call: any) =>
+            settingsUrl.test(String(call.args[0])) &&
+            call.args[1]?.method === 'POST'
+        )
+        .map((call: any) => JSON.parse(call.args[1].body));
+    const initialPostCount = getPosts().length;
+
+    const list = await getList();
+    list.columns = [
+      { key: 'name', label: 'Name', resizable: true },
+      { key: 'status', label: 'Status' },
+      { key: 'details', label: 'Details', grow: true }
+    ];
+    list.historyStateKey = 'contacts';
+    list.columnWidthSettings = {
+      contacts: { name: 240 },
+      msgs: { name: 360 }
+    };
+    list.settingsEndpoint = '/user/settings/';
+    list.saveDelay = 10;
+    await list.updateComplete;
+
+    const headers = list.shadowRoot!.querySelectorAll('th.head-cell');
+    expect(getResizeHandle(headers[0] as HTMLElement)).to.exist;
+    expect(getResizeHandle(headers[1] as HTMLElement)).to.not.exist;
+    expect(getResizeHandle(headers[2] as HTMLElement)).to.not.exist;
+    expect(
+      (headers[0].querySelector('.head-inner') as HTMLElement).style.width
+    ).to.equal('240px');
+
+    const handle = getResizeHandle(headers[0] as HTMLElement) as HTMLElement;
+    handle.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        key: 'ArrowRight'
+      })
+    );
+    await list.updateComplete;
+    await waitForCondition(() => getPosts().length > initialPostCount);
+    expect(getPosts()[initialPostCount]).to.deep.equal({
+      list_columns: { contacts: { name: 250 } }
+    });
+    expect(list.columns[0].width).to.be.undefined;
+
+    list.historyStateKey = 'msgs';
+    await list.updateComplete;
+    expect(
+      (
+        list.shadowRoot!.querySelector(
+          'th.head-cell .head-inner'
+        ) as HTMLElement
+      ).style.width
+    ).to.equal('360px');
+  });
+
   it('renders the messages list (screenshot)', async () => {
     await loadStore();
     const list = (await getComponent(
@@ -526,7 +949,103 @@ describe('temba-content-list', () => {
     }
     expect((list as any).featuredFields?.length).to.be.greaterThan(0);
     await list.updateComplete;
+
+    const columns = (list as any).columns as Array<{
+      key: string;
+      grow?: boolean;
+      minWidth?: string;
+      resizeMinWidth?: string;
+    }>;
+    const createdIndex = columns.findIndex(
+      (column) => column.key === 'created_on'
+    );
+    const customIndex = columns.findIndex((column) =>
+      column.key.startsWith('field:')
+    );
+    const headers = list.shadowRoot!.querySelectorAll('th.head-cell');
+    expect(createdIndex).to.equal(columns.length - 1);
+    expect(customIndex).to.be.greaterThan(-1);
+    expect(columns[customIndex].minWidth).to.equal(undefined);
+    expect(columns[customIndex].resizeMinWidth).to.equal('40px');
+    expect(columns.find((column) => column.key === 'name')?.minWidth).to.equal(
+      '150px'
+    );
+    expect(
+      getResizeHandle(headers[customIndex] as HTMLElement)?.getAttribute(
+        'aria-valuemin'
+      )
+    ).to.equal('40');
+    expect(columns[createdIndex].grow).to.be.true;
+    expect(headers[createdIndex].classList.contains('grow')).to.be.true;
+    expect(
+      headers[createdIndex].getBoundingClientRect().width
+    ).to.be.greaterThan(112);
+    expect(getResizeHandle(headers[createdIndex] as HTMLElement)).to.equal(
+      null
+    );
     await assertScreenshot('content-list/contacts', getClip(list));
+
+    const customHeader = headers[customIndex] as HTMLElement;
+    const customHandle = getResizeHandle(customHeader)!;
+    const customHeaderContentWidth = Math.ceil(
+      Array.from(customHeader.querySelector('.head-inner')!.children).reduce(
+        (width, child) =>
+          width + (child as HTMLElement).getBoundingClientRect().width,
+        0
+      )
+    );
+    const expectedCustomFloor = Math.max(40, customHeaderContentWidth);
+    customHandle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 500,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: 0,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointerup', {
+        clientX: 0,
+        pointerType: 'mouse'
+      })
+    );
+    await list.updateComplete;
+    expect(
+      (customHeader.querySelector('.head-inner') as HTMLElement).style.width
+    ).to.equal(`${expectedCustomFloor}px`);
+    expect(expectedCustomFloor).to.be.lessThan(80);
+  });
+
+  it('gives spare contact-table width to the final Created On column', async () => {
+    const list = (await getComponent(
+      'temba-contact-list',
+      { 'fields-endpoint': '' },
+      '',
+      1100
+    )) as ContactList;
+    await list.updateComplete;
+
+    const columns = (list as any).columns as Array<{ key: string }>;
+    const headers = Array.from(
+      list.shadowRoot!.querySelectorAll('th.head-cell')
+    ) as HTMLElement[];
+    const createdIndex = columns.findIndex(
+      (column) => column.key === 'created_on'
+    );
+    const createdWidth = headers[createdIndex].getBoundingClientRect().width;
+    const otherWidths = headers
+      .filter((_, index) => index !== createdIndex)
+      .map((header) => header.getBoundingClientRect().width);
+
+    expect(createdIndex).to.equal(columns.length - 1);
+    expect(createdWidth).to.be.greaterThan(Math.max(...otherWidths));
+    expect(list.shadowRoot!.querySelector('th.spacer')).to.equal(null);
   });
 
   it('shows a Ref column instead of URN for anon workspaces', async () => {
@@ -746,6 +1265,7 @@ describe('temba-content-list', () => {
       });
     });
     await list.updateComplete;
+    expect(list.shadowRoot!.querySelector('.resize-handle')).to.equal(null);
     await assertScreenshot('content-list/flows', getClip(list));
   });
 
@@ -763,6 +1283,7 @@ describe('temba-content-list', () => {
       });
     });
     await list.updateComplete;
+    expect(list.shadowRoot!.querySelector('.resize-handle')).to.equal(null);
     await assertScreenshot('content-list/triggers', getClip(list));
   });
 

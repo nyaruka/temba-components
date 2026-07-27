@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Icon } from '../Icons';
 import { CustomEventType } from '../interfaces';
-import { getUrl, postUrl } from '../utils';
+import { getUrl, postJSON, postUrl } from '../utils';
 import { designTokens } from '../styles/designTokens';
 
 /** A single column in the list. Subclasses typically define a static
@@ -41,6 +41,12 @@ export interface ContentListColumn {
    * columns must be contiguous from the first column; right-pinned
    * columns contiguous to the last. */
   pinned?: boolean | 'left' | 'right';
+  /** Whether the column can be resized from its trailing edge. Resizing is
+   * opt-in so list types can expose it only where the interaction is useful. */
+  resizable?: boolean;
+  /** Optional resize-only floor. Unlike minWidth, this does not affect the
+   * table's native layout before the user resizes the column. */
+  resizeMinWidth?: string;
 }
 
 /** A bulk action surfaced in the toolbar when one or more rows are
@@ -585,7 +591,7 @@ export class ContentList<T = any> extends RapidElement {
         z-index: 2;
       }
       tr.header th.pinned {
-        z-index: 3;
+        z-index: 5;
       }
 
       tr.row td {
@@ -699,6 +705,64 @@ export class ContentList<T = any> extends RapidElement {
         justify-content: center;
       }
 
+      /* Column resize affordance. The hit target straddles the column
+         boundary from the leading edge of the following header, which
+         keeps both halves clickable above that cell's stacking context.
+         Its rule remains visible so column boundaries are
+         discoverable without hovering; interaction strengthens it.
+         A real element (rather than a pseudo-element) gives keyboard and
+         screen-reader users the same control. */
+      .resize-handle {
+        position: absolute;
+        top: 0;
+        left: -5px;
+        bottom: 0;
+        z-index: 4;
+        width: 10px;
+        cursor: col-resize;
+        touch-action: none;
+        outline: none;
+      }
+      .resize-handle::after {
+        content: '';
+        position: absolute;
+        top: 7px;
+        left: 50%;
+        bottom: 7px;
+        width: 1px;
+        border-radius: 1px;
+        background: var(--border);
+        transform: translateX(-50%);
+        transition:
+          width 0.12s ease,
+          background 0.12s ease;
+      }
+      :host(:not([column-resizing])) .resize-handle:hover::after,
+      :host(:not([column-resizing])) .resize-handle:focus-visible::after,
+      .resize-handle.resizing::after {
+        width: 3px;
+        background: var(--border-strong);
+      }
+      /* A header hosting the preceding column's handle must paint above
+         its neighbour so the target stays centered across the boundary. */
+      tr.header th:has(> .resize-handle.leading) {
+        z-index: 4;
+      }
+      /* Keep the final column's target inside the table so it doesn't
+         create a few pixels of horizontal overflow. Its rule stays in
+         the target's center, just inboard of the table edge. */
+      .resize-handle.trailing {
+        left: auto;
+        right: -5px;
+      }
+      .resize-handle.trailing.outer {
+        right: 0;
+      }
+      :host([column-resizing]),
+      :host([column-resizing]) * {
+        cursor: col-resize !important;
+      }
+
       /* Pinned columns stay fixed against their edge while the rest
          of the table scrolls under them. The frozen-region look —
          the tint and the divider — only kicks in once the table
@@ -725,30 +789,16 @@ export class ContentList<T = any> extends RapidElement {
       .table-frame.overflowing tr.row.selected td.pinned {
         background: var(--cl-selected);
       }
-      /* A subtle vertical rule marks where the pinned section ends.
-         It is an inset shadow rather than a border so it stays put
-         with the sticky cell under border-collapse. */
-      .table-frame.overflowing th.pin-last,
+      /* Body cells retain a subtle vertical rule where the pinned section
+         ends. Header boundaries are already represented by resize
+         separators, so they only keep the standard bottom rule. */
       .table-frame.overflowing td.pin-last {
         box-shadow: inset -1px 0 0 0 var(--border);
       }
       /* Mirror of the rule for the right-pinned group — the divider
          sits on the inboard (left) edge of its first cell. */
-      .table-frame.overflowing th.pin-first,
       .table-frame.overflowing td.pin-first {
         box-shadow: inset 1px 0 0 0 var(--border);
-      }
-      /* A pinned header cell keeps the header's bottom-border shadow
-         alongside the pin-edge rule. */
-      .table-frame.overflowing tr.header th.pin-last {
-        box-shadow:
-          inset -1px 0 0 0 var(--border),
-          inset 0 -1px 0 0 var(--border);
-      }
-      .table-frame.overflowing tr.header th.pin-first {
-        box-shadow:
-          inset 1px 0 0 0 var(--border),
-          inset 0 -1px 0 0 var(--border);
       }
       /* Once scrolled, the frozen edge casts the same soft scroll
          shadow as the sticky header — a gradient (matching th::after
@@ -1261,6 +1311,20 @@ export class ContentList<T = any> extends RapidElement {
   @property({ type: String, attribute: 'history-state-key' })
   historyStateKey = '';
 
+  /** Saved widths for every list, keyed first by the list's
+   * {@link historyStateKey}, then by column key. The host can seed this
+   * from user settings so each list remembers its own layout. */
+  @property({ type: Object, attribute: 'column-width-settings' })
+  columnWidthSettings: Record<string, Record<string, number>> = {};
+
+  /** Endpoint that accepts user-setting updates. Width persistence is
+   * disabled when this or {@link historyStateKey} is unset. */
+  @property({ type: String, attribute: 'settings-endpoint' })
+  settingsEndpoint = '';
+
+  /** Debounce window for settings saves. Public so tests can shorten it. */
+  saveDelay = 500;
+
   /** Placeholder for the search input. */
   @property({ type: String })
   searchPlaceholder = 'Search';
@@ -1403,6 +1467,26 @@ export class ContentList<T = any> extends RapidElement {
   private popstateHandler: () => void;
   private resizeHandler: () => void;
 
+  /** Active pointer-driven column resize. Window listeners keep the drag
+   * alive when the pointer outruns the narrow header handle. */
+  private columnResize:
+    | {
+        key: string;
+        startX: number;
+        startWidth: number;
+        minWidth: number;
+        nativeFloor: boolean;
+        initialSavedWidth: number | undefined;
+        changed: boolean;
+        handle: HTMLElement;
+      }
+    | undefined;
+  private previousBodyUserSelect = '';
+  private columnWidths: Record<string, number> = {};
+  private columnWidthSaveTimeout: ReturnType<typeof setTimeout> = null;
+  private suppressHeaderClick = false;
+  private headerClickSuppressionTimeout: ReturnType<typeof setTimeout> = null;
+
   /** Pin index assigned to each left-pinned column / leading cell,
    * used to resolve its sticky `left`. Recomputed each render. */
   private pinIndexByColumn = new Map<ContentListColumn, number>();
@@ -1425,6 +1509,34 @@ export class ContentList<T = any> extends RapidElement {
 
   constructor() {
     super();
+  }
+
+  protected willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
+    if (
+      changes.has('columnWidthSettings') ||
+      changes.has('historyStateKey') ||
+      changes.has('columns')
+    ) {
+      const saved = this.columnWidthSettings?.[this.historyStateKey];
+      const widths: Record<string, number> = {};
+      if (saved && typeof saved === 'object') {
+        Object.entries(saved).forEach(([key, value]) => {
+          if (typeof value === 'number' && Number.isFinite(value)) {
+            const column = this.columns.find(
+              (candidate) => candidate.key === key
+            );
+            widths[key] = this.clampColumnWidth(
+              value,
+              column
+                ? this.minimumColumnWidth(column)
+                : ContentList.MIN_COLUMN_WIDTH
+            );
+          }
+        });
+      }
+      this.columnWidths = widths;
+    }
   }
 
   public connectedCallback(): void {
@@ -1482,6 +1594,16 @@ export class ContentList<T = any> extends RapidElement {
     }
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
+    }
+    this.stopColumnResize();
+    if (this.columnWidthSaveTimeout) {
+      clearTimeout(this.columnWidthSaveTimeout);
+      this.columnWidthSaveTimeout = null;
+      this.saveColumnWidths();
+    }
+    if (this.headerClickSuppressionTimeout) {
+      clearTimeout(this.headerClickSuppressionTimeout);
+      this.headerClickSuppressionTimeout = null;
     }
     if (this.bulkCollapseFrame) {
       cancelAnimationFrame(this.bulkCollapseFrame);
@@ -1945,6 +2067,23 @@ export class ContentList<T = any> extends RapidElement {
     // state bubbles — see commitSearch for the full reasoning.
     this.fetchPage();
     this.writeUrlState();
+  }
+
+  private handleColumnHeaderClick(
+    event: MouseEvent,
+    column: ContentListColumn
+  ): void {
+    // Releasing a resize over the header label can synthesize a click on
+    // the shared <th>. Consume that click so resizing never changes sort.
+    if (this.suppressHeaderClick) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.suppressHeaderClick = false;
+      clearTimeout(this.headerClickSuppressionTimeout);
+      this.headerClickSuppressionTimeout = null;
+      return;
+    }
+    this.handleSortClick(column);
   }
 
   private handleRowClick(item: T, event: MouseEvent): void {
@@ -2577,10 +2716,12 @@ export class ContentList<T = any> extends RapidElement {
    * the column simply sizes to its content (header label or widest
    * value) via the table's auto layout. */
   private cellWidthStyle(column: ContentListColumn): string {
+    const savedWidth = this.savedColumnWidth(column);
     // Under fixed layout the column widths are set on the cells
     // themselves (see {@link renderHeaderCell}); the inner wrapper
     // just fills its cell and ellipsis-truncates against it.
     if (this.fixedLayout) return '';
+    if (savedWidth != null) return `width: ${savedWidth}px;`;
     if (column.width) return `width: ${column.width};`;
     const parts: string[] = [];
     if (column.minWidth) parts.push(`min-width: ${column.minWidth};`);
@@ -2588,6 +2729,361 @@ export class ContentList<T = any> extends RapidElement {
     // table; every other column caps its content-driven width.
     if (!column.grow) parts.push(`max-width: ${column.maxWidth || '320px'};`);
     return parts.join(' ');
+  }
+
+  /** Numeric pixel value for a CSS width used by the list's column
+   * contracts. Resizable columns use pixel widths because pointer movement
+   * is measured in pixels; non-pixel bounds fall back to the defaults. */
+  private columnWidthPixels(
+    value: string | undefined,
+    fallback: number
+  ): number {
+    if (!value || !value.trim().endsWith('px')) return fallback;
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  private static readonly MIN_COLUMN_WIDTH = 80;
+  private static readonly MAX_COLUMN_WIDTH = 600;
+
+  private clampColumnWidth(
+    width: number,
+    minWidth = ContentList.MIN_COLUMN_WIDTH
+  ): number {
+    const floor = Math.min(minWidth, ContentList.MAX_COLUMN_WIDTH);
+    return Math.round(
+      Math.min(Math.max(width, floor), ContentList.MAX_COLUMN_WIDTH)
+    );
+  }
+
+  private isColumnResizable(column: ContentListColumn): boolean {
+    return column.resizable === true && !column.grow;
+  }
+
+  private savedColumnWidth(column: ContentListColumn): number | undefined {
+    return this.isColumnResizable(column)
+      ? this.columnWidths[column.key]
+      : undefined;
+  }
+
+  private effectiveColumnWidth(column: ContentListColumn): number {
+    return (
+      this.savedColumnWidth(column) ??
+      this.columnWidthPixels(column.width, ContentList.MIN_COLUMN_WIDTH)
+    );
+  }
+
+  private minimumColumnWidth(column: ContentListColumn): number {
+    return this.columnWidthPixels(
+      column.resizeMinWidth ?? column.minWidth,
+      ContentList.MIN_COLUMN_WIDTH
+    );
+  }
+
+  private maximumColumnWidth(column: ContentListColumn): number {
+    return this.columnWidthPixels(
+      column.maxWidth,
+      ContentList.MAX_COLUMN_WIDTH
+    );
+  }
+
+  private hasPrescribedColumnWidth(column: ContentListColumn): boolean {
+    return this.savedColumnWidth(column) != null || column.width != null;
+  }
+
+  private hasColumnWidthSlackSink(): boolean {
+    return (
+      this.columns.some((column) => column.grow) || this.spacerAfterIndex >= 0
+    );
+  }
+
+  private usesNativeWidthFloor(
+    column: ContentListColumn,
+    renderedWidth: number,
+    prescribedWidth: number
+  ): boolean {
+    return (
+      !this.hasColumnWidthSlackSink() &&
+      this.hasPrescribedColumnWidth(column) &&
+      renderedWidth > prescribedWidth + 1
+    );
+  }
+
+  /** Store a user's width separately from the static column definition.
+   * This keeps overrides intact when a list rebuilds dynamic columns. */
+  private setColumnWidth(
+    key: string,
+    width: number,
+    minWidth = ContentList.MIN_COLUMN_WIDTH
+  ): number {
+    const nextWidth = this.clampColumnWidth(width, minWidth);
+    if (this.columnWidths[key] === nextWidth) return nextWidth;
+    this.columnWidths = { ...this.columnWidths, [key]: nextWidth };
+    this.requestUpdate();
+    return nextWidth;
+  }
+
+  private restoreColumnWidth(key: string, width: number | undefined): void {
+    if (this.columnWidths[key] === width) return;
+    const widths = { ...this.columnWidths };
+    if (width == null) delete widths[key];
+    else widths[key] = width;
+    this.columnWidths = widths;
+    this.requestUpdate();
+  }
+
+  /** The width contract is carried by the inner wrapper, while the resize
+   * handle sits on the outer table-cell boundary. Auto table layout can
+   * distribute spare room to that cell, so derive the matching content
+   * width from the rendered cell rather than trusting its prescribed width. */
+  private renderedColumnWidth(
+    header: HTMLElement | null,
+    column: ContentListColumn
+  ): number {
+    if (!header) return this.effectiveColumnWidth(column);
+    const style = getComputedStyle(header);
+    const padding =
+      Number.parseFloat(style.paddingLeft) +
+      Number.parseFloat(style.paddingRight);
+    const width = header.getBoundingClientRect().width - padding;
+    return Number.isFinite(width) && width > 0
+      ? width
+      : this.effectiveColumnWidth(column);
+  }
+
+  private scheduleColumnWidthSave(): void {
+    if (!this.settingsEndpoint || !this.historyStateKey) return;
+    clearTimeout(this.columnWidthSaveTimeout);
+    this.columnWidthSaveTimeout = setTimeout(() => {
+      this.columnWidthSaveTimeout = null;
+      this.saveColumnWidths();
+    }, this.saveDelay);
+  }
+
+  private saveColumnWidths(): void {
+    if (!this.settingsEndpoint || !this.historyStateKey) return;
+    postJSON(this.settingsEndpoint, {
+      list_columns: {
+        [this.historyStateKey]: this.columnWidths
+      }
+    }).catch(() => {
+      // Width persistence is a convenience; a failed save should not
+      // interrupt list interaction. A later resize will retry it.
+    });
+  }
+
+  private startColumnResize(
+    event: PointerEvent,
+    column: ContentListColumn
+  ): void {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    // A second pointer should replace, not overlap, an active drag and
+    // must preserve the body's original selection style for cleanup.
+    this.stopColumnResize();
+    event.preventDefault();
+    event.stopPropagation();
+    const handle = event.currentTarget as HTMLElement;
+    const header = this.resizeHeaderForHandle(handle);
+    const prescribedWidth = this.effectiveColumnWidth(column);
+    const startWidth = this.renderedColumnWidth(header, column);
+    const resizeFloor = this.minimumRenderedColumnWidth(header, column);
+    const nativeFloor = this.usesNativeWidthFloor(
+      column,
+      startWidth,
+      prescribedWidth
+    );
+    this.columnResize = {
+      key: column.key,
+      startX: event.clientX,
+      startWidth,
+      minWidth: nativeFloor ? startWidth : resizeFloor,
+      nativeFloor,
+      initialSavedWidth: this.columnWidths[column.key],
+      changed: false,
+      handle
+    };
+    handle.setAttribute(
+      'aria-valuemin',
+      `${Math.round(nativeFloor ? startWidth : resizeFloor)}`
+    );
+    handle.classList.add('resizing');
+    this.previousBodyUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = 'none';
+    this.toggleAttribute('column-resizing', true);
+    window.addEventListener('pointermove', this.handleColumnResizeMove);
+    window.addEventListener('pointerup', this.stopColumnResize);
+    window.addEventListener('pointercancel', this.stopColumnResize);
+  }
+
+  private handleColumnResizeMove = (event: PointerEvent): void => {
+    if (!this.columnResize) return;
+    event.preventDefault();
+    const resize = this.columnResize;
+    const requestedWidth = resize.startWidth + event.clientX - resize.startX;
+    if (
+      resize.nativeFloor &&
+      (requestedWidth <= resize.minWidth ||
+        resize.minWidth >= ContentList.MAX_COLUMN_WIDTH)
+    ) {
+      // The table is already rendering wider than the CSS contract. Treat
+      // that native allocation as the floor without writing it back: doing
+      // so would feed the spare width into the next auto-layout pass and
+      // move the boundary even though the user dragged left.
+      this.restoreColumnWidth(resize.key, resize.initialSavedWidth);
+    } else {
+      this.setColumnWidth(resize.key, requestedWidth, resize.minWidth);
+    }
+    resize.changed = this.columnWidths[resize.key] !== resize.initialSavedWidth;
+  };
+
+  private stopColumnResize = (event?: Event): void => {
+    if (!this.columnResize) return;
+    const { changed, handle } = this.columnResize;
+    handle.classList.remove('resizing');
+    this.columnResize = undefined;
+    document.body.style.userSelect = this.previousBodyUserSelect;
+    this.toggleAttribute('column-resizing', false);
+    window.removeEventListener('pointermove', this.handleColumnResizeMove);
+    window.removeEventListener('pointerup', this.stopColumnResize);
+    window.removeEventListener('pointercancel', this.stopColumnResize);
+    if (event?.type === 'pointerup') {
+      this.suppressHeaderClick = true;
+      clearTimeout(this.headerClickSuppressionTimeout);
+      this.headerClickSuppressionTimeout = setTimeout(() => {
+        this.suppressHeaderClick = false;
+        this.headerClickSuppressionTimeout = null;
+      }, 0);
+    }
+    if (changed) this.scheduleColumnWidthSave();
+  };
+
+  /** Arrow keys resize in 10px steps (25px with Shift), providing an
+   * accessible equivalent to dragging the separator. */
+  private handleColumnResizeKeydown(
+    event: KeyboardEvent,
+    column: ContentListColumn
+  ): void {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    event.stopPropagation();
+    const handle = event.currentTarget as HTMLElement;
+    const header = this.resizeHeaderForHandle(handle);
+    const prescribedWidth = this.effectiveColumnWidth(column);
+    const currentWidth = this.renderedColumnWidth(header, column);
+    const resizeFloor = this.minimumRenderedColumnWidth(header, column);
+    const nativeFloor = this.usesNativeWidthFloor(
+      column,
+      currentWidth,
+      prescribedWidth
+    );
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    if (
+      nativeFloor &&
+      (direction < 0 || currentWidth >= ContentList.MAX_COLUMN_WIDTH)
+    ) {
+      handle.setAttribute('aria-valuenow', `${Math.round(currentWidth)}`);
+      return;
+    }
+    const width = this.setColumnWidth(
+      column.key,
+      currentWidth + direction * (event.shiftKey ? 25 : 10),
+      nativeFloor ? currentWidth : resizeFloor
+    );
+    handle.setAttribute(
+      'aria-valuemin',
+      `${Math.round(nativeFloor ? currentWidth : resizeFloor)}`
+    );
+    handle.setAttribute('aria-valuenow', `${width}`);
+    this.scheduleColumnWidthSave();
+  }
+
+  /** Fit the column to the widest rendered header/body value. Cell
+   * contents are measured at max-content width without painting a layout
+   * change; the configured column bounds keep outliers manageable. */
+  private intrinsicWidth(element: HTMLElement): number {
+    const previousStyle = element.getAttribute('style');
+    element.style.width = 'max-content';
+    element.style.minWidth = '0';
+    element.style.maxWidth = 'none';
+    element.style.position = 'absolute';
+    const width = element.getBoundingClientRect().width;
+    if (previousStyle == null) element.removeAttribute('style');
+    else element.setAttribute('style', previousStyle);
+    return width;
+  }
+
+  private minimumRenderedColumnWidth(
+    header: HTMLElement | null,
+    column: ContentListColumn
+  ): number {
+    const configuredFloor = this.minimumColumnWidth(column);
+    const headerInner = header?.querySelector<HTMLElement>('.head-inner');
+    return headerInner
+      ? Math.max(configuredFloor, this.headerContentWidth(headerInner))
+      : configuredFloor;
+  }
+
+  private headerContentWidth(headerInner: HTMLElement): number {
+    return Math.ceil(
+      Array.from(headerInner.children).reduce(
+        (width, child) =>
+          width + (child as HTMLElement).getBoundingClientRect().width,
+        0
+      )
+    );
+  }
+
+  private handleColumnAutoFit(
+    event: MouseEvent,
+    column: ContentListColumn
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const handle = event.currentTarget as HTMLElement;
+    const header = this.resizeHeaderForHandle(handle);
+    if (!header) return;
+
+    const widths: number[] = [];
+    const headerInner = header.querySelector<HTMLElement>('.head-inner');
+    if (headerInner) widths.push(this.headerContentWidth(headerInner));
+
+    const columnIndex = (header as HTMLTableCellElement).cellIndex;
+    this.shadowRoot
+      ?.querySelectorAll<HTMLTableRowElement>('tr.row')
+      .forEach((row) => {
+        const cell = row.cells.item(columnIndex);
+        const inner = cell?.querySelector<HTMLElement>('.cell-inner');
+        if (!inner) return;
+        let contentWidth = this.intrinsicWidth(inner);
+        const icon = cell.querySelector<HTMLElement>('.lead-icon');
+        if (icon) {
+          const iconStyle = getComputedStyle(icon);
+          contentWidth +=
+            icon.offsetWidth + Number.parseFloat(iconStyle.marginRight || '0');
+        }
+        widths.push(contentWidth);
+      });
+
+    const minWidth = this.minimumRenderedColumnWidth(header, column);
+    const maxWidth = Math.max(this.maximumColumnWidth(column), minWidth);
+    const contentWidth = widths.length ? Math.max(...widths) : minWidth;
+    const width = this.setColumnWidth(
+      column.key,
+      Math.min(Math.max(contentWidth, minWidth), maxWidth),
+      minWidth
+    );
+    handle.setAttribute('aria-valuenow', `${width}`);
+    this.scheduleColumnWidthSave();
+  }
+
+  /** Leading handles live in the next header so that header owns both
+   * clickable halves of the boundary. Pinned and outer-edge handles stay
+   * in their own header so they follow that sticky/table boundary. */
+  private resizeHeaderForHandle(handle: HTMLElement): HTMLElement | null {
+    const host = handle.parentElement;
+    return handle.classList.contains('leading')
+      ? (host?.previousElementSibling as HTMLElement | null)
+      : host;
   }
 
   /** Measure the header's pinned cells and publish a cumulative
@@ -2725,18 +3221,71 @@ export class ContentList<T = any> extends RapidElement {
                 </th>
               `
             : null}
-          ${this.columns.map((c, i) =>
-            i === this.spacerAfterIndex
-              ? html`${this.renderHeaderCell(c)}
-                  <th class="spacer"></th>`
-              : this.renderHeaderCell(c)
-          )}
+          ${this.columns.map((column, index) => {
+            const previousColumn = this.columns[index - 1];
+            const leadingResizeColumn =
+              previousColumn &&
+              !this.isLeftPinned(previousColumn) &&
+              !this.isRightPinned(previousColumn) &&
+              this.spacerAfterIndex !== index - 1
+                ? previousColumn
+                : undefined;
+            const trailingResize =
+              index === this.columns.length - 1 ||
+              this.isLeftPinned(column) ||
+              this.isRightPinned(column);
+            const outerResize = index === this.columns.length - 1;
+            return html`${this.renderHeaderCell(
+              column,
+              leadingResizeColumn,
+              trailingResize,
+              outerResize
+            )}${index === this.spacerAfterIndex
+              ? html`<th class="spacer">
+                  ${!this.isLeftPinned(column) && !this.isRightPinned(column)
+                    ? this.renderResizeHandle(column, true)
+                    : null}
+                </th>`
+              : null}`;
+          })}
         </tr>
       </thead>
     `;
   }
 
-  private renderHeaderCell(column: ContentListColumn): TemplateResult {
+  private renderResizeHandle(
+    column: ContentListColumn | undefined,
+    leading: boolean,
+    outer = false
+  ): TemplateResult | null {
+    if (!column || !this.isColumnResizable(column)) return null;
+    return html`<span
+      class="resize-handle ${leading ? 'leading' : 'trailing'} ${outer
+        ? 'outer'
+        : ''} ${this.columnResize?.key === column.key ? 'resizing' : ''}"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize ${column.label ?? column.key} column"
+      aria-valuemin=${this.minimumColumnWidth(column)}
+      aria-valuemax=${ContentList.MAX_COLUMN_WIDTH}
+      aria-valuenow=${this.effectiveColumnWidth(column)}
+      tabindex="0"
+      @pointerdown=${(event: PointerEvent) =>
+        this.startColumnResize(event, column)}
+      @keydown=${(event: KeyboardEvent) =>
+        this.handleColumnResizeKeydown(event, column)}
+      @click=${(event: MouseEvent) => event.stopPropagation()}
+      @dblclick=${(event: MouseEvent) =>
+        this.handleColumnAutoFit(event, column)}
+    ></span>`;
+  }
+
+  private renderHeaderCell(
+    column: ContentListColumn,
+    leadingResizeColumn?: ContentListColumn,
+    trailingResize = false,
+    outerResize = false
+  ): TemplateResult {
     const active = this.sort === column.key || this.sort === '-' + column.key;
     const desc = this.sort === '-' + column.key;
     const cls = `head-cell ${column.align || ''} ${
@@ -2765,19 +3314,31 @@ export class ContentList<T = any> extends RapidElement {
     // Under fixed layout the header row drives the column widths, so
     // each `width`-set column carries its width on the cell itself;
     // the grow column is left unsized to claim the remainder.
-    const widthStyle =
-      this.fixedLayout && column.width ? `width: ${column.width};` : '';
+    const savedWidth = this.savedColumnWidth(column);
+    const widthStyle = this.fixedLayout
+      ? savedWidth != null
+        ? `width: ${savedWidth}px;`
+        : column.width
+          ? `width: ${column.width};`
+          : ''
+      : '';
     return html`
       <th
         class=${cls}
         style="${this.columnPinStyle(column)} ${widthStyle}"
-        @click=${column.sortable ? () => this.handleSortClick(column) : null}
+        @click=${column.sortable
+          ? (event: MouseEvent) => this.handleColumnHeaderClick(event, column)
+          : null}
       >
+        ${this.renderResizeHandle(leadingResizeColumn, true)}
         <div class="head-inner" style=${this.cellWidthStyle(column)}>
           ${column.align === 'right'
             ? html`${slot}${label}`
             : html`${label}${slot}`}
         </div>
+        ${trailingResize
+          ? this.renderResizeHandle(column, false, outerResize)
+          : null}
       </th>
     `;
   }
