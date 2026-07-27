@@ -21,8 +21,11 @@ export class CardStack extends RapidElement {
   @property({ type: Array })
   order: string[] = [];
 
+  /** Vertical gap between cards — the layout's one spacing unit, so
+   * card-to-card spacing matches the gap between the main view and the
+   * card column. */
   @property({ type: String })
-  gap = 'var(--gap, 14px)';
+  gap = 'var(--layout-spacing, 8px)';
 
   private getAssigned(): Element[] {
     // resolve through the shadow slot so cards forwarded from a wrapper

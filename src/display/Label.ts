@@ -22,6 +22,12 @@ export default class Label extends LitElement {
            rather than overflowing. The slot/mask below have the
            min-width:0 needed to let the ellipsis engage. */
         max-width: 100%;
+        /* As a flex item the host's automatic minimum size is its
+           full nowrap text width, which refuses to shrink and
+           stretches content-sized ancestors (e.g. the Next Up card)
+           instead of ellipsizing. min-width:0 lets the pill shrink
+           to its container so the slot ellipsis can engage. */
+        min-width: 0;
       }
 
       slot {
@@ -29,10 +35,13 @@ export default class Label extends LitElement {
         overflow-x: hidden;
         text-overflow: ellipsis;
         display: block;
-        /* Without min-width:0 the slot — as a flex item inside .mask —
-           refuses to shrink below its content size, defeating the
-           overflow/ellipsis. */
-        min-width: 0;
+        /* min-width:0 lets the slot — as a flex item inside .mask —
+           shrink below its content size so the overflow/ellipsis can
+           engage. The default is 0 so every label can collapse fully;
+           a consumer that wants a squeezed pill to keep a couple of
+           characters visible (rather than collapsing to bare chrome)
+           opts in by setting --label-min-width (e.g. 2em). */
+        min-width: var(--label-min-width, 0);
       }
 
       .mask {
@@ -199,6 +208,15 @@ export default class Label extends LitElement {
   icon: string;
 
   /**
+   * An additional icon rendered ahead of the main icon — e.g. a +/−
+   * qualifier on a group pill ("added to" vs "removed from"). Unlike
+   * `icon` it never falls back to the type's default, so it only
+   * renders when explicitly set.
+   */
+  @property({ type: String, attribute: 'prefix-icon' })
+  prefixIcon: string;
+
+  /**
    * Design-system pill variant — `flow`, `group`, `contact`, `field`,
    * `keyword`, `label`, or `neutral`. When set, switches the chrome to
    * a flat DS pill (rounded 999px, type-colored). Stays the legacy
@@ -289,6 +307,9 @@ export default class Label extends LitElement {
               >
                 <temba-icon name="x" size="0.85"></temba-icon>
               </button>`
+            : null}
+          ${this.prefixIcon
+            ? html`<temba-icon name=${this.prefixIcon} />`
             : null}
           ${resolvedIcon ? html`<temba-icon name=${resolvedIcon} />` : null}
           <slot></slot>

@@ -114,13 +114,15 @@ export class MsgList extends ContentList<Msg> {
         key: 'contact',
         label: 'Contact',
         width: '130px',
-        pinned: true
+        pinned: true,
+        resizable: true
       },
       { key: 'text', label: 'Message', grow: true },
       {
         key: 'created_on',
         label: 'Sent',
-        align: 'right'
+        align: 'right',
+        resizable: true
       }
     ];
     this.bulkActions = [

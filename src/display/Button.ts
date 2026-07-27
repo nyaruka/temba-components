@@ -58,11 +58,13 @@ export class Button extends LitElement {
         white-space: nowrap;
       }
 
-      /* even smaller variant (compact lists, list-row actions, etc.) */
+      /* even smaller variant (compact lists, list-row actions, etc.).
+         The vars let dense consumers (e.g. slim status rows) compact
+         it further without another named size. */
       .small {
-        height: 24px;
-        padding: 0 8px;
-        font-size: 12px;
+        height: var(--button-small-height, 24px);
+        padding: 0 var(--button-small-x-pad, 8px);
+        font-size: var(--button-small-font-size, 12px);
       }
 
       /* DS .btn-primary — solid accent fill with a faint top

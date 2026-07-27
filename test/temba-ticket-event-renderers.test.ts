@@ -1,5 +1,8 @@
 import { expect, fixture, html } from '@open-wc/testing';
-import { renderTicketAssigneeChanged } from '../src/events/eventRenderers';
+import {
+  renderEventTooltip,
+  renderTicketAssigneeChanged
+} from '../src/events/eventRenderers';
 import { TicketEvent } from '../src/events';
 
 // Build a TicketEvent fixture. The user variance (Chat.ts User
@@ -21,118 +24,97 @@ const makeEvent = (
   } as TicketEvent;
 };
 
+// assignee changes render as a self-contained ticket pill whose text
+// is the assignee (or "Unassigned"); the hover tooltip only adds
+// what the pill can't show — the acting user (avatar + name) above
+// the detailed timestamp
+const getPill = (el: Element) => el.querySelector('temba-label');
+
+const renderTooltip = async (event: TicketEvent): Promise<HTMLElement> => {
+  return fixture(html`<div>${renderEventTooltip(event)}</div>`);
+};
+
 describe('renderTicketAssigneeChanged', () => {
-  it('renders "took this ticket" when actor and assignee share the same email', async () => {
-    const adam = { uuid: 'u-adam', name: 'Adam', email: 'adam@example.com' };
-    const event = makeEvent({ _user: adam, assignee: adam });
-
-    const el = await fixture(
-      html`<div>${renderTicketAssigneeChanged(event)}</div>`
-    );
-    expect(el.textContent).to.contain('took this ticket');
-    expect(el.textContent).to.not.contain('assigned this ticket to');
-  });
-
-  it('renders "took this ticket" when actor and assignee share the same uuid (no email on payload)', async () => {
+  it('renders the assignee name in the pill', async () => {
     const event = makeEvent({
-      _user: { uuid: 'u-adam', name: 'Adam' },
-      assignee: { uuid: 'u-adam', name: 'Adam' }
+      _user: { uuid: 'u-adam', name: 'Adam Ant', email: 'adam@example.com' },
+      assignee: { uuid: 'u-sally', name: 'Sally Sue', email: 's@example.com' }
     });
 
     const el = await fixture(
       html`<div>${renderTicketAssigneeChanged(event)}</div>`
     );
-    expect(el.textContent).to.contain('took this ticket');
+    expect(el.textContent).to.contain('Sally Sue');
   });
 
-  it('renders "took this ticket" when actor and assignee share the same email (no uuid on payload)', async () => {
-    // Isolates the email-fallback branch: if the OR-guard ever loses
-    // its email half, the uuid-only test above stays green but this
-    // one will fail.
+  it('renders "Unassigned" when assignee is absent', async () => {
     const event = makeEvent({
-      _user: { name: 'Adam', email: 'adam@example.com' },
-      assignee: { name: 'Adam', email: 'adam@example.com' }
+      _user: { uuid: 'u-adam', name: 'Adam Ant', email: 'adam@example.com' }
     });
 
     const el = await fixture(
       html`<div>${renderTicketAssigneeChanged(event)}</div>`
     );
-    expect(el.textContent).to.contain('took this ticket');
+    expect(el.textContent).to.contain('Unassigned');
   });
 
-  it('renders "<actor> assigned this ticket to <assignee>" for cross-user assignment', async () => {
+  it('carries no native title on the pill (the rich tooltip replaces it)', async () => {
     const event = makeEvent({
-      _user: { uuid: 'u-adam', name: 'Adam', email: 'adam@example.com' },
-      assignee: { uuid: 'u-sally', name: 'Sally', email: 'sally@example.com' }
+      _user: { uuid: 'u-adam', name: 'Adam Ant', email: 'adam@example.com' },
+      assignee: { uuid: 'u-sally', name: 'Sally Sue', email: 's@example.com' }
     });
 
     const el = await fixture(
       html`<div>${renderTicketAssigneeChanged(event)}</div>`
     );
-    expect(el.textContent).to.contain('assigned this ticket to');
-    expect(el.textContent).to.not.contain('took this ticket');
+    expect(getPill(el).hasAttribute('title')).to.equal(false);
   });
 
-  it('does not collapse to "took this ticket" when both emails are missing', async () => {
-    // Without an email guard, two undefined === undefined would match
-    // and wrongly render self-assignment. The guard requires both sides
-    // to have a real email value before collapsing.
+  it('links the pill to the ticket', async () => {
     const event = makeEvent({
-      _user: { uuid: 'u-adam', name: 'Adam' },
-      assignee: { uuid: 'u-sally', name: 'Sally' }
-    });
-
-    const el = await fixture(
-      html`<div>${renderTicketAssigneeChanged(event)}</div>`
-    );
-    expect(el.textContent).to.contain('assigned this ticket to');
-    expect(el.textContent).to.not.contain('took this ticket');
-  });
-
-  it('renders "<actor> unassigned this ticket" when assignee is absent', async () => {
-    const event = makeEvent({
-      _user: { uuid: 'u-adam', name: 'Adam', email: 'adam@example.com' }
-    });
-
-    const el = await fixture(
-      html`<div>${renderTicketAssigneeChanged(event)}</div>`
-    );
-    expect(el.textContent).to.contain('unassigned this ticket');
-  });
-
-  it('renders "This ticket was assigned to <assignee>" for system assignment', async () => {
-    const event = makeEvent({
-      assignee: { uuid: 'u-sally', name: 'Sally', email: 'sally@example.com' }
-    });
-
-    const el = await fixture(
-      html`<div>${renderTicketAssigneeChanged(event)}</div>`
-    );
-    expect(el.textContent).to.contain('This ticket was assigned to');
-  });
-
-  it('renders "This ticket was unassigned" when there is no actor or assignee', async () => {
-    const event = makeEvent();
-
-    const el = await fixture(
-      html`<div>${renderTicketAssigneeChanged(event)}</div>`
-    );
-    expect(el.textContent).to.contain('This ticket was unassigned');
-  });
-
-  it('links the assignee pill to /ticket/all/open/?assignee=<uuid>', async () => {
-    const event = makeEvent({
-      _user: { uuid: 'u-adam', name: 'Adam', email: 'adam@example.com' },
-      assignee: { uuid: 'u-sally', name: 'Sally', email: 'sally@example.com' }
+      _user: { uuid: 'u-adam', name: 'Adam Ant', email: 'adam@example.com' },
+      assignee: { uuid: 'u-sally', name: 'Sally Sue', email: 's@example.com' }
     });
 
     const el: HTMLElement = await fixture(
       html`<div>${renderTicketAssigneeChanged(event)}</div>`
     );
-    const links = Array.from(el.querySelectorAll('a'));
-    const assigneeHref = links
-      .map((a) => a.getAttribute('href'))
-      .find((href) => href && href.includes('u-sally'));
-    expect(assigneeHref).to.equal('/ticket/all/open/?assignee=u-sally');
+    const link = el.querySelector('a');
+    expect(link.getAttribute('href')).to.equal('/ticket/all/open/ticket-1/');
+  });
+});
+
+describe('renderEventTooltip (ticket assignment)', () => {
+  it('shows the acting user with an avatar above the timestamp', async () => {
+    const event = makeEvent({
+      _user: { uuid: 'u-adam', name: 'Adam Ant', email: 'adam@example.com' },
+      assignee: { uuid: 'u-sally', name: 'Sally Sue', email: 's@example.com' }
+    });
+
+    const tip = await renderTooltip(event);
+    expect(tip.textContent).to.contain('Adam Ant');
+    expect(tip.querySelectorAll('temba-user').length).to.equal(1);
+    expect(tip.querySelector('temba-date')).to.not.equal(null);
+  });
+
+  it('does not repeat the assignee (already visible in the pill)', async () => {
+    const event = makeEvent({
+      _user: { uuid: 'u-adam', name: 'Adam Ant', email: 'adam@example.com' },
+      assignee: { uuid: 'u-sally', name: 'Sally Sue', email: 's@example.com' }
+    });
+
+    const tip = await renderTooltip(event);
+    expect(tip.textContent).to.not.contain('Sally Sue');
+  });
+
+  it('shows only the timestamp when there is no acting user', async () => {
+    const event = makeEvent({
+      assignee: { uuid: 'u-sally', name: 'Sally Sue', email: 's@example.com' }
+    });
+
+    const tip = await renderTooltip(event);
+    expect(tip.querySelectorAll('temba-user').length).to.equal(0);
+    expect(tip.textContent).to.not.contain('Sally Sue');
+    expect(tip.querySelector('temba-date')).to.not.equal(null);
   });
 });

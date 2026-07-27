@@ -8,7 +8,7 @@ import {
   TemplateResult
 } from 'lit';
 import { property } from 'lit/decorators.js';
-import { msg } from '@lit/localize';
+import { msg, str } from '@lit/localize';
 import {
   Contact,
   CustomEventType,
@@ -26,7 +26,11 @@ import {
 } from '../utils';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose, ComposeValue } from '../form/Compose';
-import { ContactHistoryPage } from '../events';
+import {
+  ContactFlowChangedEvent,
+  ContactHistoryPage,
+  ContactLastSeenChangedEvent
+} from '../events';
 import {
   Chat,
   MessageType,
@@ -38,16 +42,24 @@ import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
 import { Select } from '../form/select/Select';
 import {
+  Events,
   renderEvent,
   renderTicketAction,
   renderTicketAssigneeChanged
 } from '../events/eventRenderers';
 import { publishToSocket } from './SocketService';
 import { subscribeToContactHistory, RealtimeSubscription } from './Realtime';
+import { Icon } from '../Icons';
+import { designTokens } from '../styles/designTokens';
+import { DateTime } from 'luxon';
 
 // how often we re-publish typing_started while composing - just inside the
 // tightest platform sustain interval (Telegram's indicator lapses after 5s)
 const TYPING_PULSE_INTERVAL = 4000;
+
+// how often we re-render idle conversations so the last seen duration
+// doesn't go stale
+const STATE_REFRESH_INTERVAL = 60000;
 
 // re-export for backwards compatibility
 export { renderTicketAction, renderTicketAssigneeChanged };
@@ -64,10 +76,12 @@ interface SearchResult {
 export class ContactChat extends ContactStoreElement {
   public static get styles() {
     return css`
+      ${designTokens}
+
       :host {
         flex-grow: 1;
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         min-height: 0;
         margin-top: var(--gap);
         --compose-shadow: none;
@@ -101,7 +115,33 @@ export class ContactChat extends ContactStoreElement {
         --compose-border: 1px solid #e1e1e1;
         --compose-curvature: 6px;
         margin: 0.5em;
-        background: #f9f9f9;
+        /* white keeps the input readable as a card against the tinted
+           chat box region behind it - rounded to match the compose
+           container so the corners don't bleed past its border */
+        background: #fff;
+        border-radius: var(--compose-curvature);
+      }
+
+      /* The chat box focuses with a solid outline and no exterior
+         glow - just this control, other widgets keep the design-system
+         halo. The focus vars must be set on temba-compose itself - its
+         shadow :host declares them via the design tokens, which beats
+         anything inherited from .compose. */
+      .compose temba-compose {
+        --color-focus: var(--focus, rgb(91, 156, 229));
+        --widget-box-shadow-focused: none;
+      }
+
+      /* While the contact is in a flow the compose outline carries the
+         flow hue: resting border matches the flow pill border, focus
+         goes solid flow green */
+      .in-flow .compose {
+        --compose-border: 1px solid
+          color-mix(in srgb, var(--flow, #16a34a) 25%, white);
+      }
+
+      .in-flow .compose temba-compose {
+        --color-focus: var(--flow, #16a34a);
       }
 
       .closed-footer {
@@ -134,12 +174,6 @@ export class ContactChat extends ContactStoreElement {
         --color-widget-bg-focused: transparent;
       }
 
-      .border {
-      }
-
-      temba-compose {
-      }
-
       .error-gutter {
         display: flex;
         padding: 0.5em 1em;
@@ -154,11 +188,19 @@ export class ContactChat extends ContactStoreElement {
         align-self: center;
       }
 
+      /* The history draws no bottom border - each strip below it
+         (ticket bar, status row, chat box) owns its top border
+         instead, so the separator always belongs to the strip it
+         introduces. The status row's goes flow-green while the
+         contact is in a flow, which places the green line below the
+         ticket bar when there is one and directly below the history
+         when there isn't. */
       temba-chat {
-        border-bottom: 1px solid #ddd;
         background: linear-gradient(0deg, #fff, #fff);
-        --chat-border-in: 1px solid #eee;
         --color-chat-out: var(--color-message);
+        /* nothing floats over the bottom of the history anymore - the
+           status area below holds that content, so no reserved space */
+        --chat-bottom-padding: 1em;
         transition: opacity 0.15s ease;
       }
 
@@ -170,18 +212,28 @@ export class ContactChat extends ContactStoreElement {
         min-height: 0;
       }
 
+      /* The search bar rides above the chat card — outside its border —
+         so sliding it in shrinks the card to make room instead of
+         overlaying the history. It borrows the list pages' searchbar
+         layout (bare single-line input + trailing icon controls) but
+         wears the card chrome (surface + border + shadow) instead of the
+         sunken strip — the page background here is grey, so a sunken bar
+         would blend right into it. The gap below it is the layout's
+         spacing unit, matching the gap between the chat and the cards. */
       @keyframes search-slide-in {
         from {
           max-height: 0;
           opacity: 0;
           padding-top: 0;
           padding-bottom: 0;
+          margin-bottom: 0;
         }
         to {
           max-height: 3em;
           opacity: 1;
-          padding-top: 0.5em;
-          padding-bottom: 0.5em;
+          padding-top: 4px;
+          padding-bottom: 4px;
+          margin-bottom: var(--layout-spacing, 8px);
         }
       }
 
@@ -189,102 +241,129 @@ export class ContactChat extends ContactStoreElement {
         from {
           max-height: 3em;
           opacity: 1;
-          padding-top: 0.5em;
-          padding-bottom: 0.5em;
+          padding-top: 4px;
+          padding-bottom: 4px;
+          margin-bottom: var(--layout-spacing, 8px);
         }
         to {
           max-height: 0;
           opacity: 0;
           padding-top: 0;
           padding-bottom: 0;
+          margin-bottom: 0;
         }
       }
 
-      .search-overlay {
+      .searchbar {
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
-        gap: 0.25em;
-        padding: 1em 1em;
-        border-bottom: 1px solid #ddd;
+        gap: 6px;
+        padding: 4px 12px;
+        margin-bottom: var(--layout-spacing, 8px);
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--r-sm);
+        box-shadow: var(--shadow-2);
+        color: var(--text-3);
+        font-family: var(--font);
+        font-size: 13.5px;
         overflow: hidden;
         animation: search-slide-in 0.15s ease-out;
       }
 
-      .search-overlay.closing {
+      .searchbar.closing {
         animation: search-slide-out 0.15s ease-in forwards;
       }
 
-      .search-input-wrapper {
-        flex-grow: 1;
+      .searchbar input {
+        flex: 1 1 auto;
+        border: 0;
+        background: transparent;
+        outline: 0;
+        font: inherit;
+        color: var(--text-1);
         min-width: 0;
-        position: relative;
-        margin-right: 0.5em;
+        /* match the stepper buttons' height so the bar doesn't grow
+           when results (and their page buttons) appear */
+        height: 22px;
       }
 
-      .search-input {
-        --temba-textinput-padding: 6px 28px 6px 8px;
+      .searchbar input::placeholder {
+        color: var(--text-3);
       }
 
-      .search-go {
-        position: absolute;
-        right: 4px;
-        top: 50%;
-        transform: translateY(-50%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0.15em;
-        border-radius: 3px;
-        color: #999;
-        z-index: 1;
-      }
-
-      .search-go:hover {
-        color: #333;
-      }
-
-      .search-go:disabled {
-        opacity: 0.3;
-        cursor: default;
-      }
-
-      .search-counter {
-        font-size: 11px;
-        color: #666;
+      /* "↵ to search" hint — fades in alongside the run-search icon
+         only while there's a pending draft to apply. */
+      .searchbar .search-hint {
+        flex: 0 0 auto;
+        font-size: 0.75em;
+        color: var(--text-3);
         white-space: nowrap;
-        min-width: 3em;
-        text-align: center;
+        user-select: none;
       }
 
-      .search-btn {
+      .searchbar .search-hint .enter-key {
+        position: relative;
+        top: 2px;
+      }
+
+      /* Standard clickable icons — bare glyph at rest, a circular wash
+         on hover. The default wash is near-white and disappears against
+         the white bar, so each carries a more saturated one; run search
+         only renders when a draft is pending, so it's always the
+         primary action and its wash warms to accent. */
+      .searchbar .search-go,
+      .searchbar .search-cancel {
+        flex: 0 0 auto;
+        margin-left: 5px;
+        --icon-color: var(--text-3);
+        --icon-color-circle-hover: rgba(15, 22, 36, 0.1);
+      }
+
+      .searchbar .search-go {
+        --icon-color-circle-hover: var(--accent-200);
+      }
+
+      /* Match stepper — the list pager's chevron-only page buttons
+         bracketing a quiet "n of N" count, stepping through matches
+         instead of pages. */
+      .match-pager {
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
+        gap: 2px;
+      }
+
+      .pager-status {
+        padding: 0 4px;
+        color: var(--text-3);
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+
+      .page-btn {
+        display: inline-flex;
+        align-items: center;
         justify-content: center;
-        background: none;
-        border: none;
+        width: 22px;
+        height: 22px;
+        border-radius: var(--r-sm);
+        color: var(--text-3);
         cursor: pointer;
-        padding: 0.25em;
-        border-radius: 4px;
-        color: #666;
-        font-size: 11px;
+        user-select: none;
       }
 
-      .search-btn:hover,
-      .search-btn.enter-target:not(:disabled) {
-        background: rgba(0, 0, 0, 0.08);
-        color: #333;
+      /* enter-target lights the button Enter would fire — the older-
+         match step while the input holds the already-searched query. */
+      .page-btn:hover,
+      .page-btn.enter-target {
+        background: var(--sunken);
+        color: var(--text-1);
       }
 
-      .search-btn:disabled {
-        opacity: 0.3;
-        cursor: default;
-      }
-
-      .search-btn:disabled:hover {
-        background: none;
+      .page-btn temba-icon {
+        --icon-color: currentColor;
       }
 
       .search-no-results {
@@ -292,131 +371,179 @@ export class ContactChat extends ContactStoreElement {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        color: #999;
-        font-size: 14px;
+        color: var(--text-3);
+        font-family: var(--font);
+        font-size: 13.5px;
         text-align: center;
         pointer-events: none;
         z-index: 5;
       }
 
+      /* The search trigger floats over the history's top-right corner,
+         styled as the list pages' Search action chip — bordered icon +
+         label — but on an opaque surface (with a soft shadow) since it
+         sits over chat content rather than a header. */
       .search-toggle {
         position: absolute;
-        top: 0.5em;
+        top: 0.75em;
         right: 1.5em;
         z-index: 5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid #ddd;
-        border-radius: 50%;
-        width: 2em;
-        height: 2em;
-        cursor: pointer;
-        color: #888;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      }
-
-      .search-toggle:hover {
-        background: #fff;
-        color: #333;
-        border-color: #ccc;
-      }
-
-      /* "Currently in [flow]" treatment.
-         Lives in the chat footer to advertise the active run with an
-         optional Interrupt action (the chip's X). Sized to its
-         contents only (inline-flex) so the chat scrollbar to the
-         right remains clickable, and pointer-events:none on the
-         wrapping footer means the rest of the row doesn't intercept
-         scrollbar drags either. Translucent white bg + backdrop
-         blur keeps the chat history legible through the chip. */
-      .in-flow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 0.4em 0.75em;
-        margin: 0.5em;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.75);
-        /* tests set --test-backdrop-filter to none - the blur layer's
-           fractional offset rasterizes nondeterministically in headless
-           screenshots */
-        backdrop-filter: var(--test-backdrop-filter, blur(8px));
-        -webkit-backdrop-filter: var(--test-backdrop-filter, blur(8px));
-        box-shadow: var(--shadow-1);
-      }
-
-      .flow-footer {
-        text-align: center;
-        pointer-events: none;
-        /* The chat history has a scrollbar on the right edge; the
-           footer overlay spans the full container width, so centering
-           inside it lands the chip slightly right-of-center relative
-           to the visible message area. Reserve the scrollbar width on
-           the right so the chip is centered to what the user sees. */
-        padding-right: 15px;
-      }
-
-      .flow-footer .in-flow {
-        pointer-events: auto;
-      }
-
-      .in-flow .flow-name {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        /* Match the chat history event text — same hue + size — so
-           the "Currently in" line reads as one of the events rather
-           than its own UI chrome. */
-        font-size: 13.5px;
-        color: #8e8e93;
-      }
-
-      .in-flow .interrupt {
-        text-align: center;
-        align-self: stretch;
-        display: flex;
-        align-items: center;
+        height: 26px;
+        box-sizing: border-box;
+        padding: 0 10px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--r-sm);
+        background: var(--surface);
+        color: var(--text-2);
+        font-family: var(--font);
+        font-size: 13px;
         cursor: pointer;
-        justify-content: center;
-        padding: 0.5em 1em;
-        font-weight: bold;
+        user-select: none;
+        box-shadow: var(--shadow-1);
       }
 
-      .in-flow .interrupt:hover {
-        background: rgba(var(--error-rgb), 0.92);
+      .search-toggle:hover {
+        background: var(--sunken);
+        color: var(--text-1);
       }
 
-      .in-flow temba-icon,
-      .in-ticket temba-icon {
-        margin-right: 0.5em;
+      .search-toggle temba-icon {
+        --icon-color: currentColor;
       }
 
-      .in-ticket-wrapper {
+      /* The single status area above the chat box. Holds the ticket
+         controls (assignee / topic / close) and the contact status
+         (last seen, current flow) as stacked rows sharing one tint so
+         everything about the conversation's state lives in one place,
+         between the history and the compose. */
+      .status-area {
+        background: rgba(0, 0, 0, 0.02);
       }
 
-      .in-ticket {
-        box-shadow: none;
-        padding: 0.5em 0.5em;
+      /* the compose drops its top margin so the status area hugs the
+         chat box instead of floating above it */
+      .status-area + .chat-box .compose {
+        margin-top: 0;
+      }
+
+      /* Insets match .ticket-controls (px, not em - the rows have
+         different font sizes and em padding would drift the edges
+         apart) so the last seen lines up with the assignee widget box
+         and the Interrupt button sits flush with the Close button. */
+      .contact-status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        /* px so the guaranteed breathing room between last seen and
+           the flow doesn't scale down with the row's small font - the
+           flow name ellipsizes before this gap ever compresses */
+        gap: 24px;
+        padding: 5px 8px;
+        font-size: 11.5px;
+        color: #8e8e93;
+        border-top: 1px solid #ddd;
+      }
+
+      /* While the contact is in a flow the row takes the flow pill's
+         wash and foreground (see pillVariants .pill-flow) so it reads
+         as flow-tinted - the ticket controls above keep the plain
+         status-area grey. Fallbacks match the --flow design token for
+         pages without tokens. */
+      .in-flow .contact-status {
+        background: color-mix(in srgb, var(--flow, #16a34a) 12%, white);
+        color: var(--flow, #16a34a);
+        --icon-color: var(--flow, #16a34a);
+        border-top-color: color-mix(in srgb, var(--flow, #16a34a) 25%, white);
+      }
+
+      /* compact the interrupt button to the row's caption scale */
+      .contact-status temba-button {
+        --button-small-height: 20px;
+        --button-small-x-pad: 6px;
+        --button-small-font-size: 11px;
+      }
+
+      .contact-status .last-seen {
+        white-space: nowrap;
+        /* last seen always reads in full - the flow side gives way */
+        flex-shrink: 0;
+      }
+
+      .contact-status .current-flow {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+        /* the flow name can be long - let it ellipsize instead of
+           crowding out the last seen side */
+        min-width: 0;
+        margin-left: auto;
+      }
+
+      .contact-status .current-flow .flow-link {
+        display: flex;
+        align-items: center;
+        gap: 0.35em;
+        color: inherit;
+        font-weight: 500;
+        text-decoration: none;
+        min-width: 0;
+      }
+
+      .contact-status .current-flow .flow-link .flow-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        /* shrinks with the bar but keeps a couple of characters plus
+           the ellipsis so the name never collapses entirely */
+        min-width: 2em;
+      }
+
+      .contact-status .current-flow .flow-link:hover .flow-name {
+        text-decoration: underline;
+      }
+
+      .contact-status .current-flow temba-button {
+        flex-shrink: 0;
+        margin-left: 0.25em;
+      }
+
+      /* The compose region shares the status area tint so the panel is
+         framed by the same treatment top and bottom. */
+      .chat-box {
+        background: rgba(0, 0, 0, 0.02);
+        border-top: 1px solid #ddd;
+      }
+
+      /* the status row and chat box share one tinted region - no line
+         between them */
+      .status-area + .chat-box {
+        border-top: none;
+      }
+
+      .in-flow .chat-box {
+        background: color-mix(in srgb, var(--flow, #16a34a) 12%, white);
+      }
+
+      .ticket-controls {
+        padding: 8px;
         text-align: center;
         align-items: center;
-        border-bottom: 1px solid #ddd;
         display: flex;
-        box-shadow: none;
-        margin: 0em;
-        background: rgba(0, 0, 0, 0.03);
+        border-top: 1px solid #ddd;
       }
 
       /* Keep the assignment + topic controls the same height as the
          Close button so the row reads as one strip. Shrink the user
          avatars (--temba-scale) so they fit in the smaller box. */
-      .in-ticket temba-user-select,
-      .in-ticket temba-select {
+      .ticket-controls temba-user-select,
+      .ticket-controls temba-select {
         --temba-select-min-height: 28px;
       }
 
-      .in-ticket temba-user-select {
+      .ticket-controls temba-user-select {
         --temba-scale: 0.75;
       }
 
@@ -557,6 +684,10 @@ export class ContactChat extends ContactStoreElement {
   private typingPulse: number = null;
   private typingDisabled = false;
 
+  // periodic re-render keeping the last seen duration fresh while the
+  // conversation is idle
+  private stateRefresh: number = null;
+
   constructor() {
     super();
   }
@@ -587,12 +718,18 @@ export class ContactChat extends ContactStoreElement {
     super.connectedCallback();
     this.chat = this.shadowRoot.querySelector('temba-chat');
     this.updateSubscriptions();
+    this.stateRefresh = window.setInterval(
+      () => this.requestUpdate(),
+      STATE_REFRESH_INTERVAL
+    );
   }
 
   public disconnectedCallback() {
     super.disconnectedCallback();
     this.stopTyping();
     this.unsubscribeAll();
+    window.clearInterval(this.stateRefresh);
+    this.stateRefresh = null;
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -677,9 +814,23 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private handleSocketEvent(event: any) {
+    if (!this.currentContact) {
+      return;
+    }
+
+    // ephemeral contact state updates - they don't touch the history view
+    // so they apply even while searching
+    if (
+      event.type === Events.CONTACT_LAST_SEEN_CHANGED ||
+      event.type === Events.CONTACT_FLOW_CHANGED
+    ) {
+      this.handleContactStateEvent(event);
+      return;
+    }
+
     // while searching we're viewing an arbitrary point in history, new
     // events will be picked up by the refetch when search closes
-    if (!this.chat || this.searchMode || !this.currentContact) {
+    if (!this.chat || this.searchMode) {
       return;
     }
 
@@ -693,6 +844,51 @@ export class ContactChat extends ContactStoreElement {
     if (messages.length > 0) {
       this.chat.addMessages(messages, null, true);
     }
+  }
+
+  /**
+   * Ephemeral events that update contact state rather than record history.
+   * They are never persisted, so this is the only place they can be applied.
+   * The current contact is the store's cached copy of the contact, so
+   * updating it in place also keeps the cache fresh for later readers.
+   */
+  private handleContactStateEvent(
+    event: ContactFlowChangedEvent | ContactLastSeenChangedEvent
+  ) {
+    const contact = this.currentContact;
+    if (event.type === Events.CONTACT_LAST_SEEN_CHANGED) {
+      const lastSeenOn = (event as ContactLastSeenChangedEvent).last_seen_on;
+      // last seen only ever moves forward - ignore out of order deliveries
+      if (
+        !contact.last_seen_on ||
+        new Date(lastSeenOn) > new Date(contact.last_seen_on)
+      ) {
+        contact.last_seen_on = lastSeenOn;
+      }
+    } else {
+      contact.flow = (event as ContactFlowChangedEvent).flow || null;
+    }
+    this.requestUpdate();
+  }
+
+  private getLastSeen(): { duration: string; title: string } | null {
+    const lastSeenOn = this.currentContact?.last_seen_on;
+    if (!lastSeenOn || !this.store) {
+      return null;
+    }
+
+    // recent activity speaks for itself in the chat - only surface last
+    // seen once the contact has been quiet for at least an hour
+    const lastSeen = DateTime.fromISO(lastSeenOn);
+    const minutes = DateTime.now().diff(lastSeen, 'minutes').minutes;
+    if (minutes < 60) {
+      return null;
+    }
+
+    return {
+      duration: this.store.getShortDuration(lastSeen),
+      title: lastSeen.toLocaleString(DateTime.DATETIME_SHORT)
+    };
   }
 
   private handleTypingEvent(event: TypingEvent) {
@@ -844,7 +1040,29 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
+  /** Drops any search positioning — highlights, block flags, paging
+   * anchors — and reloads the history at its normal, most-recent view. */
+  private restoreUnsearchedView() {
+    const chat = this.chat;
+    if (!chat) {
+      return;
+    }
+
+    chat.searchHighlight = null;
+    chat.highlightMessageUuid = null;
+    chat.reset();
+    this.blockFetching = false;
+    this.blockFetchingNewer = false;
+    this.fetchingNewer = false;
+    this.beforeUUID = null;
+    this.afterUUID = null;
+    this.fetchPreviousMessages();
+  }
+
   private handleSearchClose() {
+    // supersede any in-flight match navigation right away — its chain
+    // must not re-assert highlights over the restored view below
+    this.searchGeneration++;
     this.searchClosing = true;
     window.setTimeout(() => {
       this.searchClosing = false;
@@ -855,31 +1073,43 @@ export class ContactChat extends ContactStoreElement {
       this.searchLoading = false;
       this.searchNoResults = false;
       this.lastSearchedQuery = '';
-      const chat = this.chat;
-      if (!chat) {
-        return;
-      }
-
-      chat.searchHighlight = null;
-      chat.highlightMessageUuid = null;
-      // reload the current view
-      chat.reset();
-      this.blockFetching = false;
-      this.blockFetchingNewer = false;
-      this.fetchingNewer = false;
-      this.beforeUUID = null;
-      this.afterUUID = null;
-      this.fetchPreviousMessages();
+      this.restoreUnsearchedView();
     }, 150);
   }
 
   private handleSearchInput(e: Event) {
     const input = e.target as HTMLInputElement;
     this.searchQuery = input.value;
+
+    // any edit away from the searched query invalidates its results —
+    // drop them and put the history back at its unsearched view rather
+    // than staying parked at a stale match; backspacing to nothing is
+    // just an empty search. Clearing lastSearchedQuery also means
+    // retyping the same query and hitting Enter re-runs the search.
+    if (this.searchQuery.trim() !== this.lastSearchedQuery) {
+      // only reload the view when a search had actually run — while
+      // typing a fresh query the history is already showing it
+      const hadSearch = this.lastSearchedQuery !== '';
+      this.searchGeneration++;
+      this.searchResults = [];
+      this.searchIndex = -1;
+      this.searchNoResults = false;
+      this.lastSearchedQuery = '';
+      if (hadSearch) {
+        this.restoreUnsearchedView();
+      }
+    }
   }
 
   // tracks the query that produced the current searchResults
   private lastSearchedQuery = '';
+
+  // bumped whenever the current search is superseded (new search, query
+  // edit, close) — navigateToResult's async fade/load chain captures the
+  // value at entry and bails at each step once it goes stale, so a chain
+  // already in flight can't re-assert highlights or scroll position over
+  // a view the user has since moved on from
+  private searchGeneration = 0;
 
   private handleSearchKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
@@ -904,6 +1134,8 @@ export class ContactChat extends ContactStoreElement {
       return;
     }
 
+    // a fresh search supersedes any navigation still in flight
+    this.searchGeneration++;
     this.searchLoading = true;
     this.searchResults = [];
     this.searchIndex = -1;
@@ -919,7 +1151,23 @@ export class ContactChat extends ContactStoreElement {
     getUrl(url)
       .then((response: WebResponse) => {
         this.searchLoading = false;
-        this.searchResults = response.json.results || [];
+        // ignore a response the user has already moved past — editing the
+        // query (handleSearchInput clears lastSearchedQuery) or closing search
+        // (handleSearchClose flips searchMode off) can land before a slow
+        // response; applying it here would repopulate results for and scroll to
+        // a superseded query.
+        if (this.lastSearchedQuery !== query || !this.searchMode) {
+          return;
+        }
+        // the stepper walks newest → oldest ("older match" steps forward
+        // through the list), so order the results newest-first here rather
+        // than depending on the endpoint's ordering (uuid v7 sorts
+        // chronologically, matching the uuid comparisons used elsewhere)
+        this.searchResults = (
+          (response.json.results || []) as SearchResult[]
+        ).sort((a, b) =>
+          b.uuid.toLowerCase().localeCompare(a.uuid.toLowerCase())
+        );
         if (this.searchResults.length > 0) {
           this.searchNoResults = false;
           this.searchIndex = 0;
@@ -931,6 +1179,9 @@ export class ContactChat extends ContactStoreElement {
       })
       .catch(() => {
         this.searchLoading = false;
+        if (this.lastSearchedQuery !== query || !this.searchMode) {
+          return;
+        }
         this.searchResults = [];
         this.searchIndex = -1;
         this.searchNoResults = false;
@@ -956,7 +1207,15 @@ export class ContactChat extends ContactStoreElement {
       return;
     }
 
-    this.chat.searchHighlight = this.searchQuery.trim();
+    // the chain below spans fade timers and fetches — capture the current
+    // generation so each step can bail if the search is superseded
+    // (closed, edited, or re-run) while it's still in flight
+    const generation = this.searchGeneration;
+    const stale = () => generation !== this.searchGeneration;
+
+    // highlight the query that produced these results, not the current input
+    // text — a draft edit mid-navigation must not mislabel the highlights.
+    this.chat.searchHighlight = this.lastSearchedQuery;
 
     // start fetches immediately (in parallel with fade-out)
     const beforePromise = fetchContactHistory(
@@ -976,6 +1235,13 @@ export class ContactChat extends ContactStoreElement {
     this.chat.style.opacity = '0';
 
     window.setTimeout(() => {
+      // superseded while fading out — leave the view to whatever
+      // superseded us and just undo our fade
+      if (stale()) {
+        this.chat.style.opacity = '1';
+        return;
+      }
+
       // fully hidden (including scrollbar) during content swap
       this.chat.style.visibility = 'hidden';
       this.chat.reset();
@@ -993,6 +1259,12 @@ export class ContactChat extends ContactStoreElement {
       let navigationCompleted = false;
       Promise.all([beforePromise, afterPromise])
         .then(([beforePage, afterPage]) => {
+          // superseded while the pages were loading — the finally below
+          // restores visibility since navigationCompleted is still false
+          if (stale()) {
+            return;
+          }
+
           const afterMessages = this.createMessages(afterPage);
           afterMessages.reverse();
 
@@ -1036,6 +1308,16 @@ export class ContactChat extends ContactStoreElement {
             window.setTimeout(() => {
               if (!this.chat) return;
 
+              // superseded after the messages rendered — don't re-assert
+              // the highlight or scroll over the restored view, but do
+              // undo our hide (navigationCompleted is already true, so
+              // the finally won't)
+              if (stale()) {
+                this.chat.style.visibility = 'visible';
+                this.chat.style.opacity = '1';
+                return;
+              }
+
               // position internal scroll only — never use scrollIntoView
               // which can move ancestor containers
               this.chat.highlightMessageUuid = result.uuid;
@@ -1077,6 +1359,10 @@ export class ContactChat extends ContactStoreElement {
           });
         })
         .catch(() => {
+          // superseded — whatever superseded us already owns the reload
+          if (stale()) {
+            return;
+          }
           this.blockFetching = false;
           this.blockFetchingNewer = false;
           this.fetchingNewer = false;
@@ -1193,15 +1479,18 @@ export class ContactChat extends ContactStoreElement {
   /**
    * Keeps the store's avatar cache fresh from server-hydrated user refs and
    * fills in refs that arrive without one - events published over sockets
-   * carry only a user's uuid and name.
+   * carry only a user's uuid and name. Ticket assignment events carry a
+   * second user ref (the assignee) whose avatar feeds the event's hover
+   * tooltip.
    */
   private resolveUserAvatar(event: any) {
-    const user = event._user;
-    if (user && user.uuid && this.store) {
-      if (user.avatar) {
-        this.store.setUserAvatar(user.uuid, user.avatar);
-      } else {
-        user.avatar = this.store.getUserAvatar(user.uuid);
+    for (const user of [event._user, event.assignee]) {
+      if (user && user.uuid && this.store) {
+        if (user.avatar) {
+          this.store.setUserAvatar(user.uuid, user.avatar);
+        } else {
+          user.avatar = this.store.getUserAvatar(user.uuid);
+        }
       }
     }
   }
@@ -1445,7 +1734,7 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getCompose(): TemplateResult {
-    return html`<div class="border"></div>
+    return html`<div class="chat-box">
       <div class="compose">
         <temba-compose
           attachments
@@ -1466,7 +1755,8 @@ export class ContactChat extends ContactStoreElement {
               ></temba-button>
             </div>`
           : null}
-      </div>`;
+      </div>
+    </div>`;
   }
 
   private handleAssignmentChanged(evt: CustomEvent) {
@@ -1568,177 +1858,203 @@ export class ContactChat extends ContactStoreElement {
       });
   }
 
+  /** The search bar rendered above the chat card while searching —
+   * mirrors the list pages' searchbar: a bare input on a sunken strip
+   * with an ↵-to-search hint + run icon while a draft is pending, and
+   * a pager-style match stepper once results are in. */
+  private renderSearchBar(): TemplateResult {
+    const trimmed = this.searchQuery.trim();
+    const pendingDraft = !!trimmed && trimmed !== this.lastSearchedQuery;
+    return html`<div class="searchbar ${this.searchClosing ? 'closing' : ''}">
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Search messages"
+        aria-label="Search messages"
+        .value=${this.searchQuery}
+        @input=${this.handleSearchInput}
+        @keydown=${this.handleSearchKeydown}
+        @focus=${() => (this.searchFocused = true)}
+        @blur=${() => (this.searchFocused = false)}
+      />
+      ${this.searchLoading
+        ? html`<temba-loading size="8"></temba-loading>`
+        : pendingDraft
+          ? html`<span class="search-hint">
+                <span class="enter-key">&#x21B5;</span> to search
+              </span>
+              <temba-icon
+                class="search-go"
+                name=${Icon.search}
+                size="1.1"
+                clickable
+                title="Search"
+                aria-label="Run search"
+                @click=${this.executeSearch}
+              ></temba-icon>`
+          : this.searchResults.length > 0
+            ? html`<div class="match-pager">
+                <span class="pager-status"
+                  >${this.searchIndex + 1} of ${this.searchResults.length}</span
+                >
+                <span
+                  class="page-btn ${this.searchFocused &&
+                  trimmed === this.lastSearchedQuery
+                    ? 'enter-target'
+                    : ''}"
+                  @click=${this.handleSearchNext}
+                  title="Older match (Enter)"
+                  aria-label="Older match"
+                >
+                  <temba-icon name=${Icon.up} size="1"></temba-icon>
+                </span>
+                <span
+                  class="page-btn"
+                  @click=${this.handleSearchPrev}
+                  title="Newer match (Shift+Enter)"
+                  aria-label="Newer match"
+                >
+                  <temba-icon name=${Icon.down} size="1"></temba-icon>
+                </span>
+              </div>`
+            : null}
+      <temba-icon
+        class="search-cancel"
+        name=${Icon.close}
+        size="1.1"
+        clickable
+        title="Close search (Escape)"
+        aria-label="Close search"
+        @click=${this.handleSearchClose}
+      ></temba-icon>
+    </div>`;
+  }
+
   public render(): TemplateResult {
     const inFlow = this.currentContact && this.currentContact.flow;
+    const lastSeen = this.getLastSeen();
 
     const inTicket = this.currentTicket;
     const ticketClosed = this.currentTicket && this.currentTicket.closed_on;
 
-    return html`<div class="chat-wrapper">
-      ${this.currentContact
-        ? html`<div class="chat-container">
-              ${this.showSearch && this.searchMode
-                ? html`<div
-                    class="search-overlay ${this.searchClosing
-                      ? 'closing'
-                      : ''}"
-                  >
-                    <div class="search-input-wrapper">
-                      <temba-textinput
-                        class="search-input"
-                        placeholder="Search messages..."
-                        .value=${this.searchQuery}
-                        .submitOnEnter=${false}
-                        @input=${this.handleSearchInput}
-                        @keydown=${this.handleSearchKeydown}
-                        @focus=${() => (this.searchFocused = true)}
-                        @blur=${() => (this.searchFocused = false)}
-                        widget_only
-                      ></temba-textinput>
-                      <button
-                        class="search-go"
-                        @click=${this.executeSearch}
-                        ?disabled=${!this.searchQuery.trim() ||
-                        this.searchLoading}
-                        title="Search (Enter)"
-                      >
-                        <temba-icon name="search" size="0.8"></temba-icon>
-                      </button>
-                    </div>
-                    ${this.searchLoading
-                      ? html`<span class="search-counter"
-                          ><temba-loading size="8"></temba-loading
-                        ></span>`
-                      : this.searchResults.length > 0
-                        ? html`<span class="search-counter"
-                              >${this.searchIndex + 1} /
-                              ${this.searchResults.length}</span
-                            ><button
-                              class="search-btn ${this.searchFocused &&
-                              this.searchQuery.trim() === this.lastSearchedQuery
-                                ? 'enter-target'
-                                : ''}"
-                              @click=${this.handleSearchNext}
-                              title="Older match (Enter)"
-                            >
-                              &#x25B2;
-                            </button>
-                            <button
-                              class="search-btn"
-                              @click=${this.handleSearchPrev}
-                              title="Newer match (Shift+Enter)"
-                            >
-                              &#x25BC;
-                            </button>`
-                        : null}
-                    <button
-                      class="search-btn"
-                      @click=${this.handleSearchClose}
-                      title="Close search (Escape)"
-                    >
-                      &#x2715;
-                    </button>
-                  </div>`
-                : null}
-              ${this.showSearch && !this.searchMode
-                ? html`<button
-                    class="search-toggle"
-                    @click=${this.handleSearchToggle}
-                    title="Search messages"
-                  >
-                    <temba-icon name="search" size="1"></temba-icon>
-                  </button>`
-                : null}
-              <temba-chat
-                @temba-scroll-threshold=${this.fetchPreviousMessages}
-                @temba-scroll-threshold-bottom=${this.fetchNewerMessages}
-                @temba-fetch-complete=${this.fetchComplete}
-                avatar=${this.avatar}
-                contactName=${this.currentContact?.name ?? nothing}
-                contactUuid=${this.currentContact?.uuid ?? nothing}
-                agent
-                avatars
-                ?hasFooter=${inFlow}
-                .showMessageLogsAfter=${this.showMessageLogsAfter}
-              >
-                ${inFlow
-                  ? html`
-                      <div slot="footer" class="flow-footer">
-                        <div class="in-flow">
-                          <div class="flow-name">
-                            <span>Currently in</span>
-                            <a
-                              href="/flow/editor/${this.currentContact.flow
-                                .uuid}/"
-                              onclick="goto(event, this)"
-                              ><temba-label
-                                type="flow"
-                                clickable
-                                ?removable=${this.showInterrupt}
-                                removeLabel=${msg('Interrupt flow')}
-                                @temba-remove=${this.handleInterrupt}
-                                >${this.currentContact.flow.name}</temba-label
-                              ></a
-                            >
-                          </div>
-                        </div>
-                      </div>
-                    `
-                  : null}
-                <div slot="footer"></div>
-              </temba-chat>
-              ${this.searchNoResults
-                ? html`<div class="search-no-results">
-                    No results found for
-                    <strong>${this.lastSearchedQuery}</strong>
-                  </div>`
-                : null}
-            </div>
-            ${inTicket
-              ? html`<div class="in-ticket-wrapper">
-                  <div class="in-ticket">
-                    <temba-user-select
-                      placeholder="Assign to.."
-                      searchable
-                      searchOnFocus
-                      clearable
-                      .values=${this.currentTicket.assignee
-                        ? [this.currentTicket.assignee]
-                        : []}
-                      @change=${this.handleAssignmentChanged}
-                      ?disabled=${ticketClosed || this.disableAssign}
-                    ></temba-user-select>
-
-                    <temba-select
-                      style="margin:0 0.5em; flex-grow:1"
-                      endpoint="/api/v2/topics.json"
-                      searchable
-                      valuekey="uuid"
-                      .values=${[this.currentTicket.topic]}
-                      @change=${this.handleTopicChanged}
-                      ?disabled=${ticketClosed}
-                    ></temba-select>
-
-                    ${this.currentTicket.closed_on
-                      ? html`
-                          <temba-button
-                            name="Reopen"
-                            @click=${this.handleReopen}
-                          ></temba-button>
-                        `
-                      : html`
-                          <temba-button
-                            name="Close"
-                            destructive
-                            @click=${this.handleClose}
-                          ></temba-button>
-                        `}
-                  </div>
-                </div> `
-              : null}
-            ${this.getTembaCompose()}`
+    return html`${this.currentContact && this.showSearch && this.searchMode
+        ? this.renderSearchBar()
         : null}
-    </div>`;
+      <div class="chat-wrapper ${inFlow ? 'in-flow' : ''}">
+        ${this.currentContact
+          ? html`<div class="chat-container">
+                ${this.showSearch && !this.searchMode
+                  ? html`<button
+                      class="search-toggle"
+                      @click=${this.handleSearchToggle}
+                      title="Search messages"
+                    >
+                      <temba-icon name=${Icon.search} size="0.95"></temba-icon>
+                      Search
+                    </button>`
+                  : null}
+                <temba-chat
+                  @temba-scroll-threshold=${this.fetchPreviousMessages}
+                  @temba-scroll-threshold-bottom=${this.fetchNewerMessages}
+                  @temba-fetch-complete=${this.fetchComplete}
+                  avatar=${this.avatar}
+                  contactName=${this.currentContact?.name ?? nothing}
+                  contactUuid=${this.currentContact?.uuid ?? nothing}
+                  agent
+                  avatars
+                  .showMessageLogsAfter=${this.showMessageLogsAfter}
+                >
+                </temba-chat>
+                ${this.searchNoResults
+                  ? html`<div class="search-no-results">
+                      No results found for
+                      <strong>${this.lastSearchedQuery}</strong>
+                    </div>`
+                  : null}
+              </div>
+              ${inTicket || inFlow || lastSeen
+                ? html`<div class="status-area">
+                    ${inTicket
+                      ? html`<div class="ticket-controls">
+                          <temba-user-select
+                            placeholder="Assign to.."
+                            searchable
+                            searchOnFocus
+                            clearable
+                            .values=${this.currentTicket.assignee
+                              ? [this.currentTicket.assignee]
+                              : []}
+                            @change=${this.handleAssignmentChanged}
+                            ?disabled=${ticketClosed || this.disableAssign}
+                          ></temba-user-select>
+
+                          <temba-select
+                            style="margin:0 0.5em; flex-grow:1"
+                            endpoint="/api/v2/topics.json"
+                            searchable
+                            valuekey="uuid"
+                            .values=${[this.currentTicket.topic]}
+                            @change=${this.handleTopicChanged}
+                            ?disabled=${ticketClosed}
+                          ></temba-select>
+
+                          ${this.currentTicket.closed_on
+                            ? html`
+                                <temba-button
+                                  name="Reopen"
+                                  @click=${this.handleReopen}
+                                ></temba-button>
+                              `
+                            : html`
+                                <temba-button
+                                  name="Close"
+                                  destructive
+                                  @click=${this.handleClose}
+                                ></temba-button>
+                              `}
+                        </div>`
+                      : null}
+                    ${inFlow || lastSeen
+                      ? html`<div class="contact-status">
+                          ${lastSeen
+                            ? html`<div
+                                class="last-seen"
+                                title=${lastSeen.title}
+                              >
+                                ${msg(str`Last seen ${lastSeen.duration}`)}
+                              </div>`
+                            : null}
+                          ${inFlow
+                            ? html`<div class="current-flow">
+                                <a
+                                  class="flow-link"
+                                  href="/flow/editor/${this.currentContact.flow
+                                    .uuid}/"
+                                  onclick="goto(event, this)"
+                                  title=${this.currentContact.flow.name}
+                                >
+                                  <temba-icon name="flow"></temba-icon>
+                                  <div class="flow-name">
+                                    ${this.currentContact.flow.name}
+                                  </div>
+                                </a>
+                                ${this.showInterrupt
+                                  ? html`<temba-button
+                                      small
+                                      light
+                                      name=${msg('Interrupt')}
+                                      @click=${this.handleInterrupt}
+                                    ></temba-button>`
+                                  : null}
+                              </div>`
+                            : null}
+                        </div>`
+                      : null}
+                  </div>`
+                : null}
+              ${this.getTembaCompose()}`
+          : null}
+      </div>`;
   }
 }
 export const closeTicket = (uuid: string): Promise<WebResponse> => {
