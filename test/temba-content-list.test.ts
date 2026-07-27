@@ -1048,6 +1048,68 @@ describe('temba-content-list', () => {
     expect(list.shadowRoot!.querySelector('th.spacer')).to.equal(null);
   });
 
+  it('resizes columns by dragging (screenshot)', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      { endpoint: '/test-assets/content-list/contacts.json' },
+      '',
+      1100
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    for (
+      let i = 0;
+      i < 200 && (list as any).featuredFields?.length === 0;
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    await list.updateComplete;
+
+    const nameHeader = list.shadowRoot!.querySelector(
+      'th.head-cell'
+    ) as HTMLElement;
+    const startWidth = nameHeader.getBoundingClientRect().width;
+    const handle = getResizeHandle(nameHeader)!;
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 300,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: 420,
+        pointerType: 'mouse'
+      })
+    );
+    await list.updateComplete;
+
+    // mid-drag the separator is strengthened and the column tracks the
+    // pointer; clip to the header region so the affordance is legible
+    const dragClip = getClip(list);
+    dragClip.height = 170;
+    await assertScreenshot('content-list/contacts-resize-drag', dragClip);
+
+    window.dispatchEvent(
+      new PointerEvent('pointerup', {
+        clientX: 420,
+        pointerType: 'mouse'
+      })
+    );
+    await list.updateComplete;
+    expect(nameHeader.getBoundingClientRect().width).to.be.greaterThan(
+      startWidth + 100
+    );
+    await assertScreenshot('content-list/contacts-resized', getClip(list));
+  });
+
   it('shows a Ref column instead of URN for anon workspaces', async () => {
     await loadStore();
     const list = (await getComponent(
