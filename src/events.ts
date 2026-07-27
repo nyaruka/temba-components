@@ -11,6 +11,18 @@ export interface ContactLanguageChangedEvent extends ContactEvent {
   language: string;
 }
 
+// ephemeral state event - arrives over the socket but is never persisted,
+// updates the contact's current flow rather than recording history
+export interface ContactFlowChangedEvent extends ContactEvent {
+  flow: ObjectReference | null;
+}
+
+// ephemeral state event - arrives over the socket but is never persisted,
+// updates the contact's last seen rather than recording history
+export interface ContactLastSeenChangedEvent extends ContactEvent {
+  last_seen_on: string;
+}
+
 export interface ContactStatusChangedEvent extends ContactEvent {
   status: string;
 }
