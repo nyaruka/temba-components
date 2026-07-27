@@ -430,6 +430,10 @@ export class ContactDetails extends ContactStoreElement {
 
   public willUpdate(changed: PropertyValues): void {
     if (changed.has('contact') || changed.has('endpoint')) {
+      const url = this.contact ? `${this.endpoint}${this.contact}` : null;
+      if (url !== this.url) {
+        this.data = null;
+      }
       this.saveGeneration++;
       this.saveGenerations.clear();
       this.fieldSaveGenerations.clear();

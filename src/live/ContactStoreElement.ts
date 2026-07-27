@@ -68,15 +68,14 @@ export class ContactStoreElement extends EndpointMonitorElement {
   }
 
   public willUpdate(changed: PropertyValues): void {
-    // Derive our URL before the base class runs so it sees the URL change in
-    // this same pass. Clear data for any identity change so consumers cannot
-    // edit the previous contact while the next one is loading.
+    // derive our url before the base class runs so it sees the url change
+    // in this same pass (clearing stale data when the contact is unset)
     if (changed.has('contact') || changed.has('endpoint')) {
-      const url = this.contact ? `${this.endpoint}${this.contact}` : null;
-      if (url !== this.url) {
-        this.data = null;
+      if (this.contact) {
+        this.url = `${this.endpoint}${this.contact}`;
+      } else {
+        this.url = null;
       }
-      this.url = url;
     }
     super.willUpdate(changed);
   }
