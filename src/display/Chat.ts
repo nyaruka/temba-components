@@ -1175,8 +1175,10 @@ export class Chat extends RapidElement {
   private msgMap = new Map<string, ContactEvent>();
 
   // runs of informational events collapse behind a summary pill —
-  // this tracks which runs the user has expanded, keyed by the run's
-  // first event id (element state, so it survives re-renders)
+  // this tracks which runs the user has expanded as a set of event
+  // ids (a run is expanded if any of its events is present). keying
+  // on membership rather than the run's first id keeps expansion
+  // stable when pagination prepends older events into the run
   private expandedEventChunks = new Set<string>();
 
   // runs mid-collapse: they keep rendering expanded (with the closing
@@ -1789,13 +1791,17 @@ export class Chat extends RapidElement {
                 // condensable events collapse behind a single summary
                 // pill until expanded — even a run of one, so single
                 // events behave the same as longer runs
-                const chunkKey = chunk.ids[0];
-                if (!this.expandedEventChunks.has(chunkKey)) {
+                const expanded = chunk.ids.some((id) =>
+                  this.expandedEventChunks.has(id)
+                );
+                if (!expanded) {
                   const events = chunk.ids.map((id) => this.msgMap.get(id));
                   return html`<div class="row message is-event summary-row">
                     <div class="event">
                       ${renderEventSummary(events, () => {
-                        this.expandedEventChunks.add(chunkKey);
+                        chunk.ids.forEach((id) =>
+                          this.expandedEventChunks.add(id)
+                        );
                         this.requestUpdate();
                       })}
                     </div>
@@ -1804,7 +1810,9 @@ export class Chat extends RapidElement {
 
                 // collapsing runs keep rendering expanded while the
                 // closing animation plays, then swap to the summary
-                const collapsing = this.collapsingEventChunks.has(chunkKey);
+                const collapsing = chunk.ids.some((id) =>
+                  this.collapsingEventChunks.has(id)
+                );
                 return html`<div
                   class="row message is-event condensed-events ${collapsing
                     ? 'collapsing'
@@ -1817,14 +1825,18 @@ export class Chat extends RapidElement {
                           class="collapse-rail"
                           title="Collapse"
                           @click=${() => {
-                            if (this.collapsingEventChunks.has(chunkKey)) {
+                            if (collapsing) {
                               return;
                             }
-                            this.collapsingEventChunks.add(chunkKey);
+                            chunk.ids.forEach((id) =>
+                              this.collapsingEventChunks.add(id)
+                            );
                             this.requestUpdate();
                             window.setTimeout(() => {
-                              this.collapsingEventChunks.delete(chunkKey);
-                              this.expandedEventChunks.delete(chunkKey);
+                              chunk.ids.forEach((id) => {
+                                this.collapsingEventChunks.delete(id);
+                                this.expandedEventChunks.delete(id);
+                              });
                               this.requestUpdate();
                             }, 180);
                           }}

@@ -2090,7 +2090,11 @@ export class Simulator extends RapidElement {
       await new Promise((resolve) => setTimeout(resolve, 400));
 
       // the simulation was reset while we were waiting, this reply belongs
-      // to the old session
+      // to the old session. we deliberately don't touch `sprinting` here:
+      // handleReset already cleared it when it bumped the generation (and
+      // clearing it now could stomp a sprint the new session has started).
+      // anything else that invalidates a generation must likewise reset
+      // `sprinting` or the input stays disabled.
       if (generation !== this.sessionGeneration) {
         return;
       }

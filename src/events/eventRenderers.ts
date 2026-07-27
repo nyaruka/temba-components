@@ -295,14 +295,20 @@ export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
   </div>`;
 };
 
+// strip the scheme and query string from a raw URN for display
+// (e.g. "tel:+1234?channel=x" → "+1234"); a malformed URN without a
+// scheme separator passes through as-is rather than throwing
+const urnDisplayValue = (urn: string): string => {
+  const parts = urn.split(':');
+  return (parts.length > 1 ? parts[1] : urn).split('?')[0];
+};
+
 export const renderContactURNsChanged = (
   event: URNsChangedEvent
 ): TemplateResult => {
   // URNs are replaced as a set, so the whole set shares one pill —
   // the value truncates past 18em with the full list on hover
-  const urns = (event.urns || []).map(
-    (urn: string) => urn.split(':')[1].split('?')[0]
-  );
+  const urns = (event.urns || []).map(urnDisplayValue);
   return html`<div style=${eventLineStyle}>
     ${attributePill('URNs', urns.length ? urns.join(', ') : null, {
       icon: 'at-sign'
@@ -798,9 +804,7 @@ const getEventTooltipLines = (
     case Events.CONTACT_NAME_CHANGED:
       return fullValue(event.name);
     case Events.CONTACT_URNS_CHANGED: {
-      const urns = (event.urns || []).map(
-        (urn: string) => urn.split(':')[1].split('?')[0]
-      );
+      const urns = (event.urns || []).map(urnDisplayValue);
       return fullValue(urns.join(', '));
     }
     case Events.RUN_RESULT_CHANGED:
