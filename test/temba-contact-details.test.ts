@@ -1,6 +1,7 @@
 import { assert, expect, oneEvent, waitUntil } from '@open-wc/testing';
-import { SinonStub } from 'sinon';
+import { SinonStub, stub } from 'sinon';
 import { CustomEventType, URN } from '../src/interfaces';
+import { TextInput } from '../src/form/TextInput';
 import { ContactFieldEditor } from '../src/live/ContactFieldEditor';
 import { ContactDetails } from '../src/live/ContactDetails';
 import {
@@ -356,6 +357,165 @@ describe(TAG, () => {
     ]);
     expect(contactDetails.data.name).to.equal('David Matthews');
     expect(contactDetails.data.language).to.equal('spa');
+  });
+
+  it('ignores contact save responses that arrive out of order', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({
+      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      editable: true
+    });
+    const original = contactDetails.data;
+    let resolveLanguage: (response: any) => void;
+    let resolveStatus: (response: any) => void;
+    const postJSON = stub(contactDetails.store, 'postJSON');
+    postJSON.onFirstCall().returns(
+      new Promise((resolve) => {
+        resolveLanguage = resolve;
+      })
+    );
+    postJSON.onSecondCall().returns(
+      new Promise((resolve) => {
+        resolveStatus = resolve;
+      })
+    );
+
+    try {
+      const languageSave = contactDetails.handleLanguageChanged({
+        currentTarget: { values: [{ value: 'spa' }] }
+      } as unknown as Event);
+      const statusSave = contactDetails.handleStatusChanged({
+        currentTarget: { values: [{ value: 'blocked' }] }
+      } as unknown as Event);
+
+      resolveStatus({
+        status: 200,
+        json: { ...original, status: 'blocked' },
+        headers: new Headers()
+      });
+      await statusSave;
+      expect(contactDetails.data.status).to.equal('blocked');
+
+      resolveLanguage({
+        status: 200,
+        json: { ...original, language: 'spa' },
+        headers: new Headers()
+      });
+      await languageSave;
+      expect(contactDetails.data.status).to.equal('blocked');
+      expect(contactDetails.data.language).to.equal(original.language);
+    } finally {
+      postJSON.restore();
+    }
+  });
+
+  it('ignores a save response after switching contacts', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({
+      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      editable: true
+    });
+    const original = contactDetails.data;
+    const otherContact = {
+      ...original,
+      uuid: 'other-contact',
+      name: 'Other Contact'
+    };
+    mockGET(
+      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=other-contact/,
+      { next: null, previous: null, results: [otherContact] }
+    );
+    let resolveSave: (response: any) => void;
+    const postJSON = stub(contactDetails.store, 'postJSON').returns(
+      new Promise((resolve) => {
+        resolveSave = resolve;
+      })
+    );
+
+    try {
+      const save = contactDetails.handleLanguageChanged({
+        currentTarget: { values: [{ value: 'spa' }] }
+      } as unknown as Event);
+      contactDetails.contact = 'other-contact';
+      await contactDetails.updateComplete;
+      await waitUntil(() => contactDetails.data?.uuid === 'other-contact');
+
+      resolveSave({
+        status: 200,
+        json: { ...original, name: 'Stale Contact', language: 'spa' },
+        headers: new Headers()
+      });
+      await save;
+
+      expect(contactDetails.data.uuid).to.equal('other-contact');
+      expect(contactDetails.data.name).to.equal('Other Contact');
+    } finally {
+      postJSON.restore();
+    }
+  });
+
+  it('loads a saved contact from cache when remounted', async () => {
+    await loadStore();
+    const attrs = {
+      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      editable: true
+    };
+    const contactDetails = await getContactDetails(attrs);
+    mockPOST(
+      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=/,
+      {
+        ...contactDetails.data,
+        status: 'blocked'
+      }
+    );
+
+    await contactDetails.handleStatusChanged({
+      currentTarget: { values: [{ value: 'blocked' }] }
+    } as unknown as Event);
+    contactDetails.remove();
+
+    const remounted = await getContactDetails(attrs);
+    expect(remounted.data.status).to.equal('blocked');
+  });
+
+  it('reorders URNs with the keyboard', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({
+      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      editable: true
+    });
+    contactDetails.schemes = SCHEMES;
+    contactDetails.showUrnDialog();
+    await contactDetails.updateComplete;
+    const firstPath = contactDetails.data.urns[0].path;
+    const secondPath = contactDetails.data.urns[1].path;
+    const firstHandle = contactDetails.shadowRoot.querySelector(
+      '#urn-0 .drag-handle'
+    ) as HTMLElement;
+    expect(firstHandle.getAttribute('role')).to.equal('button');
+    expect(firstHandle.getAttribute('tabindex')).to.equal('0');
+    expect(firstHandle.getAttribute('aria-label')).to.contain(
+      'Use the up and down arrow keys'
+    );
+
+    firstHandle.focus();
+    firstHandle.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        bubbles: true,
+        cancelable: true
+      })
+    );
+    await contactDetails.updateComplete;
+
+    const inputs = contactDetails.shadowRoot.querySelectorAll(
+      'temba-textinput.urn-input'
+    ) as NodeListOf<TextInput>;
+    expect(inputs[0].value).to.equal(secondPath);
+    expect(inputs[1].value).to.equal(firstPath);
+    expect(contactDetails.shadowRoot.activeElement).to.equal(
+      contactDetails.shadowRoot.querySelector('#urn-1 .drag-handle')
+    );
   });
 
   it('drafts URN changes and applies them together on Save', async () => {

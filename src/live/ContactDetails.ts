@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { Icon } from '../Icons';
 import { CustomEventType, Group, URN } from '../interfaces';
@@ -48,6 +48,10 @@ export class ContactDetails extends ContactStoreElement {
 
   @state()
   private failed = new Set<string>();
+
+  private saveGeneration = 0;
+
+  private saveGenerations = new Map<string, number>();
 
   static get styles() {
     return css`
@@ -342,24 +346,56 @@ export class ContactDetails extends ContactStoreElement {
     this.failed = failed;
   }
 
+  private finishSave(
+    contactId: string,
+    key: string,
+    generation: number,
+    status: 'failed' | 'ready'
+  ) {
+    if (
+      this.contact !== contactId ||
+      this.saveGenerations.get(key) !== generation
+    ) {
+      return;
+    }
+    this.saveGenerations.delete(key);
+    this.setSaveState(key, status);
+  }
+
   private async save(key: string, payload: any): Promise<WebResponse> {
+    const contactId = this.contact;
+    const contactUuid = this.data.uuid;
+    const generation = ++this.saveGeneration;
+    this.saveGenerations.set(key, generation);
     this.setSaveState(key, 'saving');
     try {
       const response = await this.store.postJSON(
-        `${this.endpoint}${this.data.uuid}`,
+        `${this.endpoint}${contactUuid}`,
         payload
       );
       if (response.status !== 200) {
-        this.setSaveState(key, 'failed');
+        this.finishSave(contactId, key, generation, 'failed');
         return response;
       }
-      this.setContact(response.json);
-      this.setSaveState(key, 'ready');
+      if (this.contact === contactId && this.saveGeneration === generation) {
+        this.setContact(response.json, contactId);
+      }
+      this.finishSave(contactId, key, generation, 'ready');
       return response;
     } catch (error) {
-      this.setSaveState(key, 'failed');
+      this.finishSave(contactId, key, generation, 'failed');
       return { status: 500, json: {}, headers: new Headers() };
     }
+  }
+
+  public willUpdate(changed: PropertyValues): void {
+    if (changed.has('contact') || changed.has('endpoint')) {
+      this.saveGeneration++;
+      this.saveGenerations.clear();
+      this.saving.clear();
+      this.failed.clear();
+    }
+    super.willUpdate(changed);
   }
 
   public async handleTextChanged(event: Event) {
@@ -434,6 +470,27 @@ export class ContactDetails extends ContactStoreElement {
     const moved = urns.splice(fromIndex, 1)[0];
     urns.splice(toIndex, 0, moved);
     this.draftUrns = urns;
+  }
+
+  public handleUrnOrderKeyDown(event: KeyboardEvent, index: number) {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+
+    const toIndex = index + (event.key === 'ArrowUp' ? -1 : 1);
+    if (toIndex < 0 || toIndex >= this.draftUrns.length) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    const urns = [...this.draftUrns];
+    const moved = urns.splice(index, 1)[0];
+    urns.splice(toIndex, 0, moved);
+    this.draftUrns = urns;
+    void this.updateComplete.then(() => {
+      (
+        this.shadowRoot.querySelector(
+          `#urn-${toIndex} .drag-handle`
+        ) as HTMLElement
+      )?.focus();
+    });
   }
 
   public handleDeleteUrn(event: Event, index: number) {
@@ -638,6 +695,13 @@ export class ContactDetails extends ContactStoreElement {
                         class="drag-handle"
                         name=${Icon.drag}
                         title="Drag to reorder"
+                        aria-label="Reorder ${this.getSchemeName(
+                          urn.scheme
+                        )} URN. Use the up and down arrow keys to move it."
+                        role="button"
+                        tabindex="0"
+                        @keydown=${(event: KeyboardEvent) =>
+                          this.handleUrnOrderKeyDown(event, index)}
                       ></temba-icon>`
                     : null}
                 </div>

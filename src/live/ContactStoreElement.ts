@@ -24,8 +24,10 @@ export class ContactStoreElement extends EndpointMonitorElement {
   endpoint = '/api/v2/contacts.json?expand_urns=true&urn_order=priority&uuid=';
 
   prepareData(data: any) {
-    if (data && data.length > 0) {
-      data = data[0];
+    if (data) {
+      data = Array.isArray(data) ? data[0] : data;
+    }
+    if (data) {
       data.groups.forEach((group: Group) => {
         group.is_dynamic = this.store.isDynamicGroup(group.uuid);
       });
@@ -59,10 +61,10 @@ export class ContactStoreElement extends EndpointMonitorElement {
       });
   }
 
-  public setContact(contact: any) {
+  public setContact(contact: any, contactId = this.contact) {
     // make sure contact data is properly prepped
     this.data = this.prepareData([contact]);
-    this.store.updateCache(`${this.endpoint}${this.contact}`, this.data);
+    this.store.updateCache(`${this.endpoint}${contactId}`, this.data);
   }
 
   public willUpdate(changed: PropertyValues): void {
