@@ -93,6 +93,12 @@ export class CardLayout extends RapidElement {
            main view — and doubles as room for card shadows. */
         flex: 1 0 var(--card-column-width, 360px);
         min-height: 0;
+        /* without min-width:0 the column's automatic minimum is its
+           content's intrinsic width, so one long unbreakable line in
+           a card (e.g. a flow pill's name) widens the whole column
+           instead of ellipsizing — the flex basis still keeps it
+           from shrinking below the configured column width */
+        min-width: 0;
         overflow-y: auto;
         padding: var(--layout-spacing, 8px);
       }
