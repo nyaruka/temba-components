@@ -14,7 +14,7 @@ const getFields = async (attrs: any = {}) => {
   const fields = (await getComponent(TAG, attrs, '', 600)) as ContactFields;
 
   // wait for our contact data to load
-  await waitForCondition(() => fields.data !== undefined);
+  await waitForCondition(() => !!fields.data);
 
   return fields;
 };

@@ -55,6 +55,8 @@ export class ContactDetails extends ContactStoreElement {
 
   private fieldSaveGenerations = new Map<string, number>();
 
+  private groupsSave: Promise<WebResponse> | null = null;
+
   static get styles() {
     return css`
       .wrapper {
@@ -431,6 +433,7 @@ export class ContactDetails extends ContactStoreElement {
       this.saveGeneration++;
       this.saveGenerations.clear();
       this.fieldSaveGenerations.clear();
+      this.groupsSave = null;
       this.saving.clear();
       this.failed.clear();
       this.urnDialogOpen = false;
@@ -587,9 +590,17 @@ export class ContactDetails extends ContactStoreElement {
 
   public async handleGroupsChanged(event: Event) {
     const select = event.currentTarget as Select<any>;
-    await this.save('groups', {
+    const groupsSave = this.save('groups', {
       groups: select.values.map((group) => group.uuid)
     });
+    this.groupsSave = groupsSave;
+    try {
+      await groupsSave;
+    } finally {
+      if (this.groupsSave === groupsSave) {
+        this.groupsSave = null;
+      }
+    }
   }
 
   public async handleLanguageChanged(event: Event) {
@@ -605,6 +616,11 @@ export class ContactDetails extends ContactStoreElement {
   public async handleStatusChanged(event: Event) {
     const select = event.currentTarget as Select<Option>;
     const status = select.values[0]?.value;
+    const contactId = this.contact;
+    if (this.groupsSave) {
+      await this.groupsSave;
+    }
+    if (this.contact !== contactId || this.data?.uuid !== contactId) return;
     if (!status || status === this.data.status) return;
 
     const payload: any = { status };

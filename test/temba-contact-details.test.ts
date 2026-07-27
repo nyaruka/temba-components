@@ -410,6 +410,67 @@ describe(TAG, () => {
     }
   });
 
+  it('waits for a group save before changing active status', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({
+      contact: CONTACT_ID,
+      editable: true
+    });
+    const original = contactDetails.data;
+    const selected = [
+      {
+        uuid: '512e36c1-9101-4ca2-aceb-e638c520bf0c',
+        name: 'Reminders'
+      }
+    ];
+    let resolveGroups: (response: any) => void;
+    let resolveStatus: (response: any) => void;
+    const postJSON = stub(contactDetails.store, 'postJSON');
+    postJSON.onFirstCall().returns(
+      new Promise((resolve) => {
+        resolveGroups = resolve;
+      })
+    );
+    postJSON.onSecondCall().returns(
+      new Promise((resolve) => {
+        resolveStatus = resolve;
+      })
+    );
+
+    try {
+      const groupsSave = contactDetails.handleGroupsChanged({
+        currentTarget: { values: selected }
+      } as unknown as Event);
+      const statusSave = contactDetails.handleStatusChanged({
+        currentTarget: { values: [{ value: 'blocked' }] }
+      } as unknown as Event);
+      expect(postJSON.callCount).to.equal(1);
+
+      resolveGroups({
+        status: 200,
+        json: { ...original, groups: selected },
+        headers: new Headers()
+      });
+      await groupsSave;
+      await waitUntil(() => postJSON.callCount === 2);
+      expect(postJSON.secondCall.args[1]).to.deep.equal({
+        status: 'blocked',
+        groups: ['512e36c1-9101-4ca2-aceb-e638c520bf0c']
+      });
+
+      resolveStatus({
+        status: 200,
+        json: { ...original, status: 'blocked', groups: selected },
+        headers: new Headers()
+      });
+      await statusSave;
+      expect(contactDetails.data.status).to.equal('blocked');
+      expect(contactDetails.data.groups[0].name).to.equal('Reminders');
+    } finally {
+      postJSON.restore();
+    }
+  });
+
   it('ignores a save response after switching contacts', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
