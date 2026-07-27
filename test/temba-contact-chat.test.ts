@@ -29,17 +29,25 @@ let previousSocketProvider: SocketProvider;
 const TAG = 'temba-contact-chat';
 
 // polls with short real sleeps (so mocked HTTP roundtrips can complete) while
-// advancing fake timers, until the predicate holds
+// advancing fake timers, until the predicate holds for stableFor consecutive
+// iterations
 const settle = async (
   predicate: () => boolean,
   tickMs = 0,
-  maxAttempts = 400
+  maxAttempts = 400,
+  stableFor = 1
 ) => {
+  let stable = 0;
   for (let i = 0; i < maxAttempts; i++) {
     await waitFor(10);
     clock.tick(tickMs);
     if (predicate()) {
-      return;
+      stable++;
+      if (stable >= stableFor) {
+        return;
+      }
+    } else {
+      stable = 0;
     }
   }
   throw new Error('Condition not met while settling');
@@ -56,6 +64,15 @@ const chatLoaded = (chat: ContactChat) => {
   );
 };
 
+// waits for history to load and the fetch chain to drain. when the loaded
+// view isn't scrollable the chat keeps requesting older pages, and each
+// completion is deferred by up to MIN_FETCH_TIME of (faked) time — so tick
+// generously and require the loaded state to survive several ticks before
+// calling it settled
+const settleLoaded = async (chat: ContactChat) => {
+  await settle(() => chatLoaded(chat), 150, 400, 5);
+};
+
 const getContactChat = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
   // add some sizes and styles to force our chat history to scroll
@@ -70,7 +87,7 @@ const getContactChat = async (attrs: any = {}) => {
 
   // wait for contact data and history to load (real HTTP), flushing fake
   // timers so addMessages' setTimeout(fn, 0) fires
-  await settle(() => chatLoaded(chat));
+  await settleLoaded(chat);
   return chat;
 };
 
@@ -127,6 +144,193 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-for-active-contact', getClip(chat));
   });
 
+  it('condenses info events into wrapping pill runs', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+
+    // this contact id deliberately doesn't match the generic
+    // /contact\/chat\/contact-.*/ mocks above so we can feed it an
+    // event-heavy history; the after= mock must be registered first
+    // since the generic history pattern would also match that URL
+    mockGET(/\/contact\/chat\/events-dude\/\?after=/, {
+      events: [],
+      next: null
+    });
+    mockGET(
+      /\/contact\/chat\/events-dude\//,
+      '/test-assets/contacts/history-events.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'events-dude'
+    });
+
+    await assertScreenshot('contacts/chat-condensed-events', getClip(chat));
+  });
+
+  it('expands the event summary into detailed pills on click', async () => {
+    await loadStore();
+    mockGET(/\/contact\/chat\/events-dude\/\?after=/, {
+      events: [],
+      next: null
+    });
+    mockGET(
+      /\/contact\/chat\/events-dude\//,
+      '/test-assets/contacts/history-events.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'events-dude'
+    });
+
+    // the run of info events renders collapsed as a summary pill —
+    // clicking it swaps in the detailed pills
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    const summary = inner.shadowRoot.querySelector(
+      'temba-label[title="Show details"]'
+    ) as HTMLElement;
+    expect(summary).to.not.equal(null);
+    expect(inner.shadowRoot.querySelector('.condensed-events')).to.equal(null);
+
+    summary.click();
+    await inner.updateComplete;
+    expect(inner.shadowRoot.querySelector('.condensed-events')).to.not.equal(
+      null
+    );
+
+    await assertScreenshot(
+      'contacts/chat-condensed-events-expanded',
+      getClip(chat)
+    );
+  });
+
+  it('shows a rich tooltip when hovering an event pill', async () => {
+    await loadStore();
+
+    // a dedicated contact whose history has a single ticket assignment
+    // event — hovering its pill should pop our rich tooltip with the
+    // acting user (avatar + name) above the detailed timestamp
+    mockGET(/\/test-assets\/contacts\/tooltip-dude/, {
+      next: null,
+      previous: null,
+      results: [
+        {
+          uuid: 'tooltip-dude',
+          name: 'Tina Tooltips',
+          status: 'active',
+          urns: [],
+          groups: [],
+          fields: {},
+          created_on: '2021-01-15T19:16:49.377501Z',
+          modified_on: '2021-03-30T02:01:09.120952Z',
+          last_seen_on: '2021-03-30T02:01:09.120952Z',
+          blocked: false,
+          stopped: false
+        }
+      ]
+    });
+    mockGET(/\/contact\/chat\/tooltip-dude\/\?after=/, {
+      events: [],
+      next: null
+    });
+    mockGET(/\/contact\/chat\/tooltip-dude\//, {
+      events: [
+        {
+          uuid: 'evt-tip-2',
+          type: 'ticket_assignee_changed',
+          created_on: '2021-03-31T00:15:00.000Z',
+          ticket: { uuid: 'ticket-1' },
+          _user: {
+            uuid: 'u-adam',
+            name: 'Adam Ant',
+            email: 'adam@nyaruka.com'
+          },
+          assignee: {
+            uuid: 'u-sally',
+            name: 'Sally Seashell',
+            email: 'sally@nyaruka.com'
+          }
+        },
+        {
+          uuid: 'evt-tip-1',
+          type: 'msg_received',
+          created_on: '2021-03-31T00:10:00.000Z',
+          msg: { text: 'Can somebody help me?' }
+        }
+      ],
+      next: null
+    });
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'tooltip-dude'
+    });
+
+    // even a single informational event starts collapsed behind a
+    // summary pill — expand it to get at the detailed pill
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    const summary = inner.shadowRoot.querySelector(
+      'temba-label[title="Show details"]'
+    ) as HTMLElement;
+    summary.click();
+    await inner.updateComplete;
+
+    // each inline event is wrapped in a temba-tip carrying the rich
+    // tooltip content; hovering past the show delay pops it
+    const tip = inner.shadowRoot.querySelector('temba-tip') as any;
+    expect(tip).to.not.equal(null);
+
+    tip.shadowRoot
+      .querySelector('.slot')
+      .dispatchEvent(new Event('mouseenter'));
+    clock.tick(400);
+    await tip.updateComplete;
+    expect(tip.visible).to.equal(true);
+
+    const tipEle = tip.shadowRoot.querySelector('.tip');
+    expect(tipEle.textContent).to.contain('Adam Ant');
+    // the assignee is already visible in the pill, so the tooltip
+    // only carries the actor and the timestamp
+    expect(tipEle.textContent).to.not.contain('Sally');
+    expect(tipEle.querySelector('temba-user')).to.not.equal(null);
+
+    // let the tip's opacity transition finish before comparing pixels
+    await waitFor(300);
+    await assertScreenshot('contacts/chat-event-tooltip', getClip(chat));
+  });
+
+  it('pins the day marker while scrolling back through history', async () => {
+    await loadStore();
+    mockGET(/\/contact\/chat\/events-dude\/\?after=/, {
+      events: [],
+      next: null
+    });
+    mockGET(
+      /\/contact\/chat\/events-dude\//,
+      '/test-assets/contacts/history-events.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'events-dude'
+    });
+
+    // expand the summary so there's enough history to scroll, then
+    // scroll partway back — the current section's day marker should
+    // float pinned at the top of the chat window
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    const summary = inner.shadowRoot.querySelector(
+      'temba-label[title="Show details"]'
+    ) as HTMLElement;
+    summary.click();
+    await inner.updateComplete;
+
+    const scroll = inner.shadowRoot.querySelector('.scroll') as HTMLElement;
+    // column-reverse scroller: 0 is the bottom, negative scrolls back
+    scroll.scrollTop = -(scroll.scrollHeight - scroll.clientHeight) / 2;
+    await waitFor(100);
+
+    await assertScreenshot('contacts/chat-day-marker-pinned', getClip(chat));
+  });
+
   it('show history and hide chatbox if contact is archived', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
@@ -164,7 +368,7 @@ describe('temba-contact-chat', () => {
 
     // re-selecting the same ticket sets the same contact again
     chat.contact = 'contact-barack-archived';
-    await settle(() => chatLoaded(chat));
+    await settleLoaded(chat);
 
     expect(chat.currentContact, 'contact should reload').to.not.be.null;
     const inner = chat.shadowRoot.querySelector('temba-chat') as any;
@@ -181,21 +385,31 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-for-stopped-contact', getClip(chat));
   });
 
-  it('keeps flow footer from blocking scrollbar drag interactions', async () => {
+  it('lays out last seen and current flow side by side without overlap', async () => {
+    // push now past dave's last seen so both sides of the bar render
+    mockedNow.restore();
+    mockedNow = mockNow('2022-08-01T00:00:00.000-00:00');
+
     await loadStore();
     const chat: ContactChat = await getContactChat({
       contact: 'contact-dave-active'
     });
 
-    const flowFooter = chat.shadowRoot.querySelector(
-      '.flow-footer'
+    const contactStatus = chat.shadowRoot.querySelector(
+      '.contact-status'
     ) as HTMLElement;
-    const inFlow = flowFooter.querySelector('.in-flow') as HTMLElement;
+    const lastSeen = contactStatus.querySelector('.last-seen') as HTMLElement;
+    const currentFlow = contactStatus.querySelector(
+      '.current-flow'
+    ) as HTMLElement;
 
-    expect(flowFooter).to.exist;
-    expect(inFlow).to.exist;
-    expect(getComputedStyle(flowFooter).pointerEvents).to.equal('none');
-    expect(getComputedStyle(inFlow).pointerEvents).to.equal('auto');
+    expect(lastSeen).to.exist;
+    expect(currentFlow).to.exist;
+
+    // the two sit in the same row but never overlap
+    const seenRect = lastSeen.getBoundingClientRect();
+    const flowRect = currentFlow.getBoundingClientRect();
+    expect(seenRect.right).to.be.lessThan(flowRect.left);
   });
 
   it('sends text without attachments', async () => {
@@ -1080,5 +1294,211 @@ describe('temba-contact-chat', () => {
     expect(mockSocket.published.length).to.equal(1);
     expect(mockSocket.published[0].channel).to.equal(channel);
     expect(mockSocket.published[0].data.type).to.equal('typing_started');
+  });
+
+  const getCurrentFlow = (chat: ContactChat) =>
+    chat.shadowRoot.querySelector('.contact-status .current-flow');
+
+  const getLastSeen = (chat: ContactChat) =>
+    chat.shadowRoot.querySelector('.contact-status .last-seen');
+
+  it('updates the current flow from socket contact_flow_changed events', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const channel = `history:${chat.currentContact.uuid}`;
+
+    // the fetched contact is in a flow
+    expect(getCurrentFlow(chat).textContent).to.contain('Daily Flow');
+
+    // moving to another flow renames the chip
+    const before = chat.afterUUID;
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000006666',
+      type: 'contact_flow_changed',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      flow: { uuid: 'flow-registration', name: 'Registration' }
+    });
+    await chat.updateComplete;
+    expect(getCurrentFlow(chat).textContent).to.contain('Registration');
+
+    // ephemeral events are state, not history - the newest-seen anchor
+    // must not advance and nothing renders in the chat itself
+    expect(chat.afterUUID).to.equal(before);
+    const tembaChat = getTembaChat(chat);
+    expect(
+      tembaChat.shadowRoot.querySelector(
+        '.row[data-uuid="01998888-0000-7000-8000-000000006666"]'
+      )
+    ).to.not.exist;
+
+    // leaving the flow removes the chip entirely
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000007777',
+      type: 'contact_flow_changed',
+      created_on: '2025-09-25T12:01:00.000000+00:00',
+      flow: null
+    });
+    await chat.updateComplete;
+    expect(getCurrentFlow(chat)).to.not.exist;
+  });
+
+  it('ellipsizes long flow names in the status bar', async () => {
+    // push now past dave's last seen so both sides of the bar render
+    mockedNow.restore();
+    mockedNow = mockNow('2022-08-01T00:00:00.000-00:00');
+
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    mockSocket.serverPublish(`history:${chat.currentContact.uuid}`, {
+      uuid: '01998888-0000-7000-8000-00000000bbbb',
+      type: 'contact_flow_changed',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      flow: {
+        uuid: 'flow-long',
+        name: 'Customer Satisfaction Survey Follow Up For Returning Subscribers 2025'
+      }
+    });
+    await chat.updateComplete;
+
+    const contactStatus = chat.shadowRoot.querySelector(
+      '.contact-status'
+    ) as HTMLElement;
+    const currentFlow = getCurrentFlow(chat) as HTMLElement;
+    const flowName = currentFlow.querySelector('.flow-name') as HTMLElement;
+
+    // the name shrank to fit - it stays inside the bar and clear of
+    // the last seen side
+    const barRect = contactStatus.getBoundingClientRect();
+    const flowRect = currentFlow.getBoundingClientRect();
+    const seenRect = getLastSeen(chat).getBoundingClientRect();
+    expect(flowRect.right).to.be.at.most(barRect.right + 1);
+
+    // the flow gave way before ever compressing the guaranteed gap
+    expect(flowRect.left - seenRect.right).to.be.at.least(23);
+
+    // and the name is actually ellipsized rather than resized to fit
+    expect(flowName.scrollWidth).to.be.greaterThan(flowName.clientWidth);
+
+    await assertScreenshot('contacts/chat-status-long-flow', getClip(chat));
+  });
+
+  it('fires an interrupt event from the status area', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showInterrupt: true
+    });
+
+    const interrupt = chat.shadowRoot.querySelector(
+      '.contact-status .current-flow temba-button'
+    ) as HTMLElement;
+    expect(interrupt).to.exist;
+    await assertScreenshot('contacts/chat-status-interrupt', getClip(chat));
+
+    const listener = oneEvent(chat, CustomEventType.Interrupt, false);
+    interrupt.click();
+    const event = await listener;
+    expect(event.detail.contact.uuid).to.equal('contact-dave-active');
+  });
+
+  it('shows last seen in the status bar and updates it from socket events', async () => {
+    // dave was last seen 2022-07-08 - view him the next morning
+    mockedNow.restore();
+    mockedNow = mockNow('2022-07-09T00:00:00.000-00:00');
+
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const channel = `history:${chat.currentContact.uuid}`;
+
+    expect(getLastSeen(chat).textContent).to.contain('hours ago');
+
+    // the contact was seen an hour ago
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000008888',
+      type: 'contact_last_seen_changed',
+      created_on: '2022-07-08T23:00:00.000000+00:00',
+      last_seen_on: '2022-07-08T23:00:00.000000+00:00'
+    });
+    await chat.updateComplete;
+    expect(getLastSeen(chat).textContent).to.contain('1 hour ago');
+
+    // an out of order (older) last seen is ignored
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-000000009999',
+      type: 'contact_last_seen_changed',
+      created_on: '2022-07-01T00:00:00.000000+00:00',
+      last_seen_on: '2022-07-01T00:00:00.000000+00:00'
+    });
+    await chat.updateComplete;
+    expect(getLastSeen(chat).textContent).to.contain('1 hour ago');
+
+    // checking in just now hides last seen entirely - it only shows
+    // once the contact has been quiet for at least an hour
+    mockSocket.serverPublish(channel, {
+      uuid: '01998888-0000-7000-8000-00000000cccc',
+      type: 'contact_last_seen_changed',
+      created_on: '2022-07-09T00:00:00.000000+00:00',
+      last_seen_on: '2022-07-09T00:00:00.000000+00:00'
+    });
+    await chat.updateComplete;
+    expect(getLastSeen(chat)).to.not.exist;
+  });
+
+  it('shows ticket controls and contact status in one area above the chat box', async () => {
+    // push now past dave's last seen so the contact status renders too
+    mockedNow.restore();
+    mockedNow = mockNow('2022-08-01T00:00:00.000-00:00');
+
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+      showInterrupt: true
+    });
+
+    chat.currentTicket = {
+      uuid: 'ticket-1',
+      topic: { uuid: 'topic-1', name: 'General' },
+      assignee: null,
+      closed_on: null
+    } as any;
+    await chat.updateComplete;
+
+    const statusArea = chat.shadowRoot.querySelector(
+      '.status-area'
+    ) as HTMLElement;
+
+    // both the ticket controls and the contact status live in the area
+    expect(statusArea.querySelector('.ticket-controls')).to.exist;
+    expect(statusArea.querySelector('.contact-status .last-seen')).to.exist;
+    expect(statusArea.querySelector('.contact-status .current-flow')).to.exist;
+
+    // and the area sits between the chat history and the compose box
+    const areaRect = statusArea.getBoundingClientRect();
+    const historyRect = chat.shadowRoot
+      .querySelector('temba-chat')
+      .getBoundingClientRect();
+    const composeRect = chat.shadowRoot
+      .querySelector('.compose')
+      .getBoundingClientRect();
+    expect(areaRect.top).to.be.at.least(historyRect.bottom - 1);
+    expect(areaRect.bottom).to.be.at.most(composeRect.top + 1);
+
+    // the interrupt button right-aligns with the close button above it
+    const closeRect = statusArea
+      .querySelector('.ticket-controls temba-button')
+      .getBoundingClientRect();
+    const interruptRect = statusArea
+      .querySelector('.current-flow temba-button')
+      .getBoundingClientRect();
+    expect(Math.abs(closeRect.right - interruptRect.right)).to.be.at.most(1);
+
+    await assertScreenshot('contacts/chat-ticket-status-area', getClip(chat));
   });
 });

@@ -108,7 +108,10 @@
       },
       "_deleted": {
         "created_on": "2025-09-23T20:40:27.239433+00:00",
-        "user": { "name": "Rowan Seymour", "uuid": "rowan-user-uuid" }
+        "user": {
+          "name": "Rowan Seymour",
+          "uuid": "rowan-user-uuid"
+        }
       }
     },
     {
@@ -169,6 +172,32 @@
           "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
           "name": "SMS Channel"
         }
+      }
+    },
+    {
+      "uuid": "01997d74-bf67-75c2-9c1e-3f2b8a11d002",
+      "type": "contact_field_changed",
+      "created_on": "2025-09-23T20:40:27.239428+00:00",
+      "field": {
+        "key": "join_date",
+        "name": "Join Date"
+      },
+      "value": {
+        "text": "2021-07-18T12:00:00.000000+00:00",
+        "datetime": "2021-07-18T12:00:00.000000+00:00"
+      }
+    },
+    {
+      "uuid": "01997d74-bf67-75c1-9c1e-3f2b8a11d001",
+      "type": "contact_field_changed",
+      "created_on": "2025-09-23T20:40:27.239428+00:00",
+      "field": {
+        "key": "age",
+        "name": "Age"
+      },
+      "value": {
+        "text": "43",
+        "number": "43"
       }
     },
     {

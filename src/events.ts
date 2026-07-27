@@ -11,6 +11,18 @@ export interface ContactLanguageChangedEvent extends ContactEvent {
   language: string;
 }
 
+// ephemeral state event - arrives over the socket but is never persisted,
+// updates the contact's current flow rather than recording history
+export interface ContactFlowChangedEvent extends ContactEvent {
+  flow: ObjectReference | null;
+}
+
+// ephemeral state event - arrives over the socket but is never persisted,
+// updates the contact's last seen rather than recording history
+export interface ContactLastSeenChangedEvent extends ContactEvent {
+  last_seen_on: string;
+}
+
 export interface ContactStatusChangedEvent extends ContactEvent {
   status: string;
 }
@@ -62,6 +74,7 @@ export interface TicketEvent extends ContactEvent {
     // ticket_opened
     uuid: string;
     topic?: ObjectReference;
+    assignee?: User;
   };
   ticket_uuid?: string; // all other event types
   assignee?: User;
@@ -75,7 +88,9 @@ export interface NameChangedEvent extends ContactEvent {
 
 export interface UpdateFieldEvent extends ContactEvent {
   field: { key: string; name: string };
-  value: { text: string };
+  // engine field values always carry text; typed representations are
+  // present when the value parses as that type (see goflow's Value)
+  value: { text: string; datetime?: string; number?: string };
 }
 
 export interface ContactGroupsEvent extends ContactEvent {
