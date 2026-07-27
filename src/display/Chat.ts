@@ -1785,9 +1785,10 @@ export class Chat extends RapidElement {
             chunks,
             (chunk) => chunk.ids[0],
             (chunk) => {
-              if (chunk.condensed && chunk.ids.length > 1) {
-                // runs of informational events collapse behind a single
-                // summary pill until expanded
+              if (chunk.condensed) {
+                // condensable events collapse behind a single summary
+                // pill until expanded — even a run of one, so single
+                // events behave the same as longer runs
                 const chunkKey = chunk.ids[0];
                 if (!this.expandedEventChunks.has(chunkKey)) {
                   const events = chunk.ids.map((id) => this.msgMap.get(id));

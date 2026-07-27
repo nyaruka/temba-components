@@ -1053,6 +1053,21 @@ describe('temba-simulator', () => {
     expect(chat).to.exist;
     await chat.updateComplete;
 
+    // the webhook event starts collapsed behind a summary pill —
+    // expand it to get at the details button
+    await waitForCondition(
+      () =>
+        !!chat.shadowRoot?.querySelector('temba-label[title="Show details"]'),
+      40,
+      50
+    );
+    (
+      chat.shadowRoot.querySelector(
+        'temba-label[title="Show details"]'
+      ) as HTMLElement
+    ).click();
+    await chat.updateComplete;
+
     await waitForCondition(
       () => !!chat.shadowRoot?.querySelector('[data-webhook-details]'),
       40,
@@ -1175,6 +1190,21 @@ describe('temba-simulator', () => {
 
     const chat = simulator.shadowRoot.querySelector('temba-chat') as any;
     expect(chat).to.exist;
+    await chat.updateComplete;
+
+    // the webhook event starts collapsed behind a summary pill —
+    // expand it to get at the details button
+    await waitForCondition(
+      () =>
+        !!chat.shadowRoot?.querySelector('temba-label[title="Show details"]'),
+      40,
+      50
+    );
+    (
+      chat.shadowRoot.querySelector(
+        'temba-label[title="Show details"]'
+      ) as HTMLElement
+    ).click();
     await chat.updateComplete;
 
     await waitForCondition(

@@ -265,9 +265,17 @@ describe('temba-contact-chat', () => {
       contact: 'tooltip-dude'
     });
 
+    // even a single informational event starts collapsed behind a
+    // summary pill — expand it to get at the detailed pill
+    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
+    const summary = inner.shadowRoot.querySelector(
+      'temba-label[title="Show details"]'
+    ) as HTMLElement;
+    summary.click();
+    await inner.updateComplete;
+
     // each inline event is wrapped in a temba-tip carrying the rich
     // tooltip content; hovering past the show delay pops it
-    const inner = chat.shadowRoot.querySelector('temba-chat') as any;
     const tip = inner.shadowRoot.querySelector('temba-tip') as any;
     expect(tip).to.not.equal(null);
 
