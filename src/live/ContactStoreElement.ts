@@ -18,10 +18,10 @@ export class ContactStoreElement extends EndpointMonitorElement {
   @property({ type: Object, attribute: false })
   data: Contact;
 
-  // expand_urns resolves each URN against a channel so we know which one
-  // will be used when messaging the contact
+  // Resolve each URN against a channel while retaining the user's priority
+  // order. Consumers can select the first channel-backed URN for messaging.
   @property({ type: String })
-  endpoint = '/api/v2/contacts.json?expand_urns=true&uuid=';
+  endpoint = '/api/v2/contacts.json?expand_urns=true&urn_order=priority&uuid=';
 
   prepareData(data: any) {
     if (data && data.length > 0) {

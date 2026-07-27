@@ -10,7 +10,7 @@ import { getClasses, postJSON } from '../utils';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Checkbox } from '../form/Checkbox';
-import { CustomEventType } from '../interfaces';
+import { ContactField, CustomEventType } from '../interfaces';
 
 const MIN_FOR_FILTER = 10;
 
@@ -123,13 +123,47 @@ export class ContactFields extends ContactStoreElement {
   }
 
   private isAgent(): boolean {
-    return this.role === 'T';
+    return this.role === 'T' || this.role?.toLowerCase() === 'agent';
+  }
+
+  private getAgentAccess(field: ContactField): 'none' | 'view' | 'edit' {
+    const access = field.agent_access?.toLowerCase();
+    if (access === 'n' || access === 'none') return 'none';
+    if (access === 'e' || access === 'edit') return 'edit';
+    return 'view';
+  }
+
+  private canViewField(field: ContactField): boolean {
+    return !this.isAgent() || this.getAgentAccess(field) !== 'none';
+  }
+
+  private canEditField(field: ContactField): boolean {
+    return (
+      !this.disabled &&
+      (!this.isAgent() || this.getAgentAccess(field) === 'edit')
+    );
+  }
+
+  private getVisibleFieldEntries(): [string, string][] {
+    if (!this.data || !this.fieldsReady) return [];
+    return Object.entries(this.data.fields).filter(
+      ([key]: [string, string]) => {
+        const field = this.store.getContactField(key);
+        return !!field && this.canViewField(field);
+      }
+    );
   }
 
   public willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
-    if (changed.has('data') && this.data) {
-      if (Object.keys(this.data.fields).length <= MIN_FOR_FILTER) {
+    if (
+      (changed.has('data') ||
+        changed.has('fieldsReady') ||
+        changed.has('role')) &&
+      this.data &&
+      this.fieldsReady
+    ) {
+      if (this.getVisibleFieldEntries().length <= MIN_FOR_FILTER) {
         this.showAll = true;
       }
     }
@@ -139,15 +173,25 @@ export class ContactFields extends ContactStoreElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
-    if (changes.has('data') && this.data) {
+    if (
+      (changes.has('data') ||
+        changes.has('fieldsReady') ||
+        changes.has('role')) &&
+      this.data &&
+      this.fieldsReady
+    ) {
       this.fireCustomEvent(CustomEventType.DetailsChanged, {
-        count: Object.values(this.data.fields).filter((value) => !!value).length
+        count: this.getVisibleFieldEntries().filter(([, value]) => !!value)
+          .length
       });
     }
   }
 
   public handleFieldChanged(evt: InputEvent) {
     const field = evt.currentTarget as ContactFieldEditor;
+    const definition = this.store.getContactField(field.key);
+    if (!definition || !this.canEditField(definition)) return;
+
     const value = field.value;
 
     // TODO: Use contact.postChanges instead of postJSON
@@ -179,9 +223,8 @@ export class ContactFields extends ContactStoreElement {
       // guard against keys with no matching field definition (mid-load races
       // or fields that have since been deleted) so a single missing
       // definition can't throw and blank out the entire tab
-      const fieldsToShow = Object.entries(this.data.fields)
-        .filter(([key]: [string, string]) => !!this.store.getContactField(key))
-        .sort((a: [string, string], b: [string, string]) => {
+      const fieldsToShow = this.getVisibleFieldEntries().sort(
+        (a: [string, string], b: [string, string]) => {
           const [ak] = a;
           const [bk] = b;
           const fieldA = this.store.getContactField(ak);
@@ -243,7 +286,8 @@ export class ContactFields extends ContactStoreElement {
           }
 
           return ak.localeCompare(bk);
-        });
+        }
+      );
 
       if (fieldsToShow.length == 0) {
         return html`<slot name="empty"></slot>`;
@@ -260,17 +304,14 @@ export class ContactFields extends ContactStoreElement {
           type=${field.value_type}
           @change=${this.handleFieldChanged}
           timezone=${this.timezone}
-          ?disabled=${(this.isAgent() && field.agent_access === 'view') ||
-          this.disabled
-            ? true
-            : false}
+          ?disabled=${!this.canEditField(field)}
         ></temba-contact-field>`;
       });
 
       return html`
         <div class=${getClasses({ disabled: this.disabled })}>
           <div class="fields ${this.showAll ? 'show-all' : ''}">${fields}</div>
-          ${Object.keys(this.data.fields).length >= MIN_FOR_FILTER
+          ${fieldsToShow.length >= MIN_FOR_FILTER
             ? html`<div class="toggle">
                 <div style="flex-grow: 1"></div>
                 <div>
