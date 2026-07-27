@@ -150,27 +150,28 @@ export class ContactList extends ContentList<Contact> {
    * created on.
    *
    * Name leads, with URN, the workspace's custom fields, and the
-   * last-seen / created-on dates trailing it. Every column sizes to
-   * its content between min/max bounds — none are hard-fixed — so the
-   * table stays compact and overflows into a horizontal scroll only
-   * when the field set is genuinely wide. Only Name is pinned to the
-   * left edge, so identity stays anchored while everything else
-   * scrolls.
+   * last-seen / created-on dates trailing it. Columns through Last Seen
+   * size to their content between min/max bounds and can be resized;
+   * Created On grows to absorb any remaining browser width. Only Name is
+   * pinned to the left edge, so identity stays anchored while everything
+   * else scrolls.
    *
    * There is deliberately no group-membership column — contacts
    * routinely belong to dozens of groups, so a groups cell is
    * noise rather than signal in a list view. */
   private buildColumns(): ContentListColumn[] {
-    // Custom-field columns are all left-aligned for simplicity, and
-    // set no minWidth — their natural floor is the column header
-    // label, which the table's auto layout already honours; maxWidth
-    // just caps a runaway value.
+    // Custom-field columns are all left-aligned for simplicity. Their
+    // resize floor is deliberately half the generic 80px floor so users
+    // can pack more workspace-specific fields into view; maxWidth caps a
+    // runaway value.
     const fieldColumns: ContentListColumn[] = (this.featuredFields || []).map(
       (f: any) => ({
         key: FIELD_PREFIX + f.key,
         label: f.name || f.label || f.key,
         sortable: true,
-        maxWidth: '200px'
+        resizeMinWidth: '40px',
+        maxWidth: '200px',
+        resizable: true
       })
     );
     // Name + URN are the pinned identity columns and are not
@@ -182,20 +183,23 @@ export class ContactList extends ContentList<Contact> {
         label: 'Name',
         minWidth: '150px',
         maxWidth: '260px',
-        pinned: true
+        pinned: true,
+        resizable: true
       },
       this.anon
         ? {
             key: 'ref',
             label: 'Ref',
             minWidth: '120px',
-            maxWidth: '190px'
+            maxWidth: '190px',
+            resizable: true
           }
         : {
             key: 'urn',
             label: 'URN',
             minWidth: '120px',
-            maxWidth: '190px'
+            maxWidth: '190px',
+            resizable: true
           },
       ...fieldColumns,
       {
@@ -204,15 +208,16 @@ export class ContactList extends ContentList<Contact> {
         sortable: true,
         minWidth: '96px',
         maxWidth: '150px',
-        align: 'right'
+        align: 'right',
+        resizable: true
       },
       {
         key: 'created_on',
         label: 'Created on',
         sortable: true,
         minWidth: '96px',
-        maxWidth: '150px',
-        align: 'right'
+        align: 'right',
+        grow: true
       }
     ];
   }
