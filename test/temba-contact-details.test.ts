@@ -13,6 +13,7 @@ import {
 } from './utils.test';
 
 const TAG = 'temba-contact-details';
+const CONTACT_ID = 'contact-dave-active';
 const getContactDetails = async (attrs: any = {}) => {
   const contactDetails = (await getComponent(
     TAG,
@@ -45,7 +46,7 @@ describe(TAG, () => {
     clearMockPosts();
     (window.fetch as SinonStub).resetHistory();
     mockGET(
-      /\/api\/v2\/contacts.json\?expand_urns=true&urn_order=priority&uuid=24d64810-3315-4ff5-be85-48e3fe055bf9/,
+      /\/api\/v2\/contacts.json\?expand_urns=true&urn_order=priority&uuid=contact-dave-active/,
       '/test-assets/contacts/contact-dave-active'
     );
   });
@@ -53,7 +54,7 @@ describe(TAG, () => {
   it('renders default', async () => {
     await loadStore();
     const contactDetails: ContactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9'
+      contact: CONTACT_ID
     });
 
     assert.instanceOf(contactDetails, ContactDetails);
@@ -104,7 +105,7 @@ describe(TAG, () => {
   it('renders editable contact attributes', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     contactDetails.schemes = SCHEMES;
@@ -263,7 +264,7 @@ describe(TAG, () => {
   it('updates status immediately and preserves manual groups', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     mockPOST(
@@ -288,7 +289,7 @@ describe(TAG, () => {
   it('shows the first sendable URN while editing priority order', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     contactDetails.schemes = SCHEMES;
@@ -328,7 +329,7 @@ describe(TAG, () => {
   it('updates name and language independently', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     mockPOST(
@@ -359,10 +360,10 @@ describe(TAG, () => {
     expect(contactDetails.data.language).to.equal('spa');
   });
 
-  it('ignores contact save responses that arrive out of order', async () => {
+  it('merges contact save responses that arrive out of order', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     const original = contactDetails.data;
@@ -403,7 +404,7 @@ describe(TAG, () => {
       });
       await languageSave;
       expect(contactDetails.data.status).to.equal('blocked');
-      expect(contactDetails.data.language).to.equal(original.language);
+      expect(contactDetails.data.language).to.equal('spa');
     } finally {
       postJSON.restore();
     }
@@ -412,7 +413,7 @@ describe(TAG, () => {
   it('ignores a save response after switching contacts', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     const original = contactDetails.data;
@@ -454,10 +455,47 @@ describe(TAG, () => {
     }
   });
 
+  it('clears contact state and rejects edits while a contact loads', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({
+      contact: CONTACT_ID,
+      editable: true
+    });
+    contactDetails.schemes = SCHEMES;
+    contactDetails.showUrnDialog();
+    contactDetails.handleNewUrnChanged({
+      currentTarget: { value: '+12065550123' }
+    } as unknown as Event);
+    contactDetails.handleAddUrn();
+    await contactDetails.updateComplete;
+    expect(
+      (contactDetails.shadowRoot.querySelector('temba-dialog') as any).open
+    ).to.be.true;
+
+    const makeRequest = stub(contactDetails.store, 'makeRequest');
+    const postJSON = stub(contactDetails.store, 'postJSON');
+    try {
+      contactDetails.contact = 'other-contact';
+      await contactDetails.handleLanguageChanged({
+        currentTarget: { values: [{ value: 'spa' }] }
+      } as unknown as Event);
+      await contactDetails.updateComplete;
+
+      expect(postJSON.called).to.be.false;
+      expect(makeRequest.calledWith(contactDetails.url)).to.be.true;
+      expect(contactDetails.data).to.be.null;
+      expect(contactDetails.shadowRoot.querySelector('temba-dialog')).to.be
+        .null;
+    } finally {
+      makeRequest.restore();
+      postJSON.restore();
+    }
+  });
+
   it('loads a saved contact from cache when remounted', async () => {
     await loadStore();
     const attrs = {
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     };
     const contactDetails = await getContactDetails(attrs);
@@ -481,7 +519,7 @@ describe(TAG, () => {
   it('reorders URNs with the keyboard', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     contactDetails.schemes = SCHEMES;
@@ -521,7 +559,7 @@ describe(TAG, () => {
   it('drafts URN changes and applies them together on Save', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     contactDetails.schemes = SCHEMES;
@@ -730,7 +768,7 @@ describe(TAG, () => {
   it('discards URN drafts on Cancel', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     contactDetails.schemes = SCHEMES;
@@ -764,7 +802,7 @@ describe(TAG, () => {
   it('re-emits name searches from the details component', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     const name = contactDetails.shadowRoot.querySelector(
@@ -790,7 +828,7 @@ describe(TAG, () => {
   it('updates selected manual groups', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: CONTACT_ID,
       editable: true
     });
     const selected = [

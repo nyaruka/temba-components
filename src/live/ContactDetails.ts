@@ -53,6 +53,8 @@ export class ContactDetails extends ContactStoreElement {
 
   private saveGenerations = new Map<string, number>();
 
+  private fieldSaveGenerations = new Map<string, number>();
+
   static get styles() {
     return css`
       .wrapper {
@@ -364,9 +366,20 @@ export class ContactDetails extends ContactStoreElement {
 
   private async save(key: string, payload: any): Promise<WebResponse> {
     const contactId = this.contact;
+    if (
+      !contactId ||
+      !this.data ||
+      this.data.uuid !== contactId ||
+      this.url !== `${this.endpoint}${contactId}`
+    ) {
+      return { status: 409, json: {}, headers: new Headers() };
+    }
+
     const contactUuid = this.data.uuid;
     const generation = ++this.saveGeneration;
+    const fields = Object.keys(payload);
     this.saveGenerations.set(key, generation);
+    fields.forEach((field) => this.fieldSaveGenerations.set(field, generation));
     this.setSaveState(key, 'saving');
     try {
       const response = await this.store.postJSON(
@@ -374,15 +387,40 @@ export class ContactDetails extends ContactStoreElement {
         payload
       );
       if (response.status !== 200) {
+        fields.forEach((field) => {
+          if (this.fieldSaveGenerations.get(field) === generation) {
+            this.fieldSaveGenerations.delete(field);
+          }
+        });
         this.finishSave(contactId, key, generation, 'failed');
         return response;
       }
-      if (this.contact === contactId && this.saveGeneration === generation) {
-        this.setContact(response.json, contactId);
+      if (
+        this.contact === contactId &&
+        this.data?.uuid === contactId &&
+        this.url === `${this.endpoint}${contactId}`
+      ) {
+        const updated = { ...this.data };
+        let hasUpdates = false;
+        fields.forEach((field) => {
+          if (this.fieldSaveGenerations.get(field) === generation) {
+            updated[field] = response.json[field];
+            this.fieldSaveGenerations.delete(field);
+            hasUpdates = true;
+          }
+        });
+        if (hasUpdates) {
+          this.setContact(updated, contactId);
+        }
       }
       this.finishSave(contactId, key, generation, 'ready');
       return response;
     } catch (error) {
+      fields.forEach((field) => {
+        if (this.fieldSaveGenerations.get(field) === generation) {
+          this.fieldSaveGenerations.delete(field);
+        }
+      });
       this.finishSave(contactId, key, generation, 'failed');
       return { status: 500, json: {}, headers: new Headers() };
     }
@@ -392,8 +430,13 @@ export class ContactDetails extends ContactStoreElement {
     if (changed.has('contact') || changed.has('endpoint')) {
       this.saveGeneration++;
       this.saveGenerations.clear();
+      this.fieldSaveGenerations.clear();
       this.saving.clear();
       this.failed.clear();
+      this.urnDialogOpen = false;
+      this.draftUrns = [];
+      this.newScheme = '';
+      this.newUrn = '';
     }
     super.willUpdate(changed);
   }
