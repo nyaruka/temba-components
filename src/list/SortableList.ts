@@ -25,7 +25,11 @@ export class SortableList extends RapidElement {
         user-select: none;
         position: relative;
         display: grid;
-        grid-template-columns: 1fr;
+        /* minmax(0, 1fr) rather than bare 1fr — an fr track's implicit
+           minimum is min-content, so one long unbreakable line in an
+           item (e.g. a flow pill's name) would widen the track past
+           the container instead of letting the content ellipsize */
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .container.horizontal {

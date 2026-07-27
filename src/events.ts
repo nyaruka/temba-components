@@ -62,6 +62,7 @@ export interface TicketEvent extends ContactEvent {
     // ticket_opened
     uuid: string;
     topic?: ObjectReference;
+    assignee?: User;
   };
   ticket_uuid?: string; // all other event types
   assignee?: User;
@@ -75,7 +76,9 @@ export interface NameChangedEvent extends ContactEvent {
 
 export interface UpdateFieldEvent extends ContactEvent {
   field: { key: string; name: string };
-  value: { text: string };
+  // engine field values always carry text; typed representations are
+  // present when the value parses as that type (see goflow's Value)
+  value: { text: string; datetime?: string; number?: string };
 }
 
 export interface ContactGroupsEvent extends ContactEvent {
