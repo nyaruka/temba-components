@@ -261,6 +261,29 @@ describe(TAG, () => {
     ).to.be.null;
   });
 
+  it('keeps an edit affordance for contacts without URNs', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({
+      contact: CONTACT_ID,
+      editable: true
+    });
+    contactDetails.setContact({ ...contactDetails.data, urns: [] });
+    await contactDetails.updateComplete;
+
+    const primaryUrn = contactDetails.shadowRoot.querySelector(
+      'temba-contact-field.primary-urn'
+    ) as ContactFieldEditor;
+    expect(primaryUrn).not.to.be.null;
+    expect(primaryUrn.value).to.equal('No URNs');
+    expect(
+      contactDetails.shadowRoot.querySelector('.urn-display > .urn-edit-icon')
+    ).not.to.be.null;
+
+    contactDetails.editable = false;
+    await contactDetails.updateComplete;
+    expect(contactDetails.shadowRoot.querySelector('.urn-display')).to.be.null;
+  });
+
   it('updates status immediately and preserves manual groups', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
@@ -405,6 +428,31 @@ describe(TAG, () => {
       await languageSave;
       expect(contactDetails.data.status).to.equal('blocked');
       expect(contactDetails.data.language).to.equal('spa');
+    } finally {
+      postJSON.restore();
+    }
+  });
+
+  it('preserves fields omitted from contact save responses', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({
+      contact: CONTACT_ID,
+      editable: true
+    });
+    const groups = contactDetails.data.groups;
+    const postJSON = stub(contactDetails.store, 'postJSON').resolves({
+      status: 200,
+      json: { status: 'blocked' },
+      headers: new Headers()
+    });
+
+    try {
+      await contactDetails.handleStatusChanged({
+        currentTarget: { values: [{ value: 'blocked' }] }
+      } as unknown as Event);
+
+      expect(contactDetails.data.status).to.equal('blocked');
+      expect(contactDetails.data.groups).to.deep.equal(groups);
     } finally {
       postJSON.restore();
     }

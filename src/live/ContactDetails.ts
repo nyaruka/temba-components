@@ -406,9 +406,11 @@ export class ContactDetails extends ContactStoreElement {
         let hasUpdates = false;
         fields.forEach((field) => {
           if (this.fieldSaveGenerations.get(field) === generation) {
-            updated[field] = response.json[field];
+            if (response.json[field] !== undefined) {
+              updated[field] = response.json[field];
+              hasUpdates = true;
+            }
             this.fieldSaveGenerations.delete(field);
-            hasUpdates = true;
           }
         });
         if (hasUpdates) {
@@ -629,6 +631,8 @@ export class ContactDetails extends ContactStoreElement {
 
     const payload: any = { status };
     if (this.data.status === 'active') {
+      // Leaving active normally clears group membership. Include the current
+      // manual groups so an inline status edit preserves that membership.
       payload.groups = this.getManualGroups().map((group) => group.uuid);
     }
     await this.save('status', payload);
@@ -704,7 +708,7 @@ export class ContactDetails extends ContactStoreElement {
     return html`<temba-contact-field
       class=${className}
       name=${urn ? this.getSchemeName(urn.scheme) : 'URN'}
-      value=${urn ? urn.display || urn.path : ''}
+      value=${urn ? urn.display || urn.path : 'No URNs'}
       valueIcon=${unsendable ? Icon.contact_stopped : ''}
       valueIconLabel=${unsendable ? 'Not sendable: no channel available' : ''}
       disabled
@@ -848,18 +852,21 @@ export class ContactDetails extends ContactStoreElement {
   }
 
   private renderPrimaryUrn(editable: boolean): TemplateResult {
-    if (this.anon) return null;
+    if (this.anon || (!editable && this.data.urns.length === 0)) return null;
     const additional = Math.max(0, this.data.urns.length - 1);
     const displayedUrn = getDestinationURN(this.data) || this.data.urns[0];
+    const noUrns = this.data.urns.length === 0;
     const onlyUnsendable =
       this.data.urns.length === 1 && this.data.urns[0].channel === null;
     return html`<div
         class="urn-display primary-urn ${editable
           ? 'editable'
           : ''} ${onlyUnsendable ? 'only-unsendable' : ''}"
-        aria-label=${onlyUnsendable
-          ? 'This contact has no sendable URNs'
-          : 'Contact URN'}
+        aria-label=${noUrns
+          ? 'This contact has no URNs'
+          : onlyUnsendable
+            ? 'This contact has no sendable URNs'
+            : 'Contact URN'}
       >
         ${this.renderDisplayedUrn(displayedUrn, 'primary-urn')}
         ${editable && additional
