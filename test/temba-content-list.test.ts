@@ -742,6 +742,86 @@ describe('temba-content-list', () => {
     );
   });
 
+  it('keeps dragged widths when columns rebuild', async () => {
+    const list = await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    });
+    list.historyStateKey = 'items';
+    list.columnWidthSettings = { items: { name: 160 } };
+    const buildColumns = () => [
+      { key: 'name', label: 'Name', width: '140px', resizable: true },
+      { key: 'value', label: 'Value', grow: true }
+    ];
+    list.columns = buildColumns();
+    await list.updateComplete;
+
+    const getInner = () =>
+      list.shadowRoot!.querySelector('th.head-cell .head-inner') as HTMLElement;
+    expect(getInner().style.width).to.equal('160px');
+
+    const handle = getResizeHandle(
+      list.shadowRoot!.querySelector('th.head-cell') as HTMLElement
+    )!;
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 400,
+        pointerType: 'mouse'
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointermove', { clientX: 460, pointerType: 'mouse' })
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointerup', { clientX: 460, pointerType: 'mouse' })
+    );
+    await list.updateComplete;
+    expect(getInner().style.width).to.equal('220px');
+
+    // a columns rebuild (e.g. dynamic fields arriving) keeps the dragged
+    // width even though it hasn't round-tripped into the settings attribute
+    list.columns = buildColumns();
+    await list.updateComplete;
+    expect(getInner().style.width).to.equal('220px');
+
+    // but a fresh settings payload replaces it outright
+    list.columnWidthSettings = { items: { name: 180 } };
+    await list.updateComplete;
+    expect(getInner().style.width).to.equal('180px');
+  });
+
+  it('announces the rendered width when a separator gains focus', async () => {
+    const list = await getList({
+      endpoint: '/test-assets/content-list/items.json'
+    });
+    list.columns = [
+      { key: 'name', label: 'Name', minWidth: '150px', resizable: true },
+      { key: 'value', label: 'Value', grow: true }
+    ];
+    await list.updateComplete;
+
+    const header = list.shadowRoot!.querySelector(
+      'th.head-cell'
+    ) as HTMLElement;
+    const handle = getResizeHandle(header)!;
+    // with no saved or prescribed width, the template can only render
+    // the generic floor as its value
+    expect(handle.getAttribute('aria-valuenow')).to.equal('80');
+
+    handle.dispatchEvent(new FocusEvent('focus'));
+    const style = getComputedStyle(header);
+    const rendered =
+      header.getBoundingClientRect().width -
+      Number.parseFloat(style.paddingLeft) -
+      Number.parseFloat(style.paddingRight);
+    expect(rendered).to.be.greaterThan(140);
+    expect(Number(handle.getAttribute('aria-valuenow'))).to.be.closeTo(
+      Math.round(rendered),
+      1
+    );
+  });
+
   it('persists resizable columns independently for each list', async () => {
     const settingsUrl = /\/user\/settings\/$/;
     mockPOST(settingsUrl, { settings: {} });

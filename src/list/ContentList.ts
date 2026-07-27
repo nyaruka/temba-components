@@ -1313,7 +1313,9 @@ export class ContentList<T = any> extends RapidElement {
 
   /** Saved widths for every list, keyed first by the list's
    * {@link historyStateKey}, then by column key. The host can seed this
-   * from user settings so each list remembers its own layout. */
+   * from user settings so each list remembers its own layout. This is
+   * the same `list_columns` value that {@link settingsEndpoint} saves —
+   * the attribute is the read side of that round trip. */
   @property({ type: Object, attribute: 'column-width-settings' })
   columnWidthSettings: Record<string, Record<string, number>> = {};
 
@@ -1535,7 +1537,15 @@ export class ContentList<T = any> extends RapidElement {
           }
         });
       }
-      this.columnWidths = widths;
+      // A columns rebuild (custom fields arriving, anon flipping) must
+      // not discard widths dragged this session that haven't round-tripped
+      // through the settings attribute — only a new settings payload or a
+      // different list replaces them outright.
+      const preserved =
+        changes.has('columnWidthSettings') || changes.has('historyStateKey')
+          ? {}
+          : this.columnWidths;
+      this.columnWidths = { ...widths, ...preserved };
     }
   }
 
@@ -2862,6 +2872,11 @@ export class ContentList<T = any> extends RapidElement {
 
   private saveColumnWidths(): void {
     if (!this.settingsEndpoint || !this.historyStateKey) return;
+    // This posts only the current list's widths, nested under the same
+    // historyStateKey used to read them back out of columnWidthSettings.
+    // The endpoint must merge list_columns at both the view and column
+    // level (as temba's user-settings endpoint does) — replacing it
+    // wholesale would wipe the widths saved for every other list.
     postJSON(this.settingsEndpoint, {
       list_columns: {
         [this.historyStateKey]: this.columnWidths
@@ -2883,6 +2898,15 @@ export class ContentList<T = any> extends RapidElement {
     event.preventDefault();
     event.stopPropagation();
     const handle = event.currentTarget as HTMLElement;
+    // Capture the pointer so the drag survives excursions outside the
+    // window and its release retargets to the handle — the synthesized
+    // click then lands on the handle (which swallows clicks) instead of
+    // whichever header happens to be under the pointer.
+    try {
+      handle.setPointerCapture(event.pointerId);
+    } catch {
+      // synthetic pointers (tests) have no active pointer to capture
+    }
     const header = this.resizeHeaderForHandle(handle);
     const prescribedWidth = this.effectiveColumnWidth(column);
     const startWidth = this.renderedColumnWidth(header, column);
@@ -2995,6 +3019,22 @@ export class ContentList<T = any> extends RapidElement {
     );
     handle.setAttribute('aria-valuenow', `${width}`);
     this.scheduleColumnWidthSave();
+  }
+
+  /** An auto-sized column has no saved or prescribed width at render
+   * time, so the template's aria-valuenow is only a floor. Measure the
+   * real rendered width when the separator gains focus so screen
+   * readers announce the width the user actually sees. */
+  private handleColumnResizeFocus(
+    event: FocusEvent,
+    column: ContentListColumn
+  ): void {
+    const handle = event.currentTarget as HTMLElement;
+    const header = this.resizeHeaderForHandle(handle);
+    handle.setAttribute(
+      'aria-valuenow',
+      `${Math.round(this.renderedColumnWidth(header, column))}`
+    );
   }
 
   /** Fit the column to the widest rendered header/body value. Cell
@@ -3274,6 +3314,8 @@ export class ContentList<T = any> extends RapidElement {
         this.startColumnResize(event, column)}
       @keydown=${(event: KeyboardEvent) =>
         this.handleColumnResizeKeydown(event, column)}
+      @focus=${(event: FocusEvent) =>
+        this.handleColumnResizeFocus(event, column)}
       @click=${(event: MouseEvent) => event.stopPropagation()}
       @dblclick=${(event: MouseEvent) =>
         this.handleColumnAutoFit(event, column)}
