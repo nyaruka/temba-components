@@ -344,6 +344,190 @@ describe('temba-card-layout', () => {
       expect(layout.shadowRoot.querySelector('.resize-handle')).to.not.exist;
     });
 
+    it('offers no resize when the breakpoint keeps card mode out of reach', async () => {
+      // the layout could fit the chat beside the cards, but the explicit
+      // breakpoint holds it in tabs — a drag could only strand it there
+      const parentNode = document.createElement('div');
+      parentNode.setAttribute('style', 'width: 1000px; display: flex;');
+      const layout = (await fixture(
+        html`
+          <temba-card-layout breakpoint="1200">
+            <div slot="main">main</div>
+            <temba-card id="card-a" label="Alpha"><div>A</div></temba-card>
+          </temba-card-layout>
+        `,
+        { parentNode }
+      )) as CardLayout;
+
+      await waitForCondition(() => layout.hostWidth > 0 && layout.narrow);
+      await layout.updateComplete;
+      expect(layout.shadowRoot.querySelector('.resize-handle')).to.not.exist;
+    });
+
+    it('offers no card-mode resize when the layout is too tight', async () => {
+      // a low breakpoint keeps the cards, but there is no room to drag:
+      // the chat at its minimum plus the column footprint doesn't fit
+      const parentNode = document.createElement('div');
+      parentNode.setAttribute('style', 'width: 700px; display: flex;');
+      const layout = (await fixture(
+        html`
+          <temba-card-layout breakpoint="400">
+            <div slot="main">main</div>
+            <temba-card id="card-a" label="Alpha"><div>A</div></temba-card>
+          </temba-card-layout>
+        `,
+        { parentNode }
+      )) as CardLayout;
+
+      await waitForCondition(() => layout.hostWidth > 0);
+      await layout.updateComplete;
+      expect(layout.narrow).to.be.false;
+      expect(layout.shadowRoot.querySelector('temba-card-stack')).to.exist;
+      expect(layout.shadowRoot.querySelector('.resize-handle')).to.not.exist;
+    });
+
+    it('ignores a press that never moves', async () => {
+      const layout = await createLayout(1000);
+      const handle = layout.shadowRoot.querySelector('.resize-handle');
+      let resized = false;
+      layout.addEventListener(CustomEventType.Resized, () => (resized = true));
+
+      // a trackpad click can fire a pointermove with no travel — it must
+      // not commit a width (which would also fix the automatic width)
+      press(handle, 600);
+      move(600);
+      release();
+      await layout.updateComplete;
+
+      expect(layout.mainWidth).to.equal(0);
+      expect(resized).to.be.false;
+    });
+
+    it('restores the width when a drag is cancelled', async () => {
+      const layout = await createLayout(1000);
+      const handle = layout.shadowRoot.querySelector('.resize-handle');
+      const main = layout.shadowRoot.querySelector('.main') as HTMLElement;
+      const startWidth = main.offsetWidth;
+
+      press(handle, 600);
+      move(500);
+      await layout.updateComplete;
+      expect(layout.mainWidth).to.equal(startWidth - 100);
+
+      window.dispatchEvent(
+        new PointerEvent('pointercancel', { pointerType: 'mouse' })
+      );
+      await layout.updateComplete;
+      expect(layout.mainWidth).to.equal(0);
+    });
+
+    describe('keyboard', () => {
+      const arrow = (handle: Element, key: string, shiftKey = false) => {
+        handle.dispatchEvent(
+          new KeyboardEvent('keydown', { key, shiftKey, bubbles: true })
+        );
+      };
+
+      it('resizes in steps with the arrow keys', async () => {
+        const layout = await createLayout(1000);
+        layout.mainWidth = 500;
+        await layout.updateComplete;
+        const handle = layout.shadowRoot.querySelector('.resize-handle');
+
+        arrow(handle, 'ArrowLeft');
+        await layout.updateComplete;
+        expect(layout.mainWidth).to.equal(490);
+
+        // shift takes bigger bites
+        arrow(handle, 'ArrowLeft', true);
+        await layout.updateComplete;
+        expect(layout.mainWidth).to.equal(465);
+
+        arrow(handle, 'ArrowRight');
+        await layout.updateComplete;
+        expect(layout.mainWidth).to.equal(475);
+      });
+
+      it('grows no further than the widest fit', async () => {
+        const layout = await createLayout(1000);
+        layout.mainWidth = 620;
+        await layout.updateComplete;
+        const handle = layout.shadowRoot.querySelector('.resize-handle');
+
+        arrow(handle, 'ArrowRight', true);
+        await layout.updateComplete;
+        expect(layout.mainWidth).to.equal(1000 - CardLayout.COLUMN_FOOTPRINT);
+        expect(layout.narrow).to.be.false;
+      });
+
+      it('announces keyboard resizes', async () => {
+        const layout = await createLayout(1000);
+        const handle = layout.shadowRoot.querySelector('.resize-handle');
+
+        const resized = oneEvent(layout, CustomEventType.Resized, false);
+        arrow(handle, 'ArrowLeft');
+        const event = await resized;
+        expect(event.detail.width).to.equal(layout.mainWidth);
+      });
+
+      it('never shrinks the chat when growing from tab mode', async () => {
+        const layout = await createLayout(1000);
+        layout.mainWidth = 700;
+        await waitForCondition(() => layout.narrow);
+        await layout.updateComplete;
+
+        const handle = layout.shadowRoot.querySelector('.resize-handle.edge');
+        arrow(handle, 'ArrowRight');
+        await layout.updateComplete;
+
+        // the tab pane is already wider than any card-mode width — the
+        // grow is a no-op rather than a jump back to the cards
+        expect(layout.mainWidth).to.equal(700);
+        expect(layout.narrow).to.be.true;
+      });
+    });
+
+    describe('aria', () => {
+      it('advertises the resize range from the template', async () => {
+        const layout = await createLayout(1000);
+        const handle = layout.shadowRoot.querySelector('.resize-handle');
+        const max = 1000 - CardLayout.COLUMN_FOOTPRINT;
+
+        expect(handle.getAttribute('role')).to.equal('separator');
+        expect(handle.getAttribute('aria-valuemin')).to.equal(
+          `${layout.mainMinWidth}`
+        );
+        expect(handle.getAttribute('aria-valuemax')).to.equal(`${max}`);
+        // announced before any interaction, and kept current afterwards
+        expect(handle.getAttribute('aria-valuenow')).to.equal(`${max}`);
+
+        layout.mainWidth = 500;
+        await layout.updateComplete;
+        expect(
+          layout.shadowRoot
+            .querySelector('.resize-handle')
+            .getAttribute('aria-valuenow')
+        ).to.equal('500');
+      });
+
+      it('keeps the announced width inside the range in tab mode', async () => {
+        const layout = await createLayout(1000);
+        layout.mainWidth = 700;
+        await waitForCondition(() => layout.narrow);
+        await layout.updateComplete;
+
+        const handle = layout.shadowRoot.querySelector('.resize-handle.edge');
+        const max = 1000 - CardLayout.COLUMN_FOOTPRINT;
+        expect(handle.getAttribute('aria-valuemax')).to.equal(`${max}`);
+        // the pane spans the whole layout in tabs — announce the maximum
+        // rather than a value outside the advertised range
+        expect(handle.getAttribute('aria-valuenow')).to.equal(`${max}`);
+
+        handle.dispatchEvent(new FocusEvent('focus'));
+        expect(handle.getAttribute('aria-valuenow')).to.equal(`${max}`);
+      });
+    });
+
     it('stops tracking the pointer once the drag is released', async () => {
       const layout = await createLayout(1000);
       const handle = layout.shadowRoot.querySelector('.resize-handle');

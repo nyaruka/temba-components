@@ -89,8 +89,12 @@ export class CardLayout extends RapidElement {
         outline: none;
       }
 
+      /* in tab view the handle rides the layout's right inset — keep it
+         inside that inset so it doesn't overlay (and swallow pointer
+         events on) the edge of the tab content */
       .resize-handle.edge {
         right: 0;
+        width: var(--layout-spacing, 8px);
       }
 
       .resize-handle .grip {
@@ -102,7 +106,7 @@ export class CardLayout extends RapidElement {
       .resize-handle:hover .grip,
       .resize-handle:focus-visible .grip,
       .resize-handle.active .grip {
-        background: rgba(0, 0, 0, 0.08);
+        background: var(--border-strong);
       }
 
       slot[name='main']::slotted(*) {
@@ -180,6 +184,11 @@ export class CardLayout extends RapidElement {
   @property({ type: Number, attribute: false })
   hostWidth = 0;
 
+  // last measured width of the rendered main pane — the separator
+  // announces it while the width is still automatic (no chosen width)
+  @property({ type: Number, attribute: false })
+  mainPaneWidth = 0;
+
   /** The narrowest layout that can show card mode at any main-view width. */
   private getMinFlipWidth(): number {
     return this.breakpoint > 0
@@ -204,13 +213,43 @@ export class CardLayout extends RapidElement {
   }
 
   /** Whether the layout is wide enough for a resize to land anywhere
-   * useful: the main view at its minimum beside the card column. Narrower
-   * than that a drag can only strand the layout in tab mode — the flip
-   * width it would need exceeds the layout — so no handle is offered.
-   * Note this is deliberately independent of the breakpoint: an explicit
-   * low breakpoint says "prefer cards", it doesn't make dragging work. */
+   * useful: the main view at its minimum beside the card column, and at
+   * or above any explicit breakpoint. Narrower than that a drag can only
+   * strand the layout in tab mode — the flip width it would need exceeds
+   * the layout — so no handle is offered. Note an explicit *low*
+   * breakpoint says "prefer cards", it doesn't make dragging work: the
+   * footprint floor still applies. */
   private isResizable(): boolean {
-    return this.hostWidth >= this.mainMinWidth + CardLayout.COLUMN_FOOTPRINT;
+    return (
+      this.hostWidth >=
+      Math.max(
+        this.getMinFlipWidth(),
+        this.mainMinWidth + CardLayout.COLUMN_FOOTPRINT
+      )
+    );
+  }
+
+  /** The widest main view that still leaves the cards their footprint —
+   * the separator's maximum. */
+  private getResizeMax(): number {
+    return this.hostWidth - CardLayout.COLUMN_FOOTPRINT;
+  }
+
+  /** Keep a width inside the range the separator advertises. In tab view
+   * the pane spans more than the widest card-mode fit, so an unclamped
+   * value would fall outside [valuemin, valuemax]. */
+  private clampResizeWidth(width: number): number {
+    return Math.min(Math.max(width, this.mainMinWidth), this.getResizeMax());
+  }
+
+  /** The value the separator announces: the chosen width when there is
+   * one, otherwise the last measured pane width. */
+  private getAnnouncedWidth(): number {
+    return Math.round(
+      this.clampResizeWidth(
+        this.getEffectiveMainWidth() || this.mainPaneWidth || this.mainMinWidth
+      )
+    );
   }
 
   /** Width the main view occupies now — in tab view it fills the layout,
@@ -315,6 +354,9 @@ export class CardLayout extends RapidElement {
       this.hostWidth = width;
       this.narrow = width < this.getFlipWidth();
       this.compactTabs = width < CardLayout.COMPACT_TABS_WIDTH;
+      // keep the separator's announced width current without measuring
+      // on every render
+      this.mainPaneWidth = this.getMainPaneWidth();
     }
   }
 
@@ -349,6 +391,12 @@ export class CardLayout extends RapidElement {
 
   private dragStartX = 0;
   private dragStartWidth = 0;
+  // the chosen width when the drag began, restored if it is cancelled
+  private dragStartMainWidth = 0;
+  // whether the pointer has actually travelled — a click on the handle
+  // (a trackpad tap can fire a zero-delta pointermove) must not commit a
+  // width, which would also turn an automatic width into a chosen one
+  private dragMoved = false;
   // whether the pointer moved far enough to change the width — a click on
   // the handle shouldn't announce a resize or post settings
   private dragChanged = false;
@@ -372,6 +420,8 @@ export class CardLayout extends RapidElement {
     // most of the way back across the column they will occupy
     this.dragStartX = event.clientX;
     this.dragStartWidth = this.getMainPaneWidth();
+    this.dragStartMainWidth = this.mainWidth;
+    this.dragMoved = false;
     this.dragChanged = false;
     this.resizing = true;
     this.previousBodyUserSelect = document.body.style.userSelect;
@@ -383,11 +433,19 @@ export class CardLayout extends RapidElement {
     // the capture and kill the drag — window listeners survive the flip
     window.addEventListener('pointermove', this.handleResizeMove);
     window.addEventListener('pointerup', this.handleResizeEnd);
-    window.addEventListener('pointercancel', this.handleResizeEnd);
+    window.addEventListener('pointercancel', this.handleResizeCancel);
   };
 
   private handleResizeMove = (event: PointerEvent) => {
     event.preventDefault();
+    if (event.clientX !== this.dragStartX) {
+      this.dragMoved = true;
+    }
+    // a press with no travel isn't a resize — leave the width alone (in
+    // particular, don't turn an automatic width into a chosen one)
+    if (!this.dragMoved) {
+      return;
+    }
     const width = this.offsetWidth;
     // the widest chat that still leaves the cards their footprint
     const max = width - CardLayout.COLUMN_FOOTPRINT;
@@ -430,39 +488,55 @@ export class CardLayout extends RapidElement {
     }
   };
 
+  /** A cancelled gesture (the browser or OS taking the pointer away) is
+   * not a resize — put the width back where the drag found it. */
+  private handleResizeCancel = () => {
+    const changed = this.dragChanged;
+    this.releaseResize();
+    if (changed) {
+      this.mainWidth = this.dragStartMainWidth;
+    }
+  };
+
   /** Arrow keys resize in 10px steps (25px with Shift), the keyboard
    * equivalent of dragging the separator. There is no hysteresis here —
-   * the width simply clamps to what fits, so a press from tab mode lands
-   * in card mode at the widest width the cards leave room for. */
+   * the width simply clamps to what fits, so a shrink press from tab mode
+   * lands in card mode at the widest width the cards leave room for. */
   private handleResizeKeydown = (event: KeyboardEvent) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
     event.stopPropagation();
     const step = event.shiftKey ? 25 : 10;
     const direction = event.key === 'ArrowRight' ? 1 : -1;
-    const max = this.hostWidth - CardLayout.COLUMN_FOOTPRINT;
-    const width = Math.min(
-      Math.max(this.getMainPaneWidth() + direction * step, this.mainMinWidth),
-      max
-    );
+    const current = this.getMainPaneWidth();
+    const width = this.clampResizeWidth(current + direction * step);
 
     (event.currentTarget as HTMLElement).setAttribute(
       'aria-valuenow',
       `${Math.round(width)}`
     );
+
+    // in tab view the pane already spans more than the widest card-mode
+    // fit, so there is nothing to grow into — growing must not shrink the
+    // pane (and pop the cards back out) as a side effect of the clamp
+    if (direction > 0 && width < current) {
+      return;
+    }
+
     if (width !== this.mainWidth) {
       this.mainWidth = width;
+      this.fireCustomEvent(CustomEventType.Resized, { width });
       this.scheduleSave();
     }
   };
 
-  /** The rendered main width isn't known at render time (it may be the
-   * flex basis rather than a set width), so measure it when the separator
+  /** The template binding keeps aria-valuenow live from the last measured
+   * pane width; refine it with a fresh measurement when the separator
    * takes focus and screen readers are about to announce it. */
   private handleResizeFocus = (event: FocusEvent) => {
     (event.currentTarget as HTMLElement).setAttribute(
       'aria-valuenow',
-      `${Math.round(this.getMainPaneWidth())}`
+      `${Math.round(this.clampResizeWidth(this.getMainPaneWidth()))}`
     );
   };
 
@@ -475,7 +549,7 @@ export class CardLayout extends RapidElement {
     document.body.style.cursor = this.previousBodyCursor;
     window.removeEventListener('pointermove', this.handleResizeMove);
     window.removeEventListener('pointerup', this.handleResizeEnd);
-    window.removeEventListener('pointercancel', this.handleResizeEnd);
+    window.removeEventListener('pointercancel', this.handleResizeCancel);
   }
 
   /**
@@ -653,7 +727,8 @@ export class CardLayout extends RapidElement {
         aria-orientation="vertical"
         aria-label="Resize chat"
         aria-valuemin=${this.mainMinWidth}
-        aria-valuemax=${this.hostWidth - CardLayout.COLUMN_FOOTPRINT}
+        aria-valuemax=${this.getResizeMax()}
+        aria-valuenow=${this.getAnnouncedWidth()}
         tabindex="0"
         @pointerdown=${this.handleResizeStart}
         @keydown=${this.handleResizeKeydown}
