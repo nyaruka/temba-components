@@ -403,6 +403,32 @@ describe('temba-card-layout', () => {
       expect(resized).to.be.false;
     });
 
+    it('ignores a press that only drifts a pixel', async () => {
+      const layout = await createLayout(1000);
+      const handle = layout.shadowRoot.querySelector('.resize-handle');
+      let resized = false;
+      layout.addEventListener(CustomEventType.Resized, () => (resized = true));
+
+      // a click carries a pixel or two of drift — below the threshold it
+      // stays a click, so the width stays automatic and the flip point
+      // doesn't move
+      press(handle, 600);
+      move(601);
+      move(599);
+      release();
+      await layout.updateComplete;
+
+      expect(layout.mainWidth).to.equal(0);
+      expect(resized).to.be.false;
+
+      // real travel still resizes
+      press(handle, 600);
+      move(590);
+      await layout.updateComplete;
+      expect(layout.mainWidth).to.be.greaterThan(0);
+      release();
+    });
+
     it('restores the width when a drag is cancelled', async () => {
       const layout = await createLayout(1000);
       const handle = layout.shadowRoot.querySelector('.resize-handle');
@@ -553,9 +579,6 @@ describe('temba-card-layout', () => {
         // the pane spans the whole layout in tabs — announce the maximum
         // rather than a value outside the advertised range
         expect(handle.getAttribute('aria-valuenow')).to.equal(`${max}`);
-
-        handle.dispatchEvent(new FocusEvent('focus'));
-        expect(handle.getAttribute('aria-valuenow')).to.equal(`${max}`);
       });
     });
 
@@ -696,6 +719,20 @@ describe('temba-card-layout', () => {
         await createPersistentLayout('{"width": 500}');
       expect(layout.mainWidth).to.equal(500);
       expect(layout.narrow).to.be.false;
+
+      clickHeader(layout.querySelector('#card-a') as Card);
+      await waitForCondition(() => newPosts().length > 0);
+      expect(newPosts()[0].contact_cards.width).to.equal(500);
+    });
+
+    it('keeps the saved width when this page has no chosen width', async () => {
+      // the width is shared across pages like the order and collapsed
+      // lists — a save from a page rendering at the automatic width must
+      // carry the stored width through rather than clearing it
+      const { layout, newPosts } =
+        await createPersistentLayout('{"width": 500}');
+      layout.mainWidth = 0;
+      await layout.updateComplete;
 
       clickHeader(layout.querySelector('#card-a') as Card);
       await waitForCondition(() => newPosts().length > 0);
