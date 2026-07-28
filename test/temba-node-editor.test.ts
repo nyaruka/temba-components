@@ -583,6 +583,157 @@ describe('temba-node-editor', () => {
     expect(result.errors.name).to.exist;
   });
 
+  it('enforces goflow length limits on array item sub-fields', async () => {
+    // goflow caps case arguments at 10000 chars and category names at 64 (the
+    // editor's own category limit is stricter at 36)
+    const node = {
+      uuid: 'len-3',
+      actions: [],
+      exits: [{ uuid: 'exit-1', name: 'Default' }],
+      router: {
+        type: 'switch',
+        operand: '@input.text',
+        categories: [{ uuid: 'cat-1', name: 'All', exit_uuid: 'exit-1' }]
+      }
+    };
+    const el = (await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${{
+          type: 'split_by_expression',
+          position: { left: 0, top: 0 }
+        }}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+    await el.updateComplete;
+
+    const rule = (value1: string, category: string) => ({
+      operator: { value: 'has_any_word', name: 'has any of the words' },
+      value1,
+      value2: '',
+      category
+    });
+
+    // a normal rule passes
+    (el as any).formData = {
+      uuid: 'len-3',
+      operand: '@input.text',
+      rules: [rule('yes', 'Yes')]
+    };
+    expect((el as any).validateForm().valid).to.be.true;
+
+    // an over-long rule value is rejected
+    (el as any).formData = {
+      uuid: 'len-3',
+      operand: '@input.text',
+      rules: [rule('x'.repeat(10001), 'Yes')]
+    };
+    let result = (el as any).validateForm();
+    expect(result.valid).to.be.false;
+    expect(result.errors.rules).to.exist;
+
+    // an over-long category name is rejected
+    (el as any).formData = {
+      uuid: 'len-3',
+      operand: '@input.text',
+      rules: [rule('yes', 'c'.repeat(37))]
+    };
+    result = (el as any).validateForm();
+    expect(result.valid).to.be.false;
+    expect(result.errors.rules).to.exist;
+
+    // an over-long value hidden by its operator's visibility condition is ignored
+    (el as any).formData = {
+      uuid: 'len-3',
+      operand: '@input.text',
+      rules: [
+        {
+          operator: { value: 'has_text', name: 'has some text' },
+          value1: 'x'.repeat(10001),
+          value2: '',
+          category: 'Has Text'
+        }
+      ]
+    };
+    expect((el as any).validateForm().valid).to.be.true;
+  });
+
+  it('enforces goflow limits on webhook headers', async () => {
+    // goflow caps webhook headers at 100 entries, names at 100 chars and
+    // values at 8192 chars
+    const node = {
+      uuid: 'len-4',
+      actions: [
+        {
+          type: 'call_webhook',
+          uuid: 'webhook-1',
+          method: 'GET',
+          url: 'https://example.com',
+          headers: {}
+        }
+      ],
+      exits: [{ uuid: 'exit-1', name: 'Default' }],
+      router: {
+        type: 'switch',
+        categories: [{ uuid: 'cat-1', name: 'Success', exit_uuid: 'exit-1' }]
+      }
+    };
+    const el = (await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${{ type: 'split_by_webhook', position: { left: 0, top: 0 } }}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+    await el.updateComplete;
+
+    const base = {
+      uuid: 'len-4',
+      method: [{ value: 'GET', name: 'GET' }],
+      url: 'https://example.com',
+      body: '',
+      result_name: ''
+    };
+
+    // a normal header passes
+    (el as any).formData = {
+      ...base,
+      headers: [{ key: 'Accept', value: 'application/json' }]
+    };
+    expect((el as any).validateForm().valid).to.be.true;
+
+    // more than 100 headers is rejected
+    (el as any).formData = {
+      ...base,
+      headers: Array.from({ length: 101 }, (_, i) => ({
+        key: `X-Header-${i}`,
+        value: 'v'
+      }))
+    };
+    let result = (el as any).validateForm();
+    expect(result.valid).to.be.false;
+    expect(result.errors.headers).to.exist;
+
+    // an over-long header name is rejected
+    (el as any).formData = {
+      ...base,
+      headers: [{ key: 'H'.repeat(101), value: 'v' }]
+    };
+    result = (el as any).validateForm();
+    expect(result.valid).to.be.false;
+    expect(result.errors.headers).to.exist;
+
+    // an over-long header value is rejected
+    (el as any).formData = {
+      ...base,
+      headers: [{ key: 'X-Data', value: 'v'.repeat(8193) }]
+    };
+    result = (el as any).validateForm();
+    expect(result.valid).to.be.false;
+    expect(result.errors.headers).to.exist;
+  });
+
   it('treats a whitespace-only required field as empty', async () => {
     // a required field containing only whitespace must fail validation - otherwise
     // it slips through and is emitted (e.g. trimmed to "") and rejected by the backend

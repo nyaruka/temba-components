@@ -135,6 +135,21 @@ describe('send_msg action config', () => {
       );
     });
 
+    it('fails validation when a template variable exceeds 10000 chars', () => {
+      const formData = {
+        uuid: 'test-action',
+        text: 'Hello world',
+        attachments: [],
+        runtime_attachments: [],
+        template: { uuid: 'template-1', name: 'Template' },
+        template_variables: ['v'.repeat(10001)]
+      };
+
+      const result = send_msg.validate(formData);
+      expect(result.valid).to.be.false;
+      expect(result.errors.template).to.exist;
+    });
+
     it('passes validation with exactly 10 attachments', () => {
       const formData = {
         uuid: 'test-action',

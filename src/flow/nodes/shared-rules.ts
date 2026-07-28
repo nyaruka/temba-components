@@ -172,6 +172,7 @@ export const createRulesItemConfig = () => ({
     type: 'text' as const,
     placeholder: value1Placeholder,
     evaluated: true,
+    maxLength: 10000,
     flavor: 'xsmall' as const,
     conditions: {
       visible: value1VisibilityCondition
@@ -181,6 +182,7 @@ export const createRulesItemConfig = () => ({
     type: 'text' as const,
     placeholder: value2Placeholder,
     evaluated: true,
+    maxLength: 10000,
     flavor: 'xsmall' as const,
     conditions: {
       visible: value2VisibilityCondition

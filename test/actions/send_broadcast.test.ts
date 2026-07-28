@@ -127,6 +127,58 @@ describe('send_broadcast action config', () => {
     );
   });
 
+  describe('validate', () => {
+    it('validates recipient counts against engine limits', () => {
+      // more than 100 groups is rejected
+      let result = send_broadcast.validate!({
+        uuid: 'test-uuid',
+        text: 'Hi',
+        recipients: Array.from({ length: 101 }, (_, i) => ({
+          id: `group-${i}`,
+          name: `Group ${i}`,
+          type: 'group'
+        }))
+      });
+      expect(result.valid).to.be.false;
+      expect(result.errors.recipients).to.exist;
+
+      // an expression over 1000 chars is rejected
+      result = send_broadcast.validate!({
+        uuid: 'test-uuid',
+        text: 'Hi',
+        recipients: [
+          { id: '@' + 'x'.repeat(1000), name: '', type: 'expression' }
+        ]
+      });
+      expect(result.valid).to.be.false;
+      expect(result.errors.recipients).to.exist;
+
+      // a normal mix passes
+      result = send_broadcast.validate!({
+        uuid: 'test-uuid',
+        text: 'Hi',
+        recipients: [
+          { id: 'group-1', name: 'Group 1', type: 'group' },
+          { id: 'contact-1', name: 'Contact 1', type: 'contact' },
+          { id: '@urns.tel', name: '@urns.tel', type: 'expression' }
+        ]
+      });
+      expect(result.valid).to.be.true;
+    });
+
+    it('validates template variable lengths against engine limits', () => {
+      const result = send_broadcast.validate!({
+        uuid: 'test-uuid',
+        text: 'Hi',
+        recipients: [{ id: 'group-1', name: 'Group 1', type: 'group' }],
+        template: { uuid: 'template-1', name: 'Template' },
+        template_variables: ['v'.repeat(10001)]
+      });
+      expect(result.valid).to.be.false;
+      expect(result.errors.template).to.exist;
+    });
+  });
+
   describe('form data conversion', () => {
     it('converts action to form data correctly', () => {
       const action: SendBroadcast = {

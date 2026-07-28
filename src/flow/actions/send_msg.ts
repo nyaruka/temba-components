@@ -8,7 +8,11 @@ import {
 } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
-import { renderClamped, renderHighlightedText } from '../utils';
+import {
+  renderClamped,
+  renderHighlightedText,
+  validateTemplateVariables
+} from '../utils';
 import { splitSMS } from '../../display/sms';
 
 const ATTACHMENT_TYPE_NAMES: Record<string, string> = {
@@ -266,6 +270,13 @@ export const send_msg: ActionConfig = {
       if (staticAttachments.length > 0) {
         errors.text = 'Each message can only have up to 10 total attachments';
       }
+    }
+
+    const templateVariablesError = validateTemplateVariables(
+      formData.template_variables || []
+    );
+    if (templateVariablesError) {
+      errors.template = templateVariablesError;
     }
 
     return {

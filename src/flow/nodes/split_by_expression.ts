@@ -32,6 +32,7 @@ export const split_by_expression: NodeConfig = {
       helpText: 'The expression to evaluate and split on',
       required: true,
       evaluated: true,
+      maxLength: 10000,
       placeholder: '@fields.age'
     },
     rules: createRulesArrayConfig(

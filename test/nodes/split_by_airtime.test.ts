@@ -426,6 +426,35 @@ describe('split_by_airtime node config', () => {
       expect(Object.keys(result.errors)).to.have.lengthOf(0);
     });
 
+    it('should fail validation when an amount exceeds the engine maximum', () => {
+      const formData = {
+        amounts: [
+          {
+            currency: [{ value: 'USD', name: 'US Dollar (USD)' }],
+            amount: '2000000000000000'
+          }
+        ]
+      };
+
+      const result = split_by_airtime.validate!(formData);
+      expect(result.valid).to.be.false;
+      expect(result.errors.amounts).to.exist;
+    });
+
+    it('should validate an amount at the engine maximum', () => {
+      const formData = {
+        amounts: [
+          {
+            currency: [{ value: 'USD', name: 'US Dollar (USD)' }],
+            amount: '1000000000000000'
+          }
+        ]
+      };
+
+      const result = split_by_airtime.validate!(formData);
+      expect(result.valid).to.be.true;
+    });
+
     it('should fail validation when no amounts are provided', () => {
       const formData = {
         amounts: []

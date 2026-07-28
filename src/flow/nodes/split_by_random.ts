@@ -24,7 +24,8 @@ export const split_by_random: NodeConfig = {
         name: {
           type: 'text',
           placeholder: 'Bucket name',
-          required: true
+          required: true,
+          maxLength: 36
         }
       }
     }
