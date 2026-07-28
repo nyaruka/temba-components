@@ -1,5 +1,4 @@
-import { html, css, LitElement, TemplateResult } from 'lit';
-import { property, state, query } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import {
   FlowDefinition,
   Node,
@@ -37,8 +36,8 @@ import {
   NodeConfig
 } from './types';
 import { localizeAction } from './utils';
-import { Icon } from '../Icons';
 import { getTranslatableCategoriesForNode } from './categoryLocalization';
+import { ModalSearchResult, SearchModal } from '../layout/SearchModal';
 
 // Sticky note badge colors: border matches the sticky's border, fill is 25% lighter
 const STICKY_BADGE_COLORS: Record<
@@ -52,24 +51,10 @@ const STICKY_BADGE_COLORS: Record<
   gray: { border: '#6b7280', fill: '#8f949f', text: '#fff' }
 };
 
-export interface SearchResult {
+export interface SearchResult extends ModalSearchResult {
   nodeUuid: string;
   // For actions: the action object; for nodes (splits): null
   action: Action | null;
-  // The config name (e.g. "Send Message", "Call Webhook")
-  typeName: string;
-  // Color for the type badge background
-  color: string;
-  // Optional border color for the badge (used by sticky notes)
-  borderColor?: string;
-  // Optional text color override for the badge
-  textColor?: string;
-  // The full text that was searched
-  fullText: string;
-  // The index of the match start in fullText
-  matchStart: number;
-  // The length of the match
-  matchLength: number;
   // For sticky notes: which field matched ('title' or 'body')
   stickyField?: 'title' | 'body';
 }
@@ -353,183 +338,7 @@ function localizeCategoryName(
   return originalName;
 }
 
-export class FlowSearch extends LitElement {
-  static styles = css`
-    :host {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 100000;
-      display: none;
-      font-family: var(--font-family, sans-serif);
-    }
-
-    :host([open]) {
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-    }
-
-    .backdrop {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.3);
-    }
-
-    .search-container {
-      position: relative;
-      margin-top: 80px;
-      width: 560px;
-      max-height: calc(100vh - 160px);
-      background: white;
-      border-radius: 14px;
-      box-shadow:
-        0 24px 80px rgba(0, 0, 0, 0.2),
-        0 0 0 1px rgba(0, 0, 0, 0.05);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: searchSlideIn 0.15s ease-out;
-    }
-
-    @keyframes searchSlideIn {
-      from {
-        opacity: 0;
-        transform: scale(0.98) translateY(-8px);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-      }
-    }
-
-    .search-input-row {
-      display: flex;
-      align-items: center;
-      padding: 14px 18px;
-      border-bottom: 1px solid #e5e7eb;
-      gap: 10px;
-    }
-
-    .search-icon {
-      color: #9ca3af;
-      flex-shrink: 0;
-    }
-
-    .search-icon temba-icon {
-      --icon-color: #9ca3af;
-      display: block;
-    }
-
-    input {
-      flex: 1;
-      border: none;
-      outline: none;
-      font-size: 16px;
-      background: transparent;
-      color: #111;
-      font-family: inherit;
-    }
-
-    input::placeholder {
-      color: #9ca3af;
-    }
-
-    .results {
-      overflow-y: auto;
-      max-height: 400px;
-    }
-
-    .result-item {
-      display: flex;
-      align-items: center;
-      padding: 10px 18px;
-      gap: 12px;
-      cursor: pointer;
-      border-bottom: 1px solid #f3f4f6;
-      transition: background 0.08s;
-    }
-
-    .result-item:last-child {
-      border-bottom: none;
-    }
-
-    .result-item:hover,
-    .result-item.highlighted {
-      background: #f0f4ff;
-    }
-
-    .result-type-badge {
-      flex-shrink: 0;
-      font-size: 11px;
-      font-weight: 600;
-      color: white;
-      padding: 2px 10px;
-      border-radius: 8px;
-      border: 2px solid transparent;
-      white-space: nowrap;
-      text-align: center;
-      box-sizing: border-box;
-    }
-
-    .result-text {
-      min-width: 0;
-      font-size: 14px;
-      color: #374151;
-      line-height: 1.4;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .result-text mark {
-      background: #fef08a;
-      color: inherit;
-      border-radius: 2px;
-      padding: 0 1px;
-    }
-
-    .no-results {
-      padding: 24px 18px;
-      text-align: center;
-      color: #9ca3af;
-      font-size: 14px;
-    }
-
-    .result-count {
-      padding: 8px 18px;
-      font-size: 12px;
-      color: #9ca3af;
-      border-top: 1px solid #e5e7eb;
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    .hint {
-      padding: 10px 18px;
-      font-size: 12px;
-      color: #9ca3af;
-      text-align: center;
-    }
-
-    kbd {
-      background: #f3f4f6;
-      border: 1px solid #d1d5db;
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-size: 11px;
-      font-family: inherit;
-    }
-  `;
-
-  @property({ type: Boolean, reflect: true })
-  open = false;
-
+export class FlowSearch extends SearchModal<SearchResult> {
   @property({ attribute: false })
   definition: FlowDefinition | null = null;
 
@@ -542,96 +351,16 @@ export class FlowSearch extends LitElement {
   @property({ type: Boolean })
   includeCategories = false;
 
-  @state()
-  private searchQuery = '';
-
-  @state()
-  private results: SearchResult[] = [];
-
-  @state()
-  private highlightedIndex = 0;
-
-  @query('input')
-  private inputEl!: HTMLInputElement;
-
-  public show(): void {
-    this.open = true;
-    this.searchQuery = '';
-    this.results = [];
-    this.highlightedIndex = 0;
-    this.updateComplete.then(() => {
-      this.inputEl?.focus();
-      this.inputEl?.select();
-    });
+  protected getSearchLabel(): string {
+    return this.scope === 'table' ? 'Search this table' : 'Search this flow';
   }
 
-  public hide(): void {
-    this.open = false;
-    this.searchQuery = '';
-    this.results = [];
-  }
-
-  private handleInput(e: InputEvent): void {
-    const input = e.target as HTMLInputElement;
-    this.searchQuery = input.value;
-    this.performSearch();
-    this.highlightedIndex = 0;
-  }
-
-  private handleKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      this.hide();
-      return;
-    }
-    if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
-      e.preventDefault();
-      if (this.results.length > 0) {
-        this.highlightedIndex =
-          (this.highlightedIndex + 1) % this.results.length;
-      }
-      return;
-    }
-    if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) {
-      e.preventDefault();
-      if (this.results.length > 0) {
-        this.highlightedIndex =
-          (this.highlightedIndex - 1 + this.results.length) %
-          this.results.length;
-      }
-      return;
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (this.results.length > 0) {
-        this.selectResult(this.results[this.highlightedIndex]);
-      }
-      return;
-    }
-  }
-
-  private handleBackdropClick(): void {
-    this.hide();
-  }
-
-  private selectResult(result: SearchResult): void {
-    this.hide();
-    this.dispatchEvent(
-      new CustomEvent('temba-search-result-selected', {
-        detail: result,
-        bubbles: true,
-        composed: true
-      })
-    );
-  }
-
-  private performSearch(): void {
-    if (!this.definition || !this.searchQuery.trim()) {
-      this.results = [];
-      return;
+  protected performSearch(rawQuery: string): SearchResult[] {
+    if (!this.definition) {
+      return [];
     }
 
-    const query = this.searchQuery.toLowerCase();
+    const query = rawQuery.toLowerCase();
 
     // Get the localization map for the active language (if translating)
     const isTranslating =
@@ -641,11 +370,10 @@ export class FlowSearch extends LitElement {
       : undefined;
 
     if (this.scope === 'table') {
-      this.results = this.performTableSearch(query, langLocalization);
-      return;
+      return this.performTableSearch(query, langLocalization);
     }
 
-    this.results = this.performFlowSearch(query, langLocalization);
+    return this.performFlowSearch(query, langLocalization);
   }
 
   private performFlowSearch(
@@ -888,113 +616,5 @@ export class FlowSearch extends LitElement {
     }
 
     return results;
-  }
-
-  private renderMatchText(result: SearchResult): TemplateResult {
-    const { matchStart, matchLength } = result;
-    const matchEnd = matchStart + matchLength;
-
-    // Replace newlines with spaces for single-line display
-    const text = result.fullText.replace(/\n/g, ' ');
-
-    // Type-name matches show an unhighlighted content preview
-    if (matchLength === 0) {
-      return html`${text}`;
-    }
-
-    // Show leading context before the match, then the match, then trailing.
-    // CSS text-overflow:ellipsis clips the trailing text, so we keep the match
-    // near the start. When the match is near the end of the text, show more
-    // leading context since there's less trailing text to display.
-    const afterMatch = text.length - matchEnd;
-    const contextBefore = afterMatch < 30 ? 50 : 20;
-    const start = Math.max(0, matchStart - contextBefore);
-    const prefix = start > 0 ? '\u2026' : '';
-
-    const before = text.slice(start, matchStart);
-    const match = text.slice(matchStart, matchEnd);
-    const after = text.slice(matchEnd);
-
-    return html`${prefix}${before}<mark>${match}</mark>${after}`;
-  }
-
-  updated(changedProps: Map<string, unknown>): void {
-    if (changedProps.has('highlightedIndex')) {
-      const highlighted = this.shadowRoot?.querySelector(
-        '.result-item.highlighted'
-      );
-      highlighted?.scrollIntoView({ block: 'nearest' });
-    }
-  }
-
-  render(): TemplateResult {
-    const isTableScope = this.scope === 'table';
-    const searchLabel = isTableScope ? 'Search this table' : 'Search this flow';
-
-    return html`
-      <div class="backdrop" @click=${this.handleBackdropClick}></div>
-      <div
-        class="search-container"
-        role="dialog"
-        aria-modal="true"
-        aria-label=${searchLabel}
-        @click=${(e: Event) => e.stopPropagation()}
-      >
-        <div class="search-input-row">
-          <div class="search-icon">
-            <temba-icon name=${Icon.search} size="1.5"></temba-icon>
-          </div>
-          <input
-            type="text"
-            placeholder="${searchLabel}..."
-            aria-label=${searchLabel}
-            .value=${this.searchQuery}
-            @input=${this.handleInput}
-            @keydown=${this.handleKeyDown}
-          />
-        </div>
-        ${this.searchQuery.trim()
-          ? this.results.length > 0
-            ? html`
-                <div class="results">
-                  ${this.results.map(
-                    (result, index) => html`
-                      <div
-                        class="result-item ${index === this.highlightedIndex
-                          ? 'highlighted'
-                          : ''}"
-                        @click=${() => this.selectResult(result)}
-                        @mouseenter=${() => {
-                          this.highlightedIndex = index;
-                        }}
-                      >
-                        <div
-                          class="result-type-badge"
-                          style="background:${result.color};border-color:${result.borderColor ||
-                          result.color}${result.textColor
-                            ? `;color:${result.textColor}`
-                            : ''}"
-                        >
-                          ${result.typeName}
-                        </div>
-                        <div class="result-text">
-                          ${this.renderMatchText(result)}
-                        </div>
-                      </div>
-                    `
-                  )}
-                </div>
-                <div class="result-count">
-                  ${this.results.length}
-                  result${this.results.length !== 1 ? 's' : ''}
-                </div>
-              `
-            : html`<div class="no-results">No matches found</div>`
-          : html`<div class="hint">
-              <kbd>↑</kbd> <kbd>↓</kbd> to navigate &nbsp; <kbd>Enter</kbd> to
-              open &nbsp; <kbd>Esc</kbd> to close
-            </div>`}
-      </div>
-    `;
   }
 }

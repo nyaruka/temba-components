@@ -753,6 +753,7 @@ export class ContactChat extends ContactStoreElement {
         this.fetchMissedEvents();
       }
       this.fetchPreviousMessages();
+      this.tryPendingSearch();
     }
   }
 
@@ -1104,6 +1105,45 @@ export class ContactChat extends ContactStoreElement {
   // tracks the query that produced the current searchResults
   private lastSearchedQuery = '';
 
+  // a search requested (e.g. from the cross-ticket search modal) before the
+  // contact had loaded — executed once the contact and chat are ready
+  private pendingSearch: { query: string; eventUuid: string } = null;
+
+  /**
+   * Opens search mode and executes the given query, landing on the given
+   * event if it's among the matches (otherwise the most recent match). Safe
+   * to call before the contact has finished loading — the search runs once
+   * it has.
+   */
+  public startSearch(query: string, eventUuid: string = null): void {
+    if (!query || !query.trim()) {
+      return;
+    }
+    this.searchMode = true;
+    this.searchQuery = query;
+    this.searchResults = [];
+    this.searchIndex = -1;
+    this.searchLoading = false;
+    this.searchNoResults = false;
+    this.lastSearchedQuery = '';
+    this.pendingSearch = { query: query.trim(), eventUuid };
+    window.setTimeout(() => {
+      const input = this.shadowRoot.querySelector('.search-input') as any;
+      if (input) {
+        input.focus();
+      }
+    }, 50);
+    this.tryPendingSearch();
+  }
+
+  private tryPendingSearch(): void {
+    if (this.pendingSearch && this.currentContact && this.chat) {
+      const { eventUuid } = this.pendingSearch;
+      this.pendingSearch = null;
+      this.executeSearch(eventUuid);
+    }
+  }
+
   // bumped whenever the current search is superseded (new search, query
   // edit, close) — navigateToResult's async fade/load chain captures the
   // value at entry and bails at each step once it goes stale, so a chain
@@ -1128,7 +1168,7 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
-  private executeSearch() {
+  private executeSearch(targetUuid: string = null) {
     const query = this.searchQuery.trim();
     if (!query || !this.currentContact || this.searchLoading) {
       return;
@@ -1163,15 +1203,27 @@ export class ContactChat extends ContactStoreElement {
         // through the list), so order the results newest-first here rather
         // than depending on the endpoint's ordering (uuid v7 sorts
         // chronologically, matching the uuid comparisons used elsewhere)
-        this.searchResults = (
-          (response.json.results || []) as SearchResult[]
-        ).sort((a, b) =>
-          b.uuid.toLowerCase().localeCompare(a.uuid.toLowerCase())
+        let results = ((response.json.results || []) as SearchResult[]).sort(
+          (a, b) => b.uuid.toLowerCase().localeCompare(a.uuid.toLowerCase())
         );
+
+        // a ticket-scoped chat only shows this ticket's history, so its
+        // search only covers this ticket's messages too
+        if (this.currentTicket) {
+          results = results.filter(
+            (r) => r.ticket_uuid === this.currentTicket.uuid
+          );
+        }
+        this.searchResults = results;
+
         if (this.searchResults.length > 0) {
           this.searchNoResults = false;
-          this.searchIndex = 0;
-          this.navigateToResult(0);
+          const targetIndex = targetUuid
+            ? this.searchResults.findIndex((r) => r.uuid === targetUuid)
+            : -1;
+          const index = targetIndex !== -1 ? targetIndex : 0;
+          this.searchIndex = index;
+          this.navigateToResult(index);
         } else {
           this.searchNoResults = true;
           this.searchIndex = -1;
@@ -1614,12 +1666,21 @@ export class ContactChat extends ContactStoreElement {
         this.afterUUID = anchorUUID;
       }
 
+      const requestedBefore = this.beforeUUID;
       fetchContactHistory(
         endpoint,
         this.currentTicket?.uuid,
         this.beforeUUID,
         null
       ).then((page: ContactHistoryPage) => {
+        // the view was repositioned while this page was in flight (e.g. a
+        // search navigated to a match and re-anchored the history) — drop
+        // it rather than stacking the old view's messages on the new one
+        if (this.beforeUUID !== requestedBefore) {
+          chat.fetching = false;
+          return;
+        }
+
         const messages = this.createMessages(page);
         messages.reverse();
 

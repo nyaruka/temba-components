@@ -619,6 +619,70 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-search-result', getClip(chat));
   });
 
+  it('starts a search programmatically landing on the given event', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    // ask for the older of the two matches
+    chat.startSearch('primus', '01997d74-bf67-7199-8e8a-200e41a90d71');
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+
+    expect(chat.searchMode).to.equal(true);
+    expect(chat.searchQuery).to.equal('primus');
+    expect(chat.searchResults.length).to.equal(2);
+
+    // landed on the requested event, not the most recent match
+    expect(chat.searchIndex).to.equal(1);
+    expect(chat.searchResults[1].uuid).to.equal(
+      '01997d74-bf67-7199-8e8a-200e41a90d71'
+    );
+  });
+
+  it('runs a programmatic search requested before the contact loads', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat = (await getComponent(
+      TAG,
+      { contact: 'contact-dave-active', endpoint: '/test-assets/contacts/' },
+      '',
+      500,
+      500,
+      'display:flex;flex-direction:column;flex-grow:1;min-height:0;'
+    )) as ContactChat;
+
+    // request the search before the contact has finished loading - it should
+    // execute once it has
+    chat.startSearch('primus');
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      150,
+      400
+    );
+
+    expect(chat.searchMode).to.equal(true);
+    expect(chat.searchResults.length).to.equal(2);
+    expect(chat.searchIndex).to.equal(0);
+  });
+
   it('clears stale results when the query changes or is emptied', async () => {
     await loadStore();
 
