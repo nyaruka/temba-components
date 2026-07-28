@@ -79,8 +79,10 @@ export class ContactList extends ContentList<Contact> {
         labelsEndpoint: '/api/v2/groups.json?manual_only=1',
         labelsKey: 'groups'
       },
-      { key: 'delete', label: 'Delete', icon: Icon.delete, destructive: true },
-      { key: 'archive', label: 'Archive', icon: Icon.archive }
+      // Archive trails the reversible actions; Delete, when offered,
+      // always goes last.
+      { key: 'archive', label: 'Archive', icon: Icon.archive },
+      { key: 'delete', label: 'Delete', icon: Icon.delete, destructive: true }
     ];
   }
 
