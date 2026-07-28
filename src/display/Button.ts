@@ -26,7 +26,7 @@ export class Button extends LitElement {
         justify-content: var(--button-justify, center);
         gap: 6px;
         flex-grow: 1;
-        height: 28px;
+        height: var(--button-height, 28px);
         padding: 0 10px;
         border: 1px solid transparent;
         border-radius: var(--r-sm);
@@ -129,7 +129,7 @@ export class Button extends LitElement {
 
       /* icon-only button — square footprint, ghost chrome */
       .icon-button {
-        width: 28px;
+        width: var(--button-height, 28px);
         padding: 0;
         background: transparent;
         border-color: transparent;

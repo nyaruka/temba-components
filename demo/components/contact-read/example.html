@@ -41,6 +41,7 @@
       globals="/api/v2/globals.json"
       groups="/api/v2/groups.json"
       labels="/api/v2/labels.json"
+      workspace="/api/v2/workspace.json"
     ></temba-store>
 
     <div class="read-page">
@@ -58,8 +59,9 @@
 
         <temba-card id="card-details" label="Details" icon="info">
           <temba-contact-details
-            contact="contact-1"
-            endpoint="/api/v2/contacts.json?uuid="
+            contact="contact-dave-active"
+            endpoint="/test-assets/contacts/"
+            editable
           ></temba-contact-details>
         </temba-card>
         <temba-card id="card-fields" label="Fields" icon="fields">
@@ -85,6 +87,13 @@
 
     <script type="module">
       import '/out-tsc/temba-modules.js';
+
+      document.querySelector('temba-contact-details').schemes = [
+        { value: 'tel', name: 'Phone Number' },
+        { value: 'mailto', name: 'Email Address' },
+        { value: 'telegram', name: 'Telegram Identifier' },
+        { value: 'whatsapp', name: 'WhatsApp Identifier' }
+      ];
 
       document
         .querySelector('#layout')

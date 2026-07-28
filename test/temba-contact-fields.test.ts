@@ -1,4 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
+import { ContactFieldEditor } from '../src/live/ContactFieldEditor';
 import { ContactFields } from '../src/live/ContactFields';
 import {
   getComponent,
@@ -10,10 +11,11 @@ import {
 const TAG = 'temba-contact-fields';
 const getFields = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
+  attrs['writeEndpoint'] = '/test-assets/contacts/';
   const fields = (await getComponent(TAG, attrs, '', 600)) as ContactFields;
 
   // wait for our contact data to load
-  await waitForCondition(() => fields.data !== undefined);
+  await waitForCondition(() => !!fields.data);
 
   return fields;
 };
@@ -40,7 +42,7 @@ describe(TAG, () => {
     data.groups.forEach((group) => {
       delete group['is_dynamic'];
     });
-    // field updates post to the same endpoint the contact was fetched from
+    // field updates post to the write endpoint
     mockPOST(/\/test-assets\/contacts\/contact-dave-active/, data);
 
     // update our fields
@@ -56,6 +58,44 @@ describe(TAG, () => {
     expect(fields.data.groups[1].is_dynamic).equals(false);
 
     // await assertScreenshot('contacts/fields-updated', getClip(fields));
+  });
+
+  it('honors agent field access', async () => {
+    const store = await loadStore();
+    store.getContactField('gender').agent_access = 'none';
+    store.getContactField('age').agent_access = 'view';
+    store.getContactField('joined').agent_access = 'edit';
+
+    const fields: ContactFields = await getFields({
+      contact: 'contact-dave-active',
+      role: 'T'
+    });
+    await fields.updateComplete;
+
+    expect(fields.shadowRoot.querySelector('temba-contact-field[key="gender"]'))
+      .to.be.null;
+
+    const viewOnly = fields.shadowRoot.querySelector(
+      'temba-contact-field[key="age"]'
+    ) as ContactFieldEditor;
+    expect(viewOnly.disabled).to.be.true;
+    expect(viewOnly.shadowRoot.querySelector('temba-textinput')).to.be.null;
+    expect(viewOnly.shadowRoot.querySelector('.wrapper.disabled')).not.to.be
+      .null;
+
+    const editable = fields.shadowRoot.querySelector(
+      'temba-contact-field[key="joined"]'
+    ) as ContactFieldEditor;
+    expect(editable.disabled).to.be.false;
+    expect(editable.shadowRoot.querySelector('temba-datepicker')).not.to.be
+      .null;
+
+    const fetchCount = (window.fetch as any).callCount;
+    viewOnly.value = '41';
+    fields.handleFieldChanged({
+      currentTarget: viewOnly
+    } as unknown as InputEvent);
+    expect((window.fetch as any).callCount).to.equal(fetchCount);
   });
 
   // regression: the contact data and the store's field definitions load

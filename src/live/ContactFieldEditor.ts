@@ -38,10 +38,19 @@ export class ContactFieldEditor extends RapidElement {
   iconClass = '';
 
   @property({ type: String })
+  valueIcon = '';
+
+  @property({ type: String })
+  valueIconLabel = '';
+
+  @property({ type: String })
   status: Status = Status.Ready;
 
   @property({ type: Boolean })
   disabled = false;
+
+  @property({ type: Boolean })
+  searchable = true;
 
   @property({ type: Boolean })
   dirty = false;
@@ -60,7 +69,7 @@ export class ContactFieldEditor extends RapidElement {
         --color-widget-bg: transparent;
         --color-widget-bg-focused: #fff;
         --widget-box-shadow: none;
-        padding-bottom: 0.6em;
+        padding-bottom: var(--contact-field-padding-bottom, 0.6em);
         border-bottom: var(--contact-field-separator, 1px solid #ececec);
       }
 
@@ -94,7 +103,7 @@ export class ContactFieldEditor extends RapidElement {
       }
 
       .wrapper {
-        margin-bottom: 0.5em;
+        margin-bottom: var(--contact-field-wrapper-margin-bottom, 0.5em);
       }
 
       .field-label {
@@ -123,10 +132,19 @@ export class ContactFieldEditor extends RapidElement {
       }
 
       .disabled .value {
-        color: var(--text-1);
+        color: var(--contact-field-value-color, var(--text-1));
         margin-left: 0.25em;
         margin-top: 0.35em;
         min-height: 1.75em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .value-prefix {
+        display: flex;
+        align-items: center;
+        --icon-color: var(--contact-field-value-icon-color, var(--text-3));
       }
 
       .postfix {
@@ -337,9 +355,12 @@ export class ContactFieldEditor extends RapidElement {
     evt.stopPropagation();
   }
 
-  public handleResponse(response: WebResponse) {
+  public handleResponse(response: WebResponse, savedValue?: string) {
     if (response.status === 200) {
-      this.value = response.json.fields[this.key];
+      this.value =
+        savedValue !== undefined
+          ? savedValue
+          : response.json.fields?.[this.key] || '';
       // this.status = Status.Success;
       // on success lets go back to ready state for now
       this.status = Status.Ready;
@@ -452,12 +473,14 @@ export class ContactFieldEditor extends RapidElement {
             @click=${this.handleIconClick}
           >
             ${state}
-            <temba-icon
-              class="search"
-              icon-action="search"
-              name="${Icon.search}"
-              animateclick="pulse"
-            ></temba-icon>
+            ${this.searchable
+              ? html`<temba-icon
+                  class="search"
+                  icon-action="search"
+                  name="${Icon.search}"
+                  animateclick="pulse"
+                ></temba-icon>`
+              : null}
             <temba-icon
               class="copy"
               icon-action="copy"
@@ -528,6 +551,18 @@ export class ContactFieldEditor extends RapidElement {
       >
         <div class="label"><div class="name">${this.name}</div></div>
         <div class="value">
+          ${this.valueIcon
+            ? html`<temba-tip
+                class="value-prefix"
+                text=${this.valueIconLabel}
+                position="top"
+              >
+                <temba-icon
+                  name=${this.valueIcon}
+                  aria-label=${this.valueIconLabel}
+                ></temba-icon>
+              </temba-tip>`
+            : null}
           ${this.type === 'datetime'
             ? this.value
               ? html`<temba-date
