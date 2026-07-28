@@ -87,7 +87,10 @@ export const split_by_resthook: NodeConfig = {
     const existingCases = originalNode.router?.cases || [];
 
     const { router, exits } = createSuccessFailureRouter(
-      '@webhook.status',
+      // default() guards against @webhook being null (e.g. the call was
+      // skipped because the request exceeded the engine's size limit) which
+      // would otherwise produce lookup errors when the router evaluates
+      '@(default(webhook.status, 0))',
       {
         type: 'has_number_between',
         arguments: ['200', '299']

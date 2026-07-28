@@ -74,7 +74,87 @@ describe('split_by_webhook node config', () => {
       // Should have Success/Failure router
       expect(resultNode.router).to.exist;
       expect(resultNode.router!.type).to.equal('switch');
+      // operand uses default() so a null @webhook (e.g. skipped call) routes
+      // to Failure without evaluation errors
+      expect(resultNode.router!.operand).to.equal(
+        '@(default(webhook.status, 0))'
+      );
       expect(resultNode.exits).to.have.lengthOf(2);
+    });
+
+    it('should upgrade legacy @webhook.status operand on re-save', () => {
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'call_webhook',
+            uuid: 'existing-action-uuid',
+            method: 'GET',
+            url: 'https://example.com/api'
+          } as CallWebhook
+        ],
+        router: {
+          type: 'switch',
+          cases: [
+            {
+              uuid: 'existing-case-uuid',
+              type: 'has_number_between',
+              arguments: ['200', '299'],
+              category_uuid: 'existing-success-uuid'
+            }
+          ],
+          categories: [
+            {
+              uuid: 'existing-success-uuid',
+              name: 'Success',
+              exit_uuid: 'existing-success-exit-uuid'
+            },
+            {
+              uuid: 'existing-failure-uuid',
+              name: 'Failure',
+              exit_uuid: 'existing-failure-exit-uuid'
+            }
+          ],
+          default_category_uuid: 'existing-failure-uuid',
+          operand: '@webhook.status'
+        } as any,
+        exits: [
+          {
+            uuid: 'existing-success-exit-uuid',
+            destination_uuid: 'some-node-uuid'
+          },
+          {
+            uuid: 'existing-failure-exit-uuid',
+            destination_uuid: 'another-node-uuid'
+          }
+        ]
+      };
+
+      const formData = {
+        uuid: 'test-node',
+        method: [{ value: 'GET', name: 'GET' }],
+        url: 'https://example.com/api',
+        headers: [],
+        body: ''
+      };
+
+      const resultNode = split_by_webhook.fromFormData!(formData, originalNode);
+
+      // operand should be upgraded to the null-safe form
+      expect(resultNode.router!.operand).to.equal(
+        '@(default(webhook.status, 0))'
+      );
+
+      // everything else should be preserved
+      expect(resultNode.actions![0].uuid).to.equal('existing-action-uuid');
+      expect(resultNode.router!.cases![0].uuid).to.equal('existing-case-uuid');
+      expect(resultNode.router!.categories![0].uuid).to.equal(
+        'existing-success-uuid'
+      );
+      expect(resultNode.exits![0].destination_uuid).to.equal('some-node-uuid');
+      expect(resultNode.exits![1].destination_uuid).to.equal(
+        'another-node-uuid'
+      );
     });
 
     it('should transform from form data to flow definition (POST)', () => {
