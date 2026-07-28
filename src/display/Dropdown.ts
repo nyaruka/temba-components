@@ -113,7 +113,7 @@ export class Dropdown extends RapidElement {
   @property({ type: Boolean })
   mask = false;
 
-  // always open above the toggle instead of only when off the bottom
+  // prefer opening above the toggle, falling back to below if there's no room
   @property({ type: Boolean })
   up = false;
 
@@ -166,6 +166,7 @@ export class Dropdown extends RapidElement {
     // reset position so calculatePosition() sees the natural bounds
     this.dropdownStyle = {};
     this.arrowStyle = {};
+    this.openedUp = this.up;
 
     this.open = true;
     this.dormant = false;
@@ -240,20 +241,18 @@ export class Dropdown extends RapidElement {
       if (toggleBounds.left + dropdownBounds.width > window.innerWidth) {
         dropdownStyle['left'] =
           toggleBounds.right - dropdownBounds.width + 'px';
-        delete dropdownStyle['right'];
         bumpedLeft = true;
       }
 
-      // if forced up or off to the bottom, bump it up, leaving room for
-      // the arrow to point at the top of the toggle and offsetting the
-      // margin so the upward open animation lands there
+      // if preferred up and there's room, or we'd fall off the bottom, bump
+      // it up, leaving room for the arrow to point at the top of the toggle
       if (
-        this.up ||
+        (this.up &&
+          toggleBounds.top > dropdownBounds.height + this.arrowSize) ||
         toggleBounds.bottom + dropdownBounds.height > window.innerHeight
       ) {
         dropdownStyle['top'] =
           toggleBounds.top - dropdownBounds.height - this.arrowSize + 'px';
-        dropdownStyle['marginTop'] = '0.5em';
         bumpedUp = true;
       }
 
@@ -334,7 +333,7 @@ export class Dropdown extends RapidElement {
           class="${getClasses({
             dropdown: true,
             dormant: this.dormant,
-            up: this.up || this.openedUp
+            up: this.openedUp
           })}"
           style=${styleMap(this.dropdownStyle)}
           tabindex="0"

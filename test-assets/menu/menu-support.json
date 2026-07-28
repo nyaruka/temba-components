@@ -14,6 +14,7 @@
       "icon": "help",
       "bottom": true,
       "popup": true,
+      "event": "temba-support-menu",
       "items": [
         {
           "id": "help_docs",

@@ -855,7 +855,7 @@ export class TembaMenu extends ResizeElement {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  private loadItems(item: MenuItem, event: MouseEvent = null) {
+  private loadItems(item: MenuItem, event: MouseEvent | KeyboardEvent = null) {
     if (item && item.endpoint) {
       item.loading = true;
       this.httpComplete = fetchResults(item.endpoint)
@@ -905,7 +905,7 @@ export class TembaMenu extends ResizeElement {
   }
 
   private handleItemClicked(
-    event: MouseEvent,
+    event: MouseEvent | KeyboardEvent,
     menuItem: MenuItem,
     parent: MenuItem = null
   ) {
@@ -928,13 +928,13 @@ export class TembaMenu extends ResizeElement {
   }
 
   private executeNavigation(
-    event: MouseEvent,
+    event: MouseEvent | KeyboardEvent,
     menuItem: MenuItem,
     parent: MenuItem = null
   ) {
     if (parent && parent.popup) {
       const dropdown = this.shadowRoot.querySelector(
-        `#dd-${parent.id}`
+        `#dd-${CSS.escape(parent.id)}`
       ) as Dropdown;
       if (dropdown) {
         dropdown.close();
@@ -1187,9 +1187,17 @@ export class TembaMenu extends ResizeElement {
         class="popup-link"
         href=${ifDefined(menuItem.href ? menuItem.href : undefined)}
         target=${ifDefined(menuItem.target ? menuItem.target : undefined)}
+        tabindex=${ifDefined(menuItem.href ? undefined : '0')}
         @click=${(event: MouseEvent) => {
           event.preventDefault();
           this.handleItemClicked(event, menuItem, parent);
+        }}
+        @keydown=${(event: KeyboardEvent) => {
+          // anchors without an href aren't keyboard activatable on their own
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.handleItemClicked(event, menuItem, parent);
+          }
         }}
       >
         ${menuItem.icon
