@@ -1302,6 +1302,56 @@ describe('temba-content-list', () => {
     await assertScreenshot('content-list/contacts-bulk', getClip(list));
   });
 
+  it('keeps the bulk actions above the pinned column header', async () => {
+    await loadStore();
+    const list = (await getComponent(
+      'temba-contact-list',
+      { endpoint: '/test-assets/content-list/contacts.json' },
+      '',
+      1100
+    )) as ContactList;
+    await new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+    for (
+      let i = 0;
+      i < 200 && (list as any).featuredFields?.length === 0;
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+
+    // select via a real row-checkbox click, like a user would
+    const checkCell = list.shadowRoot!.querySelector(
+      'tr.row td.check-cell'
+    ) as HTMLElement;
+    checkCell.click();
+    await list.updateComplete;
+
+    const bar = list.shadowRoot!.querySelector('.bulk-bar') as HTMLElement;
+    assert.exists(bar, 'bulk bar should render when rows are selected');
+
+    // the leading chips overlap the pinned Name header, which stacks
+    // above ordinary header cells for the resize handles — the bar must
+    // still paint (and hit-test) above it, or the first actions are
+    // hidden and unclickable under the pinned header
+    const chips = Array.from(bar.querySelectorAll<HTMLElement>('.bulk-action'));
+    expect(chips.length).to.be.greaterThan(0);
+    chips.forEach((chip) => {
+      const rect = chip.getBoundingClientRect();
+      const top = list.shadowRoot!.elementFromPoint(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2
+      ) as HTMLElement;
+      expect(
+        bar.contains(top),
+        `${chip.title} chip should be on top, got ${top?.tagName}.${top?.className}`
+      ).to.be.true;
+    });
+  });
+
   it('collapses the bulk action labels to icons when the bar is too narrow', async () => {
     await loadStore();
     const list = (await getComponent(

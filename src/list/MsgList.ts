@@ -118,11 +118,13 @@ export class MsgList extends ContentList<Msg> {
         resizable: true
       },
       { key: 'text', label: 'Message', grow: true },
+      // Sent is deliberately not resizable: it's the last column, so its
+      // only possible handle would sit on the table's outer edge (Message
+      // is the grow column and owns the boundary between them).
       {
         key: 'created_on',
         label: 'Sent',
-        align: 'right',
-        resizable: true
+        align: 'right'
       }
     ];
     this.bulkActions = [
@@ -132,6 +134,8 @@ export class MsgList extends ContentList<Msg> {
         icon: Icon.label,
         labelsEndpoint: '/api/v2/labels.json'
       },
+      // Archive trails the reversible actions; Delete, when offered,
+      // always goes last.
       { key: 'archive', label: 'Archive', icon: Icon.archive },
       { key: 'delete', label: 'Delete', icon: Icon.delete, destructive: true }
     ];

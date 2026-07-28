@@ -214,7 +214,9 @@ export class ContentList<T = any> extends RapidElement {
          the select-all checkbox — rather than replacing the page header.
          Positioned in the table-frame (not the scrolling table) so it
          stays put horizontally, with an opaque header-tint background to
-         hide the labels underneath, above the sticky header (z 2/3). */
+         hide the labels underneath, above every header layer — pinned
+         header cells reach z 5 (see tr.header th.pinned), so the bar
+         sits at 6 to cover them too. */
       .bulk-bar {
         position: absolute;
         top: 0;
@@ -225,7 +227,7 @@ export class ContentList<T = any> extends RapidElement {
         left: var(--cl-firstcol-left, 44px);
         right: var(--cl-scrollbar-w, 0px);
         height: var(--cl-header-height, 36px);
-        z-index: 4;
+        z-index: 6;
         display: flex;
         align-items: center;
         gap: 4px;
@@ -567,8 +569,10 @@ export class ContentList<T = any> extends RapidElement {
 
       /* The header row sticks to the top of the scroll frame so the
          column labels stay put while the rows scroll under them.
-         z-index 2 lifts it above the body; a pinned header cell
-         needs 3 to also clear the body's pinned column (z-index 1). */
+         z-index 2 lifts it above the body; a pinned header cell needs
+         more to also clear the body's pinned column (z-index 1) and the
+         resize-handle layers (z 4) — but must stay under the bulk-action
+         bar (z 6), which overlays the whole header row on selection. */
       tr.header th {
         height: 36px;
         vertical-align: middle;
