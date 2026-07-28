@@ -1027,19 +1027,28 @@ export class Chat extends RapidElement {
 
       .popup .arrow {
         z-index: 1;
-        text-shadow: 0px 3px 3px rgba(0, 0, 0, 0.1);
         position: absolute;
-        justify-content: center;
-        text-align: center;
-        /* fixed so the arrow matches the event tips' 18px arrows
-           rather than tracking the popup's 11px text */
-        font-size: 18px;
-        /* same fat, stubby squash as the temba-tip arrows, pushed out
-           far enough to bridge the gap below while the base stays
-           buried under the popup */
-        transform: translateY(0.8em) scale(1.15, 0.6);
-        color: #fff;
-        bottom: 0;
+        bottom: -9px;
+        width: 16px;
+        height: 11px;
+        /* the shadow is on this wrapper rather than the clipped
+           shape below so it hugs the triangle's slanted edges */
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.12));
+      }
+
+      /* a CSS-drawn tail rather than a ▼ glyph — glyph ink lands
+         wherever the platform font puts it, so the tip rendered
+         hidden on some systems and overshot on others. This triangle
+         is deterministic: its top 2px lie on the popup body hiding
+         the border where the tail meets it, the rest bridges the gap
+         below so the tip visibly laps over the top of the bubble */
+      .popup .arrow::after {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #fff;
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
       }
 
       .bubble-wrap:hover .popup {
@@ -1924,7 +1933,7 @@ export class Chat extends RapidElement {
               value="${event.created_on.toISOString()}"
               display="datetime"
             ></temba-date>
-            <div class="arrow">▼</div>
+            <div class="arrow"></div>
           </div>`
         : null}
       <div class="bubble">
@@ -2025,7 +2034,7 @@ export class Chat extends RapidElement {
                   ></a>`
                 : null}
 
-              <div class="arrow">▼</div>
+              <div class="arrow"></div>
             </div>`
           : null}
         ${isDeleted
