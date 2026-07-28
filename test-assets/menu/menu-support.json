@@ -13,7 +13,33 @@
       "name": "Support",
       "icon": "help",
       "bottom": true,
-      "event": "temba-show-support"
+      "popup": true,
+      "event": "temba-support-menu",
+      "items": [
+        {
+          "id": "help_docs",
+          "name": "Help Docs",
+          "type": "link",
+          "href": "https://help.textit.com",
+          "icon": "docs",
+          "target": "_blank"
+        },
+        {
+          "id": "privacy",
+          "name": "Privacy Policy",
+          "type": "link",
+          "href": "/policy/",
+          "icon": "privacy",
+          "target": "_blank"
+        },
+        {
+          "id": "open_chat",
+          "name": "Chat with Support",
+          "type": "link",
+          "event": "temba-show-support",
+          "icon": "message"
+        }
+      ]
     },
     {
       "id": "notifications",

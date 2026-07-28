@@ -70,6 +70,10 @@ export class Dropdown extends RapidElement {
         transform: translateY(0.5em) scale(1);
       }
 
+      .open .dropdown.up {
+        transform: translateY(-0.5em) scale(1);
+      }
+
       .mask {
         position: absolute;
         left: 0;
@@ -109,9 +113,21 @@ export class Dropdown extends RapidElement {
   @property({ type: Boolean })
   mask = false;
 
+  // prefer opening above the toggle, falling back to below if there's no room
+  @property({ type: Boolean })
+  up = false;
+
+  // optional selector for the element inside the toggle slot to position
+  // against, e.g. the visible button rather than its padded wrapper
+  @property({ type: String })
+  anchor = '';
+
   dropdownStyle: Record<string, string> = {};
 
   arrowStyle: Record<string, string> = {};
+
+  // whether the last position calculation opened us above the toggle
+  private openedUp = false;
 
   constructor() {
     super();
@@ -150,6 +166,7 @@ export class Dropdown extends RapidElement {
     // reset position so calculatePosition() sees the natural bounds
     this.dropdownStyle = {};
     this.arrowStyle = {};
+    this.openedUp = this.up;
 
     this.open = true;
     this.dormant = false;
@@ -175,6 +192,12 @@ export class Dropdown extends RapidElement {
     this.blur();
   }
 
+  public close() {
+    if (this.open) {
+      this.closeDropdown();
+    }
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
@@ -191,19 +214,14 @@ export class Dropdown extends RapidElement {
     ) as HTMLDivElement;
     const toggle = this.querySelector('*[slot="toggle"]');
 
-    const arrow = this.shadowRoot.querySelector('.arrow') as HTMLDivElement;
-
     let bumpedUp = false;
     let bumpedLeft = false;
 
     if (dropdown && toggle) {
+      const anchor =
+        (this.anchor && toggle.querySelector(this.anchor)) || toggle;
       const dropdownBounds = dropdown.getBoundingClientRect();
-      const toggleBounds = toggle.getBoundingClientRect();
-      const arrowBounds = arrow.getBoundingClientRect();
-
-      if (!toggle) {
-        return;
-      }
+      const toggleBounds = anchor.getBoundingClientRect();
 
       // Anchor the dropdown to the toggle's viewport coordinates.
       // The dropdown is `position: fixed`, so viewport coords are
@@ -223,20 +241,24 @@ export class Dropdown extends RapidElement {
       if (toggleBounds.left + dropdownBounds.width > window.innerWidth) {
         dropdownStyle['left'] =
           toggleBounds.right - dropdownBounds.width + 'px';
-        delete dropdownStyle['right'];
         bumpedLeft = true;
       }
 
-      // if off to the bottom, bump it up
-      if (toggleBounds.bottom + dropdownBounds.height > window.innerHeight) {
-        dropdownStyle['top'] = toggleBounds.top - dropdownBounds.height + 'px';
-        dropdownStyle['marginTop'] = '-0.5em';
+      // if preferred up and there's room, or we'd fall off the bottom, bump
+      // it up, leaving room for the arrow to point at the top of the toggle
+      if (
+        (this.up &&
+          toggleBounds.top > dropdownBounds.height + this.arrowSize) ||
+        toggleBounds.bottom + dropdownBounds.height > window.innerHeight
+      ) {
+        dropdownStyle['top'] =
+          toggleBounds.top - dropdownBounds.height - this.arrowSize + 'px';
         bumpedUp = true;
       }
 
       // if our arrow is aligned with the left of the dropdown, scootch
       // the dropdown left a pinch so our arrow still overlaps properly
-      let arrowLeft = toggleBounds.width / 2 - arrowBounds.width / 2;
+      let arrowLeft = toggleBounds.width / 2 - this.arrowSize;
       if (arrowLeft <= 0) {
         dropdownStyle['marginLeft'] = '-10px';
         arrowLeft = 10;
@@ -272,13 +294,13 @@ export class Dropdown extends RapidElement {
       }
 
       if (bumpedLeft) {
-        arrowStyle['right'] =
-          toggleBounds.width / 2 - arrowBounds.width / 2 + 'px';
+        arrowStyle['right'] = toggleBounds.width / 2 - this.arrowSize + 'px';
         delete arrowStyle['left'];
       }
 
       this.arrowStyle = arrowStyle;
       this.dropdownStyle = dropdownStyle;
+      this.openedUp = bumpedUp;
     }
     this.requestUpdate();
   }
@@ -310,7 +332,8 @@ export class Dropdown extends RapidElement {
         <div
           class="${getClasses({
             dropdown: true,
-            dormant: this.dormant
+            dormant: this.dormant,
+            up: this.openedUp
           })}"
           style=${styleMap(this.dropdownStyle)}
           tabindex="0"

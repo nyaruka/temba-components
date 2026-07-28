@@ -27,6 +27,7 @@ export interface MenuItem {
   items?: MenuItem[];
   inline?: boolean;
   type?: string;
+  target?: string;
   on_submit?: string;
   bubble?: string;
   popup?: boolean;
@@ -233,6 +234,38 @@ export class TembaMenu extends ResizeElement {
       temba-dropdown > div[slot='dropdown'] {
         width: 300px;
         overflow: hidden;
+      }
+
+      /* popups holding natural links hug their content instead */
+      temba-dropdown > div[slot='dropdown']:has(> .popup-link) {
+        width: auto;
+        min-width: 11em;
+      }
+
+      .popup-link {
+        display: flex;
+        align-items: center;
+        margin: 0.5em 1em;
+        color: var(--color-link-primary);
+        --icon-color: var(--text-2);
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .popup-link temba-icon {
+        margin-right: 0.5em;
+      }
+
+      .popup-link:hover {
+        text-decoration: underline;
+      }
+
+      .popup-link:first-child {
+        margin-top: 1em;
+      }
+
+      .popup-link:last-child {
+        margin-bottom: 1em;
       }
 
       temba-dropdown > div[slot='dropdown'] .avatar > .details {
@@ -822,7 +855,7 @@ export class TembaMenu extends ResizeElement {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  private loadItems(item: MenuItem, event: MouseEvent = null) {
+  private loadItems(item: MenuItem, event: MouseEvent | KeyboardEvent = null) {
     if (item && item.endpoint) {
       item.loading = true;
       this.httpComplete = fetchResults(item.endpoint)
@@ -872,7 +905,7 @@ export class TembaMenu extends ResizeElement {
   }
 
   private handleItemClicked(
-    event: MouseEvent,
+    event: MouseEvent | KeyboardEvent,
     menuItem: MenuItem,
     parent: MenuItem = null
   ) {
@@ -895,16 +928,16 @@ export class TembaMenu extends ResizeElement {
   }
 
   private executeNavigation(
-    event: MouseEvent,
+    event: MouseEvent | KeyboardEvent,
     menuItem: MenuItem,
     parent: MenuItem = null
   ) {
     if (parent && parent.popup) {
       const dropdown = this.shadowRoot.querySelector(
-        'temba-dropdown'
+        `#dd-${CSS.escape(parent.id)}`
       ) as Dropdown;
       if (dropdown) {
-        dropdown.blur();
+        dropdown.close();
       }
 
       if (event) {
@@ -1148,6 +1181,32 @@ export class TembaMenu extends ResizeElement {
       return html`<div class="space"></div>`;
     }
 
+    if (menuItem.type === 'link') {
+      return html`<a
+        id="menu-${menuItem.id}"
+        class="popup-link"
+        href=${ifDefined(menuItem.href ? menuItem.href : undefined)}
+        target=${ifDefined(menuItem.target ? menuItem.target : undefined)}
+        tabindex=${ifDefined(menuItem.href ? undefined : '0')}
+        @click=${(event: MouseEvent) => {
+          event.preventDefault();
+          this.handleItemClicked(event, menuItem, parent);
+        }}
+        @keydown=${(event: KeyboardEvent) => {
+          // anchors without an href aren't keyboard activatable on their own
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.handleItemClicked(event, menuItem, parent);
+          }
+        }}
+      >
+        ${menuItem.icon
+          ? html`<temba-icon name="${menuItem.icon}"></temba-icon>`
+          : null}
+        ${menuItem.name}
+      </a>`;
+    }
+
     if (menuItem.type === 'section' || menuItem.inline) {
       return html`<div class="sub-section">${menuItem.name}</div>`;
     }
@@ -1240,7 +1299,7 @@ export class TembaMenu extends ResizeElement {
         }}
       >
         ${menuItem.level === 0
-          ? menuItem.avatar
+          ? menuItem.avatar || menuItem.popup
             ? icon
             : html`<temba-tip
                 position="right"
@@ -1286,6 +1345,8 @@ export class TembaMenu extends ResizeElement {
       return html`
         <temba-dropdown
           id="dd-${menuItem.id}"
+          ?up=${!!menuItem.bottom}
+          anchor="a"
           @temba-opened=${(event: CustomEvent) =>
             this.handlePopupOpened(event, menuItem)}
         >
