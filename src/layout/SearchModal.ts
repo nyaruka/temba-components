@@ -1,5 +1,6 @@
 import { html, css, CSSResultGroup, TemplateResult } from 'lit';
 import { property, state, query } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import { Icon } from '../Icons';
 import { RapidElement } from '../RapidElement';
 
@@ -233,6 +234,11 @@ export abstract class SearchModal<
   @state()
   protected dirty = false;
 
+  // Set when an async performSearch rejects, so a failed lookup reads as a
+  // failure rather than as an empty result set
+  @state()
+  protected error = false;
+
   // Bumped on each search (and on query edits in searchOnEnter mode) so
   // in-flight async results that are no longer wanted get dropped
   private searchGeneration = 0;
@@ -258,6 +264,7 @@ export abstract class SearchModal<
     this.highlightedIndex = 0;
     this.loading = false;
     this.dirty = false;
+    this.error = false;
     this.searchGeneration++;
     this.updateComplete.then(() => {
       this.inputEl?.focus();
@@ -271,6 +278,7 @@ export abstract class SearchModal<
     this.results = [];
     this.loading = false;
     this.dirty = false;
+    this.error = false;
     this.searchGeneration++;
   }
 
@@ -278,6 +286,7 @@ export abstract class SearchModal<
     const input = e.target as HTMLInputElement;
     this.searchQuery = input.value;
     this.highlightedIndex = 0;
+    this.error = false;
     if (this.searchOnEnter) {
       // invalidate any in-flight search and wait for Enter
       this.searchGeneration++;
@@ -329,6 +338,7 @@ export abstract class SearchModal<
     const generation = ++this.searchGeneration;
     this.dirty = false;
     this.highlightedIndex = 0;
+    this.error = false;
 
     if (!this.searchQuery.trim()) {
       this.results = [];
@@ -347,10 +357,15 @@ export abstract class SearchModal<
             this.loading = false;
           }
         })
-        .catch(() => {
+        .catch((error) => {
+          // a superseded search has already been replaced by whatever
+          // superseded it - that includes searches we aborted ourselves,
+          // so those never surface as failures
           if (generation === this.searchGeneration) {
+            console.error(error);
             this.results = [];
             this.loading = false;
+            this.error = true;
           }
         });
     } else {
@@ -405,12 +420,16 @@ export abstract class SearchModal<
    * The content of a single result row. Subclasses can override to customize.
    */
   protected renderResultContent(result: T): TemplateResult {
+    const badgeStyles: { [key: string]: string } = {
+      background: result.color,
+      borderColor: result.borderColor || result.color
+    };
+    if (result.textColor) {
+      badgeStyles.color = result.textColor;
+    }
+
     return html`
-      <div
-        class="result-type-badge"
-        style="background:${result.color};border-color:${result.borderColor ||
-        result.color}${result.textColor ? `;color:${result.textColor}` : ''}"
-      >
+      <div class="result-type-badge" style=${styleMap(badgeStyles)}>
         ${result.typeName}
       </div>
       <div class="result-text">${this.renderMatchText(result)}</div>
@@ -440,6 +459,10 @@ export abstract class SearchModal<
       return html`<div class="loading">
         <temba-loading units="6" size="8"></temba-loading>
       </div>`;
+    }
+
+    if (this.error) {
+      return html`<div class="no-results">Search failed - try again</div>`;
     }
 
     if (this.results.length === 0) {

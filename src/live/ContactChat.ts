@@ -64,10 +64,11 @@ const STATE_REFRESH_INTERVAL = 60000;
 // re-export for backwards compatibility
 export { renderTicketAction, renderTicketAssigneeChanged };
 
-interface SearchResult {
+export interface SearchResult {
   uuid: string;
   type: string;
   created_on: string;
+  ticket_uuid?: string;
   msg?: any;
   _user?: any;
   [key: string]: any;
@@ -1022,22 +1023,44 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
+  /**
+   * Clears the state of the current search - its query, results and the
+   * flags driving the search bar. Opening a fresh search keeps whatever
+   * lastSearchedQuery was, so its results can be re-run; closing or
+   * starting a new one drops it too.
+   */
+  private resetSearchState(query = '', clearLastSearched = false) {
+    this.searchQuery = query;
+    this.searchResults = [];
+    this.searchIndex = -1;
+    this.searchLoading = false;
+    this.searchNoResults = false;
+    if (clearLastSearched) {
+      this.lastSearchedQuery = '';
+    }
+  }
+
+  /** Focuses the search input once the search bar has rendered. */
+  private focusSearchInput() {
+    window.setTimeout(() => {
+      const input = this.shadowRoot.querySelector('.search-input') as any;
+      if (input) {
+        input.focus();
+      }
+    }, 50);
+  }
+
   private handleSearchToggle() {
+    // an opening or closing search supersedes any hand-off still waiting
+    // on a contact to load
+    this.pendingSearch = null;
+
     if (this.searchMode) {
       this.handleSearchClose();
     } else {
       this.searchMode = true;
-      this.searchQuery = '';
-      this.searchResults = [];
-      this.searchIndex = -1;
-      this.searchLoading = false;
-      this.searchNoResults = false;
-      window.setTimeout(() => {
-        const input = this.shadowRoot.querySelector('.search-input') as any;
-        if (input) {
-          input.focus();
-        }
-      }, 50);
+      this.resetSearchState();
+      this.focusSearchInput();
     }
   }
 
@@ -1064,16 +1087,14 @@ export class ContactChat extends ContactStoreElement {
     // supersede any in-flight match navigation right away — its chain
     // must not re-assert highlights over the restored view below
     this.searchGeneration++;
+    // and a hand-off waiting on a contact must not reopen search behind
+    // the user once it lands
+    this.pendingSearch = null;
     this.searchClosing = true;
     window.setTimeout(() => {
       this.searchClosing = false;
       this.searchMode = false;
-      this.searchQuery = '';
-      this.searchResults = [];
-      this.searchIndex = -1;
-      this.searchLoading = false;
-      this.searchNoResults = false;
-      this.lastSearchedQuery = '';
+      this.resetSearchState('', true);
       this.restoreUnsearchedView();
     }, 150);
   }
@@ -1106,42 +1127,58 @@ export class ContactChat extends ContactStoreElement {
   private lastSearchedQuery = '';
 
   // a search requested (e.g. from the cross-ticket search modal) before the
-  // contact had loaded — executed once the contact and chat are ready
-  private pendingSearch: { query: string; eventUuid: string } = null;
+  // contact had loaded — executed once that contact and the chat are ready
+  private pendingSearch: {
+    query: string;
+    event: SearchResult;
+    contactUuid: string;
+  } = null;
 
   /**
    * Opens search mode and executes the given query, landing on the given
-   * event if it's among the matches (otherwise the most recent match). Safe
-   * to call before the contact has finished loading — the search runs once
-   * it has.
+   * event — which is inserted into the results if the endpoint's matches
+   * don't reach back far enough to include it. Safe to call before the
+   * contact has finished loading — the search runs once it has.
    */
-  public startSearch(query: string, eventUuid: string = null): void {
+  public startSearch(query: string, event: SearchResult = null): void {
     if (!query || !query.trim()) {
       return;
     }
     this.searchMode = true;
-    this.searchQuery = query;
-    this.searchResults = [];
-    this.searchIndex = -1;
-    this.searchLoading = false;
-    this.searchNoResults = false;
-    this.lastSearchedQuery = '';
-    this.pendingSearch = { query: query.trim(), eventUuid };
-    window.setTimeout(() => {
-      const input = this.shadowRoot.querySelector('.search-input') as any;
-      if (input) {
-        input.focus();
-      }
-    }, 50);
+    this.resetSearchState(query, true);
+    // the contact the host has asked us to show, which may still be
+    // loading — the search belongs to it and nobody else
+    this.pendingSearch = {
+      query: query.trim(),
+      event,
+      contactUuid: this.contact
+    };
+    this.focusSearchInput();
     this.tryPendingSearch();
   }
 
   private tryPendingSearch(): void {
-    if (this.pendingSearch && this.currentContact && this.chat) {
-      const { eventUuid } = this.pendingSearch;
-      this.pendingSearch = null;
-      this.executeSearch(eventUuid);
+    const pending = this.pendingSearch;
+    if (!pending || !this.currentContact || !this.chat) {
+      return;
     }
+
+    // the search was requested for a specific contact — hold it while that
+    // contact is still loading, but drop it once the host has moved on to
+    // another one rather than running it against the wrong history
+    if (
+      pending.contactUuid &&
+      pending.contactUuid !== this.currentContact.uuid
+    ) {
+      if (pending.contactUuid !== this.contact) {
+        this.pendingSearch = null;
+      }
+      return;
+    }
+
+    this.pendingSearch = null;
+    this.searchQuery = pending.query;
+    this.executeSearch(pending.event);
   }
 
   // bumped whenever the current search is superseded (new search, query
@@ -1168,7 +1205,7 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
-  private executeSearch(targetUuid: string = null) {
+  private executeSearch(targetEvent: SearchResult = null) {
     const query = this.searchQuery.trim();
     if (!query || !this.currentContact || this.searchLoading) {
       return;
@@ -1187,7 +1224,15 @@ export class ContactChat extends ContactStoreElement {
       this.chat.reset();
     }
 
-    const url = `/contact/chat_search/${this.currentContact.uuid}/?text=${encodeURIComponent(query)}`;
+    // a ticket-scoped chat only shows this ticket's history, so its search
+    // only covers this ticket's messages too — scoping it server-side means
+    // the endpoint's result cap applies to this ticket rather than to the
+    // contact's whole history
+    let url = `/contact/chat_search/${this.currentContact.uuid}/?text=${encodeURIComponent(query)}`;
+    if (this.currentTicket) {
+      url += `&ticket=${encodeURIComponent(this.currentTicket.uuid)}`;
+    }
+
     getUrl(url)
       .then((response: WebResponse) => {
         this.searchLoading = false;
@@ -1203,23 +1248,28 @@ export class ContactChat extends ContactStoreElement {
         // through the list), so order the results newest-first here rather
         // than depending on the endpoint's ordering (uuid v7 sorts
         // chronologically, matching the uuid comparisons used elsewhere)
-        let results = ((response.json.results || []) as SearchResult[]).sort(
+        const results = ((response.json.results || []) as SearchResult[]).sort(
           (a, b) => b.uuid.toLowerCase().localeCompare(a.uuid.toLowerCase())
         );
 
-        // a ticket-scoped chat only shows this ticket's history, so its
-        // search only covers this ticket's messages too
-        if (this.currentTicket) {
-          results = results.filter(
-            (r) => r.ticket_uuid === this.currentTicket.uuid
+        // the endpoint caps how many matches it returns, so the event we
+        // were handed off may not be among them — splice it into its own
+        // spot in the ordering so the hand-off always lands on it
+        if (targetEvent && !results.some((r) => r.uuid === targetEvent.uuid)) {
+          const older = results.findIndex(
+            (r) =>
+              r.uuid
+                .toLowerCase()
+                .localeCompare(targetEvent.uuid.toLowerCase()) < 0
           );
+          results.splice(older === -1 ? results.length : older, 0, targetEvent);
         }
         this.searchResults = results;
 
         if (this.searchResults.length > 0) {
           this.searchNoResults = false;
-          const targetIndex = targetUuid
-            ? this.searchResults.findIndex((r) => r.uuid === targetUuid)
+          const targetIndex = targetEvent
+            ? this.searchResults.findIndex((r) => r.uuid === targetEvent.uuid)
             : -1;
           const index = targetIndex !== -1 ? targetIndex : 0;
           this.searchIndex = index;
@@ -1951,7 +2001,7 @@ export class ContactChat extends ContactStoreElement {
                 clickable
                 title="Search"
                 aria-label="Run search"
-                @click=${this.executeSearch}
+                @click=${() => this.executeSearch()}
               ></temba-icon>`
           : this.searchResults.length > 0
             ? html`<div class="match-pager">

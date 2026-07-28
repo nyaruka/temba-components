@@ -3,11 +3,20 @@ import { property } from 'lit/decorators.js';
 import { ModalSearchResult, SearchModal } from '../layout/SearchModal';
 import { getUrl } from '../utils';
 
+// The matched message event as the endpoint returns it
+export interface TicketSearchEvent {
+  uuid: string;
+  type: string;
+  created_on: string;
+  ticket_uuid?: string;
+  msg?: { text?: string };
+  [key: string]: any;
+}
+
 export interface TicketSearchResult extends ModalSearchResult {
   contact: { uuid: string; name: string };
   ticket: { uuid: string; status: string };
-  // The matched message event (uuid, type, text, created_on, ticket_uuid, ...)
-  event: any;
+  event: TicketSearchEvent;
   // The query that produced this result, so selection handlers can re-run
   // the search within the ticket
   query: string;
@@ -18,6 +27,25 @@ const BADGE_COLOR = '#6b7280';
 // rough number of characters that fit on a result row - the snippet is
 // windowed around the match so the match stays visible if CSS clips the tail
 const SNIPPET_BUDGET = 60;
+
+// the shortest prefix we'll fall back to when a query term doesn't appear
+// literally - short enough to cover most inflections, long enough that the
+// highlight still points at the word the user searched for
+const MIN_PREFIX = 4;
+
+// strips everything but letters and numbers, so punctuation in the query
+// doesn't keep a term from matching the message text
+const stripNonWord = (text: string) => text.replace(/[^\p{L}\p{N}]/gu, '');
+
+// same, but only at the ends, so the words of a multi-word query stay apart
+const stripOuterNonWord = (text: string) =>
+  text.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+
+// the candidates to look for, in priority order, without duplicates
+const withoutDupes = (candidates: string[]) =>
+  candidates.filter(
+    (candidate, index) => !!candidate && candidates.indexOf(candidate) === index
+  );
 
 /**
  * Searches message text across all of an org's ticket chats. Searching hits
@@ -48,9 +76,22 @@ export class TicketSearch extends SearchModal<TicketSearchResult> {
   @property({ type: String })
   endpoint = '/ticket/search/';
 
-  constructor() {
-    super();
-    this.searchOnEnter = true;
+  // searching hits an endpoint, so wait for Enter
+  searchOnEnter = true;
+
+  // the in-flight request, aborted when it's superseded or the modal closes
+  private abortController: AbortController = null;
+
+  public hide(): void {
+    this.abortSearch();
+    super.hide();
+  }
+
+  private abortSearch(): void {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
   }
 
   protected getSearchLabel(): string {
@@ -64,11 +105,42 @@ export class TicketSearch extends SearchModal<TicketSearchResult> {
   }
 
   protected async performSearch(query: string): Promise<TicketSearchResult[]> {
+    this.abortSearch();
+    const controller = new AbortController();
+    this.abortController = controller;
+
     const response = await getUrl(
-      `${this.endpoint}?text=${encodeURIComponent(query)}`
+      `${this.endpoint}?text=${encodeURIComponent(query)}`,
+      controller
     );
+
+    if (this.abortController === controller) {
+      this.abortController = null;
+    }
+
     const results = (response.json as any).results || [];
     return results.map((result: any) => this.toSearchResult(result, query));
+  }
+
+  /**
+   * Locates a term in the message text, falling back to progressively
+   * shorter prefixes of it. The backend matches on analyzed text, so a query
+   * term ("helping") can match a message that only contains a stemmed or
+   * inflected form of it ("helped") - highlighting the longest prefix that
+   * does appear keeps the match visible rather than showing nothing.
+   */
+  private findTerm(
+    lowerText: string,
+    term: string,
+    minLength: number
+  ): { start: number; length: number } | null {
+    for (let length = term.length; length >= minLength; length--) {
+      const idx = lowerText.indexOf(term.slice(0, length));
+      if (idx !== -1) {
+        return { start: idx, length };
+      }
+    }
+    return null;
   }
 
   private toSearchResult(result: any, query: string): TicketSearchResult {
@@ -76,20 +148,50 @@ export class TicketSearch extends SearchModal<TicketSearchResult> {
     const lowerText = text.toLowerCase();
     const lowerQuery = query.trim().toLowerCase();
 
-    // highlight the whole query if it appears verbatim, otherwise the first
-    // matching term (the backend matches terms independently)
-    let matchStart = lowerText.indexOf(lowerQuery);
-    let matchLength = lowerQuery.length;
-    if (matchStart === -1) {
-      for (const term of lowerQuery.split(/\s+/)) {
-        const idx = lowerText.indexOf(term);
-        if (idx !== -1) {
-          matchStart = idx;
-          matchLength = term.length;
+    let matchStart = -1;
+    let matchLength = 0;
+
+    // highlight the whole query if it appears verbatim (with or without any
+    // punctuation it's wrapped in), otherwise the first matching term - the
+    // backend matches terms independently, and against analyzed text, so a
+    // term is tried both as typed and stripped of its punctuation
+    const queries = withoutDupes([lowerQuery, stripOuterNonWord(lowerQuery)]);
+    for (const candidate of queries) {
+      const idx = lowerText.indexOf(candidate);
+      if (idx !== -1) {
+        matchStart = idx;
+        matchLength = candidate.length;
+        break;
+      }
+    }
+
+    const terms = withoutDupes(
+      lowerQuery.split(/\s+/).reduce((all: string[], term) => {
+        all.push(term, stripNonWord(term));
+        return all;
+      }, [])
+    );
+
+    // literal matches first, so an exact hit on a later term beats a
+    // prefix hit on an earlier one
+    for (const minLength of [Infinity, MIN_PREFIX]) {
+      if (matchStart !== -1) {
+        break;
+      }
+      for (const term of terms) {
+        const match = this.findTerm(
+          lowerText,
+          term,
+          Math.min(minLength, term.length)
+        );
+        if (match) {
+          matchStart = match.start;
+          matchLength = match.length;
           break;
         }
       }
     }
+
     if (matchStart === -1) {
       matchStart = 0;
       matchLength = 0;

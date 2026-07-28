@@ -48,6 +48,24 @@ const RESPONSE = {
   ]
 };
 
+// the backend matches analyzed text, so a query can come back with messages
+// that only contain an inflected form of the term
+const STEMMED_RESPONSE = {
+  results: [
+    {
+      contact: { uuid: 'contact-1', name: 'Ben Haggerty' },
+      ticket: { uuid: 'ticket-1', status: 'open' },
+      event: {
+        uuid: 'event-1',
+        type: 'msg_received',
+        msg: { text: 'She helped me with my order' },
+        created_on: '2025-03-01T13:00:00Z',
+        ticket_uuid: 'ticket-1'
+      }
+    }
+  ]
+};
+
 const createSearch = async (): Promise<TicketSearch> => {
   const el = (await fixture(
     '<temba-ticket-search></temba-ticket-search>'
@@ -76,6 +94,9 @@ const getResults = (el: TicketSearch): TicketSearchResult[] => {
 
 describe('temba-ticket-search', () => {
   beforeEach(() => {
+    // registered first so they win over the catch-all below
+    mockGET(/\/ticket\/search\/\?text=helping/, STEMMED_RESPONSE);
+    mockGET(/\/ticket\/search\/\?text=kaboom/, { error: 'boom' }, {}, '500');
     mockGET(/\/ticket\/search\/\?text=.*/, RESPONSE);
   });
 
@@ -176,6 +197,38 @@ describe('temba-ticket-search', () => {
     expect(event.detail.ticket.uuid).to.equal('ticket-2');
     expect(event.detail.contact.uuid).to.equal('contact-2');
     expect(el.open).to.equal(false);
+  });
+
+  it('highlights the longest matching prefix of an inflected term', async () => {
+    const el = await createSearch();
+    await setQuery(el, 'helping?');
+    await pressKey(el, 'Enter');
+    await waitUntil(() => getResults(el).length > 0);
+    await el.updateComplete;
+
+    // "helping?" appears nowhere literally, so back off to the longest
+    // prefix that does - punctuation and all - rather than showing no
+    // highlight at all
+    const result = getResults(el)[0];
+    expect(result.fullText).to.equal('She helped me with my order');
+    expect(result.matchStart).to.equal('She '.length);
+    expect(result.matchLength).to.equal('help'.length);
+
+    const mark = el.shadowRoot
+      .querySelector('.result-item')
+      .querySelector('mark');
+    expect(mark.textContent).to.equal('help');
+  });
+
+  it('shows a failure message when the search request fails', async () => {
+    const el = await createSearch();
+    await setQuery(el, 'kaboom');
+    await pressKey(el, 'Enter');
+
+    await waitUntil(() => !!el.shadowRoot.querySelector('.no-results'));
+    expect(el.shadowRoot.querySelector('.no-results').textContent).to.contain(
+      'Search failed'
+    );
   });
 
   it('invalidates results when the query changes', async () => {

@@ -632,7 +632,11 @@ describe('temba-contact-chat', () => {
     });
 
     // ask for the older of the two matches
-    chat.startSearch('primus', '01997d74-bf67-7199-8e8a-200e41a90d71');
+    chat.startSearch('primus', {
+      uuid: '01997d74-bf67-7199-8e8a-200e41a90d71',
+      type: 'msg_received',
+      created_on: '2025-09-23T20:40:27.239431+00:00'
+    });
 
     await settle(
       () => chat.searchResults && chat.searchResults.length > 0,
@@ -681,6 +685,73 @@ describe('temba-contact-chat', () => {
     expect(chat.searchMode).to.equal(true);
     expect(chat.searchResults.length).to.equal(2);
     expect(chat.searchIndex).to.equal(0);
+  });
+
+  it('lands on a handed-off event the endpoint did not return', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    // the endpoint caps its matches, so hand off an event it didn't return -
+    // its uuid sorts between the two that it did
+    chat.startSearch('primus', {
+      uuid: '01997d74-bf67-7500-8e8a-200e41a90d71',
+      type: 'msg_received',
+      created_on: '2025-09-23T20:40:27.239432+00:00'
+    });
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+
+    // spliced into its newest-first spot, and navigated to
+    expect(chat.searchResults.length).to.equal(3);
+    expect(chat.searchResults[1].uuid).to.equal(
+      '01997d74-bf67-7500-8e8a-200e41a90d71'
+    );
+    expect(chat.searchIndex).to.equal(1);
+  });
+
+  it('scopes a ticket chat search to its ticket', async () => {
+    await loadStore();
+
+    // only a request carrying the ticket param is mocked, so results can
+    // only appear if the search was scoped server-side
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus&ticket=ticket-1/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    chat.currentTicket = {
+      uuid: 'ticket-1',
+      topic: { uuid: 'topic-1', name: 'General' },
+      assignee: null,
+      closed_on: null
+    } as any;
+    await chat.updateComplete;
+
+    chat.startSearch('primus');
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+
+    expect(chat.searchResults.length).to.equal(2);
   });
 
   it('clears stale results when the query changes or is emptied', async () => {
