@@ -75,6 +75,24 @@ describe('temba-date', () => {
     expect(dateString).to.equal('Dec 1');
   });
 
+  it('renders nothing for zero-value times', async () => {
+    // a contact that has never been seen can come through as go's zero time -
+    // that isn't a real date and shouldn't render as "2021 years ago"
+    const date = await getDate({
+      value: '0001-01-01T00:00:00.000000Z',
+      display: 'duration'
+    });
+    expect(date.shadowRoot.querySelector('.date')).to.equal(null);
+  });
+
+  it('renders nothing for unparseable values', async () => {
+    const date = await getDate({
+      value: 'not-a-date',
+      display: 'duration'
+    });
+    expect(date.shadowRoot.querySelector('.date')).to.equal(null);
+  });
+
   it('renders inline', async () => {
     const el: HTMLElement = await fixture(html`
       <span
