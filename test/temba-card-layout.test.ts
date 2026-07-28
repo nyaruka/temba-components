@@ -22,7 +22,11 @@ const createLayout = async (width: number, def = LAYOUT) => {
   const parentNode = document.createElement('div');
   parentNode.setAttribute('style', `width: ${width}px; display: flex;`);
   const layout = (await fixture(def, { parentNode })) as CardLayout;
-  await waitForCondition(() => layout.narrow === width < 800);
+  // the resize handles only appear once the layout has observed its own
+  // width, so wait for that as well as the mode
+  await waitForCondition(
+    () => layout.hostWidth > 0 && layout.narrow === width < 800
+  );
   await layout.updateComplete;
   return layout;
 };
@@ -222,14 +226,28 @@ describe('temba-card-layout', () => {
   describe('resizing', () => {
     const press = (handle: Element, x: number) => {
       handle.dispatchEvent(
-        new MouseEvent('mousedown', { clientX: x, bubbles: true })
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: x,
+          cancelable: true,
+          pointerType: 'mouse'
+        })
       );
     };
     const move = (x: number) => {
-      window.dispatchEvent(new MouseEvent('mousemove', { clientX: x }));
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: x,
+          cancelable: true,
+          pointerType: 'mouse'
+        })
+      );
     };
     const release = () => {
-      window.dispatchEvent(new MouseEvent('mouseup'));
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { pointerType: 'mouse' })
+      );
     };
 
     it('resizes the main view by dragging the divider', async () => {
@@ -324,6 +342,35 @@ describe('temba-card-layout', () => {
       const layout = await createLayout(600);
       expect(layout.narrow).to.be.true;
       expect(layout.shadowRoot.querySelector('.resize-handle')).to.not.exist;
+    });
+
+    it('stops tracking the pointer once the drag is released', async () => {
+      const layout = await createLayout(1000);
+      const handle = layout.shadowRoot.querySelector('.resize-handle');
+
+      press(handle, 600);
+      move(500);
+      await layout.updateComplete;
+      const released = layout.mainWidth;
+
+      release();
+      move(300);
+      await layout.updateComplete;
+      expect(layout.mainWidth).to.equal(released);
+    });
+
+    it('restores the body styles when removed mid-drag', async () => {
+      const layout = await createLayout(1000);
+      const handle = layout.shadowRoot.querySelector('.resize-handle');
+
+      press(handle, 600);
+      move(500);
+      expect(document.body.style.cursor).to.equal('col-resize');
+      expect(document.body.style.userSelect).to.equal('none');
+
+      layout.remove();
+      expect(document.body.style.cursor).to.equal('');
+      expect(document.body.style.userSelect).to.equal('');
     });
   });
 
@@ -445,10 +492,24 @@ describe('temba-card-layout', () => {
       const handle = layout.shadowRoot.querySelector('.resize-handle');
 
       handle.dispatchEvent(
-        new MouseEvent('mousedown', { clientX: 600, bubbles: true })
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: 600,
+          cancelable: true,
+          pointerType: 'mouse'
+        })
       );
-      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 500 }));
-      window.dispatchEvent(new MouseEvent('mouseup'));
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: 500,
+          cancelable: true,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { pointerType: 'mouse' })
+      );
 
       await waitForCondition(() => newPosts().length > 0);
       expect(newPosts()[0].contact_cards.width).to.equal(layout.mainWidth);

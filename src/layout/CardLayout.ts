@@ -73,7 +73,8 @@ export class CardLayout extends RapidElement {
 
       /* drag handle for resizing the main view — in card view it rides the
          gap between the main view and the card column, in tab view (.edge)
-         it rides the layout's right inset */
+         it rides the layout's right inset. touch-action keeps the browser
+         from claiming the drag as a scroll gesture on touch pointers. */
       .resize-handle {
         position: absolute;
         top: 0;
@@ -84,6 +85,8 @@ export class CardLayout extends RapidElement {
         z-index: 1;
         display: flex;
         justify-content: center;
+        touch-action: none;
+        outline: none;
       }
 
       .resize-handle.edge {
@@ -97,6 +100,7 @@ export class CardLayout extends RapidElement {
       }
 
       .resize-handle:hover .grip,
+      .resize-handle:focus-visible .grip,
       .resize-handle.active .grip {
         background: rgba(0, 0, 0, 0.08);
       }
@@ -168,11 +172,11 @@ export class CardLayout extends RapidElement {
   mainWidth = 0;
 
   // a drag on the resize handle is in progress
-  @property({ type: Boolean })
+  @property({ type: Boolean, attribute: false })
   resizing = false;
 
-  // last observed layout width — the tab view uses it to decide whether a
-  // resize could reach card mode at all before offering the handle
+  // last observed layout width — the handles use it to decide whether a
+  // resize could reach card mode at all before offering themselves
   @property({ type: Number, attribute: false })
   hostWidth = 0;
 
@@ -183,13 +187,37 @@ export class CardLayout extends RapidElement {
       : this.mainMinWidth + CardLayout.COLUMN_FOOTPRINT;
   }
 
+  /** The main width the layout actually renders. A width saved on a page
+   * with a lower floor still gets this page's minimum, but the floor is
+   * never written back into `mainWidth` — that would clobber the user's
+   * chosen width for the page it was chosen on. */
+  private getEffectiveMainWidth(): number {
+    return this.mainWidth > 0 ? Math.max(this.mainWidth, this.mainMinWidth) : 0;
+  }
+
   private getFlipWidth(): number {
     const min = this.getMinFlipWidth();
+    const width = this.getEffectiveMainWidth();
     // a user-sized main view raises the bar — the cards keep their
     // footprint rather than being squeezed beside it
-    return this.mainWidth > 0
-      ? Math.max(min, this.mainWidth + CardLayout.COLUMN_FOOTPRINT)
-      : min;
+    return width > 0 ? Math.max(min, width + CardLayout.COLUMN_FOOTPRINT) : min;
+  }
+
+  /** Whether the layout is wide enough for a resize to land anywhere
+   * useful: the main view at its minimum beside the card column. Narrower
+   * than that a drag can only strand the layout in tab mode — the flip
+   * width it would need exceeds the layout — so no handle is offered.
+   * Note this is deliberately independent of the breakpoint: an explicit
+   * low breakpoint says "prefer cards", it doesn't make dragging work. */
+  private isResizable(): boolean {
+    return this.hostWidth >= this.mainMinWidth + CardLayout.COLUMN_FOOTPRINT;
+  }
+
+  /** Width the main view occupies now — in tab view it fills the layout,
+   * so a resize from there starts at the full width. */
+  private getMainPaneWidth(): number {
+    const main = this.shadowRoot?.querySelector('.main') as HTMLElement;
+    return main ? main.offsetWidth : this.offsetWidth;
   }
 
   @property({ type: Array })
@@ -321,6 +349,11 @@ export class CardLayout extends RapidElement {
 
   private dragStartX = 0;
   private dragStartWidth = 0;
+  // whether the pointer moved far enough to change the width — a click on
+  // the handle shouldn't announce a resize or post settings
+  private dragChanged = false;
+  private previousBodyUserSelect = '';
+  private previousBodyCursor = '';
 
   // dragging past the widest fit pins the chat there; the pointer must
   // then travel this fraction of the card column before the layout flips
@@ -328,22 +361,33 @@ export class CardLayout extends RapidElement {
   // the cards pop back out
   static FLIP_DRAG_RATIO = 0.75;
 
-  private handleResizeStart = (event: MouseEvent) => {
+  private handleResizeStart = (event: PointerEvent) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    // a second pointer replaces rather than overlaps an active drag, so
+    // the captured body styles stay the ones we found before any drag
+    this.releaseResize();
     event.preventDefault();
     // in tab view the main pane fills the layout, so the drag starts from
     // the full width — the cards return only once the pointer has come
     // most of the way back across the column they will occupy
-    const main = this.shadowRoot.querySelector('.main') as HTMLElement;
     this.dragStartX = event.clientX;
-    this.dragStartWidth = main ? main.offsetWidth : this.offsetWidth;
+    this.dragStartWidth = this.getMainPaneWidth();
+    this.dragChanged = false;
     this.resizing = true;
+    this.previousBodyUserSelect = document.body.style.userSelect;
+    this.previousBodyCursor = document.body.style.cursor;
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'col-resize';
-    window.addEventListener('mousemove', this.handleResizeMove);
-    window.addEventListener('mouseup', this.handleResizeEnd);
+    // deliberately no setPointerCapture: a flip between card and tab mode
+    // mid-drag tears this handle out of the shadow DOM, which would end
+    // the capture and kill the drag — window listeners survive the flip
+    window.addEventListener('pointermove', this.handleResizeMove);
+    window.addEventListener('pointerup', this.handleResizeEnd);
+    window.addEventListener('pointercancel', this.handleResizeEnd);
   };
 
-  private handleResizeMove = (event: MouseEvent) => {
+  private handleResizeMove = (event: PointerEvent) => {
+    event.preventDefault();
     const width = this.offsetWidth;
     // the widest chat that still leaves the cards their footprint
     const max = width - CardLayout.COLUMN_FOOTPRINT;
@@ -359,24 +403,67 @@ export class CardLayout extends RapidElement {
 
     const flipZone = CardLayout.COLUMN_FOOTPRINT * CardLayout.FLIP_DRAG_RATIO;
     const returnZone = CardLayout.COLUMN_FOOTPRINT - flipZone;
+    let next: number;
     if (this.narrow) {
       // in tabs the cards return only once the pointer has dragged far
       // enough back; until then the width keeps tracking the pointer so
       // a release leaves tab mode in place
-      this.mainWidth =
-        dragged < max + returnZone ? Math.min(dragged, max) : dragged;
+      next = dragged < max + returnZone ? Math.min(dragged, max) : dragged;
     } else {
       // in cards the chat stops growing at the widest fit — the flip to
       // tabs waits until the pointer has crossed most of the card column
-      this.mainWidth =
-        dragged > max + flipZone ? dragged : Math.min(dragged, max);
+      next = dragged > max + flipZone ? dragged : Math.min(dragged, max);
+    }
+
+    if (next !== this.mainWidth) {
+      this.mainWidth = next;
+      this.dragChanged = true;
     }
   };
 
   private handleResizeEnd = () => {
+    const changed = this.dragChanged;
     this.releaseResize();
-    this.fireCustomEvent(CustomEventType.Resized, { width: this.mainWidth });
-    this.scheduleSave();
+    if (changed) {
+      this.fireCustomEvent(CustomEventType.Resized, { width: this.mainWidth });
+      this.scheduleSave();
+    }
+  };
+
+  /** Arrow keys resize in 10px steps (25px with Shift), the keyboard
+   * equivalent of dragging the separator. There is no hysteresis here —
+   * the width simply clamps to what fits, so a press from tab mode lands
+   * in card mode at the widest width the cards leave room for. */
+  private handleResizeKeydown = (event: KeyboardEvent) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    event.stopPropagation();
+    const step = event.shiftKey ? 25 : 10;
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const max = this.hostWidth - CardLayout.COLUMN_FOOTPRINT;
+    const width = Math.min(
+      Math.max(this.getMainPaneWidth() + direction * step, this.mainMinWidth),
+      max
+    );
+
+    (event.currentTarget as HTMLElement).setAttribute(
+      'aria-valuenow',
+      `${Math.round(width)}`
+    );
+    if (width !== this.mainWidth) {
+      this.mainWidth = width;
+      this.scheduleSave();
+    }
+  };
+
+  /** The rendered main width isn't known at render time (it may be the
+   * flex basis rather than a set width), so measure it when the separator
+   * takes focus and screen readers are about to announce it. */
+  private handleResizeFocus = (event: FocusEvent) => {
+    (event.currentTarget as HTMLElement).setAttribute(
+      'aria-valuenow',
+      `${Math.round(this.getMainPaneWidth())}`
+    );
   };
 
   private releaseResize() {
@@ -384,10 +471,11 @@ export class CardLayout extends RapidElement {
       return;
     }
     this.resizing = false;
-    document.body.style.userSelect = '';
-    document.body.style.cursor = '';
-    window.removeEventListener('mousemove', this.handleResizeMove);
-    window.removeEventListener('mouseup', this.handleResizeEnd);
+    document.body.style.userSelect = this.previousBodyUserSelect;
+    document.body.style.cursor = this.previousBodyCursor;
+    window.removeEventListener('pointermove', this.handleResizeMove);
+    window.removeEventListener('pointerup', this.handleResizeEnd);
+    window.removeEventListener('pointercancel', this.handleResizeEnd);
   }
 
   /**
@@ -527,10 +615,10 @@ export class CardLayout extends RapidElement {
     }
     if (changes.has('mainWidth')) {
       // an undersized saved width (e.g. saved on a page with a lower
-      // floor) gets the same floor as a drag
-      if (this.mainWidth > 0) {
-        this.mainWidth = Math.max(this.mainWidth, this.mainMinWidth);
-        this.style.setProperty('--main-width', `${this.mainWidth}px`);
+      // floor) renders at this page's floor without being rewritten
+      const width = this.getEffectiveMainWidth();
+      if (width > 0) {
+        this.style.setProperty('--main-width', `${width}px`);
       } else {
         this.style.removeProperty('--main-width');
       }
@@ -550,7 +638,10 @@ export class CardLayout extends RapidElement {
     }
   }
 
-  private renderResizeHandle(edge = false): TemplateResult {
+  private renderResizeHandle(edge = false): TemplateResult | null {
+    if (!this.isResizable()) {
+      return null;
+    }
     return html`
       <div
         class=${getClasses({
@@ -558,7 +649,15 @@ export class CardLayout extends RapidElement {
           edge,
           active: this.resizing
         })}
-        @mousedown=${this.handleResizeStart}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize chat"
+        aria-valuemin=${this.mainMinWidth}
+        aria-valuemax=${this.hostWidth - CardLayout.COLUMN_FOOTPRINT}
+        tabindex="0"
+        @pointerdown=${this.handleResizeStart}
+        @keydown=${this.handleResizeKeydown}
+        @focus=${this.handleResizeFocus}
       >
         <div class="grip"></div>
       </div>
@@ -567,9 +666,6 @@ export class CardLayout extends RapidElement {
 
   public render(): TemplateResult {
     if (this.narrow) {
-      // resizing out of tab mode only works when the layout is wide enough
-      // to reach card mode at some main-view width — otherwise no handle
-      const resizable = this.hostWidth >= this.getMinFlipWidth();
       return html`
         <temba-tabs .focusedName=${this.compactTabs}>
           <temba-tab name=${this.mainName} icon=${this.mainIcon}>
@@ -588,7 +684,7 @@ export class CardLayout extends RapidElement {
             `
           )}
         </temba-tabs>
-        ${resizable ? this.renderResizeHandle(true) : null}
+        ${this.renderResizeHandle(true)}
       `;
     }
 
