@@ -739,6 +739,44 @@ describe('temba-card-layout', () => {
       expect(newPosts()[0].contact_cards.width).to.equal(500);
     });
 
+    it('renders a sub-floor saved width at the floor without rewriting it', async () => {
+      // a width chosen on a page with a lower main-min-width still renders
+      // at this page's floor, but the stored value must survive a save so
+      // the page it was chosen on keeps it
+      const { layout, newPosts } =
+        await createPersistentLayout('{"width": 300}');
+      expect(layout.mainWidth).to.equal(300);
+      expect(layout.narrow).to.be.false;
+
+      const main = layout.shadowRoot.querySelector('.main') as HTMLElement;
+      expect(main.offsetWidth).to.equal(layout.mainMinWidth);
+
+      clickHeader(layout.querySelector('#card-a') as Card);
+      await waitForCondition(() => newPosts().length > 0);
+      expect(newPosts()[0].contact_cards.width).to.equal(300);
+    });
+
+    it('returns to the automatic width on double-click', async () => {
+      const { layout, newPosts } =
+        await createPersistentLayout('{"width": 500}');
+      expect(layout.mainWidth).to.equal(500);
+
+      const handle = layout.shadowRoot.querySelector('.resize-handle');
+      const resized = oneEvent(layout, CustomEventType.Resized, false);
+      handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+      const event = await resized;
+      expect(event.detail.width).to.equal(0);
+      expect(layout.mainWidth).to.equal(0);
+      await layout.updateComplete;
+      expect(layout.style.getPropertyValue('--main-width')).to.equal('');
+
+      // an explicit reset clears the stored width rather than carrying
+      // it through
+      await waitForCondition(() => newPosts().length > 0);
+      expect(newPosts()[0].contact_cards.width).to.be.undefined;
+    });
+
     it('posts the width after a resize drag', async () => {
       const { layout, newPosts } = await createPersistentLayout('{}');
       const handle = layout.shadowRoot.querySelector('.resize-handle');

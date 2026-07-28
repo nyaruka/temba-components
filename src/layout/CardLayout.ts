@@ -31,7 +31,8 @@ export interface CardSettings {
  * only a subset of the cards merges its relative order into the full saved
  * order rather than clobbering the position of cards it doesn't show, and a
  * page that never sets a width re-posts the saved one rather than clearing
- * it.
+ * it. Double-clicking the resize handle returns to the automatic width and
+ * clears the saved one.
  */
 export class CardLayout extends RapidElement {
   static get styles() {
@@ -560,6 +561,22 @@ export class CardLayout extends RapidElement {
     }
   };
 
+  /** Double-click returns the layout to the automatic width — the one
+   * escape hatch from a chosen width. An explicit reset also clears the
+   * stored width (unlike a passive save from a page rendering at the
+   * automatic width, which carries the stored value through). The two
+   * clicks that make up the double-click commit nothing on their own —
+   * a press with no travel is not a resize. */
+  private handleResizeReset = () => {
+    if (this.mainWidth === 0 && this.savedWidth === 0) {
+      return;
+    }
+    this.mainWidth = 0;
+    this.savedWidth = 0;
+    this.fireCustomEvent(CustomEventType.Resized, { width: 0 });
+    this.scheduleSave();
+  };
+
   private releaseResize() {
     if (!this.resizing) {
       return;
@@ -764,6 +781,7 @@ export class CardLayout extends RapidElement {
         aria-valuenow=${this.getAnnouncedWidth()}
         tabindex="0"
         @pointerdown=${this.handleResizeStart}
+        @dblclick=${this.handleResizeReset}
         @keydown=${this.handleResizeKeydown}
       >
         <div class="grip"></div>
