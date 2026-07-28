@@ -385,7 +385,7 @@ export class ContactDetails extends ContactStoreElement {
     this.setSaveState(key, 'saving');
     try {
       const response = await this.store.postJSON(
-        `${this.endpoint}${contactUuid}`,
+        `${this.writeEndpoint}${contactUuid}`,
         payload
       );
       if (response.status !== 200) {

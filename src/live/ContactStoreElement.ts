@@ -23,6 +23,11 @@ export class ContactStoreElement extends EndpointMonitorElement {
   @property({ type: String })
   endpoint = '/api/v2/contacts.json?expand_urns=true&urn_order=priority&uuid=';
 
+  // Writes go through the internal API, which responds with the same shape
+  // as the read endpoint above.
+  @property({ type: String })
+  writeEndpoint = '/api/internal/contacts.json?uuid=';
+
   prepareData(data: any) {
     if (data) {
       data = Array.isArray(data) ? data[0] : data;
@@ -55,7 +60,7 @@ export class ContactStoreElement extends EndpointMonitorElement {
     // clear our cache so we don't have any races
     this.store.removeFromCache(`${this.endpoint}${this.contact}`);
     return this.store
-      .postJSON(`${this.endpoint}${this.contact}`, payload)
+      .postJSON(`${this.writeEndpoint}${this.contact}`, payload)
       .then((response) => {
         this.setContact(response.json);
       });

@@ -37,7 +37,7 @@ const getContactPosts = () =>
     .filter(
       (call) =>
         call.args[1]?.method === 'POST' &&
-        String(call.args[0]).includes('/api/v2/contacts.json')
+        String(call.args[0]).includes('/api/internal/contacts.json')
     )
     .map((call) => JSON.parse(call.args[1].body));
 
@@ -290,13 +290,10 @@ describe(TAG, () => {
       contact: CONTACT_ID,
       editable: true
     });
-    mockPOST(
-      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=/,
-      {
-        ...contactDetails.data,
-        status: 'blocked'
-      }
-    );
+    mockPOST(/\/api\/internal\/contacts\.json\?uuid=/, {
+      ...contactDetails.data,
+      status: 'blocked'
+    });
 
     await contactDetails.handleStatusChanged({
       currentTarget: { values: [{ value: 'blocked' }] }
@@ -355,14 +352,11 @@ describe(TAG, () => {
       contact: CONTACT_ID,
       editable: true
     });
-    mockPOST(
-      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=/,
-      {
-        ...contactDetails.data,
-        name: 'David Matthews',
-        language: 'spa'
-      }
-    );
+    mockPOST(/\/api\/internal\/contacts\.json\?uuid=/, {
+      ...contactDetails.data,
+      name: 'David Matthews',
+      language: 'spa'
+    });
 
     const name = contactDetails.shadowRoot.querySelector(
       'temba-contact-field[key="name"]'
@@ -608,13 +602,10 @@ describe(TAG, () => {
       editable: true
     };
     const contactDetails = await getContactDetails(attrs);
-    mockPOST(
-      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=/,
-      {
-        ...contactDetails.data,
-        status: 'blocked'
-      }
-    );
+    mockPOST(/\/api\/internal\/contacts\.json\?uuid=/, {
+      ...contactDetails.data,
+      status: 'blocked'
+    });
 
     await contactDetails.handleStatusChanged({
       currentTarget: { values: [{ value: 'blocked' }] }
@@ -673,13 +664,10 @@ describe(TAG, () => {
     });
     contactDetails.schemes = SCHEMES;
     await contactDetails.updateComplete;
-    mockPOST(
-      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=/,
-      {
-        ...contactDetails.data,
-        urns: contactDetails.data.urns
-      }
-    );
+    mockPOST(/\/api\/internal\/contacts\.json\?uuid=/, {
+      ...contactDetails.data,
+      urns: contactDetails.data.urns
+    });
 
     (
       contactDetails.shadowRoot.querySelector(
@@ -946,13 +934,10 @@ describe(TAG, () => {
         name: 'Reminders'
       }
     ];
-    mockPOST(
-      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=/,
-      {
-        ...contactDetails.data,
-        groups: selected
-      }
-    );
+    mockPOST(/\/api\/internal\/contacts\.json\?uuid=/, {
+      ...contactDetails.data,
+      groups: selected
+    });
 
     await contactDetails.handleGroupsChanged({
       currentTarget: { values: selected }

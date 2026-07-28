@@ -11,6 +11,7 @@ import {
 const TAG = 'temba-contact-fields';
 const getFields = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
+  attrs['writeEndpoint'] = '/test-assets/contacts/';
   const fields = (await getComponent(TAG, attrs, '', 600)) as ContactFields;
 
   // wait for our contact data to load
@@ -41,7 +42,7 @@ describe(TAG, () => {
     data.groups.forEach((group) => {
       delete group['is_dynamic'];
     });
-    // field updates post to the same endpoint the contact was fetched from
+    // field updates post to the write endpoint
     mockPOST(/\/test-assets\/contacts\/contact-dave-active/, data);
 
     // update our fields
