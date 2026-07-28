@@ -53,6 +53,30 @@ describe('temba-menu support item', () => {
     expect(dropdown.open, 'popup should close on link click').to.equal(false);
   });
 
+  it('delegates href link navigation to the host', async () => {
+    const menu: TembaMenu = await getMenu({
+      endpoint: '/test-assets/menu/menu-support.json'
+    });
+
+    let clickedItem: any = null;
+    menu.addEventListener(CustomEventType.ButtonClicked, (event: any) => {
+      clickedItem = event.detail.item;
+    });
+
+    // the anchor carries real attributes for affordance and middle-click
+    const docsLink = menu.getDiv('#menu-help_docs') as HTMLElement;
+    expect(docsLink.getAttribute('href')).to.equal('https://help.textit.com');
+    expect(docsLink.getAttribute('target')).to.equal('_blank');
+
+    // clicks are delegated to the host to navigate, like all menu items
+    docsLink.click();
+    await menu.updateComplete;
+
+    expect(clickedItem, 'button clicked should fire for href links').to.exist;
+    expect(clickedItem.href).to.equal('https://help.textit.com');
+    expect(clickedItem.target).to.equal('_blank');
+  });
+
   it('invokes the -temba-button-clicked attribute handler like frame.html', async () => {
     // replicate frame.js handleMenuClicked + frame_top.html listener
     let supportShown = false;
