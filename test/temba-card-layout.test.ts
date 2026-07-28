@@ -446,6 +446,14 @@ describe('temba-card-layout', () => {
         arrow(handle, 'ArrowRight');
         await layout.updateComplete;
         expect(layout.mainWidth).to.equal(475);
+
+        // rapid presses in the same task each take a full step — stepping
+        // works from state, not from a measurement that hasn't flushed
+        arrow(handle, 'ArrowLeft');
+        arrow(handle, 'ArrowLeft');
+        arrow(handle, 'ArrowLeft');
+        await layout.updateComplete;
+        expect(layout.mainWidth).to.equal(445);
       });
 
       it('grows no further than the widest fit', async () => {
@@ -495,11 +503,18 @@ describe('temba-card-layout', () => {
         const handle = layout.shadowRoot.querySelector('.resize-handle.edge');
         arrow(handle, 'ArrowLeft');
         await waitForCondition(() => !layout.narrow);
+        await layout.updateComplete;
 
         // one shrink press lands at the widest width the cards leave room
         // for — the keyboard needs no drag-style hysteresis
         expect(layout.mainWidth).to.equal(1000 - CardLayout.COLUMN_FOOTPRINT);
         expect(layout.shadowRoot.querySelector('temba-card-stack')).to.exist;
+
+        // the flip rebuilt the handle from the other template — focus
+        // follows it so the keyboard user isn't stranded
+        expect(layout.shadowRoot.activeElement).to.equal(
+          layout.shadowRoot.querySelector('.resize-handle')
+        );
       });
     });
 

@@ -23,13 +23,15 @@ export interface CardSettings {
  * Panels are declared as slotted temba-cards with an id; the main view goes
  * in slot="main".
  *
- * The layout can persist card order and collapsed state itself: seed it
- * with `settings` and point `settings-endpoint` at a POST endpoint that
- * merges top-level keys (rapidpro's user settings view). Saves are
- * debounced and posted as `{[settingsKey]: {order, collapsed}}`. The saved
- * lists are the union across pages — a page rendering only a subset of the
- * cards merges its relative order into the full saved order rather than
- * clobbering the position of cards it doesn't show.
+ * The layout can persist card order, collapsed state and the chosen main
+ * width itself: seed it with `settings` and point `settings-endpoint` at a
+ * POST endpoint that merges top-level keys (rapidpro's user settings view).
+ * Saves are debounced and posted as `{[settingsKey]: {order, collapsed,
+ * width}}`. The saved state is the union across pages — a page rendering
+ * only a subset of the cards merges its relative order into the full saved
+ * order rather than clobbering the position of cards it doesn't show, and a
+ * page that never sets a width re-posts the saved one rather than clearing
+ * it.
  */
 export class CardLayout extends RapidElement {
   static get styles() {
@@ -197,9 +199,12 @@ export class CardLayout extends RapidElement {
   }
 
   /** The main width the layout actually renders. A width saved on a page
-   * with a lower floor still gets this page's minimum, but the floor is
-   * never written back into `mainWidth` — that would clobber the user's
-   * chosen width for the page it was chosen on. */
+   * with a lower floor still gets this page's minimum, but merely
+   * rendering at that floor never writes it back into `mainWidth` — that
+   * would clobber the user's chosen width for the page it was chosen on.
+   * An explicit resize here (drag or arrow key) does step from the floor
+   * and does commit: the user is choosing a width on this page, so this
+   * page's minimum is the right thing to start from. */
   private getEffectiveMainWidth(): number {
     return this.mainWidth > 0 ? Math.max(this.mainWidth, this.mainMinWidth) : 0;
   }
@@ -281,6 +286,10 @@ export class CardLayout extends RapidElement {
   // pages show, so a save from this page can't clobber their state
   private savedOrder: string[] = [];
   private savedCollapsed: string[] = [];
+  // the last width we know is stored — a page where the user never sets a
+  // width re-posts this rather than dropping the key and clearing the
+  // width chosen on another page
+  private savedWidth = 0;
 
   // cards whose collapsed state has been seeded from settings — seed once
   // so a later mutation can't undo the user's toggles
@@ -354,9 +363,13 @@ export class CardLayout extends RapidElement {
       this.hostWidth = width;
       this.narrow = width < this.getFlipWidth();
       this.compactTabs = width < CardLayout.COMPACT_TABS_WIDTH;
-      // keep the separator's announced width current without measuring
-      // on every render
-      this.mainPaneWidth = this.getMainPaneWidth();
+      // keep the separator's announced width current without measuring on
+      // every render — only while the width is automatic, since a chosen
+      // width is announced from state and measuring here would force a
+      // layout on every frame of a drag
+      if (this.mainWidth === 0) {
+        this.mainPaneWidth = this.getMainPaneWidth();
+      }
     }
   }
 
@@ -394,12 +407,16 @@ export class CardLayout extends RapidElement {
   // the chosen width when the drag began, restored if it is cancelled
   private dragStartMainWidth = 0;
   // whether the pointer has actually travelled — a click on the handle
-  // (a trackpad tap can fire a zero-delta pointermove) must not commit a
-  // width, which would also turn an automatic width into a chosen one
+  // (a trackpad tap can fire a pointermove with a pixel or two of drift)
+  // must not commit a width, which would also turn an automatic width
+  // into a chosen one
   private dragMoved = false;
   // whether the pointer moved far enough to change the width — a click on
   // the handle shouldn't announce a resize or post settings
   private dragChanged = false;
+  // a keyboard step is pending — if it flips the mode, focus follows the
+  // rebuilt handle
+  private refocusHandle = false;
   private previousBodyUserSelect = '';
   private previousBodyCursor = '';
 
@@ -408,6 +425,10 @@ export class CardLayout extends RapidElement {
   // to tabs — and come the complementary fraction back across it before
   // the cards pop back out
   static FLIP_DRAG_RATIO = 0.75;
+
+  // travel (px) before a press counts as a drag — a click on the handle
+  // carries a pixel or two of drift, which must not commit a width
+  static DRAG_THRESHOLD = 3;
 
   private handleResizeStart = (event: PointerEvent) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -438,14 +459,20 @@ export class CardLayout extends RapidElement {
 
   private handleResizeMove = (event: PointerEvent) => {
     event.preventDefault();
-    if (event.clientX !== this.dragStartX) {
+    if (
+      Math.abs(event.clientX - this.dragStartX) >= CardLayout.DRAG_THRESHOLD
+    ) {
       this.dragMoved = true;
     }
-    // a press with no travel isn't a resize — leave the width alone (in
-    // particular, don't turn an automatic width into a chosen one)
+    // a press that hasn't really travelled isn't a resize — leave the
+    // width alone (in particular, don't turn an automatic width into a
+    // chosen one, which would also move the flip point for good)
     if (!this.dragMoved) {
       return;
     }
+    // deliberately the live width rather than the lagged `hostWidth`: mid
+    // window-resize the pointer is working against the layout as it is
+    // now, not as the resize observer last saw it
     const width = this.offsetWidth;
     // the widest chat that still leaves the cards their footprint
     const max = width - CardLayout.COLUMN_FOOTPRINT;
@@ -489,7 +516,8 @@ export class CardLayout extends RapidElement {
   };
 
   /** A cancelled gesture (the browser or OS taking the pointer away) is
-   * not a resize — put the width back where the drag found it. */
+   * not a resize — put the width back where the drag found it. This is a
+   * deliberate divergence from ContentList, which commits on cancel. */
   private handleResizeCancel = () => {
     const changed = this.dragChanged;
     this.releaseResize();
@@ -508,7 +536,10 @@ export class CardLayout extends RapidElement {
     event.stopPropagation();
     const step = event.shiftKey ? 25 : 10;
     const direction = event.key === 'ArrowRight' ? 1 : -1;
-    const current = this.getMainPaneWidth();
+    // step from state when a width is chosen — a measurement here would
+    // still read the previous step until its render has flushed, folding
+    // rapid same-task presses into one
+    const current = this.getEffectiveMainWidth() || this.getMainPaneWidth();
     const width = this.clampResizeWidth(current + direction * step);
 
     // in tab view the pane already spans more than the widest card-mode
@@ -520,19 +551,13 @@ export class CardLayout extends RapidElement {
 
     if (width !== this.mainWidth) {
       this.mainWidth = width;
+      // if this press flips the mode, the handle is rebuilt from the
+      // other template and focus falls to the body — move it to the new
+      // handle so the keyboard user isn't stranded
+      this.refocusHandle = true;
       this.fireCustomEvent(CustomEventType.Resized, { width });
       this.scheduleSave();
     }
-  };
-
-  /** The template binding keeps aria-valuenow live from the last measured
-   * pane width; refine it with a fresh measurement when the separator
-   * takes focus and screen readers are about to announce it. */
-  private handleResizeFocus = (event: FocusEvent) => {
-    (event.currentTarget as HTMLElement).setAttribute(
-      'aria-valuenow',
-      `${Math.round(this.clampResizeWidth(this.getMainPaneWidth()))}`
-    );
   };
 
   private releaseResize() {
@@ -656,8 +681,12 @@ export class CardLayout extends RapidElement {
       order: this.savedOrder,
       collapsed: this.savedCollapsed
     };
-    if (this.mainWidth > 0) {
-      settings.width = Math.round(this.mainWidth);
+    // an automatic width on this page doesn't mean "no width anywhere" —
+    // carry the stored one through so a save from here doesn't clear it
+    const width = Math.round(this.mainWidth) || this.savedWidth;
+    if (width > 0) {
+      settings.width = width;
+      this.savedWidth = width;
     }
 
     postJSON(this.settingsEndpoint, {
@@ -677,8 +706,9 @@ export class CardLayout extends RapidElement {
       if (this.savedOrder.length > 0) {
         this.order = this.savedOrder;
       }
-      if (this.settings.width > 0) {
-        this.mainWidth = this.settings.width;
+      this.savedWidth = this.settings.width > 0 ? this.settings.width : 0;
+      if (this.savedWidth > 0) {
+        this.mainWidth = this.savedWidth;
       }
       this.applyCollapsed();
     }
@@ -705,6 +735,14 @@ export class CardLayout extends RapidElement {
     if (changes.has('order')) {
       this.applyOrder();
     }
+    if (this.refocusHandle) {
+      this.refocusHandle = false;
+      if (changes.has('narrow')) {
+        (
+          this.shadowRoot.querySelector('.resize-handle') as HTMLElement
+        )?.focus();
+      }
+    }
   }
 
   private renderResizeHandle(edge = false): TemplateResult | null {
@@ -727,7 +765,6 @@ export class CardLayout extends RapidElement {
         tabindex="0"
         @pointerdown=${this.handleResizeStart}
         @keydown=${this.handleResizeKeydown}
-        @focus=${this.handleResizeFocus}
       >
         <div class="grip"></div>
       </div>
