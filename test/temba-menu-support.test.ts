@@ -19,7 +19,7 @@ const getMenu = async (attrs: any = {}, width = 0) => {
 };
 
 describe('temba-menu support item', () => {
-  it('fires button clicked for event items', async () => {
+  it('fires button clicked for link items in popups', async () => {
     const menu: TembaMenu = await getMenu({
       endpoint: '/test-assets/menu/menu-support.json'
     });
@@ -36,11 +36,21 @@ describe('temba-menu support item', () => {
     const style = window.getComputedStyle(supportItem);
     expect(style.display).to.not.equal('none');
 
+    // open the popup, then click the chat link
     supportItem.click();
+    await menu.updateComplete;
+    const dropdown = menu.getDiv('#dd-support') as any;
+    expect(dropdown.open, 'popup should open on toggle click').to.equal(true);
+
+    const chatLink = menu.getDiv('#menu-open_chat') as HTMLElement;
+    expect(chatLink, 'chat link should render').to.exist;
+
+    chatLink.click();
     await menu.updateComplete;
 
     expect(clickedItem, 'button clicked event should fire').to.exist;
     expect(clickedItem.event).to.equal('temba-show-support');
+    expect(dropdown.open, 'popup should close on link click').to.equal(false);
   });
 
   it('invokes the -temba-button-clicked attribute handler like frame.html', async () => {
@@ -61,8 +71,8 @@ describe('temba-menu support item', () => {
       '-temba-button-clicked': 'handleMenuClicked(event)'
     });
 
-    const supportItem = menu.getDiv('#menu-support') as HTMLElement;
-    supportItem.click();
+    const chatLink = menu.getDiv('#menu-open_chat') as HTMLElement;
+    chatLink.click();
     await menu.updateComplete;
 
     expect(supportShown, 'temba-show-support should be dispatched').to.equal(
@@ -83,7 +93,7 @@ describe('temba-menu support item', () => {
       expect(window.getComputedStyle(hamburger).display).to.not.equal('none');
 
       // everything else in the header should be hidden, including popups
-      const support = menu.getDiv('#menu-support') as HTMLElement;
+      const support = menu.getDiv('#dd-support') as HTMLElement;
       expect(window.getComputedStyle(support).display).to.equal('none');
 
       const notifications = menu.getDiv('#dd-notifications') as HTMLElement;
