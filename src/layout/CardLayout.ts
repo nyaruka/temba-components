@@ -511,11 +511,6 @@ export class CardLayout extends RapidElement {
     const current = this.getMainPaneWidth();
     const width = this.clampResizeWidth(current + direction * step);
 
-    (event.currentTarget as HTMLElement).setAttribute(
-      'aria-valuenow',
-      `${Math.round(width)}`
-    );
-
     // in tab view the pane already spans more than the widest card-mode
     // fit, so there is nothing to grow into — growing must not shrink the
     // pane (and pop the cards back out) as a side effect of the clamp
@@ -725,7 +720,7 @@ export class CardLayout extends RapidElement {
         })}
         role="separator"
         aria-orientation="vertical"
-        aria-label="Resize chat"
+        aria-label="Resize ${this.mainName}"
         aria-valuemin=${this.mainMinWidth}
         aria-valuemax=${this.getResizeMax()}
         aria-valuenow=${this.getAnnouncedWidth()}

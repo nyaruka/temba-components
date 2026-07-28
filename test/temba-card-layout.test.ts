@@ -485,6 +485,22 @@ describe('temba-card-layout', () => {
         expect(layout.mainWidth).to.equal(700);
         expect(layout.narrow).to.be.true;
       });
+
+      it('shrinks from tab mode straight into card mode', async () => {
+        const layout = await createLayout(1000);
+        layout.mainWidth = 700;
+        await waitForCondition(() => layout.narrow);
+        await layout.updateComplete;
+
+        const handle = layout.shadowRoot.querySelector('.resize-handle.edge');
+        arrow(handle, 'ArrowLeft');
+        await waitForCondition(() => !layout.narrow);
+
+        // one shrink press lands at the widest width the cards leave room
+        // for — the keyboard needs no drag-style hysteresis
+        expect(layout.mainWidth).to.equal(1000 - CardLayout.COLUMN_FOOTPRINT);
+        expect(layout.shadowRoot.querySelector('temba-card-stack')).to.exist;
+      });
     });
 
     describe('aria', () => {
