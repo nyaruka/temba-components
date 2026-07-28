@@ -2,7 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
-import { postJSON } from '../utils';
+import { getClasses, postJSON } from '../utils';
 import { Card } from './Card';
 
 /** Saved card layout state — order and collapsed lists may reference cards
@@ -10,6 +10,7 @@ import { Card } from './Card';
 export interface CardSettings {
   order?: string[];
   collapsed?: string[];
+  width?: number;
 }
 
 /**
@@ -38,6 +39,8 @@ export class CardLayout extends RapidElement {
         flex-direction: column;
         flex-grow: 1;
         min-height: 0;
+        /* anchors the tab-view resize handle on the right inset */
+        position: relative;
       }
 
       /* in tab view there is no card column running to the edge — the
@@ -64,6 +67,38 @@ export class CardLayout extends RapidElement {
         flex-direction: column;
         padding-top: var(--layout-spacing, 8px);
         padding-bottom: var(--layout-spacing, 8px);
+        /* anchors the card-view resize handle in the gap to our right */
+        position: relative;
+      }
+
+      /* drag handle for resizing the main view — in card view it rides the
+         gap between the main view and the card column, in tab view (.edge)
+         it rides the layout's right inset */
+      .resize-handle {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: calc(var(--layout-spacing, 8px) * -1 - 1px);
+        width: calc(var(--layout-spacing, 8px) + 2px);
+        cursor: col-resize;
+        z-index: 1;
+        display: flex;
+        justify-content: center;
+      }
+
+      .resize-handle.edge {
+        right: 0;
+      }
+
+      .resize-handle .grip {
+        width: 3px;
+        border-radius: 2px;
+        background: transparent;
+      }
+
+      .resize-handle:hover .grip,
+      .resize-handle.active .grip {
+        background: rgba(0, 0, 0, 0.08);
       }
 
       slot[name='main']::slotted(*) {
@@ -126,10 +161,35 @@ export class CardLayout extends RapidElement {
   // sync with the .column CSS defaults
   static COLUMN_FOOTPRINT = 376;
 
-  private getFlipWidth(): number {
+  // user-chosen main-view width in px (0 = automatic). Dragging the resize
+  // handle sets it, and it participates in the flip: the cards always keep
+  // their footprint, so a wider chat flips to tabs sooner
+  @property({ type: Number, attribute: false })
+  mainWidth = 0;
+
+  // a drag on the resize handle is in progress
+  @property({ type: Boolean })
+  resizing = false;
+
+  // last observed layout width — the tab view uses it to decide whether a
+  // resize could reach card mode at all before offering the handle
+  @property({ type: Number, attribute: false })
+  hostWidth = 0;
+
+  /** The narrowest layout that can show card mode at any main-view width. */
+  private getMinFlipWidth(): number {
     return this.breakpoint > 0
       ? this.breakpoint
       : this.mainMinWidth + CardLayout.COLUMN_FOOTPRINT;
+  }
+
+  private getFlipWidth(): number {
+    const min = this.getMinFlipWidth();
+    // a user-sized main view raises the bar — the cards keep their
+    // footprint rather than being squeezed beside it
+    return this.mainWidth > 0
+      ? Math.max(min, this.mainWidth + CardLayout.COLUMN_FOOTPRINT)
+      : min;
   }
 
   @property({ type: Array })
@@ -216,15 +276,18 @@ export class CardLayout extends RapidElement {
     this.resizer = new ResizeObserver(() => {
       // defer out of the observer callback — flipping modes re-renders and
       // resizes us, which would otherwise trip the browser's RO loop guard
-      requestAnimationFrame(() => {
-        const width = this.offsetWidth;
-        if (width > 0) {
-          this.narrow = width < this.getFlipWidth();
-          this.compactTabs = width < CardLayout.COMPACT_TABS_WIDTH;
-        }
-      });
+      requestAnimationFrame(() => this.updateModes());
     });
     this.resizer.observe(this);
+  }
+
+  private updateModes() {
+    const width = this.offsetWidth;
+    if (width > 0) {
+      this.hostWidth = width;
+      this.narrow = width < this.getFlipWidth();
+      this.compactTabs = width < CardLayout.COMPACT_TABS_WIDTH;
+    }
   }
 
   public disconnectedCallback(): void {
@@ -235,6 +298,7 @@ export class CardLayout extends RapidElement {
     this.removeEventListener('toggle', this.handleToggle);
     this.resizer?.disconnect();
     this.mutations?.disconnect();
+    this.releaseResize();
 
     // flush a pending save so navigating away doesn't drop it
     if (this.saveTimeout) {
@@ -253,6 +317,77 @@ export class CardLayout extends RapidElement {
 
   public getIds(): string[] {
     return this.getCards().map((card) => card.id);
+  }
+
+  private dragStartX = 0;
+  private dragStartWidth = 0;
+
+  // dragging past the widest fit pins the chat there; the pointer must
+  // then travel this fraction of the card column before the layout flips
+  // to tabs — and come the complementary fraction back across it before
+  // the cards pop back out
+  static FLIP_DRAG_RATIO = 0.75;
+
+  private handleResizeStart = (event: MouseEvent) => {
+    event.preventDefault();
+    // in tab view the main pane fills the layout, so the drag starts from
+    // the full width — the cards return only once the pointer has come
+    // most of the way back across the column they will occupy
+    const main = this.shadowRoot.querySelector('.main') as HTMLElement;
+    this.dragStartX = event.clientX;
+    this.dragStartWidth = main ? main.offsetWidth : this.offsetWidth;
+    this.resizing = true;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+    window.addEventListener('mousemove', this.handleResizeMove);
+    window.addEventListener('mouseup', this.handleResizeEnd);
+  };
+
+  private handleResizeMove = (event: MouseEvent) => {
+    const width = this.offsetWidth;
+    // the widest chat that still leaves the cards their footprint
+    const max = width - CardLayout.COLUMN_FOOTPRINT;
+    // where the pointer says the chat edge should be — it can run past
+    // the widest fit without the chat following
+    const dragged = Math.min(
+      Math.max(
+        this.dragStartWidth + event.clientX - this.dragStartX,
+        this.mainMinWidth
+      ),
+      width
+    );
+
+    const flipZone = CardLayout.COLUMN_FOOTPRINT * CardLayout.FLIP_DRAG_RATIO;
+    const returnZone = CardLayout.COLUMN_FOOTPRINT - flipZone;
+    if (this.narrow) {
+      // in tabs the cards return only once the pointer has dragged far
+      // enough back; until then the width keeps tracking the pointer so
+      // a release leaves tab mode in place
+      this.mainWidth =
+        dragged < max + returnZone ? Math.min(dragged, max) : dragged;
+    } else {
+      // in cards the chat stops growing at the widest fit — the flip to
+      // tabs waits until the pointer has crossed most of the card column
+      this.mainWidth =
+        dragged > max + flipZone ? dragged : Math.min(dragged, max);
+    }
+  };
+
+  private handleResizeEnd = () => {
+    this.releaseResize();
+    this.fireCustomEvent(CustomEventType.Resized, { width: this.mainWidth });
+    this.scheduleSave();
+  };
+
+  private releaseResize() {
+    if (!this.resizing) {
+      return;
+    }
+    this.resizing = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    window.removeEventListener('mousemove', this.handleResizeMove);
+    window.removeEventListener('mouseup', this.handleResizeEnd);
   }
 
   /**
@@ -360,11 +495,16 @@ export class CardLayout extends RapidElement {
       .filter((id) => !present.includes(id))
       .concat(collapsed);
 
+    const settings: CardSettings = {
+      order: this.savedOrder,
+      collapsed: this.savedCollapsed
+    };
+    if (this.mainWidth > 0) {
+      settings.width = Math.round(this.mainWidth);
+    }
+
     postJSON(this.settingsEndpoint, {
-      [this.settingsKey]: {
-        order: this.savedOrder,
-        collapsed: this.savedCollapsed
-      }
+      [this.settingsKey]: settings
     }).catch(() => {
       // a failed save isn't worth interrupting the user over — the next
       // change will retry with the same merged state
@@ -380,7 +520,23 @@ export class CardLayout extends RapidElement {
       if (this.savedOrder.length > 0) {
         this.order = this.savedOrder;
       }
+      if (this.settings.width > 0) {
+        this.mainWidth = this.settings.width;
+      }
       this.applyCollapsed();
+    }
+    if (changes.has('mainWidth')) {
+      // an undersized saved width (e.g. saved on a page with a lower
+      // floor) gets the same floor as a drag
+      if (this.mainWidth > 0) {
+        this.mainWidth = Math.max(this.mainWidth, this.mainMinWidth);
+        this.style.setProperty('--main-width', `${this.mainWidth}px`);
+      } else {
+        this.style.removeProperty('--main-width');
+      }
+      // the flip point tracks the user width — resizing wide enough to
+      // crowd out the cards flips to tabs, and back again
+      this.updateModes();
     }
   }
 
@@ -394,8 +550,26 @@ export class CardLayout extends RapidElement {
     }
   }
 
+  private renderResizeHandle(edge = false): TemplateResult {
+    return html`
+      <div
+        class=${getClasses({
+          'resize-handle': true,
+          edge,
+          active: this.resizing
+        })}
+        @mousedown=${this.handleResizeStart}
+      >
+        <div class="grip"></div>
+      </div>
+    `;
+  }
+
   public render(): TemplateResult {
     if (this.narrow) {
+      // resizing out of tab mode only works when the layout is wide enough
+      // to reach card mode at some main-view width — otherwise no handle
+      const resizable = this.hostWidth >= this.getMinFlipWidth();
       return html`
         <temba-tabs .focusedName=${this.compactTabs}>
           <temba-tab name=${this.mainName} icon=${this.mainIcon}>
@@ -414,12 +588,16 @@ export class CardLayout extends RapidElement {
             `
           )}
         </temba-tabs>
+        ${resizable ? this.renderResizeHandle(true) : null}
       `;
     }
 
     return html`
       <div class="body">
-        <div class="main"><slot name="main"></slot></div>
+        <div class="main">
+          <slot name="main"></slot>
+          ${this.renderResizeHandle()}
+        </div>
         <div class="column">
           <temba-card-stack @temba-order-changed=${this.handleOrderChanged}>
             <slot @slotchange=${this.handleSlotChange}></slot>
