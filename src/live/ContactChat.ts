@@ -1097,6 +1097,12 @@ export class ContactChat extends ContactStoreElement {
     window.setTimeout(() => {
       this.searchClosing = false;
       this.searchMode = false;
+      // if a hand-off forced the search bar onto a conversation the host
+      // had opted out of, put the host's choice back
+      if (this.forcedShowSearch) {
+        this.forcedShowSearch = false;
+        this.showSearch = false;
+      }
       this.resetSearchState('', true);
       this.restoreUnsearchedView();
     }, 150);
@@ -1141,6 +1147,10 @@ export class ContactChat extends ContactStoreElement {
     contactUuid: string;
   } = null;
 
+  // whether startSearch turned showSearch on for a hand-off, so closing the
+  // search can restore the host's opt-out
+  private forcedShowSearch = false;
+
   /**
    * Opens search mode and executes the given query, landing on the given
    * event — which is inserted into the results if the endpoint's matches
@@ -1154,8 +1164,12 @@ export class ContactChat extends ContactStoreElement {
     this.searchMode = true;
     // hosts only turn search on for some conversations (e.g. once a contact
     // has been seen), but a hand-off always needs the bar - it carries the
-    // match stepper and the only way back out of the searched view
-    this.showSearch = true;
+    // match stepper and the only way back out of the searched view. Track
+    // when we forced it so closing the search restores the host's choice
+    if (!this.showSearch) {
+      this.showSearch = true;
+      this.forcedShowSearch = true;
+    }
     this.resetSearchState(query, true);
     // the contact the host has asked us to show, which may still be
     // loading — the search belongs to it and nobody else

@@ -127,8 +127,9 @@ export class TicketSearch extends SearchModal<TicketSearchResult> {
     const controller = new AbortController();
     this.abortController = controller;
 
+    const joiner = this.endpoint.includes('?') ? '&' : '?';
     const response = await getUrl(
-      `${this.endpoint}?text=${encodeURIComponent(query)}`,
+      `${this.endpoint}${joiner}text=${encodeURIComponent(query)}`,
       controller
     );
 

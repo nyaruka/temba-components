@@ -687,6 +687,38 @@ describe('temba-contact-chat', () => {
     expect(chat.searchIndex).to.equal(0);
   });
 
+  it('restores the host search opt-out when a handed-off search closes', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    // the host has not enabled search for this conversation
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    expect(chat.showSearch).to.equal(false);
+
+    // a hand-off forces the bar on so the searched view can be navigated
+    chat.startSearch('primus');
+    expect(chat.showSearch).to.equal(true);
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+
+    // closing the search puts the host's opt-out back
+    (chat as any).handleSearchClose();
+    clock.tick(200);
+    await chat.updateComplete;
+    expect(chat.searchMode).to.equal(false);
+    expect(chat.showSearch).to.equal(false);
+  });
+
   it('never runs a handed-off search against a different contact', async () => {
     await loadStore();
 

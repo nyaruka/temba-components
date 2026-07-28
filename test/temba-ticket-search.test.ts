@@ -282,6 +282,20 @@ describe('temba-ticket-search', () => {
     );
   });
 
+  it('joins with & when the endpoint already has a query string', async () => {
+    // only the correctly-joined URL is mocked, so results can only load if
+    // the endpoint's existing params were preserved
+    mockGET(/\/ticket\/search\/\?scope=all&text=.*/, RESPONSE);
+
+    const el = await createSearch();
+    el.endpoint = '/ticket/search/?scope=all';
+    await setQuery(el, 'help');
+    await pressKey(el, 'Enter');
+    await waitUntil(() => getResults(el).length > 0);
+
+    expect(getResults(el).length).to.equal(3);
+  });
+
   it('invalidates results when the query changes', async () => {
     const el = await createSearch();
     await setQuery(el, 'help');
