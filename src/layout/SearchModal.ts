@@ -257,6 +257,15 @@ export abstract class SearchModal<
    */
   protected abstract getSearchLabel(): string;
 
+  /**
+   * Called when a search is abandoned - the modal closed, or the query
+   * edited out from under it. Subclasses with an in-flight request should
+   * cancel it here.
+   */
+  protected cancelSearch(): void {
+    // nothing to do for synchronous searches
+  }
+
   public show(): void {
     this.open = true;
     this.searchQuery = '';
@@ -273,6 +282,7 @@ export abstract class SearchModal<
   }
 
   public hide(): void {
+    this.cancelSearch();
     this.open = false;
     this.searchQuery = '';
     this.results = [];
@@ -287,6 +297,8 @@ export abstract class SearchModal<
     this.searchQuery = input.value;
     this.highlightedIndex = 0;
     this.error = false;
+    // whatever was in flight was for the old query
+    this.cancelSearch();
     if (this.searchOnEnter) {
       // invalidate any in-flight search and wait for Enter
       this.searchGeneration++;
@@ -362,10 +374,18 @@ export abstract class SearchModal<
           // superseded it - that includes searches we aborted ourselves,
           // so those never surface as failures
           if (generation === this.searchGeneration) {
-            console.error(error);
+            console.error(
+              'search failed',
+              error instanceof Response
+                ? `${error.status} ${error.url || ''}`.trim()
+                : error
+            );
             this.results = [];
             this.loading = false;
             this.error = true;
+            // the query is still the one that failed, so leaving it dirty
+            // lets Enter run it again
+            this.dirty = this.searchOnEnter;
           }
         });
     } else {
@@ -451,6 +471,12 @@ export abstract class SearchModal<
       return this.renderHint();
     }
 
+    // a failed search leaves the query dirty so Enter retries it, so the
+    // failure has to be reported ahead of the "Enter to search" hint
+    if (this.error) {
+      return html`<div class="no-results">Search failed - try again</div>`;
+    }
+
     if (this.searchOnEnter && this.dirty) {
       return html`<div class="hint"><kbd>Enter</kbd> to search</div>`;
     }
@@ -459,10 +485,6 @@ export abstract class SearchModal<
       return html`<div class="loading">
         <temba-loading units="6" size="8"></temba-loading>
       </div>`;
-    }
-
-    if (this.error) {
-      return html`<div class="no-results">Search failed - try again</div>`;
     }
 
     if (this.results.length === 0) {

@@ -82,9 +82,8 @@ export class TicketSearch extends SearchModal<TicketSearchResult> {
   // the in-flight request, aborted when it's superseded or the modal closes
   private abortController: AbortController = null;
 
-  public hide(): void {
+  protected cancelSearch(): void {
     this.abortSearch();
-    super.hide();
   }
 
   private abortSearch(): void {

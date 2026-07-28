@@ -1,6 +1,6 @@
 import { fixture, expect, waitUntil, oneEvent } from '@open-wc/testing';
 import { TicketSearch, TicketSearchResult } from '../src/live/TicketSearch';
-import { mockGET } from './utils.test';
+import { clearMockGets, mockGET } from './utils.test';
 
 if (!customElements.get('temba-ticket-search')) {
   customElements.define('temba-ticket-search', TicketSearch);
@@ -229,6 +229,13 @@ describe('temba-ticket-search', () => {
     expect(el.shadowRoot.querySelector('.no-results').textContent).to.contain(
       'Search failed'
     );
+
+    // the failed query is still pending, so Enter runs it again
+    clearMockGets();
+    mockGET(/\/ticket\/search\/\?text=.*/, RESPONSE);
+    await pressKey(el, 'Enter');
+    await waitUntil(() => getResults(el).length > 0);
+    expect(el.shadowRoot.querySelector('.no-results')).to.equal(null);
   });
 
   it('invalidates results when the query changes', async () => {

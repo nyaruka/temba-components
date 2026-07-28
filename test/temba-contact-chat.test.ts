@@ -687,6 +687,41 @@ describe('temba-contact-chat', () => {
     expect(chat.searchIndex).to.equal(0);
   });
 
+  it('never runs a handed-off search against a different contact', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat = (await getComponent(
+      TAG,
+      { endpoint: '/test-assets/contacts/' },
+      '',
+      500,
+      500,
+      'display:flex;flex-direction:column;flex-grow:1;min-height:0;'
+    )) as ContactChat;
+
+    // hand a search off for dave and switch to carter in the same tick, so
+    // carter is the only contact that ever loads
+    chat.contact = 'contact-dave-active';
+    chat.startSearch('primus');
+    chat.contact = 'contact-carter-active';
+
+    await settle(
+      () => chat.currentContact?.uuid === 'contact-carter-active',
+      150,
+      400
+    );
+    await settleLoaded(chat);
+
+    // dave's search was dropped rather than run against carter's history
+    expect((chat as any).pendingSearch).to.equal(null);
+    expect(chat.searchResults.length).to.equal(0);
+  });
+
   it('lands on a handed-off event the endpoint did not return', async () => {
     await loadStore();
 
