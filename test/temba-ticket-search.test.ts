@@ -94,6 +94,10 @@ const getResults = (el: TicketSearch): TicketSearchResult[] => {
 
 describe('temba-ticket-search', () => {
   beforeEach(() => {
+    // tests that re-mock the endpoint leave their own mocks behind, and the
+    // first registered match wins, so start each test from a clean slate
+    clearMockGets();
+
     // registered first so they win over the catch-all below
     mockGET(/\/ticket\/search\/\?text=helping/, STEMMED_RESPONSE);
     mockGET(/\/ticket\/search\/\?text=kaboom/, { error: 'boom' }, {}, '500');
@@ -236,6 +240,46 @@ describe('temba-ticket-search', () => {
     await pressKey(el, 'Enter');
     await waitUntil(() => getResults(el).length > 0);
     expect(el.shadowRoot.querySelector('.no-results')).to.equal(null);
+  });
+
+  it('reports an empty result set as no matches', async () => {
+    clearMockGets();
+    mockGET(/\/ticket\/search\/\?text=.*/, { results: [], dropped: 0 });
+
+    const el = await createSearch();
+    await setQuery(el, 'help');
+    await pressKey(el, 'Enter');
+
+    await waitUntil(() => !!el.shadowRoot.querySelector('.no-results'));
+    expect(el.shadowRoot.querySelector('.no-results').textContent).to.contain(
+      'No matches found'
+    );
+  });
+
+  it('says so when the only matches were in inaccessible tickets', async () => {
+    clearMockGets();
+    mockGET(/\/ticket\/search\/\?text=.*/, { results: [], dropped: 2 });
+
+    const el = await createSearch();
+    await setQuery(el, 'help');
+    await pressKey(el, 'Enter');
+
+    await waitUntil(() => !!el.shadowRoot.querySelector('.no-results'));
+    expect(el.shadowRoot.querySelector('.no-results').textContent).to.contain(
+      'No matches in tickets you can access'
+    );
+
+    // the count doesn't carry over to the next search
+    clearMockGets();
+    mockGET(/\/ticket\/search\/\?text=.*/, { results: [], dropped: 0 });
+    await setQuery(el, 'help me');
+    await pressKey(el, 'Enter');
+
+    await waitUntil(
+      () =>
+        el.shadowRoot.querySelector('.no-results')?.textContent.trim() ===
+        'No matches found'
+    );
   });
 
   it('invalidates results when the query changes', async () => {

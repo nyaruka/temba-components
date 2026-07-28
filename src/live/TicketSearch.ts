@@ -1,5 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { ModalSearchResult, SearchModal } from '../layout/SearchModal';
 import { getUrl } from '../utils';
 
@@ -79,11 +79,17 @@ export class TicketSearch extends SearchModal<TicketSearchResult> {
   // searching hits an endpoint, so wait for Enter
   searchOnEnter = true;
 
+  // how many matches the last search found in tickets this user can't access,
+  // so an empty result set can say why it's empty
+  @state()
+  private dropped = 0;
+
   // the in-flight request, aborted when it's superseded or the modal closes
   private abortController: AbortController = null;
 
   protected cancelSearch(): void {
     this.abortSearch();
+    this.dropped = 0;
   }
 
   private abortSearch(): void {
@@ -103,8 +109,21 @@ export class TicketSearch extends SearchModal<TicketSearchResult> {
     </div>`;
   }
 
+  /**
+   * The endpoint filters matches down to the tickets this user can access
+   * after the search itself is capped, so a query that matched plenty can
+   * still come back empty. Say so rather than claiming nothing matched.
+   */
+  protected getNoResultsMessage(): string {
+    return this.dropped > 0
+      ? 'No matches in tickets you can access'
+      : super.getNoResultsMessage();
+  }
+
   protected async performSearch(query: string): Promise<TicketSearchResult[]> {
     this.abortSearch();
+    this.dropped = 0;
+
     const controller = new AbortController();
     this.abortController = controller;
 
@@ -117,7 +136,10 @@ export class TicketSearch extends SearchModal<TicketSearchResult> {
       this.abortController = null;
     }
 
-    const results = (response.json as any).results || [];
+    const json = response.json as any;
+    this.dropped = json.dropped || 0;
+
+    const results = json.results || [];
     return results.map((result: any) => this.toSearchResult(result, query));
   }
 

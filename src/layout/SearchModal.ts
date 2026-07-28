@@ -457,6 +457,14 @@ export abstract class SearchModal<
   }
 
   /**
+   * The message shown when a completed search produced no results. Subclasses
+   * can override to explain why the result set came back empty.
+   */
+  protected getNoResultsMessage(): string {
+    return 'No matches found';
+  }
+
+  /**
    * The hint shown before any query has been entered.
    */
   protected renderHint(): TemplateResult {
@@ -488,7 +496,7 @@ export abstract class SearchModal<
     }
 
     if (this.results.length === 0) {
-      return html`<div class="no-results">No matches found</div>`;
+      return html`<div class="no-results">${this.getNoResultsMessage()}</div>`;
     }
 
     return html`
