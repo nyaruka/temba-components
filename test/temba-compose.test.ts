@@ -267,6 +267,68 @@ describe('temba-compose broadcast edit', () => {
   });
 });
 
+describe('temba-compose enter key', () => {
+  const getComposeWithText = async () => {
+    const compose: Compose = await getCompose({
+      quickreplies: true,
+      chatbox: true,
+      counter: true,
+      value: getComposeValue(getInitialValue('hello there'))
+    });
+    return compose;
+  };
+
+  it('sends on Enter in the message editor', async () => {
+    const compose = await getComposeWithText();
+    let submitted = 0;
+    compose.addEventListener('temba-submitted', () => {
+      submitted++;
+    });
+
+    // click into the editor and press Enter
+    await typeInto('temba-compose:temba-message-editor', '', false, false);
+    await waitFor(100);
+    await pressKey('Enter', 1);
+    await waitFor(100);
+    expect(submitted).to.equal(1);
+  });
+
+  it('adds a quick reply on Enter without sending', async () => {
+    const compose = await getComposeWithText();
+    let submitted = 0;
+    compose.addEventListener('temba-submitted', () => {
+      submitted++;
+    });
+
+    // expand the quick replies section
+    const section = compose.shadowRoot.querySelector(
+      'temba-accordion-section'
+    ) as any;
+    section.collapsed = false;
+    await section.updateComplete;
+    await compose.updateComplete;
+
+    const select = compose.shadowRoot.querySelector(
+      'temba-select.quick-replies'
+    ) as any;
+
+    await typeInto(
+      'temba-compose:temba-select.quick-replies',
+      'Maybe',
+      false,
+      false
+    );
+    await pressKey('Enter', 1);
+    await waitFor(100);
+    await compose.updateComplete;
+
+    expect(select.values.length).to.equal(1);
+    expect(select.values[0].value).to.equal('Maybe');
+    expect(compose.currentQuickReplies).to.have.length(1);
+    expect(submitted).to.equal(0);
+  });
+});
+
 describe('temba-compose language visualization', () => {
   const getLangSelect = async (compose: Compose) => {
     const select = compose.shadowRoot.querySelector(

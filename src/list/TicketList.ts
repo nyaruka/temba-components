@@ -42,7 +42,6 @@ export class TicketList extends TembaList {
     // keeps mostRecentItem meaning the newest fetched item (compareItems
     // re-sorts the merged list immediately anyway)
 
-
     this.compareItems = (a: Contact, b: Contact): number => {
       const aClosed = !!a.ticket.closed_on;
       const bClosed = !!b.ticket.closed_on;

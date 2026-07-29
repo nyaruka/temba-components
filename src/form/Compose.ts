@@ -410,25 +410,14 @@ export class Compose extends FieldElement {
     // own keydown inserts a newline (which would flash before the send
     // clears it); bubble keeps Enter-to-send working from anywhere else
     // in the compose after inner widgets have had their shot at it
-    this.addEventListener(
-      'keydown',
-      this.handleHostKeyDown as EventListener,
-      true
-    );
-    this.addEventListener('keydown', this.handleHostKeyDown as EventListener);
+    this.addEventListener('keydown', this.handleHostKeyDownCapture, true);
+    this.addEventListener('keydown', this.handleHostKeyDownBubble);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.removeEventListener(
-      'keydown',
-      this.handleHostKeyDown as EventListener,
-      true
-    );
-    this.removeEventListener(
-      'keydown',
-      this.handleHostKeyDown as EventListener
-    );
+    this.removeEventListener('keydown', this.handleHostKeyDownCapture, true);
+    this.removeEventListener('keydown', this.handleHostKeyDownBubble);
   }
 
   private handleShortcutIconClick() {
@@ -454,7 +443,18 @@ export class Compose extends FieldElement {
     });
   }
 
-  private handleHostKeyDown = (evt: KeyboardEvent) => {
+  // events from inside our shadow tree are retargeted to the host, so
+  // both registrations see eventPhase as AT_TARGET — the phase can't
+  // tell us which registration is firing, so each binds it explicitly
+  private handleHostKeyDownCapture = (evt: KeyboardEvent) => {
+    this.handleHostKeyDown(evt, true);
+  };
+
+  private handleHostKeyDownBubble = (evt: KeyboardEvent) => {
+    this.handleHostKeyDown(evt, false);
+  };
+
+  private handleHostKeyDown = (evt: KeyboardEvent, capture: boolean) => {
     if (evt.key === 'Escape' && this.showShortcuts) {
       evt.preventDefault();
       evt.stopPropagation();
@@ -474,10 +474,12 @@ export class Compose extends FieldElement {
       // during capture only editor presses are claimed — anything else
       // (quick replies, attachments) waits for the bubble so the widget
       // it targets keeps first claim on the event
-      if (
-        evt.eventPhase === Event.CAPTURING_PHASE &&
-        !(editor && evt.composedPath().includes(editor))
-      ) {
+      if (capture && !(editor && evt.composedPath().includes(editor))) {
+        return;
+      }
+      // by the bubble an inner widget may have claimed the Enter for
+      // itself (e.g. the quick reply select adding a tag) — not a send
+      if (!capture && evt.defaultPrevented) {
         return;
       }
       if (editor) {
