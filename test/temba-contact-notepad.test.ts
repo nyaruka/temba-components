@@ -1,7 +1,14 @@
 import { expect, fixture, waitUntil } from '@open-wc/testing';
 import { html } from 'lit';
 import { ContactNotepad } from '../src/live/ContactNotepad';
-import { getComponent, loadStore, mockGET } from './utils.test';
+import { resetContactWatches } from '../src/live/ContactWatch';
+import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
+import {
+  getComponent,
+  loadStore,
+  mockGET,
+  MockSocketProvider
+} from './utils.test';
 
 const TAG = 'temba-contact-notepad';
 
@@ -13,11 +20,19 @@ const getNotepad = async (attrs: any = {}) => {
 };
 
 describe('temba-contact-notepad', () => {
+  let previousProvider: SocketProvider;
+
   beforeEach(() => {
+    previousProvider = setSocketProvider(new MockSocketProvider());
     mockGET(
       /\/api\/v2\/contacts\.json\?uuid=notepad-contact/,
       '/test-assets/contacts/contact-notepad.json'
     );
+  });
+
+  afterEach(() => {
+    resetContactWatches();
+    setSocketProvider(previousProvider);
   });
 
   it('hugs the note text in autogrow mode', async () => {

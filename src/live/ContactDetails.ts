@@ -8,6 +8,7 @@ import { Select } from '../form/select/Select';
 import { TextInput } from '../form/TextInput';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement, getDestinationURN } from './ContactStoreElement';
+import { Events } from '../events/eventRenderers';
 
 interface Option {
   name: string;
@@ -22,6 +23,16 @@ const STATUS_OPTIONS: Option[] = [
 ];
 
 export class ContactDetails extends ContactStoreElement {
+  // the contact state we render - live changes to any of these reach us
+  // through the central watcher
+  protected watchTypes = [
+    Events.CONTACT_NAME_CHANGED,
+    Events.CONTACT_URNS_CHANGED,
+    Events.CONTACT_LANGUAGE_CHANGED,
+    Events.CONTACT_STATUS_CHANGED,
+    Events.CONTACT_GROUPS_CHANGED
+  ];
+
   @property({ type: Boolean })
   editable = false;
 

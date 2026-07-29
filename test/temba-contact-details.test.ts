@@ -9,8 +9,12 @@ import {
   getComponent,
   loadStore,
   mockGET,
-  mockPOST
+  mockPOST,
+  MockSocketProvider,
+  waitForWatchedContact
 } from './utils.test';
+import { resetContactWatches } from '../src/live/ContactWatch';
+import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 
 const TAG = 'temba-contact-details';
 const CONTACT_ID = 'contact-dave-active';
@@ -42,13 +46,39 @@ const getContactPosts = () =>
     .map((call) => JSON.parse(call.args[1].body));
 
 describe(TAG, () => {
+  let mockSocket: MockSocketProvider;
+  let previousProvider: SocketProvider;
+
   beforeEach(() => {
+    mockSocket = new MockSocketProvider();
+    previousProvider = setSocketProvider(mockSocket);
     clearMockPosts();
     (window.fetch as SinonStub).resetHistory();
     mockGET(
       /\/api\/v2\/contacts.json\?expand_urns=true&urn_order=priority&uuid=contact-dave-active/,
       '/test-assets/contacts/contact-dave-active'
     );
+  });
+
+  afterEach(() => {
+    resetContactWatches();
+    setSocketProvider(previousProvider);
+  });
+
+  it('updates live when the name changes', async () => {
+    await loadStore();
+    const details: ContactDetails = await getContactDetails({
+      contact: CONTACT_ID
+    });
+    expect(details.data.name).to.equal('Dave Matthews');
+
+    await waitForWatchedContact(CONTACT_ID);
+    mockSocket.serverPublish(`history:${CONTACT_ID}`, {
+      type: 'contact_name_changed',
+      name: 'David J. Matthews'
+    });
+
+    await waitUntil(() => details.data.name === 'David J. Matthews');
   });
 
   it('renders default', async () => {

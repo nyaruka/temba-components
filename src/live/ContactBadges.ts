@@ -5,6 +5,7 @@ import { debounce, getClasses } from '../utils';
 import { Icon } from '../Icons';
 import { getLanguageName } from '../languages';
 import { ContactStoreElement } from './ContactStoreElement';
+import { Events } from '../events/eventRenderers';
 
 const STATUS = {
   stopped: { name: 'Stopped' },
@@ -13,6 +14,14 @@ const STATUS = {
 };
 
 export class ContactBadges extends ContactStoreElement {
+  // the badges show status, current flow, language and groups
+  protected watchTypes = [
+    Events.CONTACT_STATUS_CHANGED,
+    Events.CONTACT_FLOW_CHANGED,
+    Events.CONTACT_LANGUAGE_CHANGED,
+    Events.CONTACT_GROUPS_CHANGED
+  ];
+
   static get styles() {
     return css`
       .wrapper {

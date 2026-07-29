@@ -1,7 +1,14 @@
 import { PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Contact, Group, URN } from '../interfaces';
+import { Contact, CustomEventType, Group, URN } from '../interfaces';
 import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
+import {
+  CONTACT_STATE_TYPES,
+  refreshContact,
+  updateContact,
+  watchContact
+} from './ContactWatch';
+import { RealtimeSubscription } from './Realtime';
 
 /**
  * Returns the URN that will be used to message the given contact — URNs are
@@ -17,6 +24,15 @@ export class ContactStoreElement extends EndpointMonitorElement {
 
   @property({ type: Object, attribute: false })
   data: Contact;
+
+  // the contact events this component registers interest in with the central
+  // watcher - subclasses narrow this to what they actually render. An empty
+  // list still receives eventless deliveries (initial values and refetches);
+  // null opts out of watching entirely
+  protected watchTypes: string[] = CONTACT_STATE_TYPES;
+
+  private watch: RealtimeSubscription = null;
+  private watchedContact: string = null;
 
   // Resolve each URN against a channel while retaining the user's priority
   // order. Consumers can select the first channel-backed URN for messaging.
@@ -70,6 +86,34 @@ export class ContactStoreElement extends EndpointMonitorElement {
     // make sure contact data is properly prepped
     this.data = this.prepareData([contact]);
     this.store.updateCache(`${this.endpoint}${contactId}`, this.data);
+
+    // sync every watcher on the page with the change immediately, without
+    // waiting for it to echo back over the socket
+    if (this.data) {
+      updateContact(this.data.uuid, this.data);
+    }
+  }
+
+  /**
+   * Refetches the contact. When watched this goes through the central
+   * watcher so every watcher on the page gets the fresh contact, not just us.
+   */
+  public refresh(): void {
+    if (this.watchedContact) {
+      refreshContact(this.watchedContact);
+    } else {
+      super.refresh();
+    }
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    this.syncWatch();
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.syncWatch();
   }
 
   public willUpdate(changed: PropertyValues): void {
@@ -81,7 +125,47 @@ export class ContactStoreElement extends EndpointMonitorElement {
       } else {
         this.url = null;
       }
+      this.syncWatch();
     }
     super.willUpdate(changed);
+  }
+
+  // keeps our registration with the central watcher in sync with the
+  // contact we're pointed at
+  private syncWatch() {
+    const target =
+      (this.isConnected && this.watchTypes && this.contact) || null;
+    if (target === this.watchedContact) {
+      return;
+    }
+
+    if (this.watch) {
+      this.watch.unsubscribe();
+      this.watch = null;
+    }
+    this.watchedContact = target;
+
+    if (target) {
+      this.watch = watchContact(target, this.watchTypes, (event, contact) =>
+        this.handleWatchedContact(event, contact)
+      );
+    }
+  }
+
+  /**
+   * A delivery from the central watcher - an event we registered interest in
+   * or an eventless delivery carrying initial or refetched values. Either
+   * way the contact is current, so it simply becomes our data.
+   */
+  protected handleWatchedContact(event: any, contact: Contact) {
+    if (contact && contact.uuid === this.watchedContact) {
+      const previous = this.data;
+      // fresh identity so change detection sees every delivery
+      this.data = this.prepareData({ ...contact });
+      this.fireCustomEvent(CustomEventType.Refreshed, {
+        data: this.data,
+        previous
+      });
+    }
   }
 }

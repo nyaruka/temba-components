@@ -1,11 +1,16 @@
 import { assert, expect } from '@open-wc/testing';
 import { ContactFieldEditor } from '../src/live/ContactFieldEditor';
 import { ContactFields } from '../src/live/ContactFields';
+import { resetContactWatches } from '../src/live/ContactWatch';
+import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import {
   getComponent,
   loadStore,
+  mockGET,
   mockPOST,
-  waitForCondition
+  MockSocketProvider,
+  waitForCondition,
+  waitForWatchedContact
 } from './utils.test';
 
 const TAG = 'temba-contact-fields';
@@ -21,6 +26,45 @@ const getFields = async (attrs: any = {}) => {
 };
 
 describe(TAG, () => {
+  let mockSocket: MockSocketProvider;
+  let previousProvider: SocketProvider;
+
+  beforeEach(() => {
+    mockSocket = new MockSocketProvider();
+    previousProvider = setSocketProvider(mockSocket);
+  });
+
+  afterEach(() => {
+    resetContactWatches();
+    setSocketProvider(previousProvider);
+  });
+
+  it('updates live when a field changes', async () => {
+    await loadStore();
+
+    // the central watcher fetches its contact from the api
+    mockGET(
+      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=contact-dave-active/,
+      '/test-assets/contacts/contact-dave-active'
+    );
+
+    const fields: ContactFields = await getFields({
+      contact: 'contact-dave-active'
+    });
+    assert.equal(fields.data.fields.age, '30');
+    await waitForWatchedContact('contact-dave-active');
+
+    // the event's engine value is applied directly, serialized by the
+    // field's type - no refetch involved
+    mockSocket.serverPublish('history:contact-dave-active', {
+      type: 'contact_field_changed',
+      field: { key: 'age', name: 'Age' },
+      value: { text: '31 years', number: 31 }
+    });
+
+    await waitForCondition(() => fields.data.fields.age === '31');
+  });
+
   it('renders default', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();

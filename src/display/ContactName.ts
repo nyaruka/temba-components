@@ -1,7 +1,20 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
+import { Contact, CustomEventType } from '../interfaces';
+import { Events } from '../events/eventRenderers';
+import { getDestinationURN } from '../live/ContactStoreElement';
+import { watchContact } from '../live/ContactWatch';
+import { RealtimeSubscription } from '../live/Realtime';
 
+/**
+ * A contact's name, optionally with the URN that will be used to message
+ * them. Given a contact uuid it manages itself: it registers interest in name
+ * events with the central contact watcher, which delivers the initial value
+ * and any live changes through the same handler - the component never fetches
+ * anything. Alternatively the name and urn can be set explicitly for static
+ * rendering (e.g. rows of a list that arrived in one fetch).
+ */
 export class ContactName extends RapidElement {
   @property({ type: String })
   name: string;
@@ -9,8 +22,15 @@ export class ContactName extends RapidElement {
   @property({ type: String })
   urn: string;
 
+  // when set, name and urn are kept live by the central contact watcher
+  @property({ type: String })
+  contact: string;
+
   @property({ type: Number, attribute: 'icon-size' })
   size = 20;
+
+  private watch: RealtimeSubscription = null;
+  private watchedContact: string = null;
 
   static get styles() {
     return css`
@@ -34,6 +54,87 @@ export class ContactName extends RapidElement {
       }
     `;
   }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    this.syncWatch();
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.syncWatch();
+  }
+
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('contact')) {
+      this.syncWatch();
+    }
+  }
+
+  /**
+   * Keeps our watch in sync with the contact we're pointed at, clearing the
+   * previous contact's values on any switch. Explicitly set name/urn never
+   * pass through here since they involve no watch.
+   */
+  private syncWatch() {
+    const target = (this.isConnected && this.contact) || null;
+    if (target === this.watchedContact) {
+      return;
+    }
+
+    if (this.watch) {
+      this.watch.unsubscribe();
+      this.watch = null;
+    }
+    this.watchedContact = target;
+    this.name = null;
+    this.urn = null;
+
+    if (target) {
+      this.watch = watchContact(
+        target,
+        [Events.CONTACT_NAME_CHANGED, Events.CONTACT_URNS_CHANGED],
+        (event, contact) => this.handleContactEvent(event, contact)
+      );
+    }
+  }
+
+  private handleContactEvent(event: any, contact: Contact) {
+    if (contact) {
+      // the watcher keeps the contact current, so it's authoritative whether
+      // this delivery is an event or an initial value. Anon workspaces have
+      // no names, show the contact's ref instead
+      this.name = contact.name || contact.ref || null;
+
+      // show the URN that will be used when messaging the contact, falling
+      // back to their highest priority URN if none are sendable
+      const urn = getDestinationURN(contact) || contact.urns[0] || null;
+      this.urn = urn ? `${urn.scheme}:${urn.display || urn.path}` : null;
+      this.fireRefreshed(contact);
+    } else if (event && event.type === Events.CONTACT_NAME_CHANGED) {
+      // a live event can outrun the initial fetch - show the name we have
+      this.name = event.name || null;
+    }
+  }
+
+  // priming delivers one event per interest, coalesce those bursts into a
+  // single notification
+  private pendingRefresh: Contact = null;
+
+  private fireRefreshed(contact: Contact) {
+    if (!this.pendingRefresh) {
+      Promise.resolve().then(() => {
+        const refreshed = this.pendingRefresh;
+        this.pendingRefresh = null;
+        if (refreshed) {
+          this.fireCustomEvent(CustomEventType.Refreshed, { data: refreshed });
+        }
+      });
+    }
+    this.pendingRefresh = contact;
+  }
+
   public render(): TemplateResult {
     const urn = this.urn
       ? html`<temba-urn size=${this.size} urn=${this.urn}></temba-urn>`

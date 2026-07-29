@@ -6,6 +6,10 @@ import { ContactNote, CustomEventType } from '../interfaces';
 import { designTokens } from '../styles/designTokens';
 
 export class ContactNotepad extends ContactStoreElement {
+  // notes have no contact events - an empty interest list still receives
+  // eventless deliveries (initial values, refetches and page-local edits)
+  protected watchTypes: string[] = [];
+
   @property({ type: Object, attribute: false })
   note: ContactNote;
 

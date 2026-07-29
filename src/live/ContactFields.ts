@@ -11,10 +11,15 @@ import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Checkbox } from '../form/Checkbox';
 import { ContactField, CustomEventType } from '../interfaces';
+import { Events } from '../events/eventRenderers';
 
 const MIN_FOR_FILTER = 10;
 
 export class ContactFields extends ContactStoreElement {
+  // we render field values, so field changes are the only events we need -
+  // the central watcher hands us a refetched contact when they happen
+  protected watchTypes = [Events.CONTACT_FIELD_CHANGED];
+
   static get styles() {
     return css`
       .field {
