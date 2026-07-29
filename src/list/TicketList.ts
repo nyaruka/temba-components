@@ -38,10 +38,10 @@ export class TicketList extends TembaList {
     super();
 
     this.valueKey = 'ticket.uuid';
+    // the refresh feed is served oldest first - the inherited reverseRefresh
+    // keeps mostRecentItem meaning the newest fetched item (compareItems
+    // re-sorts the merged list immediately anyway)
 
-    // refreshed items get sorted into place by compareItems below, so
-    // reversing them on the way in is just contradictory work
-    this.reverseRefresh = false;
 
     this.compareItems = (a: Contact, b: Contact): number => {
       const aClosed = !!a.ticket.closed_on;
