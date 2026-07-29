@@ -1,7 +1,7 @@
 import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { Icon } from '../Icons';
-import { CustomEventType, Group, URN } from '../interfaces';
+import { Contact, CustomEventType, Group, URN } from '../interfaces';
 import { getLanguageName } from '../languages';
 import { capitalize, WebResponse } from '../utils';
 import { Select } from '../form/select/Select';
@@ -439,6 +439,26 @@ export class ContactDetails extends ContactStoreElement {
       this.finishSave(contactId, key, generation, 'failed');
       return { status: 500, json: {}, headers: new Headers() };
     }
+  }
+
+  /**
+   * A watcher delivery carries server state from before the writes we still
+   * have in flight, so keep our own value for anything mid-save - the save
+   * itself applies the server's version when it lands.
+   */
+  protected mergeWatchedContact(contact: Contact, previous: Contact): Contact {
+    if (!previous || this.fieldSaveGenerations.size === 0) {
+      return contact;
+    }
+
+    const merged = { ...contact };
+    this.fieldSaveGenerations.forEach((generation, field) => {
+      if (field in previous) {
+        const value = previous[field];
+        merged[field] = Array.isArray(value) ? [...value] : value;
+      }
+    });
+    return merged;
   }
 
   public willUpdate(changed: PropertyValues): void {

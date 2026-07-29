@@ -40,6 +40,12 @@ const CONTACT_ENDPOINT =
 // fields) to settle before refetching
 const REFETCH_DEBOUNCE = 100;
 
+// a fetch can fail on an otherwise healthy socket, which would leave watchers
+// with no contact at all until something else triggers a fetch - retry a few
+// times, backing off between attempts
+const FETCH_RETRIES = 3;
+const FETCH_RETRY_DELAY = 1000;
+
 // the contact-state events - everything that changes what a contact *is*, as
 // opposed to recording something that happened to them. The default interest
 // for components that render contact data
@@ -66,6 +72,9 @@ interface WatchedContact {
   sub: RealtimeSubscription;
   contact: Contact;
   fetchSeq: number;
+  // fetches in flight - their responses predate anything arriving now, so
+  // events landing while one is outstanding need a refetch to survive
+  fetching: number;
   refetchTimer: number;
 }
 
@@ -74,21 +83,30 @@ const watched = new Map<string, WatchedContact>();
 /**
  * Serializes an engine field value from an event the way the read API
  * would - both read the same engine value dict, keyed by the field's type
- * (the API calls number fields "numeric").
+ * (the API calls number fields "numeric"). A value that didn't parse as the
+ * field's type serializes as null, same as the API. Returns undefined when
+ * the field definition isn't known, since without it there's no way to tell
+ * which engine value the API would have read.
  */
-const serializeFieldValue = (key: string, value: any): string => {
+const serializeFieldValue = (key: string, value: any): string | undefined => {
   if (!value) {
     return null;
   }
   const fieldType = getStore()?.getContactField(key)?.value_type;
+  if (!fieldType) {
+    return undefined;
+  }
   const engineType = fieldType === 'numeric' ? 'number' : fieldType;
-  const engineValue = engineType ? value[engineType] : null;
-  return engineValue != null ? String(engineValue) : (value.text ?? null);
+  const engineValue = value[engineType];
+  return engineValue != null ? String(engineValue) : null;
 };
 
 // how live events patch the cached contact so every delivery carries current
-// state
-const appliers: { [type: string]: (contact: Contact, event: any) => void } = {
+// state. Returning false means the event couldn't be applied and the contact
+// needs a refetch to be current
+const appliers: {
+  [type: string]: (contact: Contact, event: any) => boolean | void;
+} = {
   [Events.CONTACT_NAME_CHANGED]: (contact, event) => {
     contact.name = event.name;
   },
@@ -112,13 +130,16 @@ const appliers: { [type: string]: (contact: Contact, event: any) => void } = {
   },
   [Events.CONTACT_FIELD_CHANGED]: (contact, event) => {
     const key = event.field?.key;
-    if (key) {
-      // replace rather than mutate so earlier deliveries keep their values
-      contact.fields = {
-        ...contact.fields,
-        [key]: serializeFieldValue(key, event.value)
-      };
+    if (!key) {
+      return;
     }
+    const value = serializeFieldValue(key, event.value);
+    if (value === undefined) {
+      // no field definition to serialize against - don't guess at a value
+      return false;
+    }
+    // replace rather than mutate so earlier deliveries keep their values
+    contact.fields = { ...contact.fields, [key]: value };
   },
   [Events.CONTACT_GROUPS_CHANGED]: (contact, event) => {
     const added = event.groups_added || [];
@@ -131,7 +152,11 @@ const appliers: { [type: string]: (contact: Contact, event: any) => void } = {
           !removed.has(group.uuid) &&
           !added.some((a: any) => a.uuid === group.uuid)
       ),
-      ...added.map((group: any) => ({ uuid: group.uuid, name: group.name }))
+      // group references can arrive without a name, but consumers sort on it
+      ...added.map((group: any) => ({
+        uuid: group.uuid,
+        name: group.name || ''
+      }))
     ];
   }
 };
@@ -147,6 +172,16 @@ const matches = (watcher: Watcher, type: string): boolean => {
   return watcher.types === '*' || watcher.types.includes(type);
 };
 
+// watchers are page components we don't control - one of them throwing can't
+// be allowed to cost the others their delivery
+const deliver = (watcher: Watcher, event: any, contact: Contact) => {
+  try {
+    watcher.onEvent(event, contact);
+  } catch (error) {
+    console.error('contact watcher failed', error);
+  }
+};
+
 /**
  * Hands every non-wildcard watcher the current contact as an eventless
  * delivery.
@@ -154,24 +189,37 @@ const matches = (watcher: Watcher, type: string): boolean => {
 const primeAll = (entry: WatchedContact) => {
   for (const watcher of [...entry.watchers]) {
     if (watcher.types !== '*') {
-      watcher.onEvent(null, entry.contact);
+      deliver(watcher, null, entry.contact);
     }
   }
 };
 
-const fetchContact = (uuid: string, entry: WatchedContact) => {
+const clearRefetch = (entry: WatchedContact) => {
+  if (entry.refetchTimer) {
+    window.clearTimeout(entry.refetchTimer);
+    entry.refetchTimer = null;
+  }
+};
+
+const fetchContact = (uuid: string, entry: WatchedContact, attempt = 0) => {
   const store = getStore();
   if (!store) {
     return;
   }
 
+  // a pending debounce would only land behind us with the same data
+  clearRefetch(entry);
+
   const seq = ++entry.fetchSeq;
+  entry.fetching++;
   store
     // skip the store cache in both directions - we always want current data
     // and the cache holds this url in a different shape for components that
     // still fetch it themselves
     .getUrl(`${CONTACT_ENDPOINT}${uuid}`, { force: true, skipCache: true })
     .then((response) => {
+      entry.fetching--;
+
       // ignore responses that arrive after everyone left or a newer fetch
       if (watched.get(uuid) !== entry || entry.fetchSeq !== seq) {
         return;
@@ -186,15 +234,30 @@ const fetchContact = (uuid: string, entry: WatchedContact) => {
       primeAll(entry);
     })
     .catch(() => {
-      // a failed fetch just means no initial value - the next (re)subscribe
-      // will try again
+      entry.fetching--;
+
+      // a failed fetch leaves watchers with no value at all, so try again
+      // with a backoff - anything that supersedes us in the meantime (a
+      // newer fetch, a local write, the last watcher leaving) cancels it
+      if (watched.get(uuid) !== entry || entry.fetchSeq !== seq) {
+        return;
+      }
+
+      if (attempt < FETCH_RETRIES) {
+        window.setTimeout(
+          () => {
+            if (watched.get(uuid) === entry && entry.fetchSeq === seq) {
+              fetchContact(uuid, entry, attempt + 1);
+            }
+          },
+          FETCH_RETRY_DELAY * Math.pow(2, attempt)
+        );
+      }
     });
 };
 
 const scheduleRefetch = (uuid: string, entry: WatchedContact) => {
-  if (entry.refetchTimer) {
-    window.clearTimeout(entry.refetchTimer);
-  }
+  clearRefetch(entry);
   entry.refetchTimer = window.setTimeout(() => {
     entry.refetchTimer = null;
     if (watched.get(uuid) === entry) {
@@ -205,18 +268,23 @@ const scheduleRefetch = (uuid: string, entry: WatchedContact) => {
 
 const handleEvent = (uuid: string, entry: WatchedContact, event: any) => {
   const apply = appliers[event.type];
-  if (entry.contact && apply) {
-    apply(entry.contact, event);
+  const applied = entry.contact && apply ? apply(entry.contact, event) : null;
+
+  // a state event we couldn't fully apply leaves the contact stale - there
+  // was no snapshot to patch, a fetch that predates the event is still in
+  // flight, or the applier couldn't resolve what it needed. Scheduling ahead
+  // of the fan-out keeps a throwing watcher from costing us the refetch, and
+  // the debounce collapses a burst into a single fetch
+  const stale =
+    !!apply && (!entry.contact || entry.fetching > 0 || applied === false);
+  if (stale || refetchTypes.has(event.type)) {
+    scheduleRefetch(uuid, entry);
   }
 
   for (const watcher of [...entry.watchers]) {
     if (matches(watcher, event.type)) {
-      watcher.onEvent(event, entry.contact);
+      deliver(watcher, event, entry.contact);
     }
-  }
-
-  if (refetchTypes.has(event.type)) {
-    scheduleRefetch(uuid, entry);
   }
 };
 
@@ -232,6 +300,7 @@ export const watchContact = (
       sub: null,
       contact: null,
       fetchSeq: 0,
+      fetching: 0,
       refetchTimer: null
     };
     watched.set(uuid, newEntry);
@@ -255,7 +324,7 @@ export const watchContact = (
     const contact = entry.contact;
     Promise.resolve().then(() => {
       if (entry.watchers.includes(watcher)) {
-        watcher.onEvent(null, contact);
+        deliver(watcher, null, contact);
       }
     });
   }
@@ -284,9 +353,10 @@ export const watchContact = (
 export const updateContact = (uuid: string, contact: Contact) => {
   const entry = watched.get(uuid);
   if (entry) {
-    // discard any in-flight fetch - it started before this write and could
-    // land after it with pre-write data
+    // discard any in-flight fetch and any pending refetch - both started
+    // before this write and could land after it with pre-write data
     entry.fetchSeq++;
+    clearRefetch(entry);
     entry.contact = contact;
     primeAll(entry);
   }
@@ -305,10 +375,7 @@ export const refreshContact = (uuid: string) => {
 
 const dropEntry = (uuid: string, entry: WatchedContact) => {
   watched.delete(uuid);
-  if (entry.refetchTimer) {
-    window.clearTimeout(entry.refetchTimer);
-    entry.refetchTimer = null;
-  }
+  clearRefetch(entry);
   entry.sub.unsubscribe();
 };
 

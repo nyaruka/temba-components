@@ -87,9 +87,14 @@ export class ContactName extends RapidElement {
       this.watch.unsubscribe();
       this.watch = null;
     }
+
+    // only values we put there are ours to clear - a name and urn supplied
+    // alongside the contact render until the watcher has something better
+    if (this.watchedContact) {
+      this.name = null;
+      this.urn = null;
+    }
     this.watchedContact = target;
-    this.name = null;
-    this.urn = null;
 
     if (target) {
       this.watch = watchContact(

@@ -28,6 +28,8 @@ describe(TAG, () => {
   beforeEach(async () => {
     mockSocket = new MockSocketProvider();
     previousProvider = setSocketProvider(mockSocket);
+    // first match wins, so drop anything a previous test re-mocked
+    clearMockGets();
     mockGET(
       /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=contact-dave-active/,
       '/test-assets/contacts/contact-dave-active'
@@ -146,6 +148,76 @@ describe(TAG, () => {
     assert.deepEqual(mockSocket.activeChannels(), []);
     assert.isNull(name.name);
     assert.isNull(name.urn);
+  });
+
+  it('recovers events that arrive before the initial fetch lands', async () => {
+    // the initial fetch comes back with nothing, so the event that follows
+    // has no snapshot to be applied to
+    clearMockGets();
+    mockGET(
+      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=contact-dave-active/,
+      { next: null, previous: null, results: [] }
+    );
+
+    const deliveries = [];
+    watchContact(CONTACT, [Events.CONTACT_NAME_CHANGED], (event, contact) =>
+      deliveries.push({ event, contact })
+    );
+
+    // let the empty fetch land before the event shows up
+    await waitFor(50);
+
+    mockSocket.serverPublish(CHANNEL, {
+      type: 'contact_name_changed',
+      name: 'David J. Matthews'
+    });
+
+    // the event reaches us with no contact to go with it
+    assert.equal(deliveries.length, 1);
+    assert.isNull(deliveries[0].contact);
+
+    // but it schedules a refetch, which primes us with the change
+    clearMockGets();
+    mockGET(
+      /\/api\/v2\/contacts\.json\?expand_urns=true&urn_order=priority&uuid=contact-dave-active/,
+      {
+        next: null,
+        previous: null,
+        results: [{ uuid: CONTACT, name: 'David J. Matthews', urns: [] }]
+      }
+    );
+
+    await waitForCondition(
+      () =>
+        deliveries[deliveries.length - 1].contact?.name === 'David J. Matthews'
+    );
+  });
+
+  it('keeps delivering when a watcher throws', async () => {
+    const deliveries = [];
+    const failing = watchContact(CONTACT, [Events.CONTACT_NAME_CHANGED], () => {
+      throw new Error('watcher blew up');
+    });
+    const healthy = watchContact(
+      CONTACT,
+      [Events.CONTACT_NAME_CHANGED],
+      (event, contact) => deliveries.push({ event, contact })
+    );
+
+    // the initial delivery gets past the watcher that throws
+    await waitForCondition(() => deliveries.length === 1);
+    assert.equal(deliveries[0].contact.name, 'Dave Matthews');
+
+    // as does a live one
+    mockSocket.serverPublish(CHANNEL, {
+      type: 'contact_name_changed',
+      name: 'David J. Matthews'
+    });
+    assert.equal(deliveries.length, 2);
+    assert.equal(deliveries[1].contact.name, 'David J. Matthews');
+
+    failing.unsubscribe();
+    healthy.unsubscribe();
   });
 
   it('routes events by interest level', async () => {

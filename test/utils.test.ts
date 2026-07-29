@@ -305,19 +305,6 @@ export const delay = (millis: number) => {
 // Enhanced wait utility for more robust testing.
 // Uses the Puppeteer-provided waitFor (real time) instead of delay (which uses
 // window.setTimeout and breaks when sinon fake timers are active).
-/**
- * Waits until the central contact watcher has a snapshot for the given
- * contact, so tests can publish events that rely on it being present.
- */
-export const waitForWatchedContact = async (uuid: string) => {
-  let primed = false;
-  const watch = watchContact(uuid, [], () => {
-    primed = true;
-  });
-  await waitForCondition(() => primed);
-  watch.unsubscribe();
-};
-
 export const waitForCondition = async (
   predicate: () => boolean,
   maxAttempts: number = 20,
@@ -335,6 +322,19 @@ export const waitForCondition = async (
       }ms)`
     );
   }
+};
+
+/**
+ * Waits until the central contact watcher has a snapshot for the given
+ * contact, so tests can publish events that rely on it being present.
+ */
+export const waitForWatchedContact = async (uuid: string) => {
+  let primed = false;
+  const watch = watchContact(uuid, [], () => {
+    primed = true;
+  });
+  await waitForCondition(() => primed);
+  watch.unsubscribe();
 };
 
 export const assertScreenshot = async (

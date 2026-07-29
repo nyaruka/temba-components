@@ -10,7 +10,7 @@ import { getClasses, postJSON } from '../utils';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Checkbox } from '../form/Checkbox';
-import { ContactField, CustomEventType } from '../interfaces';
+import { Contact, ContactField, CustomEventType } from '../interfaces';
 import { Events } from '../events/eventRenderers';
 
 const MIN_FOR_FILTER = 10;
@@ -157,6 +157,34 @@ export class ContactFields extends ContactStoreElement {
         return !!field && this.canViewField(field);
       }
     );
+  }
+
+  /**
+   * A watcher delivery carries server state from before an edit the user is
+   * still making, so keep the value we already have for any field whose
+   * editor is dirty - rebinding it would drop what they typed.
+   */
+  protected mergeWatchedContact(contact: Contact, previous: Contact): Contact {
+    if (!previous || !previous.fields) {
+      return contact;
+    }
+
+    const editors = Array.from(
+      this.shadowRoot?.querySelectorAll('temba-contact-field') || []
+    ) as ContactFieldEditor[];
+    const editing = editors.filter(
+      (editor) => editor.dirty && editor.key in previous.fields
+    );
+
+    if (editing.length === 0) {
+      return contact;
+    }
+
+    const fields = { ...contact.fields };
+    editing.forEach((editor) => {
+      fields[editor.key] = previous.fields[editor.key];
+    });
+    return { ...contact, fields };
   }
 
   public willUpdate(changed: PropertyValues): void {

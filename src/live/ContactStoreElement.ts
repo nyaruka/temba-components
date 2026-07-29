@@ -95,15 +95,16 @@ export class ContactStoreElement extends EndpointMonitorElement {
   }
 
   /**
-   * Refetches the contact. When watched this goes through the central
-   * watcher so every watcher on the page gets the fresh contact, not just us.
+   * Refetches the contact. When watched we also go through the central
+   * watcher so every watcher on the page gets the fresh contact, not just us,
+   * while the store fetch keeps the cache fresh for the components that read
+   * it without watching. Two fetches for what is a rare manual operation.
    */
   public refresh(): void {
     if (this.watchedContact) {
       refreshContact(this.watchedContact);
-    } else {
-      super.refresh();
     }
+    super.refresh();
   }
 
   public connectedCallback(): void {
@@ -160,12 +161,29 @@ export class ContactStoreElement extends EndpointMonitorElement {
   protected handleWatchedContact(event: any, contact: Contact) {
     if (contact && contact.uuid === this.watchedContact) {
       const previous = this.data;
-      // fresh identity so change detection sees every delivery
-      this.data = this.prepareData({ ...contact });
+      // fresh identity so change detection sees every delivery, copying the
+      // parts prepareData mutates so we never write into the registry's
+      // snapshot
+      const copy = {
+        ...contact,
+        groups: (contact.groups || []).map((group) => ({ ...group })),
+        fields: { ...contact.fields }
+      };
+      this.data = this.prepareData(this.mergeWatchedContact(copy, previous));
       this.fireCustomEvent(CustomEventType.Refreshed, {
         data: this.data,
         previous
       });
     }
+  }
+
+  /**
+   * Lets subclasses keep values they have a write in flight for. A delivery
+   * carries server state that predates our own unsaved edits, so anything
+   * mid-save would otherwise flip back to its old value until the write
+   * lands. Returns the contact to become our data.
+   */
+  protected mergeWatchedContact(contact: Contact, _previous: Contact): Contact {
+    return contact;
   }
 }
