@@ -533,9 +533,8 @@ export class ContentList<T = any> extends RapidElement {
            width. */
         margin-right: -20px;
         /* Contain the sticky header's z-index inside this frame so it
-           can't compete with the page header's content-menu dropdown
-           (also z-index 2), which otherwise paints under the table
-           header by DOM-order tie-break. */
+           can't compete with the page header's content-menu dropdown,
+           which otherwise paints under the table header. */
         isolation: isolate;
       }
       .table-scroll {

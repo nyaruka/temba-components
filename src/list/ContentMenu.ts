@@ -36,7 +36,12 @@ export class ContentMenu extends RapidElement {
     return css`
       :host {
         tabindex: 0;
-        z-index: 5000;
+        /* the host is typically a flex item in the page header, so this
+           z-index takes effect and creates a stacking context that caps
+           the dropdown inside it — keep it in sync with the dropdown's
+           z-index (9000) so the open menu clears floating windows like
+           the simulator (5000) */
+        z-index: 9000;
       }
       .container {
         display: flex;

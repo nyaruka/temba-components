@@ -35,7 +35,9 @@ export class Dropdown extends RapidElement {
 
       .dropdown {
         position: fixed;
-        z-index: 2;
+        /* open popups sit above floating windows (simulator, 5000) and
+           other page chrome, but below dialogs and toasts (10000) */
+        z-index: 9000;
         padding: 0;
         opacity: 0;
         border-radius: calc(var(--curvature) * 1.5);
