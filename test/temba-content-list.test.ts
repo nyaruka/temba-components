@@ -2044,4 +2044,226 @@ describe('temba-content-list', () => {
     expect(empty.textContent).to.contain('No labels');
     assert.notExists(list.shadowRoot!.querySelector('.lbl-create'));
   });
+
+  describe('column reordering', () => {
+    const PRIORITY_URL = '/fields/update_priority/';
+    const priorityRegex = /\/fields\/update_priority\/$/;
+
+    const getPriorityPosts = () =>
+      (window.fetch as any)
+        .getCalls()
+        .filter(
+          (call: any) =>
+            priorityRegex.test(String(call.args[0])) &&
+            call.args[1]?.method === 'POST'
+        )
+        .map((call: any) => JSON.parse(call.args[1].body));
+
+    const getContactList = async (attrs: any = {}) => {
+      const list = (await getComponent(
+        'temba-contact-list',
+        { endpoint: '/test-assets/content-list/contacts.json', ...attrs },
+        '',
+        1100
+      )) as ContactList;
+      await new Promise<void>((resolve) => {
+        list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+          once: true
+        });
+      });
+      // featured fields arrive via their own async fetch — wait for the
+      // field columns before interacting with the header
+      await waitForCondition(
+        () => ((list as any).featuredFields || []).length > 0
+      );
+      await list.updateComplete;
+      return list;
+    };
+
+    const headerFor = (list: ContentList, key: string): HTMLElement =>
+      list.shadowRoot!.querySelector(
+        `th.head-cell[data-key="${key}"]`
+      ) as HTMLElement;
+
+    const columnKeys = (list: ContentList): string[] =>
+      (list as any).columns.map((c: any) => c.key);
+
+    /** Grab a header at its center and release the drag at clientX. */
+    const dragHeader = async (
+      list: ContentList,
+      fromKey: string,
+      clientX: number
+    ) => {
+      const header = headerFor(list, fromKey);
+      const rect = header.getBoundingClientRect();
+      const startX = rect.left + rect.width / 2;
+      header.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: startX,
+          pointerType: 'mouse'
+        })
+      );
+      // the first move crosses the dead zone, the second lands on target
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: startX + 10,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX, pointerType: 'mouse' })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX, pointerType: 'mouse' })
+      );
+      await list.updateComplete;
+    };
+
+    it('reorders field columns by dragging and saves the featured order', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const initialPosts = getPriorityPosts().length;
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+
+      // the api fixture serves six featured fields, in priority order
+      expect(columnKeys(list)).to.deep.equal([
+        'name',
+        'urn',
+        'field:state',
+        'field:district',
+        'field:ward',
+        'field:joined',
+        'field:age',
+        'field:gender',
+        'last_seen_on',
+        'created_on'
+      ]);
+
+      // only the field columns are drag targets
+      expect(headerFor(list, 'field:state').classList.contains('reorderable'))
+        .to.be.true;
+      expect(headerFor(list, 'name').classList.contains('reorderable')).to.be
+        .false;
+      expect(headerFor(list, 'created_on').classList.contains('reorderable')).to
+        .be.false;
+
+      // drag State just past District's midpoint — they swap
+      const district = headerFor(list, 'field:district');
+      const dRect = district.getBoundingClientRect();
+      await dragHeader(list, 'field:state', dRect.left + dRect.width * 0.9);
+
+      expect(columnKeys(list)).to.deep.equal([
+        'name',
+        'urn',
+        'field:district',
+        'field:state',
+        'field:ward',
+        'field:joined',
+        'field:age',
+        'field:gender',
+        'last_seen_on',
+        'created_on'
+      ]);
+
+      // featuredFields follows the columns so later rebuilds keep the order
+      expect(
+        ((list as any).featuredFields as any[]).map((f) => f.key)
+      ).to.deep.equal(['district', 'state', 'ward', 'joined', 'age', 'gender']);
+
+      // completing a drag over a sortable header must not also sort
+      expect((list as any).sort).to.equal('');
+
+      // the full featured list is saved in column order
+      await waitForCondition(() => getPriorityPosts().length > initialPosts);
+      expect(getPriorityPosts()[initialPosts]).to.deep.equal({
+        featured: ['district', 'state', 'ward', 'joined', 'age', 'gender']
+      });
+
+      // a plain click on a reorderable header — pointer never leaves
+      // the dead zone — still sorts. Let the drag's one-tick click
+      // suppression window lapse first, as any real click would.
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      const header = headerFor(list, 'field:district');
+      header.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: 400,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 400, pointerType: 'mouse' })
+      );
+      header.click();
+      expect((list as any).sort).to.equal('field:district');
+    });
+
+    it('constrains drops to the field column run', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+
+      // far left of every field header — Ward lands at the head of the
+      // run; the pinned Name and URN columns stay put
+      await dragHeader(list, 'field:ward', 0);
+      expect(columnKeys(list).slice(0, 4)).to.deep.equal([
+        'name',
+        'urn',
+        'field:ward',
+        'field:state'
+      ]);
+
+      // far right of every header — Ward lands at the tail of the run,
+      // never past Last seen / Created on
+      const created = headerFor(list, 'created_on');
+      await dragHeader(
+        list,
+        'field:ward',
+        created.getBoundingClientRect().right + 50
+      );
+      expect(columnKeys(list)).to.deep.equal([
+        'name',
+        'urn',
+        'field:state',
+        'field:district',
+        'field:joined',
+        'field:age',
+        'field:gender',
+        'field:ward',
+        'last_seen_on',
+        'created_on'
+      ]);
+    });
+
+    it('still sorts on a plain click and stays put without a priority endpoint', async () => {
+      await loadStore();
+      const list = await getContactList();
+
+      // no endpoint to save to — the columns don't offer the drag at all
+      expect(headerFor(list, 'field:state').classList.contains('reorderable'))
+        .to.be.false;
+      const before = columnKeys(list);
+      await dragHeader(list, 'field:state', 0);
+      expect(columnKeys(list)).to.deep.equal(before);
+
+      // and a plain click (no movement past the dead zone) sorts
+      const header = headerFor(list, 'field:state');
+      header.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: 400,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 400, pointerType: 'mouse' })
+      );
+      header.click();
+      expect((list as any).sort).to.equal('field:state');
+    });
+  });
 });

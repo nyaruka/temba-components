@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
 import { Contact } from '../interfaces';
-import { getUrl } from '../utils';
+import { getUrl, postJSON } from '../utils';
 
 const FIELD_PREFIX = 'field:';
 
@@ -22,6 +22,11 @@ const EMPTY = '--';
  * {@link ContactList.fieldsEndpoint} on connect; cells read each
  * contact's value out of `item.fields[<key>]`. Date/time fields
  * render as a relative duration, matching the Last-seen column.
+ *
+ * When {@link ContactList.priorityEndpoint} is set the field columns
+ * can be dragged into a new order, which is saved as the workspace's
+ * featured-field order (the list renders featured fields by priority,
+ * so column order and field order are the same thing).
  */
 export class ContactList extends ContentList<Contact> {
   static get styles() {
@@ -48,6 +53,14 @@ export class ContactList extends ContentList<Contact> {
    * `featured: true` become extra columns. */
   @property({ type: String, attribute: 'fields-endpoint' })
   fieldsEndpoint = '/api/v2/fields.json';
+
+  /** Endpoint accepting `{ featured: [keys...] }` to save featured-field
+   * order (the same one the fields management page posts to). When set,
+   * the field columns become drag-reorderable and a drop saves the new
+   * order org-wide; the host only sets it for users holding the
+   * update-priority permission. */
+  @property({ type: String, attribute: 'priority-endpoint' })
+  priorityEndpoint = '';
 
   /** Anonymous workspaces mask URN values, so instead of the URN
    * column the list shows each contact's ref (served as its own
@@ -104,7 +117,7 @@ export class ContactList extends ContentList<Contact> {
     // Rebuilding here (rather than in updated()) means a mounted
     // anon attribute is reflected in the first paint instead of
     // flashing the URN header for a frame.
-    if (changes.has('anon')) {
+    if (changes.has('anon') || changes.has('priorityEndpoint')) {
       this.columns = this.buildColumns();
     }
   }
@@ -173,7 +186,11 @@ export class ContactList extends ContentList<Contact> {
         sortable: true,
         resizeMinWidth: '40px',
         maxWidth: '200px',
-        resizable: true
+        resizable: true,
+        // Field columns can be dragged into a new order, but only when
+        // the host wired up somewhere to save it — reordering that
+        // silently reverts on reload would read as broken.
+        reorderable: !!this.priorityEndpoint
       })
     );
     // Name + URN are the pinned identity columns and are not
@@ -222,6 +239,28 @@ export class ContactList extends ContentList<Contact> {
         grow: true
       }
     ];
+  }
+
+  /** A committed header drag reordered the field columns — keep
+   * featuredFields aligned with the new column order (so any rebuild
+   * preserves it) and save it as the workspace's featured-field order.
+   * Column order maps directly onto priority: leftmost = highest, the
+   * same contract as the fields management page, whose endpoint this
+   * posts to with the full featured list. */
+  protected onColumnOrderChanged(columns: ContentListColumn[]): void {
+    const keys = columns
+      .filter((c) => c.key.startsWith(FIELD_PREFIX))
+      .map((c) => c.key.substring(FIELD_PREFIX.length));
+    this.featuredFields = keys
+      .map((key) => (this.featuredFields || []).find((f: any) => f.key === key))
+      .filter(Boolean);
+    if (!this.priorityEndpoint) return;
+    postJSON(this.priorityEndpoint, { featured: keys }).catch((error) => {
+      // The columns stay in their dragged order — the save failing
+      // just means the order won't stick across a reload; the next
+      // successful drag re-saves the full list.
+      console.warn('failed to save featured field order', error);
+    });
   }
 
   protected getRowIcon(_item: Contact): string | null {
