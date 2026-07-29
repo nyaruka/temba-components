@@ -416,6 +416,29 @@ describe(TAG, () => {
     expect(dropdown.open).to.equal(true);
   });
 
+  it('only hit-tests the popup while open', async () => {
+    const dropdown = await getDropdown();
+    const toggle = dropdown.querySelector('[slot="toggle"]') as HTMLElement;
+
+    toggle.click();
+    await waitForStableRender(dropdown);
+
+    // the open popup is the topmost thing at its own center
+    const content = dropdown.querySelector('[slot="dropdown"]') as HTMLElement;
+    const bounds = content.getBoundingClientRect();
+    const x = bounds.left + bounds.width / 2;
+    const y = bounds.top + bounds.height / 2;
+    expect(document.elementFromPoint(x, y)).to.equal(content);
+
+    // after close the popup stays laid out until it goes dormant 250ms
+    // later, but it must not swallow clicks aimed at what it was covering
+    dropdown.close();
+    await dropdown.updateComplete;
+    expect(dropdown.open).to.equal(false);
+    expect(dropdown.dormant).to.equal(false);
+    expect(document.elementFromPoint(x, y)).to.not.equal(content);
+  });
+
   it('renders without mask by default', async () => {
     const dropdown = await getDropdown(); // No mask explicitly set
 

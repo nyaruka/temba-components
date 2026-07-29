@@ -34,13 +34,21 @@ export enum ContentMenuItemType {
 export class ContentMenu extends RapidElement {
   static get styles() {
     return css`
-      :host {
-        tabindex: 0;
-        z-index: 5000;
-      }
       .container {
         display: flex;
         align-items: center;
+      }
+
+      temba-dropdown {
+        /* as a flex item of .container this z-index takes effect and
+           creates a stacking context — keep it in sync with the popup's
+           z-index inside temba-dropdown (9000) so the open menu clears
+           floating windows like the simulator (5000). This also keeps
+           the closed toggle above those windows, intentionally: the
+           menu has to stay clickable when a floating window overlaps
+           the header. Scoped here rather than on :host so the action
+           buttons rendered alongside keep their normal stacking. */
+        z-index: 9000;
       }
 
       .button_item,
@@ -68,7 +76,6 @@ export class ContentMenu extends RapidElement {
         color: rgb(45, 45, 45);
         z-index: 50;
         min-width: 200px;
-        tabindex: 0;
       }
 
       .divider {
@@ -82,7 +89,6 @@ export class ContentMenu extends RapidElement {
         font-size: 1.1rem;
         cursor: pointer;
         font-weight: 400;
-        tabindex: 0;
       }
 
       .item:hover {

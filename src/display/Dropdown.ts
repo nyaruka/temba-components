@@ -9,9 +9,6 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 export class Dropdown extends RapidElement {
   static get styles() {
     return css`
-      :host {
-      }
-
       .wrapper {
         position: relative;
       }
@@ -25,9 +22,6 @@ export class Dropdown extends RapidElement {
         overflow: auto;
       }
 
-      .dropdown:focus {
-      }
-
       .dropdown.dormant {
         height: 0;
         overflow: hidden;
@@ -35,7 +29,16 @@ export class Dropdown extends RapidElement {
 
       .dropdown {
         position: fixed;
-        z-index: 2;
+        /* open popups sit above floating windows (simulator, 5000) and
+           other page chrome, but below dialogs and toasts (10000);
+           temba-content-menu mirrors this value on its temba-dropdown
+           flex item (see ContentMenu.ts) */
+        z-index: 9000;
+        /* the dormant (height: 0) rule is applied 250ms after close, so
+           until then this stays a laid-out, invisible fixed box at
+           z-index 9000 over whatever it was covering — ignore pointer
+           events unless we're actually open */
+        pointer-events: none;
         padding: 0;
         opacity: 0;
         border-radius: calc(var(--curvature) * 1.5);
@@ -67,6 +70,7 @@ export class Dropdown extends RapidElement {
 
       .open .dropdown {
         opacity: 1;
+        pointer-events: auto;
         transform: translateY(0.5em) scale(1);
       }
 

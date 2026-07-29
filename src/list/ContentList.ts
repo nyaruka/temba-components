@@ -532,10 +532,16 @@ export class ContentList<T = any> extends RapidElement {
            within the panel padding so row dividers don't bleed full-
            width. */
         margin-right: -20px;
-        /* Contain the sticky header's z-index inside this frame so it
-           can't compete with the page header's content-menu dropdown
-           (also z-index 2), which otherwise paints under the table
-           header by DOM-order tie-break. */
+        /* Keep the table's internal layering (sticky header, pinned
+           columns and their hover/shadow layers, z-index 1-6) inside
+           its own stacking context so those values can only order
+           against each other and never interleave with page-level
+           layers like floating windows or open dropdowns. Without it
+           the frame is z-index auto, so the table's 1-6 would join the
+           nearest ancestor stacking context — normally the root — and
+           tie against page chrome using comparably small values. Note
+           this also caps this list's own label dropdown, which renders
+           inside the frame and so cannot escape it. */
         isolation: isolate;
       }
       .table-scroll {
