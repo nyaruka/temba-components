@@ -11,6 +11,11 @@ const FIELD_PREFIX = 'field:';
 /** Placeholder shown in any cell whose value is empty. */
 const EMPTY = '--';
 
+/** Ceiling on how many pages of fields we'll walk. The API serves 250
+ * per page, so this is far past any real workspace — it exists only so
+ * an endpoint that keeps handing back a `next` can't spin forever. */
+const MAX_FIELD_PAGES = 20;
+
 /**
  * Contact CRUDL list — drop-in replacement for the rapidpro
  * `contacts/contact_list.html` table. Each row carries a contact
@@ -141,11 +146,27 @@ export class ContactList extends ContentList<Contact> {
     const controller = new AbortController();
     this.pendingFieldsController = controller;
     try {
-      const response = await getUrl(this.fieldsEndpoint, controller);
-      // If the controller has been swapped or cleared, the response
-      // is from a stale request — drop it on the floor.
-      if (this.pendingFieldsController !== controller) return;
-      const all = response.json?.results || [];
+      // The fields API is cursor paginated (250 per page), and the
+      // featured list a drop posts back is authoritative — any featured
+      // field we never read would be silently un-featured org-wide. So
+      // walk every page before deciding what's featured. Nothing is
+      // assigned until the whole walk lands, so a page that fails leaves
+      // the previous (complete) list in place rather than a truncated one.
+      const all: any[] = [];
+      const fetched = new Set<string>();
+      let url: string = this.fieldsEndpoint;
+      for (let page = 0; url && page < MAX_FIELD_PAGES; page++) {
+        // an endpoint whose `next` points back at a page we've already
+        // read would otherwise loop until the page cap
+        if (fetched.has(url)) break;
+        fetched.add(url);
+        const response = await getUrl(url, controller);
+        // If the controller has been swapped or cleared, the response
+        // is from a stale request — drop it on the floor.
+        if (this.pendingFieldsController !== controller) return;
+        all.push(...(response.json?.results || []));
+        url = response.json?.next || '';
+      }
       this.featuredFields = all
         .filter((f: any) => f.featured)
         .sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0));
@@ -274,6 +295,10 @@ export class ContactList extends ContentList<Contact> {
       })
       .catch((error) => {
         console.warn('failed to save featured field order', error);
+        // The list went away while the save was in flight — there are no
+        // columns left to put back, and refetching would only leave a
+        // request outstanding against a detached element.
+        if (!this.isConnected) return;
         // Nothing made the dragged order durable, so stop showing it —
         // refetch and fall back on whatever the server still holds. The
         // success path deliberately doesn't refetch: we already display

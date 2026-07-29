@@ -2303,6 +2303,93 @@ describe('temba-content-list', () => {
       }
     });
 
+    it('reads every page of a paginated fields endpoint', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      // The fields API is cursor paginated. The featured list posted on
+      // a drop is authoritative, so a featured field stranded on page two
+      // would be un-featured org-wide by the next drag.
+      const PAGED_URL = '/paged-fields.json';
+      // Page two is registered first: the mock registry answers with the
+      // first regex that matches, and page one's would swallow it.
+      mockGET(/\/paged-fields\.json\?cursor=2$/, {
+        next: null,
+        results: [
+          {
+            key: 'region',
+            name: 'Region',
+            featured: true,
+            priority: 7,
+            value_type: 'text'
+          }
+        ]
+      });
+      mockGET(/\/paged-fields\.json$/, {
+        next: `${PAGED_URL}?cursor=2`,
+        results: [
+          {
+            key: 'state',
+            name: 'State',
+            featured: true,
+            priority: 10,
+            value_type: 'text'
+          },
+          {
+            key: 'gender',
+            name: 'Gender',
+            featured: true,
+            priority: 5,
+            value_type: 'text'
+          },
+          {
+            key: 'born',
+            name: 'Born',
+            featured: false,
+            priority: 0,
+            value_type: 'numeric'
+          }
+        ]
+      });
+      try {
+        const initialPosts = getPriorityPosts().length;
+        const list = await getContactList({
+          'priority-endpoint': PRIORITY_URL,
+          'fields-endpoint': PAGED_URL
+        });
+
+        // both pages contribute columns, and priority orders them across
+        // the page boundary rather than page-by-page
+        expect(columnKeys(list)).to.deep.equal([
+          'name',
+          'urn',
+          'field:state',
+          'field:region',
+          'field:gender',
+          'last_seen_on',
+          'created_on'
+        ]);
+
+        // dragging State past Region swaps them
+        const region = headerFor(list, 'field:region');
+        const rRect = region.getBoundingClientRect();
+        await dragHeader(list, 'field:state', rRect.left + rRect.width * 0.9);
+        expect(columnKeys(list).slice(2, 5)).to.deep.equal([
+          'field:region',
+          'field:state',
+          'field:gender'
+        ]);
+
+        // and the saved list carries the page-two field, so nothing gets
+        // un-featured behind the user's back
+        await waitForCondition(() => getPriorityPosts().length > initialPosts);
+        expect(getPriorityPosts()[initialPosts]).to.deep.equal({
+          featured: ['region', 'state', 'gender']
+        });
+      } finally {
+        clearMockGets();
+      }
+    });
+
     it('marks the drop slot past the last field column (screenshot)', async () => {
       await loadStore();
       mockPOST(priorityRegex, { status: 'OK' });
