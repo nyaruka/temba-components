@@ -345,7 +345,7 @@ export class TembaList extends RapidElement {
         }
 
         const newIndex = this.findRepinnedCursorIndex(prevItem, newItems);
-        if (newIndex !== null) {
+        if (newIndex !== null && newIndex > -1) {
           this.cursorIndex = newIndex;
 
           // make sure our focused item is visible
