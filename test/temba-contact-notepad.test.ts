@@ -1,16 +1,38 @@
 import { expect, fixture, waitUntil } from '@open-wc/testing';
 import { html } from 'lit';
 import { ContactNotepad } from '../src/live/ContactNotepad';
-import { resetContactWatches } from '../src/live/ContactWatch';
+import { resetContactWatches, updateContact } from '../src/live/ContactWatch';
 import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import {
   getComponent,
   loadStore,
   mockGET,
-  MockSocketProvider
+  MockSocketProvider,
+  waitForWatchedContact
 } from './utils.test';
 
 const TAG = 'temba-contact-notepad';
+
+// a contact as the central watcher would hand it to us, carrying whatever
+// note the server has for it
+const contactWithNote = (text: string): any => ({
+  uuid: 'notepad-contact',
+  name: 'Dave Matthews',
+  urns: [],
+  groups: [],
+  fields: {},
+  notes: [
+    {
+      text,
+      created_on: '2026-01-06T12:00:00.000000Z',
+      created_by: {
+        email: 'eric@textit.com',
+        first_name: 'Eric',
+        last_name: 'Newcomer'
+      }
+    }
+  ]
+});
 
 const getNotepad = async (attrs: any = {}) => {
   const notepad = (await getComponent(TAG, attrs, '', 400)) as ContactNotepad;
@@ -90,6 +112,48 @@ describe('temba-contact-notepad', () => {
 
     const event = await details;
     expect(event.detail.dirty).to.be.true;
+  });
+
+  it('keeps unsaved edits through a contact delivery', async () => {
+    await loadStore();
+    const notepad = await getNotepad({
+      contact: 'notepad-contact',
+      autogrow: true
+    });
+    await waitForWatchedContact('notepad-contact');
+
+    const textarea = notepad.shadowRoot.querySelector(
+      '.notepad'
+    ) as HTMLTextAreaElement;
+
+    // the note is taken off a delivery from updated(), so the render that
+    // shows it is a follow-up pass
+    const settle = async () => {
+      while (!(await notepad.updateComplete)) {
+        // another update was scheduled while the last one ran
+      }
+    };
+
+    textarea.value = 'unsaved edit';
+    textarea.dispatchEvent(new Event('input'));
+    await settle();
+    expect(notepad.dirty).to.be.true;
+
+    // the watcher re-delivers the whole contact on any activity, not just
+    // note changes - it can't take the edit down with it
+    updateContact('notepad-contact', contactWithNote('server note'));
+    await settle();
+
+    expect(notepad.dirty).to.be.true;
+    expect(textarea.value).to.equal('unsaved edit');
+
+    // once the edit is no longer pending, deliveries land as usual
+    notepad.markClean();
+    updateContact('notepad-contact', contactWithNote('newer note'));
+    await settle();
+
+    expect(notepad.note.text).to.equal('newer note');
+    expect(textarea.value).to.equal('newer note');
   });
 
   it('fills a bounded pane without overflowing it', async () => {

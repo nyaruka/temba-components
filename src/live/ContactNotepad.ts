@@ -167,9 +167,25 @@ export class ContactNotepad extends ContactStoreElement {
       '.notepad'
     ) as HTMLInputElement;
     const note = notepad.value;
+    // our own write is the one delivery the dirty guard below holds out for,
+    // so take the note from it once it lands
     this.postChanges({ note }).then(() => {
-      this.markClean();
+      this.syncNote();
     });
+  }
+
+  // takes the newest note off the contact, copied so editing it never writes
+  // into the contact data we share with everything else
+  private syncNote() {
+    this.note =
+      this.data?.notes?.length > 0
+        ? { ...this.data.notes[this.data.notes.length - 1] }
+        : null;
+    this.fireCustomEvent(CustomEventType.DetailsChanged, {
+      count: this.note && this.note.text.length > 0 ? 1 : 0,
+      dirty: false
+    });
+    this.markClean();
   }
 
   protected updated(
@@ -177,16 +193,11 @@ export class ContactNotepad extends ContactStoreElement {
   ): void {
     super.updated(changes);
 
-    if (changes.has('data')) {
-      this.note =
-        this.data?.notes?.length > 0
-          ? { ...this.data.notes[this.data.notes.length - 1] }
-          : null;
-      this.fireCustomEvent(CustomEventType.DetailsChanged, {
-        count: this.note && this.note.text.length > 0 ? 1 : 0,
-        dirty: false
-      });
-      this.markClean();
+    // the central watcher re-delivers the contact on any activity, not just
+    // note changes, so a delivery mid-edit would otherwise drop what the user
+    // has typed - hold the note until the edit is saved or abandoned
+    if (changes.has('data') && !this.dirty) {
+      this.syncNote();
     }
 
     if (changes.has('note') || changes.has('data')) {

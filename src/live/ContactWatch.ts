@@ -201,9 +201,35 @@ const clearRefetch = (entry: WatchedContact) => {
   }
 };
 
+// a fetch that couldn't happen leaves watchers with no value at all, so try
+// again with a backoff - anything that supersedes us in the meantime (a newer
+// fetch, a local write, the last watcher leaving) cancels it
+const retryFetch = (
+  uuid: string,
+  entry: WatchedContact,
+  attempt: number,
+  seq: number
+) => {
+  if (attempt >= FETCH_RETRIES) {
+    return;
+  }
+
+  window.setTimeout(
+    () => {
+      if (watched.get(uuid) === entry && entry.fetchSeq === seq) {
+        fetchContact(uuid, entry, attempt + 1);
+      }
+    },
+    FETCH_RETRY_DELAY * Math.pow(2, attempt)
+  );
+};
+
 const fetchContact = (uuid: string, entry: WatchedContact, attempt = 0) => {
   const store = getStore();
   if (!store) {
+    // the store element can upgrade after the components that watch through
+    // it - come back for it instead of leaving watchers empty for good
+    retryFetch(uuid, entry, attempt, entry.fetchSeq);
     return;
   }
 
@@ -217,43 +243,35 @@ const fetchContact = (uuid: string, entry: WatchedContact, attempt = 0) => {
     // and the cache holds this url in a different shape for components that
     // still fetch it themselves
     .getUrl(`${CONTACT_ENDPOINT}${uuid}`, { force: true, skipCache: true })
-    .then((response) => {
-      entry.fetching--;
+    // two-argument form so a throw out of the success handler isn't taken
+    // for a failed fetch and retried on top of itself
+    .then(
+      (response) => {
+        entry.fetching--;
 
-      // ignore responses that arrive after everyone left or a newer fetch
-      if (watched.get(uuid) !== entry || entry.fetchSeq !== seq) {
-        return;
+        // ignore responses that arrive after everyone left or a newer fetch
+        if (watched.get(uuid) !== entry || entry.fetchSeq !== seq) {
+          return;
+        }
+
+        const contact = response.json?.results?.[0] || null;
+        if (!contact) {
+          return;
+        }
+
+        entry.contact = contact;
+        primeAll(entry);
+      },
+      () => {
+        entry.fetching--;
+
+        if (watched.get(uuid) !== entry || entry.fetchSeq !== seq) {
+          return;
+        }
+
+        retryFetch(uuid, entry, attempt, seq);
       }
-
-      const contact = response.json?.results?.[0] || null;
-      if (!contact) {
-        return;
-      }
-
-      entry.contact = contact;
-      primeAll(entry);
-    })
-    .catch(() => {
-      entry.fetching--;
-
-      // a failed fetch leaves watchers with no value at all, so try again
-      // with a backoff - anything that supersedes us in the meantime (a
-      // newer fetch, a local write, the last watcher leaving) cancels it
-      if (watched.get(uuid) !== entry || entry.fetchSeq !== seq) {
-        return;
-      }
-
-      if (attempt < FETCH_RETRIES) {
-        window.setTimeout(
-          () => {
-            if (watched.get(uuid) === entry && entry.fetchSeq === seq) {
-              fetchContact(uuid, entry, attempt + 1);
-            }
-          },
-          FETCH_RETRY_DELAY * Math.pow(2, attempt)
-        );
-      }
-    });
+    );
 };
 
 const scheduleRefetch = (uuid: string, entry: WatchedContact) => {
@@ -357,7 +375,14 @@ export const updateContact = (uuid: string, contact: Contact) => {
     // before this write and could land after it with pre-write data
     entry.fetchSeq++;
     clearRefetch(entry);
-    entry.contact = contact;
+    // the caller keeps using the object they handed us (it's their data and
+    // the store's cache entry) while appliers patch ours in place - copy the
+    // parts they touch so a live event can't reach back into it
+    entry.contact = {
+      ...contact,
+      groups: (contact.groups || []).map((group) => ({ ...group })),
+      fields: { ...contact.fields }
+    };
     primeAll(entry);
   }
 };
