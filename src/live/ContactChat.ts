@@ -883,9 +883,15 @@ export class ContactChat extends ContactStoreElement {
       return null;
     }
 
+    // unparseable values and zero-value times (e.g. go's zero time for a
+    // contact that has never been seen) mean there's no last seen to show
+    const lastSeen = DateTime.fromISO(lastSeenOn);
+    if (!lastSeen.isValid || lastSeen.year <= 1) {
+      return null;
+    }
+
     // recent activity speaks for itself in the chat - only surface last
     // seen once the contact has been quiet for at least an hour
-    const lastSeen = DateTime.fromISO(lastSeenOn);
     const minutes = DateTime.now().diff(lastSeen, 'minutes').minutes;
     if (minutes < 60) {
       return null;
