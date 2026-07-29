@@ -48,7 +48,10 @@ export interface ContentListColumn {
    * Reorderable columns must form one contiguous run — drags are
    * constrained to slots inside that run so the system columns on
    * either side stay put. Takes effect once two or more columns opt
-   * in (there's nothing to reorder against otherwise). */
+   * in (there's nothing to reorder against otherwise). The table does
+   * not scroll while a drag is in flight, so dragging beyond the
+   * visible frame isn't supported — drops clamp to the headers on
+   * screen. */
   reorderable?: boolean;
   /** Optional resize-only floor. Unlike minWidth, this does not affect the
    * table's native layout before the user resizes the column. */
@@ -792,16 +795,11 @@ export class ContentList<T = any> extends RapidElement {
       .head-cell.dragging {
         opacity: 0.35;
       }
-      /* The bars overhang the cell edges, so the marked header has to
-         out-stack its neighbours (opaque, z-index 2) or the following
-         cell paints over the trailing bar. Stays under a pinned header
-         cell (z-index 5) so the frozen region still covers it. */
-      .head-cell.drop-before,
-      .head-cell.drop-after {
-        z-index: 3;
-      }
-      /* The insertion bar straddles the column boundary; the header
-         cell is the positioning context (it's position: sticky). */
+      /* The insertion bar sits flush inside the boundary it marks
+         rather than straddling it — an overhanging bar would be painted
+         over by the neighbouring header cell, which is opaque and wins
+         the stacking order. The header cell is the positioning context
+         (it's position: sticky). */
       .head-cell.drop-before::before,
       .head-cell.drop-after::after {
         content: '';
@@ -814,10 +812,10 @@ export class ContentList<T = any> extends RapidElement {
         z-index: 5;
       }
       .head-cell.drop-before::before {
-        left: -1.5px;
+        left: 0;
       }
       .head-cell.drop-after::after {
-        right: -1.5px;
+        right: 0;
       }
       :host([column-dragging]),
       :host([column-dragging]) * {
@@ -3111,11 +3109,8 @@ export class ContentList<T = any> extends RapidElement {
   ): void {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     if (this.columnResize || this.columnDrag) return;
-    // Only a column inside the reorderable run can be dragged; one that
-    // opted in from outside it has nowhere legal to land.
-    const range = this.reorderableRange();
-    const index = this.columns.indexOf(column);
-    if (!range || index < range[0] || index > range[1]) return;
+    // No range check here: this only ever runs from the @pointerdown
+    // render binds on headers inside the reorderable run.
     const header = event.currentTarget as HTMLElement;
     // No preventDefault and no pointer capture yet — until the pointer
     // clears the dead zone this may still be a plain sort click, which
@@ -3551,8 +3546,11 @@ export class ContentList<T = any> extends RapidElement {
       allIds.length > 0 && allIds.every((id) => this.selectedIds.has(id));
     const someSelected = !allSelected && this.selectedIds.size > 0;
     // Computed once for the whole row rather than per cell — every
-    // header cell needs it to resolve its reorder affordances.
+    // header cell needs both to resolve its reorder affordances.
     const reorderableRange = this.reorderableRange();
+    const dragFromIndex = this.draggingColumnKey
+      ? this.columns.findIndex((c) => c.key === this.draggingColumnKey)
+      : -1;
 
     return html`
       <thead>
@@ -3592,6 +3590,7 @@ export class ContentList<T = any> extends RapidElement {
               column,
               index,
               reorderableRange,
+              dragFromIndex,
               leadingResizeColumn,
               trailingResize,
               outerResize
@@ -3641,6 +3640,7 @@ export class ContentList<T = any> extends RapidElement {
     column: ContentListColumn,
     index: number,
     range: [number, number] | null,
+    fromIndex: number,
     leadingResizeColumn?: ContentListColumn,
     trailingResize = false,
     outerResize = false
@@ -3660,9 +3660,6 @@ export class ContentList<T = any> extends RapidElement {
       index <= range[1]
     );
     const dragging = this.draggingColumnKey === column.key;
-    const fromIndex = this.draggingColumnKey
-      ? this.columns.findIndex((c) => c.key === this.draggingColumnKey)
-      : -1;
     const dropSlot = fromIndex === -1 ? -1 : this.columnDropSlot;
     const noopSlot = dropSlot === fromIndex || dropSlot === fromIndex + 1;
     const dropBefore = !noopSlot && dropSlot === index && reorderable;

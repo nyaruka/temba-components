@@ -4,7 +4,7 @@ import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
 import { Contact } from '../interfaces';
 import { getUrl, postJSON } from '../utils';
-import type { Store } from '../store/Store';
+import { getStore } from '../store/Store';
 
 const FIELD_PREFIX = 'field:';
 
@@ -74,11 +74,6 @@ export class ContactList extends ContentList<Contact> {
 
   private pendingFieldsController?: AbortController;
 
-  /** The page's store element, when the host mounted one. The list
-   * doesn't read from it — it fetches its own fields — but it does have
-   * to tell it when a drop changes the workspace's featured order. */
-  private store?: Store;
-
   constructor() {
     super();
     this.valueKey = 'uuid';
@@ -107,7 +102,6 @@ export class ContactList extends ContentList<Contact> {
 
   public connectedCallback(): void {
     super.connectedCallback();
-    this.store = document.querySelector('temba-store') as Store;
     this.loadFields();
   }
 
@@ -270,6 +264,14 @@ export class ContactList extends ContentList<Contact> {
       .filter(Boolean);
     if (!this.priorityEndpoint) return;
     postJSON(this.priorityEndpoint, { featured: keys })
+      .then((response) => {
+        // postUrl only rejects on 5xx, so a 400/403/404 arrives here as a
+        // perfectly resolved promise — the order was never stored and we
+        // have to treat it as the failure it is.
+        if (response.status < 200 || response.status >= 300) {
+          throw response;
+        }
+      })
       .catch((error) => {
         console.warn('failed to save featured field order', error);
         // Nothing made the dragged order durable, so stop showing it —
@@ -282,11 +284,15 @@ export class ContactList extends ContentList<Contact> {
       .finally(() => {
         // Featured fields are workspace state other components on the
         // page read from the store (contact details, the fields page),
-        // so its cached copy has to hear about the new order too.
-        this.store?.refreshFields().catch(() => {
-          // a stale store cache is cosmetic and elsewhere; the list
-          // itself is already showing the saved order
-        });
+        // so its cached copy has to hear about the new order too. Looked
+        // up here rather than cached on connect so a list that mounted
+        // ahead of the store still finds it.
+        getStore()
+          ?.refreshFields()
+          .catch(() => {
+            // a stale store cache is cosmetic and elsewhere; the list
+            // itself is already showing the saved order
+          });
       });
   }
 
