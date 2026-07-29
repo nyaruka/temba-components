@@ -14,6 +14,7 @@
 'sbc913d7dc0f33877': `to add`,
 's7722a91d3a512442': str`Last seen ${0}`,
 's22965bb9808befb0': `Interrupt`,
+'s6dbbe2646b239ca5': `Closed`,
 's122d4de68bcfcdf4': `It's okay to restart`,
 's3eb2567092b4d7c1': `from the beginning`,
 's28f37776b3901438': `It's okay to interrupt`,

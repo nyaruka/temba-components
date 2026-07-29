@@ -57,6 +57,9 @@ export class TembaList extends RapidElement {
   renderOption: (option: any, selected: boolean) => TemplateResult;
 
   @property({ attribute: false })
+  renderDivider: (prev: any, option: any) => TemplateResult;
+
+  @property({ attribute: false })
   renderOptionDetail: (option: any, selected: boolean) => TemplateResult;
 
   @property({ attribute: false, type: Object })
@@ -67,6 +70,10 @@ export class TembaList extends RapidElement {
   refreshKey = '0';
 
   reverseRefresh = true;
+
+  // subclasses can enforce a display order when refreshed items are merged in,
+  // otherwise new items simply land at the top of the list
+  protected compareItems: (a: any, b: any) => number = null;
 
   // subclasses that get realtime updates can opt out of interval polling
   protected pollingEnabled = true;
@@ -302,6 +309,9 @@ export class TembaList extends RapidElement {
           results = sanitizedResults.reverse();
         }
         const newItems = [...results, ...items];
+        if (this.compareItems) {
+          newItems.sort(this.compareItems);
+        }
 
         const topItem = newItems[0];
         if (
@@ -512,6 +522,7 @@ export class TembaList extends RapidElement {
         ?loading=${this.loading}
         ?internalFocusDisabled=${this.internalFocusDisabled}
         .renderOption=${this.renderOption}
+        .renderDivider=${this.renderDivider}
         .renderOptionDetail=${this.renderOptionDetail}
         @temba-scroll-threshold=${this.handleScrollThreshold}
         @temba-selection=${this.handleSelection.bind(this)}
