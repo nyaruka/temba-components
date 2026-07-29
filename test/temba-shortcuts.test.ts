@@ -26,9 +26,7 @@ describe('temba-shortcuts', () => {
     (store as any).shortcuts = SHORTCUTS;
   });
 
-  const createList = async (
-    attrs = ''
-  ): Promise<ShortcutList> => {
+  const createList = async (attrs = ''): Promise<ShortcutList> => {
     const list = (await fixture(
       `<temba-shortcuts ${attrs}></temba-shortcuts>`
     )) as ShortcutList;
@@ -95,9 +93,9 @@ describe('temba-shortcuts', () => {
       await list.updateComplete;
       const message = list.shadowRoot.querySelector('.no-match');
       expect(message.textContent).to.contain('No matches for');
-      expect(
-        list.shadowRoot.querySelector('.filter').textContent
-      ).to.contain('nonsense');
+      expect(list.shadowRoot.querySelector('.filter').textContent).to.contain(
+        'nonsense'
+      );
     });
 
     it('resets the cursor when the filter changes', async () => {

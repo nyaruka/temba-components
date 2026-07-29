@@ -181,9 +181,7 @@ describe('temba-node-editor fields', () => {
       };
       (editor as any).updateComputedFields('method');
 
-      expect(JSON.stringify(formData(editor).headers)).to.not.equal(
-        undefined
-      );
+      expect(JSON.stringify(formData(editor).headers)).to.not.equal(undefined);
       // the default headers follow the selected method
       expect(before).to.be.a('string');
     });

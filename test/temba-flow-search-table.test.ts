@@ -66,7 +66,11 @@ describe('temba-flow-search table scope', () => {
     it('reports where in the text the match falls', async () => {
       const element = await createSearch(
         definition([
-          { uuid: 'node-1', actions: [sendMsg('a1', 'Well hello there')], exits: [] }
+          {
+            uuid: 'node-1',
+            actions: [sendMsg('a1', 'Well hello there')],
+            exits: []
+          }
         ])
       );
       const results = await search(element, 'hello');
@@ -241,8 +245,7 @@ describe('temba-flow-search table scope', () => {
 
     // stickies live on the canvas rather than the message table, so they are
     // only searched in flow scope
-    const createFlowSearch = (def: any) =>
-      createSearch(def, { scope: 'flow' });
+    const createFlowSearch = (def: any) => createSearch(def, { scope: 'flow' });
 
     it('are not searched in table scope', async () => {
       const element = await createSearch(

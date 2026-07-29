@@ -32,9 +32,9 @@ describe('flow/nodes/shared-rules', () => {
     });
 
     it('reads the value from an object operator', () => {
-      expect(getOperatorValue({ value: 'has_text', name: 'has some text' })).to.equal(
-        'has_text'
-      );
+      expect(
+        getOperatorValue({ value: 'has_text', name: 'has some text' })
+      ).to.equal('has_text');
     });
 
     it('reads the value from the first entry of an array operator', () => {
@@ -366,9 +366,7 @@ describe('flow/nodes/shared-rules', () => {
     it('leaves both values empty for a zero operand case', () => {
       const rules = casesToFormRules({
         router: {
-          cases: [
-            { type: 'has_text', arguments: [], category_uuid: 'cat-1' }
-          ],
+          cases: [{ type: 'has_text', arguments: [], category_uuid: 'cat-1' }],
           categories: [{ uuid: 'cat-1', name: 'Has Text' }]
         }
       });
@@ -380,7 +378,11 @@ describe('flow/nodes/shared-rules', () => {
       const rules = casesToFormRules({
         router: {
           cases: [
-            { type: 'has_any_word', arguments: ['red'], category_uuid: 'cat-1' },
+            {
+              type: 'has_any_word',
+              arguments: ['red'],
+              category_uuid: 'cat-1'
+            },
             { type: 'has_text', arguments: [], category_uuid: 'cat-other' }
           ],
           categories: [

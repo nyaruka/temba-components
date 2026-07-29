@@ -32,9 +32,10 @@ describe('gsmvalidator', () => {
 
   it('rejects characters outside the alphabet', () => {
     for (const char of '`”…’çÿ✓') {
-      expect(validateCharacter(char), `expected ${char} to be non-GSM`).to.equal(
-        false
-      );
+      expect(
+        validateCharacter(char),
+        `expected ${char} to be non-GSM`
+      ).to.equal(false);
     }
   });
 

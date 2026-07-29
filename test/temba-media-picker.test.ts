@@ -156,8 +156,9 @@ describe('temba-media-picker', () => {
     });
 
     it('accepts any of a comma separated list', async () => {
-      expect(await uploadOne('image/png, application/pdf', 'application/pdf'))
-        .to.equal(1);
+      expect(
+        await uploadOne('image/png, application/pdf', 'application/pdf')
+      ).to.equal(1);
     });
 
     it('rejects a type outside the list', async () => {
@@ -217,12 +218,7 @@ describe('temba-media-picker', () => {
 
   describe('upload failures', () => {
     it('reports a validation error without attaching', async () => {
-      mockPOST(
-        MEDIA_ENDPOINT,
-        { file: ['Unsupported file type'] },
-        {},
-        '400'
-      );
+      mockPOST(MEDIA_ENDPOINT, { file: ['Unsupported file type'] }, {}, '400');
       const picker = await createPicker();
       picker.uploadFiles([file('bad.exe', 'application/octet-stream')]);
       await settle();
@@ -287,7 +283,9 @@ describe('temba-media-picker', () => {
       const single = await createPicker('max="1"');
       await single.updateComplete;
       expect(
-        single.shadowRoot.querySelector('#upload-input').hasAttribute('multiple')
+        single.shadowRoot
+          .querySelector('#upload-input')
+          .hasAttribute('multiple')
       ).to.equal(false);
 
       const multi = await createPicker('max="3"');

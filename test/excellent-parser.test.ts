@@ -189,9 +189,9 @@ describe('excellent/ExcellentParser', () => {
     });
 
     it('ignores non field references', () => {
-      expect(parser.getContactFields('@contact.name @globals.org')).to.deep.equal(
-        []
-      );
+      expect(
+        parser.getContactFields('@contact.name @globals.org')
+      ).to.deep.equal([]);
     });
   });
 
@@ -231,7 +231,9 @@ describe('excellent/ExcellentParser', () => {
     });
 
     it('skips expressions with a disallowed top level', () => {
-      expect(parser.findExpressions('hi @nonsense.foo there')).to.have.length(0);
+      expect(parser.findExpressions('hi @nonsense.foo there')).to.have.length(
+        0
+      );
     });
 
     it('allows an incomplete top level at the end of the input', () => {
@@ -246,7 +248,9 @@ describe('excellent/ExcellentParser', () => {
     });
 
     it('finds several expressions in one string', () => {
-      const found = parser.findExpressions('@contact.name lives in @fields.state');
+      const found = parser.findExpressions(
+        '@contact.name lives in @fields.state'
+      );
       expect(found.map((e) => e.text)).to.deep.equal([
         '@contact.name',
         '@fields.state'

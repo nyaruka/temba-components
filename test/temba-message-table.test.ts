@@ -285,9 +285,9 @@ describe('temba-message-table', () => {
 
     it('returns an empty list when not translating', async () => {
       const table = await createTable(withReplies(['Si']));
-      expect((table as any).getTranslatedQuickReplies('action-1')).to.deep.equal(
-        []
-      );
+      expect(
+        (table as any).getTranslatedQuickReplies('action-1')
+      ).to.deep.equal([]);
     });
 
     it('returns the localized replies', async () => {
@@ -295,9 +295,9 @@ describe('temba-message-table', () => {
         languageCode: SPANISH,
         isTranslating: true
       });
-      expect((table as any).getTranslatedQuickReplies('action-1')).to.deep.equal(
-        ['Si', 'No']
-      );
+      expect(
+        (table as any).getTranslatedQuickReplies('action-1')
+      ).to.deep.equal(['Si', 'No']);
     });
 
     it('trims and drops blank replies', async () => {
@@ -305,9 +305,9 @@ describe('temba-message-table', () => {
         languageCode: SPANISH,
         isTranslating: true
       });
-      expect((table as any).getTranslatedQuickReplies('action-1')).to.deep.equal(
-        ['Si']
-      );
+      expect(
+        (table as any).getTranslatedQuickReplies('action-1')
+      ).to.deep.equal(['Si']);
     });
 
     it('ignores non string entries', async () => {
@@ -315,9 +315,9 @@ describe('temba-message-table', () => {
         languageCode: SPANISH,
         isTranslating: true
       });
-      expect((table as any).getTranslatedQuickReplies('action-1')).to.deep.equal(
-        ['Si']
-      );
+      expect(
+        (table as any).getTranslatedQuickReplies('action-1')
+      ).to.deep.equal(['Si']);
     });
 
     it('returns an empty list when the field is not an array', async () => {
@@ -325,9 +325,9 @@ describe('temba-message-table', () => {
         languageCode: SPANISH,
         isTranslating: true
       });
-      expect((table as any).getTranslatedQuickReplies('action-1')).to.deep.equal(
-        []
-      );
+      expect(
+        (table as any).getTranslatedQuickReplies('action-1')
+      ).to.deep.equal([]);
     });
   });
 
@@ -373,7 +373,9 @@ describe('temba-message-table', () => {
         languageCode: SPANISH,
         isTranslating: true
       });
-      expect((missing as any).getTranslatedCategoryName('cat-1')).to.equal(null);
+      expect((missing as any).getTranslatedCategoryName('cat-1')).to.equal(
+        null
+      );
     });
   });
 
@@ -400,18 +402,18 @@ describe('temba-message-table', () => {
         withEmail({ [SPANISH]: { 'action-email': { subject: ['Hola'] } } }),
         { languageCode: SPANISH, isTranslating: true }
       );
-      expect((table as any).getTranslatedField('action-email', 'subject')).to.equal(
-        'Hola'
-      );
+      expect(
+        (table as any).getTranslatedField('action-email', 'subject')
+      ).to.equal('Hola');
     });
 
     it('returns null when not translating', async () => {
       const table = await createTable(
         withEmail({ [SPANISH]: { 'action-email': { subject: ['Hola'] } } })
       );
-      expect((table as any).getTranslatedField('action-email', 'subject')).to.equal(
-        null
-      );
+      expect(
+        (table as any).getTranslatedField('action-email', 'subject')
+      ).to.equal(null);
     });
 
     it('returns the whole array for an array field', async () => {
@@ -495,9 +497,9 @@ describe('temba-message-table', () => {
   describe('usesPairedRows and getPairedFields', () => {
     it('pairs rows for actions with more than one text field', async () => {
       const table = await createTable(definition([node()]));
-      expect(
-        (table as any).usesPairedRows({ type: 'send_email' })
-      ).to.equal(true);
+      expect((table as any).usesPairedRows({ type: 'send_email' })).to.equal(
+        true
+      );
     });
 
     it('does not pair rows for a single text field action', async () => {
@@ -559,7 +561,8 @@ describe('temba-message-table', () => {
   describe('stripLeadingLineBreaks', () => {
     it('removes leading newlines only', async () => {
       const table = await createTable(definition([node()]));
-      const strip = (text: string) => (table as any).stripLeadingLineBreaks(text);
+      const strip = (text: string) =>
+        (table as any).stripLeadingLineBreaks(text);
       expect(strip('\n\nhello')).to.equal('hello');
       expect(strip('\r\nhello')).to.equal('hello');
       expect(strip('hello\n\n')).to.equal('hello\n\n');
@@ -603,7 +606,11 @@ describe('temba-message-table', () => {
         kind: 'localization-group',
         node: node(),
         rules: [
-          { uuid: 'case-1', type: 'has_any_word', arguments: ['red', 'crimson'] }
+          {
+            uuid: 'case-1',
+            type: 'has_any_word',
+            arguments: ['red', 'crimson']
+          }
         ],
         categories: [],
         nodeIndex: 1

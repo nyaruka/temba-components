@@ -185,7 +185,9 @@ describe('temba-image-picker', () => {
       await openCropper(picker);
       expect(picker.showCroppie).to.equal(true);
 
-      (picker.shadowRoot.querySelector('.controls .close') as HTMLElement).click();
+      (
+        picker.shadowRoot.querySelector('.controls .close') as HTMLElement
+      ).click();
       await picker.updateComplete;
 
       expect(picker.showCroppie).to.equal(false);
@@ -200,9 +202,9 @@ describe('temba-image-picker', () => {
       const picker = await createPicker();
       await openCropper(picker);
 
-      (picker.shadowRoot.querySelector(
-        '.controls .submit'
-      ) as HTMLElement).click();
+      (
+        picker.shadowRoot.querySelector('.controls .submit') as HTMLElement
+      ).click();
 
       // let the croppie result promise settle
       await new Promise((resolve) => setTimeout(resolve, 0));

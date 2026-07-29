@@ -83,26 +83,34 @@ describe('temba-store api', () => {
     const duration = (opts: any) => Duration.fromObject(opts);
 
     it('uses the singular form for exactly one unit', () => {
-      expect(store.shiftAndRound(duration({ days: 1 }), 'days', 'day')).to.equal(
-        '1 day'
-      );
+      expect(
+        store.shiftAndRound(duration({ days: 1 }), 'days', 'day')
+      ).to.equal('1 day');
       expect(
         store.shiftAndRound(duration({ hours: 1 }), 'hours', 'hour')
       ).to.equal('1 hour');
     });
 
     it('uses the plural form otherwise', () => {
-      expect(store.shiftAndRound(duration({ days: 3 }), 'days', 'day')).to.equal(
-        '3 days'
-      );
+      expect(
+        store.shiftAndRound(duration({ days: 3 }), 'days', 'day')
+      ).to.equal('3 days');
     });
 
     it('rounds to the nearest whole unit', () => {
       expect(
-        store.shiftAndRound(duration({ hours: 2, minutes: 40 }), 'hours', 'hour')
+        store.shiftAndRound(
+          duration({ hours: 2, minutes: 40 }),
+          'hours',
+          'hour'
+        )
       ).to.equal('3 hours');
       expect(
-        store.shiftAndRound(duration({ hours: 1, minutes: 10 }), 'hours', 'hour')
+        store.shiftAndRound(
+          duration({ hours: 1, minutes: 10 }),
+          'hours',
+          'hour'
+        )
       ).to.equal('1 hour');
     });
   });
@@ -131,9 +139,9 @@ describe('temba-store api', () => {
     });
 
     it('uses the singular form for a single hour', () => {
-      expect(
-        store.getCountdown(inFuture({ hours: 1, minutes: 2 }))
-      ).to.equal('~ 1 hour');
+      expect(store.getCountdown(inFuture({ hours: 1, minutes: 2 }))).to.equal(
+        '~ 1 hour'
+      );
     });
   });
 

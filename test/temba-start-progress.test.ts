@@ -75,9 +75,7 @@ describe('temba-start-progress', () => {
 
     for (const status of ['Completed', 'Failed', 'Interrupted']) {
       it(`treats ${status} as complete`, async () => {
-        mockStatus([
-          start({ status, progress: { current: 100, total: 100 } })
-        ]);
+        mockStatus([start({ status, progress: { current: 100, total: 100 } })]);
         const progress = await createProgress();
         expect(progress.complete).to.equal(true);
         expect(progress.running).to.equal(false);

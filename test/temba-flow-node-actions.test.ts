@@ -33,6 +33,9 @@ const fakePlumber = () => ({
 
 describe('temba-flow-node actions', () => {
   let node: CanvasNode;
+  // CanvasNode declares node/ui/plumber private, so tests wire them up
+  // through a loosely typed alias for the same element
+  let inner: any;
   let plumber: any;
   let updateNode: any;
 
@@ -46,9 +49,10 @@ describe('temba-flow-node actions', () => {
     zustand.setState({ updateNode } as any);
 
     node = (await fixture('<temba-flow-node></temba-flow-node>')) as CanvasNode;
-    node.node = flowNode() as any;
-    node.ui = { type: 'execute_actions', position: { left: 0, top: 0 } } as any;
-    node.plumber = plumber as any;
+    inner = node as any;
+    inner.node = flowNode() as any;
+    inner.ui = { type: 'execute_actions', position: { left: 0, top: 0 } } as any;
+    inner.plumber = plumber as any;
     await node.updateComplete;
   });
 
@@ -66,7 +70,7 @@ describe('temba-flow-node actions', () => {
 
   describe('disconnectExit', () => {
     it('clears the destination and tells the plumber', () => {
-      (node as any).disconnectExit(node.node.exits[0]);
+      (node as any).disconnectExit(inner.node.exits[0]);
 
       expect(plumber.removeExitConnection.calledWith('exit-1')).to.equal(true);
       expect(updateNode.calledOnce).to.equal(true);
@@ -78,7 +82,7 @@ describe('temba-flow-node actions', () => {
 
     it('clears any pending removal state', () => {
       (node as any).exitRemovingState.add('exit-1');
-      (node as any).disconnectExit(node.node.exits[0]);
+      (node as any).disconnectExit(inner.node.exits[0]);
       expect((node as any).exitRemovingState.has('exit-1')).to.equal(false);
       expect(
         plumber.setConnectionRemovingState.calledWith('exit-1', false)
@@ -86,13 +90,13 @@ describe('temba-flow-node actions', () => {
     });
 
     it('leaves the other exits untouched', () => {
-      node.node = flowNode({
+      inner.node = flowNode({
         exits: [
           { uuid: 'exit-1', destination_uuid: 'node-2' },
           { uuid: 'exit-2', destination_uuid: 'node-3' }
         ]
       }) as any;
-      (node as any).disconnectExit(node.node.exits[0]);
+      (node as any).disconnectExit(inner.node.exits[0]);
       const updated = updateNode.firstCall.args[1];
       expect(updated.exits[1].destination_uuid).to.equal('node-3');
     });
@@ -100,11 +104,11 @@ describe('temba-flow-node actions', () => {
 
   describe('removeAction', () => {
     it('removes one action of several', () => {
-      node.node = flowNode({
+      inner.node = flowNode({
         actions: [sendMsg('action-1'), sendMsg('action-2')]
       }) as any;
 
-      (node as any).removeAction(node.node.actions[0], 0);
+      (node as any).removeAction(inner.node.actions[0], 0);
 
       expect(updateNode.calledOnce).to.equal(true);
       const updated = updateNode.firstCall.args[1];
@@ -114,7 +118,7 @@ describe('temba-flow-node actions', () => {
 
     it('deletes the whole node when the last action goes', () => {
       const deleted = events(CustomEventType.NodeDeleted);
-      (node as any).removeAction(node.node.actions[0], 0);
+      (node as any).removeAction(inner.node.actions[0], 0);
 
       expect(deleted).to.have.length(1);
       expect(deleted[0].uuid).to.equal('node-1');
@@ -122,11 +126,11 @@ describe('temba-flow-node actions', () => {
     });
 
     it('clears any pending removal state', () => {
-      node.node = flowNode({
+      inner.node = flowNode({
         actions: [sendMsg('action-1'), sendMsg('action-2')]
       }) as any;
       (node as any).actionRemovingState.add('action-1');
-      (node as any).removeAction(node.node.actions[0], 0);
+      (node as any).removeAction(inner.node.actions[0], 0);
       expect((node as any).actionRemovingState.has('action-1')).to.equal(false);
     });
   });
@@ -186,7 +190,7 @@ describe('temba-flow-node actions', () => {
 
     it('requests editing of the clicked action', () => {
       const requested = events(CustomEventType.ActionEditRequested);
-      (node as any).handleActionClick(clickOn(), node.node.actions[0]);
+      (node as any).handleActionClick(clickOn(), inner.node.actions[0]);
       expect(requested).to.have.length(1);
       expect(requested[0].action.uuid).to.equal('action-1');
       expect(requested[0].nodeUuid).to.equal('node-1');
@@ -196,14 +200,14 @@ describe('temba-flow-node actions', () => {
       const requested = events(CustomEventType.ActionEditRequested);
       const button = document.createElement('div');
       button.className = 'remove-button';
-      (node as any).handleActionClick(clickOn(button), node.node.actions[0]);
+      (node as any).handleActionClick(clickOn(button), inner.node.actions[0]);
       expect(requested).to.have.length(0);
     });
 
     it('ignores clicks while the action is being removed', () => {
       const requested = events(CustomEventType.ActionEditRequested);
       (node as any).actionRemovingState.add('action-1');
-      (node as any).handleActionClick(clickOn(), node.node.actions[0]);
+      (node as any).handleActionClick(clickOn(), inner.node.actions[0]);
       expect(requested).to.have.length(0);
     });
   });
@@ -226,7 +230,7 @@ describe('temba-flow-node actions', () => {
     });
 
     it('opens the node editor for a router with no actions', () => {
-      node.node = flowNode({
+      inner.node = flowNode({
         actions: [],
         router: { type: 'switch', categories: [] }
       }) as any;
@@ -237,7 +241,7 @@ describe('temba-flow-node actions', () => {
     });
 
     it('opens the action editor for a router with exactly one action', () => {
-      node.node = flowNode({
+      inner.node = flowNode({
         actions: [sendMsg('action-1')],
         router: { type: 'switch', categories: [] }
       }) as any;
@@ -250,7 +254,7 @@ describe('temba-flow-node actions', () => {
     });
 
     it('opens the node editor for a router with several actions', () => {
-      node.node = flowNode({
+      inner.node = flowNode({
         actions: [sendMsg('action-1'), sendMsg('action-2')],
         router: { type: 'switch', categories: [] }
       }) as any;
@@ -260,7 +264,7 @@ describe('temba-flow-node actions', () => {
     });
 
     it('ignores clicks on the remove button', () => {
-      node.node = flowNode({
+      inner.node = flowNode({
         actions: [],
         router: { type: 'switch', categories: [] }
       }) as any;
@@ -279,8 +283,10 @@ describe('temba-flow-node actions', () => {
     const watchSortable = () => {
       const calls: boolean[] = [];
       const sortable = node.querySelector('temba-sortable-list');
-      expect(sortable, 'expected the node to render a sortable list').to.not
-        .equal(null);
+      expect(
+        sortable,
+        'expected the node to render a sortable list'
+      ).to.not.equal(null);
       (sortable as any).setOriginalVisible = (visible: boolean) =>
         calls.push(visible);
       return calls;
@@ -306,7 +312,7 @@ describe('temba-flow-node actions', () => {
     });
 
     it('leaves the placeholder off when other actions remain', async () => {
-      node.node = flowNode({
+      inner.node = flowNode({
         actions: [sendMsg('action-1'), sendMsg('action-2')]
       }) as any;
       await node.updateComplete;

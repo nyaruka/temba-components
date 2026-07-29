@@ -95,8 +95,18 @@ describe('store/AppState actions', () => {
       state().setFlowInfo(
         info({
           issues: [
-            { type: 'a', node_uuid: 'node-1', action_uuid: null, description: '' },
-            { type: 'b', node_uuid: 'node-1', action_uuid: null, description: '' }
+            {
+              type: 'a',
+              node_uuid: 'node-1',
+              action_uuid: null,
+              description: ''
+            },
+            {
+              type: 'b',
+              node_uuid: 'node-1',
+              action_uuid: null,
+              description: ''
+            }
           ]
         })
       );
@@ -123,7 +133,12 @@ describe('store/AppState actions', () => {
       zustand.setState({
         flowInfo: info({
           results: [
-            { key: 'colour', name: 'Colour', categories: ['Red'], node_uuids: [] },
+            {
+              key: 'colour',
+              name: 'Colour',
+              categories: ['Red'],
+              node_uuids: []
+            },
             { key: 'size', name: 'Size', categories: ['Big'], node_uuids: [] }
           ]
         })
@@ -146,7 +161,8 @@ describe('store/AppState actions', () => {
   describe('getLanguage', () => {
     it('resolves the code to a display name', () => {
       zustand.setState({ languageCode: 'spa' } as any);
-      const language = state().getLanguage();
+      // getLanguage is on the store but not declared on the AppState type
+      const language = (state() as any).getLanguage();
       expect(language.code).to.equal('spa');
       expect(language.name).to.be.a('string');
       expect(language.name.length).to.be.greaterThan(0);
@@ -224,7 +240,12 @@ describe('store/AppState actions', () => {
       zustand.setState({
         flowDefinition: definition({
           _ui: {
-            nodes: { 'node-1': { type: 'wait_for_response', position: { left: 0, top: 0 } } },
+            nodes: {
+              'node-1': {
+                type: 'wait_for_response',
+                position: { left: 0, top: 0 }
+              }
+            },
             languages: []
           }
         })
@@ -272,9 +293,24 @@ describe('store/AppState actions', () => {
             nodes: {},
             languages: [],
             stickies: {
-              'sticky-1': { title: 'One', body: '', position: { left: 0, top: 0 }, color: 'yellow' },
-              'sticky-2': { title: 'Two', body: '', position: { left: 0, top: 0 }, color: 'blue' },
-              'sticky-3': { title: 'Three', body: '', position: { left: 0, top: 0 }, color: 'gray' }
+              'sticky-1': {
+                title: 'One',
+                body: '',
+                position: { left: 0, top: 0 },
+                color: 'yellow'
+              },
+              'sticky-2': {
+                title: 'Two',
+                body: '',
+                position: { left: 0, top: 0 },
+                color: 'blue'
+              },
+              'sticky-3': {
+                title: 'Three',
+                body: '',
+                position: { left: 0, top: 0 },
+                color: 'gray'
+              }
             }
           }
         })
@@ -289,16 +325,16 @@ describe('store/AppState actions', () => {
 
     it('removes several notes at once', () => {
       state().removeStickyNotes(['sticky-1', 'sticky-3']);
-      expect(
-        Object.keys(state().flowDefinition._ui.stickies)
-      ).to.deep.equal(['sticky-2']);
+      expect(Object.keys(state().flowDefinition._ui.stickies)).to.deep.equal([
+        'sticky-2'
+      ]);
     });
 
     it('ignores unknown uuids', () => {
       state().removeStickyNotes(['nonsense']);
-      expect(
-        Object.keys(state().flowDefinition._ui.stickies)
-      ).to.have.length(3);
+      expect(Object.keys(state().flowDefinition._ui.stickies)).to.have.length(
+        3
+      );
     });
 
     it('copes with a flow that has no stickies', () => {
@@ -336,7 +372,9 @@ describe('store/AppState actions', () => {
     });
 
     it('ignores a flow with no ui', () => {
-      zustand.setState({ flowDefinition: { ...definition(), _ui: null } } as any);
+      zustand.setState({
+        flowDefinition: { ...definition(), _ui: null }
+      } as any);
       // no throw is the assertion here
       state().setTranslationFilters({ categories: true });
     });

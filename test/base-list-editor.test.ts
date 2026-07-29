@@ -297,7 +297,9 @@ describe('form/BaseListEditor', () => {
   describe('itemsEqual', () => {
     it('compares items structurally', async () => {
       const editor = await createEditor();
-      expect(editor.callItemsEqual({ text: 'a' }, { text: 'a' })).to.equal(true);
+      expect(editor.callItemsEqual({ text: 'a' }, { text: 'a' })).to.equal(
+        true
+      );
       expect(editor.callItemsEqual({ text: 'a' }, { text: 'b' })).to.equal(
         false
       );

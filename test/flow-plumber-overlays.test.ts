@@ -81,9 +81,9 @@ describe('flow/Plumber overlays', () => {
 
     it('returns null when no overlay matches', async () => {
       const plumber = await createPlumber(withDefinition());
-      expect(
-        (plumber as any).findOverlayForActivityKey('nonsense')
-      ).to.equal(null);
+      expect((plumber as any).findOverlayForActivityKey('nonsense')).to.equal(
+        null
+      );
     });
   });
 
