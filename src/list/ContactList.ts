@@ -3,12 +3,18 @@ import { property, state } from 'lit/decorators.js';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
 import { Contact } from '../interfaces';
-import { getUrl } from '../utils';
+import { getUrl, postJSON } from '../utils';
+import { getStore } from '../store/Store';
 
 const FIELD_PREFIX = 'field:';
 
 /** Placeholder shown in any cell whose value is empty. */
 const EMPTY = '--';
+
+/** Ceiling on how many pages of fields we'll walk. The API serves 250
+ * per page, so this is far past any real workspace — it exists only so
+ * an endpoint that keeps handing back a `next` can't spin forever. */
+const MAX_FIELD_PAGES = 20;
 
 /**
  * Contact CRUDL list — drop-in replacement for the rapidpro
@@ -22,6 +28,11 @@ const EMPTY = '--';
  * {@link ContactList.fieldsEndpoint} on connect; cells read each
  * contact's value out of `item.fields[<key>]`. Date/time fields
  * render as a relative duration, matching the Last-seen column.
+ *
+ * When {@link ContactList.priorityEndpoint} is set the field columns
+ * can be dragged into a new order, which is saved as the workspace's
+ * featured-field order (the list renders featured fields by priority,
+ * so column order and field order are the same thing).
  */
 export class ContactList extends ContentList<Contact> {
   static get styles() {
@@ -45,9 +56,24 @@ export class ContactList extends ContentList<Contact> {
   }
 
   /** Endpoint returning `{ results: ContactField[] }`. Fields where
-   * `featured: true` become extra columns. */
+   * `featured: true` become extra columns.
+   *
+   * The list deliberately fetches fields itself instead of reading the
+   * global store: it has to work standalone (and against a custom
+   * endpoint), and it may mount before any store exists on the page.
+   * The store, when present, is only *told* about changes — see the
+   * refresh after a priority save. The endpoint has no featured filter,
+   * so the fetch pages through all fields and filters client-side. */
   @property({ type: String, attribute: 'fields-endpoint' })
   fieldsEndpoint = '/api/v2/fields.json';
+
+  /** Endpoint accepting `{ featured: [keys...] }` to save featured-field
+   * order (the same one the fields management page posts to). When set,
+   * the field columns become drag-reorderable and a drop saves the new
+   * order org-wide; the host only sets it for users holding the
+   * update-priority permission. */
+  @property({ type: String, attribute: 'priority-endpoint' })
+  priorityEndpoint = '';
 
   /** Anonymous workspaces mask URN values, so instead of the URN
    * column the list shows each contact's ref (served as its own
@@ -104,7 +130,7 @@ export class ContactList extends ContentList<Contact> {
     // Rebuilding here (rather than in updated()) means a mounted
     // anon attribute is reflected in the first paint instead of
     // flashing the URN header for a frame.
-    if (changes.has('anon')) {
+    if (changes.has('anon') || changes.has('priorityEndpoint')) {
       this.columns = this.buildColumns();
     }
   }
@@ -127,11 +153,27 @@ export class ContactList extends ContentList<Contact> {
     const controller = new AbortController();
     this.pendingFieldsController = controller;
     try {
-      const response = await getUrl(this.fieldsEndpoint, controller);
-      // If the controller has been swapped or cleared, the response
-      // is from a stale request — drop it on the floor.
-      if (this.pendingFieldsController !== controller) return;
-      const all = response.json?.results || [];
+      // The fields API is cursor paginated (250 per page), and the
+      // featured list a drop posts back is authoritative — any featured
+      // field we never read would be silently un-featured org-wide. So
+      // walk every page before deciding what's featured. Nothing is
+      // assigned until the whole walk lands, so a page that fails leaves
+      // the previous (complete) list in place rather than a truncated one.
+      const all: any[] = [];
+      const fetched = new Set<string>();
+      let url: string = this.fieldsEndpoint;
+      for (let page = 0; url && page < MAX_FIELD_PAGES; page++) {
+        // an endpoint whose `next` points back at a page we've already
+        // read would otherwise loop until the page cap
+        if (fetched.has(url)) break;
+        fetched.add(url);
+        const response = await getUrl(url, controller);
+        // If the controller has been swapped or cleared, the response
+        // is from a stale request — drop it on the floor.
+        if (this.pendingFieldsController !== controller) return;
+        all.push(...(response.json?.results || []));
+        url = response.json?.next || '';
+      }
       this.featuredFields = all
         .filter((f: any) => f.featured)
         .sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0));
@@ -173,7 +215,11 @@ export class ContactList extends ContentList<Contact> {
         sortable: true,
         resizeMinWidth: '40px',
         maxWidth: '200px',
-        resizable: true
+        resizable: true,
+        // Field columns can be dragged into a new order, but only when
+        // the host wired up somewhere to save it — reordering that
+        // silently reverts on reload would read as broken.
+        reorderable: !!this.priorityEndpoint
       })
     );
     // Name + URN are the pinned identity columns and are not
@@ -222,6 +268,64 @@ export class ContactList extends ContentList<Contact> {
         grow: true
       }
     ];
+  }
+
+  /** A committed header drag reordered the field columns — keep
+   * featuredFields aligned with the new column order (so any rebuild
+   * preserves it) and save it as the workspace's featured-field order.
+   * Column order maps directly onto priority: leftmost = highest, the
+   * same contract as the fields management page, whose endpoint this
+   * posts to with the full featured list. */
+  protected onColumnOrderChanged(columns: ContentListColumn[]): void {
+    // A fields fetch still in flight was started against the old order
+    // and would land on top of the drop, snapping the columns back with
+    // the new order already on its way to the server.
+    if (this.pendingFieldsController) {
+      this.pendingFieldsController.abort();
+      this.pendingFieldsController = undefined;
+    }
+    const keys = columns
+      .filter((c) => c.key.startsWith(FIELD_PREFIX))
+      .map((c) => c.key.substring(FIELD_PREFIX.length));
+    this.featuredFields = keys
+      .map((key) => (this.featuredFields || []).find((f: any) => f.key === key))
+      .filter(Boolean);
+    if (!this.priorityEndpoint) return;
+    postJSON(this.priorityEndpoint, { featured: keys })
+      .then((response) => {
+        // postUrl only rejects on 5xx, so a 400/403/404 arrives here as a
+        // perfectly resolved promise — the order was never stored and we
+        // have to treat it as the failure it is.
+        if (response.status < 200 || response.status >= 300) {
+          throw response;
+        }
+      })
+      .catch((error) => {
+        console.warn('failed to save featured field order', error);
+        // The list went away while the save was in flight — there are no
+        // columns left to put back, and refetching would only leave a
+        // request outstanding against a detached element.
+        if (!this.isConnected) return;
+        // Nothing made the dragged order durable, so stop showing it —
+        // refetch and fall back on whatever the server still holds. The
+        // success path deliberately doesn't refetch: we already display
+        // exactly what we just saved, and a read-replica answering with
+        // pre-write data would yank the columns back for no reason.
+        this.loadFields();
+      })
+      .finally(() => {
+        // Featured fields are workspace state other components on the
+        // page read from the store (contact details, the fields page),
+        // so its cached copy has to hear about the new order too. Looked
+        // up here rather than cached on connect so a list that mounted
+        // ahead of the store still finds it.
+        getStore()
+          ?.refreshFields()
+          .catch(() => {
+            // a stale store cache is cosmetic and elsewhere; the list
+            // itself is already showing the saved order
+          });
+      });
   }
 
   protected getRowIcon(_item: Contact): string | null {

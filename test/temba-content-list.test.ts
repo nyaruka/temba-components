@@ -2044,4 +2044,598 @@ describe('temba-content-list', () => {
     expect(empty.textContent).to.contain('No labels');
     assert.notExists(list.shadowRoot!.querySelector('.lbl-create'));
   });
+
+  describe('column reordering', () => {
+    const PRIORITY_URL = '/fields/update_priority/';
+    const priorityRegex = /\/fields\/update_priority\/$/;
+    // Its own endpoint rather than a second mock on PRIORITY_URL — the
+    // mock registry matches the first entry it finds, so a failing mock
+    // for the same URL would leak into every other test in the block.
+    const DENIED_URL = '/fields/update_priority/denied/';
+    const deniedRegex = /\/fields\/update_priority\/denied\/$/;
+
+    const fieldsFetchCount = () =>
+      (window.fetch as any)
+        .getCalls()
+        .filter((call: any) => /\/api\/v2\/fields\.json/.test(call.args[0]))
+        .length;
+
+    const getPriorityPosts = () =>
+      (window.fetch as any)
+        .getCalls()
+        .filter(
+          (call: any) =>
+            priorityRegex.test(String(call.args[0])) &&
+            call.args[1]?.method === 'POST'
+        )
+        .map((call: any) => JSON.parse(call.args[1].body));
+
+    const getContactList = async (attrs: any = {}) => {
+      const list = (await getComponent(
+        'temba-contact-list',
+        { endpoint: '/test-assets/content-list/contacts.json', ...attrs },
+        '',
+        1100
+      )) as ContactList;
+      await new Promise<void>((resolve) => {
+        list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+          once: true
+        });
+      });
+      // featured fields arrive via their own async fetch — wait for the
+      // field columns before interacting with the header
+      await waitForCondition(
+        () => ((list as any).featuredFields || []).length > 0
+      );
+      await list.updateComplete;
+      return list;
+    };
+
+    const headerFor = (list: ContentList, key: string): HTMLElement =>
+      list.shadowRoot!.querySelector(
+        `th.head-cell[data-key="${key}"]`
+      ) as HTMLElement;
+
+    const columnKeys = (list: ContentList): string[] =>
+      (list as any).columns.map((c: any) => c.key);
+
+    /** Grab a header at its center and release the drag at clientX. */
+    const dragHeader = async (
+      list: ContentList,
+      fromKey: string,
+      clientX: number
+    ) => {
+      const header = headerFor(list, fromKey);
+      const rect = header.getBoundingClientRect();
+      const startX = rect.left + rect.width / 2;
+      header.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: startX,
+          pointerType: 'mouse'
+        })
+      );
+      // the first move crosses the dead zone, the second lands on target
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: startX + 10,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX, pointerType: 'mouse' })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX, pointerType: 'mouse' })
+      );
+      await list.updateComplete;
+    };
+
+    /** Press a header and cross the dead zone, leaving the drag live. */
+    const beginDrag = async (list: ContentList, fromKey: string) => {
+      const header = headerFor(list, fromKey);
+      const rect = header.getBoundingClientRect();
+      const startX = rect.left + rect.width / 2;
+      header.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: startX,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: startX + 30,
+          pointerType: 'mouse'
+        })
+      );
+      await list.updateComplete;
+    };
+
+    /** The ghost lives on document.body, outside the shadow root. */
+    const ghostCount = () =>
+      document.querySelectorAll('.column-drag-ghost').length;
+
+    it('reorders field columns by dragging and saves the featured order', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const initialPosts = getPriorityPosts().length;
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+
+      // the api fixture serves six featured fields, in priority order
+      expect(columnKeys(list)).to.deep.equal([
+        'name',
+        'urn',
+        'field:state',
+        'field:district',
+        'field:ward',
+        'field:joined',
+        'field:age',
+        'field:gender',
+        'last_seen_on',
+        'created_on'
+      ]);
+
+      // only the field columns are drag targets
+      expect(headerFor(list, 'field:state').classList.contains('reorderable'))
+        .to.be.true;
+      expect(headerFor(list, 'name').classList.contains('reorderable')).to.be
+        .false;
+      expect(headerFor(list, 'created_on').classList.contains('reorderable')).to
+        .be.false;
+
+      // the reorder announces itself on its own event type — the shared
+      // OrderChanged carries other, incompatible payloads
+      const orderEvents: any[] = [];
+      list.addEventListener(CustomEventType.ColumnOrderChanged, (event: any) =>
+        orderEvents.push(event.detail)
+      );
+
+      // drag State just past District's midpoint — they swap
+      const district = headerFor(list, 'field:district');
+      const dRect = district.getBoundingClientRect();
+      await dragHeader(list, 'field:state', dRect.left + dRect.width * 0.9);
+
+      expect(columnKeys(list)).to.deep.equal([
+        'name',
+        'urn',
+        'field:district',
+        'field:state',
+        'field:ward',
+        'field:joined',
+        'field:age',
+        'field:gender',
+        'last_seen_on',
+        'created_on'
+      ]);
+
+      expect(orderEvents.length).to.equal(1);
+      expect(orderEvents[0].from).to.equal(2);
+      expect(orderEvents[0].to).to.equal(3);
+
+      // the floating ghost is torn down with the drag
+      expect(ghostCount()).to.equal(0);
+
+      // featuredFields follows the columns so later rebuilds keep the order
+      expect(
+        ((list as any).featuredFields as any[]).map((f) => f.key)
+      ).to.deep.equal(['district', 'state', 'ward', 'joined', 'age', 'gender']);
+
+      // completing a drag over a sortable header must not also sort
+      expect((list as any).sort).to.equal('');
+
+      // the full featured list is saved in column order
+      await waitForCondition(() => getPriorityPosts().length > initialPosts);
+      expect(getPriorityPosts()[initialPosts]).to.deep.equal({
+        featured: ['district', 'state', 'ward', 'joined', 'age', 'gender']
+      });
+
+      // a save the server accepted leaves the dragged order alone — no
+      // refetch of the fields, no snap back to the fixture order
+      const fetchesAfterSave = fieldsFetchCount();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(fieldsFetchCount()).to.equal(fetchesAfterSave);
+      expect(columnKeys(list).slice(2, 4)).to.deep.equal([
+        'field:district',
+        'field:state'
+      ]);
+
+      // a plain click on a reorderable header — pointer never leaves
+      // the dead zone — still sorts. Let the drag's one-tick click
+      // suppression window lapse first, as any real click would.
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      const header = headerFor(list, 'field:district');
+      header.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: 400,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 400, pointerType: 'mouse' })
+      );
+      header.click();
+      expect((list as any).sort).to.equal('field:district');
+    });
+
+    it('reverts the column order when the save is refused', async () => {
+      await loadStore();
+      // a 403 resolves rather than rejects in postUrl (only 5xx rejects),
+      // so this is the case a naive .catch() would sail straight past
+      mockPOST(deniedRegex, { error: 'no permission' }, {}, '403');
+      const warn = stub(console, 'warn');
+      try {
+        const list = await getContactList({ 'priority-endpoint': DENIED_URL });
+        const original = columnKeys(list);
+
+        const district = headerFor(list, 'field:district');
+        const dRect = district.getBoundingClientRect();
+        await dragHeader(list, 'field:state', dRect.left + dRect.width * 0.9);
+
+        // the drop applies optimistically
+        expect(columnKeys(list).slice(2, 4)).to.deep.equal([
+          'field:district',
+          'field:state'
+        ]);
+
+        // then the refused save refetches the fields and puts the
+        // columns back the way the server still has them
+        await waitForCondition(
+          () => columnKeys(list).join() === original.join()
+        );
+        expect(
+          ((list as any).featuredFields as any[]).map((f) => f.key)
+        ).to.deep.equal([
+          'state',
+          'district',
+          'ward',
+          'joined',
+          'age',
+          'gender'
+        ]);
+        expect(warn.called).to.be.true;
+      } finally {
+        warn.restore();
+      }
+    });
+
+    it('reads every page of a paginated fields endpoint', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      // The fields API is cursor paginated. The featured list posted on
+      // a drop is authoritative, so a featured field stranded on page two
+      // would be un-featured org-wide by the next drag.
+      const PAGED_URL = '/paged-fields.json';
+      // Page two is registered first: the mock registry answers with the
+      // first regex that matches, and page one's would swallow it.
+      mockGET(/\/paged-fields\.json\?cursor=2$/, {
+        next: null,
+        results: [
+          {
+            key: 'region',
+            name: 'Region',
+            featured: true,
+            priority: 7,
+            value_type: 'text'
+          }
+        ]
+      });
+      mockGET(/\/paged-fields\.json$/, {
+        next: `${PAGED_URL}?cursor=2`,
+        results: [
+          {
+            key: 'state',
+            name: 'State',
+            featured: true,
+            priority: 10,
+            value_type: 'text'
+          },
+          {
+            key: 'gender',
+            name: 'Gender',
+            featured: true,
+            priority: 5,
+            value_type: 'text'
+          },
+          {
+            key: 'born',
+            name: 'Born',
+            featured: false,
+            priority: 0,
+            value_type: 'numeric'
+          }
+        ]
+      });
+      try {
+        const initialPosts = getPriorityPosts().length;
+        const list = await getContactList({
+          'priority-endpoint': PRIORITY_URL,
+          'fields-endpoint': PAGED_URL
+        });
+
+        // both pages contribute columns, and priority orders them across
+        // the page boundary rather than page-by-page
+        expect(columnKeys(list)).to.deep.equal([
+          'name',
+          'urn',
+          'field:state',
+          'field:region',
+          'field:gender',
+          'last_seen_on',
+          'created_on'
+        ]);
+
+        // dragging State past Region swaps them
+        const region = headerFor(list, 'field:region');
+        const rRect = region.getBoundingClientRect();
+        await dragHeader(list, 'field:state', rRect.left + rRect.width * 0.9);
+        expect(columnKeys(list).slice(2, 5)).to.deep.equal([
+          'field:region',
+          'field:state',
+          'field:gender'
+        ]);
+
+        // and the saved list carries the page-two field, so nothing gets
+        // un-featured behind the user's back
+        await waitForCondition(() => getPriorityPosts().length > initialPosts);
+        expect(getPriorityPosts()[initialPosts]).to.deep.equal({
+          featured: ['region', 'state', 'gender']
+        });
+      } finally {
+        clearMockGets();
+      }
+    });
+
+    it('marks the drop slot past the last field column (screenshot)', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+
+      await beginDrag(list, 'field:state');
+
+      // park the drag well past every field column — a deterministic
+      // spot that resolves to the slot at the tail of the reorderable
+      // run, and one that leaves the pointer-tracking ghost outside the
+      // clipped region so it can't obscure the insertion bar
+      const parkX = list.getBoundingClientRect().right + 400;
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: parkX,
+          pointerType: 'mouse'
+        })
+      );
+      await list.updateComplete;
+
+      // the origin header dims and the bar lands on the trailing edge of
+      // the last field column, not on the system column after it
+      expect(headerFor(list, 'field:state').classList.contains('dragging')).to
+        .be.true;
+      expect(headerFor(list, 'field:gender').classList.contains('drop-after'))
+        .to.be.true;
+      expect(headerFor(list, 'last_seen_on').classList.contains('drop-before'))
+        .to.be.false;
+      // exactly one insertion bar at a time
+      expect(
+        list.shadowRoot!.querySelectorAll(
+          '.head-cell.drop-before, .head-cell.drop-after'
+        ).length
+      ).to.equal(1);
+      expect(ghostCount()).to.equal(1);
+
+      await assertScreenshot(
+        'content-list/contacts-column-drag',
+        getClip(list)
+      );
+
+      // tear the live drag down so nothing outlives the test
+      window.dispatchEvent(
+        new PointerEvent('pointercancel', {
+          clientX: parkX,
+          pointerType: 'mouse'
+        })
+      );
+      await list.updateComplete;
+      expect(ghostCount()).to.equal(0);
+      expect(document.body.style.userSelect).to.equal('');
+    });
+
+    it('constrains drops to the field column run', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+
+      // far left of every field header — Ward lands at the head of the
+      // run; the pinned Name and URN columns stay put
+      await dragHeader(list, 'field:ward', 0);
+      expect(columnKeys(list).slice(0, 4)).to.deep.equal([
+        'name',
+        'urn',
+        'field:ward',
+        'field:state'
+      ]);
+
+      // far right of every header — Ward lands at the tail of the run,
+      // never past Last seen / Created on
+      const created = headerFor(list, 'created_on');
+      await dragHeader(
+        list,
+        'field:ward',
+        created.getBoundingClientRect().right + 50
+      );
+      expect(columnKeys(list)).to.deep.equal([
+        'name',
+        'urn',
+        'field:state',
+        'field:district',
+        'field:joined',
+        'field:age',
+        'field:gender',
+        'field:ward',
+        'last_seen_on',
+        'created_on'
+      ]);
+    });
+
+    it('still sorts on a plain click and stays put without a priority endpoint', async () => {
+      await loadStore();
+      const list = await getContactList();
+
+      // no endpoint to save to — the columns don't offer the drag at all
+      expect(headerFor(list, 'field:state').classList.contains('reorderable'))
+        .to.be.false;
+      const before = columnKeys(list);
+      await dragHeader(list, 'field:state', 0);
+      expect(columnKeys(list)).to.deep.equal(before);
+
+      // and a plain click (no movement past the dead zone) sorts
+      const header = headerFor(list, 'field:state');
+      header.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: 400,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 400, pointerType: 'mouse' })
+      );
+      header.click();
+      expect((list as any).sort).to.equal('field:state');
+    });
+
+    it('abandons the drag on pointercancel', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+      const before = columnKeys(list);
+      const posts = getPriorityPosts().length;
+
+      await beginDrag(list, 'field:state');
+      expect(ghostCount()).to.equal(1);
+      expect(document.body.style.userSelect).to.equal('none');
+
+      window.dispatchEvent(
+        new PointerEvent('pointercancel', {
+          clientX: 900,
+          pointerType: 'mouse'
+        })
+      );
+      await list.updateComplete;
+
+      // nothing moved, nothing saved, and no ghost left on the body
+      expect(columnKeys(list)).to.deep.equal(before);
+      expect(getPriorityPosts().length).to.equal(posts);
+      expect(ghostCount()).to.equal(0);
+      expect(document.body.style.userSelect).to.equal('');
+
+      // the drag is gone, so a stray release can't commit it either
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 900, pointerType: 'mouse' })
+      );
+      await list.updateComplete;
+      expect(columnKeys(list)).to.deep.equal(before);
+    });
+
+    it('tears the drag down when the list disconnects mid-drag', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+      const before = columnKeys(list);
+      const posts = getPriorityPosts().length;
+
+      await beginDrag(list, 'field:state');
+      expect(ghostCount()).to.equal(1);
+
+      list.remove();
+      expect(ghostCount()).to.equal(0);
+      expect(document.body.style.userSelect).to.equal('');
+
+      // the window listeners went with it — these must be inert
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 900, pointerType: 'mouse' })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 900, pointerType: 'mouse' })
+      );
+      expect(ghostCount()).to.equal(0);
+      expect(columnKeys(list)).to.deep.equal(before);
+      expect(getPriorityPosts().length).to.equal(posts);
+    });
+
+    it('ignores a second pointer during a drag', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+      const before = columnKeys(list);
+      const posts = getPriorityPosts().length;
+
+      await beginDrag(list, 'field:state');
+
+      // a second touch can neither steer the drag nor commit it
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          pointerId: 7,
+          clientX: 900,
+          pointerType: 'touch'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          pointerId: 7,
+          clientX: 900,
+          pointerType: 'touch'
+        })
+      );
+      await list.updateComplete;
+      expect(columnKeys(list)).to.deep.equal(before);
+      expect(getPriorityPosts().length).to.equal(posts);
+      expect(ghostCount()).to.equal(1);
+
+      // the owning pointer still finishes the job
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 900, pointerType: 'mouse' })
+      );
+      await list.updateComplete;
+      expect(ghostCount()).to.equal(0);
+    });
+
+    it('starts a resize cleanly while a drag is live', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+      const before = columnKeys(list);
+
+      await beginDrag(list, 'field:state');
+      const handle = getResizeHandle(headerFor(list, 'field:district'));
+      handle!.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: 500,
+          pointerType: 'mouse'
+        })
+      );
+      await list.updateComplete;
+
+      // the drag is cancelled rather than left running alongside
+      expect(ghostCount()).to.equal(0);
+      expect(columnKeys(list)).to.deep.equal(before);
+
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 540, pointerType: 'mouse' })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 540, pointerType: 'mouse' })
+      );
+      await list.updateComplete;
+
+      // and the resize hands the body's selection style back
+      expect(document.body.style.userSelect).to.equal('');
+    });
+  });
 });
