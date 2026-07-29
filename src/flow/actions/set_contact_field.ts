@@ -45,6 +45,7 @@ export const set_contact_field: ActionConfig = {
       label: 'Value',
       placeholder: 'Enter field value...',
       evaluated: true,
+      maxLength: 1000,
       helpText:
         'The new value for the contact field. You can use expressions like @contact.name'
     }

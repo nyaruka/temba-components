@@ -43,6 +43,7 @@ export const split_by_ticket: NodeConfig = {
       required: false,
       evaluated: true,
       placeholder: 'Enter a note for the ticket (optional)',
+      maxLength: 10000,
       minHeight: 100
     }
   },
