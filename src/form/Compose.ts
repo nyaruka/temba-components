@@ -1,7 +1,13 @@
 import { TemplateResult, html, css, PropertyValues, nothing } from 'lit';
 import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
-import { Attachment, CustomEventType, Language, Shortcut } from '../interfaces';
+import {
+  Attachment,
+  CustomEventType,
+  Language,
+  QuickReply,
+  Shortcut
+} from '../interfaces';
 import { Icon } from '../Icons';
 import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
 import { Select } from './select/Select';
@@ -12,7 +18,7 @@ import { setCaretOffset } from '../excellent/caret-utils';
 export interface ComposeValue {
   text: string;
   attachments: { uuid: string }[];
-  quick_replies: string[];
+  quick_replies: (string | QuickReply)[];
   optin: string;
   template: string;
   variables: string[];
@@ -236,7 +242,7 @@ export class Compose extends FieldElement {
     [lang: string]: {
       text: string;
       attachments: Attachment[];
-      quick_replies: string[];
+      quick_replies: (string | QuickReply)[];
       optin?: { name: string; uuid: string };
       template?: string;
       variables?: string[];
@@ -357,11 +363,12 @@ export class Compose extends FieldElement {
       this.currentText = langValue.text || '';
       this.initialText = langValue.text || '';
       this.currentAttachments = langValue.attachments || [];
-      this.currentQuickReplies = (langValue.quick_replies || []).map(
-        (value) => {
-          return { name: value, value };
-        }
-      );
+      this.currentQuickReplies = (langValue.quick_replies || [])
+        .map((reply) =>
+          typeof reply === 'string' ? reply : (reply.text ?? null)
+        )
+        .filter((reply): reply is string => reply !== null)
+        .map((value) => ({ name: value, value }));
       this.currentOptin = langValue['optin'] ? [langValue['optin']] : [];
     }
 

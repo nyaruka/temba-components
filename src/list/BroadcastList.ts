@@ -874,7 +874,7 @@ export class BroadcastList extends ContentList<Broadcast> {
                               html`<temba-label type="neutral"
                                 >${typeof reply === 'string'
                                   ? reply
-                                  : reply.text}</temba-label
+                                  : (reply.text ?? reply.type)}</temba-label
                               >`
                           )}
                         </div>`

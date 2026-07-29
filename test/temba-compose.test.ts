@@ -195,7 +195,7 @@ describe('temba-compose broadcast edit', () => {
       eng: {
         text: 'Hello from broadcast',
         attachments: [],
-        quick_replies: ['Yes', 'No'],
+        quick_replies: [{ text: 'Yes' }, 'No'],
         optin: null,
         template: null,
         variables: []
@@ -218,7 +218,14 @@ describe('temba-compose broadcast edit', () => {
     // Verify the compose initialized correctly
     expect(compose.currentLanguage).to.equal('eng');
     expect(compose.currentText).to.equal('Hello from broadcast');
-    expect(compose.currentQuickReplies).to.have.length(2);
+    expect(compose.currentQuickReplies).to.deep.equal([
+      { name: 'Yes', value: 'Yes' },
+      { name: 'No', value: 'No' }
+    ]);
+    expect(JSON.parse(compose.value).eng.quick_replies).to.deep.equal([
+      'Yes',
+      'No'
+    ]);
 
     // Verify the message editor exists in shadow DOM and has content
     const editor = compose.shadowRoot.querySelector('temba-message-editor');
