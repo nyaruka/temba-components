@@ -56,7 +56,14 @@ export class ContactList extends ContentList<Contact> {
   }
 
   /** Endpoint returning `{ results: ContactField[] }`. Fields where
-   * `featured: true` become extra columns. */
+   * `featured: true` become extra columns.
+   *
+   * The list deliberately fetches fields itself instead of reading the
+   * global store: it has to work standalone (and against a custom
+   * endpoint), and it may mount before any store exists on the page.
+   * The store, when present, is only *told* about changes — see the
+   * refresh after a priority save. The endpoint has no featured filter,
+   * so the fetch pages through all fields and filters client-side. */
   @property({ type: String, attribute: 'fields-endpoint' })
   fieldsEndpoint = '/api/v2/fields.json';
 
