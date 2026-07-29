@@ -630,6 +630,7 @@ export class Simulator extends RapidElement {
       }
       .message-input input {
         flex: 1;
+        min-width: 0;
         border: 1px solid #c6c6c857;
         border-radius: 20px;
         padding: 8px 15px;
