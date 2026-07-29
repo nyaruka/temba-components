@@ -872,7 +872,9 @@ export class BroadcastList extends ContentList<Broadcast> {
                           ${broadcast.quick_replies.map(
                             (reply) =>
                               html`<temba-label type="neutral"
-                                >${reply}</temba-label
+                                >${typeof reply === 'string'
+                                  ? reply
+                                  : (reply.text ?? reply.type)}</temba-label
                               >`
                           )}
                         </div>`

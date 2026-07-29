@@ -432,7 +432,8 @@ describe('temba-broadcast-list', () => {
         attachments: [
           { content_type: 'image/jpeg', url: '/test-assets/img/meow.jpg' }
         ],
-        quick_replies: ['Confirm', 'Change'],
+        // server sends engine {text} objects; plain strings are legacy
+        quick_replies: [{ text: 'Confirm' }, 'Change', { type: 'location' }],
         exclusions: ['Skip contacts in a flow'],
         contacts: [{ uuid: 'c-1', name: 'Ben Haggerty' }]
       })
@@ -445,8 +446,10 @@ describe('temba-broadcast-list', () => {
       message.querySelectorAll('.detail-attachments temba-thumbnail')
     ).to.have.length(1);
     const replies = message.querySelectorAll('.detail-pills temba-label');
-    expect(replies).to.have.length(2);
+    expect(replies).to.have.length(3);
     expect(replies[0].textContent.trim()).to.equal('Confirm');
+    expect(replies[1].textContent.trim()).to.equal('Change');
+    expect(replies[2].textContent.trim()).to.equal('location');
 
     // recipients render un-capped in the detail, with exclusions below
     const recipients = detail.querySelectorAll(

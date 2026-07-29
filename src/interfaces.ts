@@ -47,6 +47,14 @@ export interface Attachment {
   error: string;
 }
 
+/** A quick reply as stored/served by the server (engine shape) —
+ * `text` buttons carry text, `location` requests may omit it. */
+export interface QuickReply {
+  type?: string;
+  text?: string;
+  extra?: string;
+}
+
 export enum DateStyle {
   DayFirst = 'day_first',
   MonthFirst = 'month_first',
@@ -231,8 +239,9 @@ export interface Broadcast {
   /** Base-language attachments (`{content_type, url}` objects or
    * `contentType:url` strings). */
   attachments?: (string | Attachment)[];
-  /** Base-language quick replies. */
-  quick_replies?: string[];
+  /** Base-language quick replies — engine `{text}` objects, with
+   * plain strings tolerated for older data. */
+  quick_replies?: (string | QuickReply)[];
   /** The opt-in the broadcast requests, when it is one. */
   optin?: ObjectReference | null;
   /** The WhatsApp template the broadcast sends, when it uses one. */
@@ -271,7 +280,7 @@ export interface Msg {
   text: string;
   status: string;
   channel: ObjectReference;
-  quick_replies: string[];
+  quick_replies: (string | QuickReply)[];
   urn: string;
   /** The message's contact — populated by the messages CRUDL
    * endpoint. Carries whichever of name/urn the endpoint exposes. */

@@ -2,7 +2,7 @@ import { TemplateResult, html, nothing, PropertyValueMap, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { RapidElement } from '../RapidElement';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType, QuickReply } from '../interfaces';
 import { TicketEvent } from '../events';
 import { renderEventSummary } from '../events/eventRenderers';
 import { DEFAULT_AVATAR } from '../webchat/assets';
@@ -81,7 +81,7 @@ interface User extends ObjectReference {
 export interface Msg {
   text: string;
   channel: ObjectReference;
-  quick_replies: string[];
+  quick_replies: (string | QuickReply)[];
   urn: string;
   direction: string;
   type: string;
