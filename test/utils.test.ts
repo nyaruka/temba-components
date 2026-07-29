@@ -40,6 +40,7 @@ import {
   SocketProvider,
   SocketSubscription
 } from '../src/live/SocketService';
+import { watchContact } from '../src/live/ContactWatch';
 
 export interface MockSubscription {
   channel: string;
@@ -321,6 +322,19 @@ export const waitForCondition = async (
       }ms)`
     );
   }
+};
+
+/**
+ * Waits until the central contact watcher has a snapshot for the given
+ * contact, so tests can publish events that rely on it being present.
+ */
+export const waitForWatchedContact = async (uuid: string) => {
+  let primed = false;
+  const watch = watchContact(uuid, [], () => {
+    primed = true;
+  });
+  await waitForCondition(() => primed);
+  watch.unsubscribe();
 };
 
 export const assertScreenshot = async (

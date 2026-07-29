@@ -1,13 +1,14 @@
 import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { Icon } from '../Icons';
-import { CustomEventType, Group, URN } from '../interfaces';
+import { Contact, CustomEventType, Group, URN } from '../interfaces';
 import { getLanguageName } from '../languages';
 import { capitalize, WebResponse } from '../utils';
 import { Select } from '../form/select/Select';
 import { TextInput } from '../form/TextInput';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement, getDestinationURN } from './ContactStoreElement';
+import { Events } from '../events/eventRenderers';
 
 interface Option {
   name: string;
@@ -22,6 +23,16 @@ const STATUS_OPTIONS: Option[] = [
 ];
 
 export class ContactDetails extends ContactStoreElement {
+  // the contact state we render - live changes to any of these reach us
+  // through the central watcher
+  protected watchTypes = [
+    Events.CONTACT_NAME_CHANGED,
+    Events.CONTACT_URNS_CHANGED,
+    Events.CONTACT_LANGUAGE_CHANGED,
+    Events.CONTACT_STATUS_CHANGED,
+    Events.CONTACT_GROUPS_CHANGED
+  ];
+
   @property({ type: Boolean })
   editable = false;
 
@@ -428,6 +439,26 @@ export class ContactDetails extends ContactStoreElement {
       this.finishSave(contactId, key, generation, 'failed');
       return { status: 500, json: {}, headers: new Headers() };
     }
+  }
+
+  /**
+   * A watcher delivery carries server state from before the writes we still
+   * have in flight, so keep our own value for anything mid-save - the save
+   * itself applies the server's version when it lands.
+   */
+  protected mergeWatchedContact(contact: Contact, previous: Contact): Contact {
+    if (!previous || this.fieldSaveGenerations.size === 0) {
+      return contact;
+    }
+
+    const merged = { ...contact };
+    this.fieldSaveGenerations.forEach((generation, field) => {
+      if (field in previous) {
+        const value = previous[field];
+        merged[field] = Array.isArray(value) ? [...value] : value;
+      }
+    });
+    return merged;
   }
 
   public willUpdate(changed: PropertyValues): void {

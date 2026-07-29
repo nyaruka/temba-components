@@ -74,6 +74,12 @@ interface SearchResult {
 }
 
 export class ContactChat extends ContactStoreElement {
+  // we run our own firehose subscription below (history rendering, typing,
+  // ephemeral state) with its own contact/ticket channel choreography, so we
+  // opt out of the central watcher entirely - our data loads and syncs
+  // through the store as before
+  protected watchTypes: string[] = null;
+
   public static get styles() {
     return css`
       ${designTokens}
