@@ -35,12 +35,13 @@ export class ContentMenu extends RapidElement {
   static get styles() {
     return css`
       :host {
-        tabindex: 0;
         /* the host is typically a flex item in the page header, so this
            z-index takes effect and creates a stacking context that caps
            the dropdown inside it — keep it in sync with the dropdown's
            z-index (9000) so the open menu clears floating windows like
-           the simulator (5000) */
+           the simulator (5000). This also keeps the closed toggle above
+           those windows, which is intended: the menu has to stay
+           clickable when a floating window overlaps the header. */
         z-index: 9000;
       }
       .container {
@@ -73,7 +74,6 @@ export class ContentMenu extends RapidElement {
         color: rgb(45, 45, 45);
         z-index: 50;
         min-width: 200px;
-        tabindex: 0;
       }
 
       .divider {
@@ -87,7 +87,6 @@ export class ContentMenu extends RapidElement {
         font-size: 1.1rem;
         cursor: pointer;
         font-weight: 400;
-        tabindex: 0;
       }
 
       .item:hover {

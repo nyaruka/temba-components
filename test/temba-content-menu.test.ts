@@ -101,4 +101,42 @@ describe('temba-content-menu', () => {
     });
     expect(contentMenu.legacy).equals(1);
   });
+
+  it('fires selection when an open menu item is clicked', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-contact-read.json'
+    });
+
+    const toggle = contentMenu.shadowRoot.querySelector(
+      '.toggle'
+    ) as HTMLElement;
+    toggle.click();
+
+    // wait out the deferred position calculation
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await contentMenu.updateComplete;
+
+    // the item must actually be hit-testable — the popup only accepts
+    // pointer events while open
+    const item = contentMenu.shadowRoot.querySelector('.item') as HTMLElement;
+    const bounds = item.getBoundingClientRect();
+    expect(
+      contentMenu.shadowRoot.elementFromPoint(
+        bounds.left + bounds.width / 2,
+        bounds.top + bounds.height / 2
+      )
+    ).to.equal(item);
+
+    const selection = new Promise<CustomEvent>((resolve) => {
+      contentMenu.addEventListener(
+        CustomEventType.Selection,
+        (event: Event) => resolve(event as CustomEvent),
+        { once: true }
+      );
+    });
+    item.click();
+
+    const event = await selection;
+    expect(event.detail.item.label).to.equal(contentMenu.items[0].label);
+  });
 });
