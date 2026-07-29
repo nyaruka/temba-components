@@ -57,6 +57,9 @@ export class TembaList extends RapidElement {
   renderOption: (option: any, selected: boolean) => TemplateResult;
 
   @property({ attribute: false })
+  renderDivider: (prev: any, option: any) => TemplateResult | null;
+
+  @property({ attribute: false })
   renderOptionDetail: (option: any, selected: boolean) => TemplateResult;
 
   @property({ attribute: false, type: Object })
@@ -67,6 +70,10 @@ export class TembaList extends RapidElement {
   refreshKey = '0';
 
   reverseRefresh = true;
+
+  // subclasses can enforce a display order when refreshed items are merged in,
+  // otherwise new items simply land at the top of the list
+  protected compareItems: (a: any, b: any) => number = null;
 
   // subclasses that get realtime updates can opt out of interval polling
   protected pollingEnabled = true;
@@ -252,6 +259,24 @@ export class TembaList extends RapidElement {
   }
 
   /**
+   * Finds where the item our cursor was pinned to ended up after a merge
+   * re-ordered our list. Returns null if the cursor is still on the right item,
+   * otherwise the index it moved to (-1 if it is no longer in the list).
+   */
+  private findRepinnedCursorIndex(prevItem: any, newItems: any[]): number {
+    if (!prevItem) {
+      return null;
+    }
+
+    const prevValue = this.getValue(prevItem);
+    if (prevValue === this.getValue(newItems[this.cursorIndex])) {
+      return null;
+    }
+
+    return newItems.findIndex((option) => this.getValue(option) === prevValue);
+  }
+
+  /**
    * Refreshes the first page, updating any found items in our list
    */
   private async refreshTop(): Promise<void> {
@@ -303,7 +328,15 @@ export class TembaList extends RapidElement {
         }
         const newItems = [...results, ...items];
 
+        // capture the top item before any display sort - it means "the newest
+        // item we just fetched, or the previous top if we fetched nothing" and
+        // drives the Refreshed event
         const topItem = newItems[0];
+
+        if (this.compareItems) {
+          newItems.sort(this.compareItems);
+        }
+
         if (
           !this.mostRecentItem ||
           JSON.stringify(this.mostRecentItem) !== JSON.stringify(topItem)
@@ -311,27 +344,21 @@ export class TembaList extends RapidElement {
           this.mostRecentItem = topItem;
         }
 
-        if (prevItem) {
-          const newItem = newItems[this.cursorIndex];
-          const prevValue = this.getValue(prevItem);
-          if (prevValue !== this.getValue(newItem)) {
-            const newIndex = newItems.findIndex(
-              (option) => this.getValue(option) === prevValue
-            );
-            this.cursorIndex = newIndex;
+        const newIndex = this.findRepinnedCursorIndex(prevItem, newItems);
+        if (newIndex !== null && newIndex > -1) {
+          this.cursorIndex = newIndex;
 
-            // make sure our focused item is visible
-            window.setTimeout(() => {
-              const options = this.shadowRoot.querySelector('temba-options');
-              if (options) {
-                const option =
-                  options.shadowRoot.querySelector('.option.focused');
-                if (option) {
-                  option.scrollIntoView({ block: 'end', inline: 'nearest' });
-                }
+          // make sure our focused item is visible
+          window.setTimeout(() => {
+            const options = this.shadowRoot.querySelector('temba-options');
+            if (options) {
+              const option =
+                options.shadowRoot.querySelector('.option.focused');
+              if (option) {
+                option.scrollIntoView({ block: 'end', inline: 'nearest' });
               }
-            }, 0);
-          }
+            }
+          }, 0);
         }
 
         this.items = newItems;
@@ -457,18 +484,60 @@ export class TembaList extends RapidElement {
   private handleScrollThreshold() {
     if (this.nextPage && !this.loading) {
       this.loading = true;
-      fetchResultsPage(this.nextPage).then((page: ResultsPage) => {
-        this.sanitizeResults(page.results).then((sanitizedResults) => {
-          if (this.sanitizeOption) {
-            sanitizedResults.forEach(this.sanitizeOption);
-          }
+      fetchResultsPage(this.nextPage)
+        .then((page: ResultsPage) => {
+          return this.sanitizeResults(page.results).then(
+            (sanitizedResults: any[]) => {
+              if (this.sanitizeOption) {
+                sanitizedResults.forEach(this.sanitizeOption);
+              }
 
-          this.items = [...this.items, ...sanitizedResults];
-          this.nextPage = page.next;
-          this.pages++;
+              // the item our cursor is pinned to, sorting can move it
+              const prevItem = this.items[this.cursorIndex];
+
+              // drop anything we already have, a poll can pull an item from the
+              // next page up into our loaded window before we fetch it
+              const seen = new Set(
+                this.items.map((option) => this.getValue(option))
+              );
+              const appended = (sanitizedResults || []).filter(
+                (option: any) => {
+                  const value = this.getValue(option);
+                  if (seen.has(value)) {
+                    return false;
+                  }
+                  seen.add(value);
+                  return true;
+                }
+              );
+
+              const items = [...this.items, ...appended];
+
+              // the server pages in the same total order we display in, so this is
+              // normally a no-op, but a poll can re-sort an item (say a ticket that
+              // just closed) into the loaded window - without this the appended
+              // page would land below it
+              if (this.compareItems) {
+                items.sort(this.compareItems);
+              }
+
+              // the sort can shift our selection, keep the cursor on it
+              const newIndex = this.findRepinnedCursorIndex(prevItem, items);
+              if (newIndex !== null && newIndex > -1) {
+                this.cursorIndex = newIndex;
+              }
+
+              this.items = items;
+              this.nextPage = page.next;
+              this.pages++;
+              this.loading = false;
+            }
+          );
+        })
+        .catch(() => {
+          // let the next scroll try again instead of wedging on loading
           this.loading = false;
         });
-      });
     }
   }
 
@@ -512,6 +581,7 @@ export class TembaList extends RapidElement {
         ?loading=${this.loading}
         ?internalFocusDisabled=${this.internalFocusDisabled}
         .renderOption=${this.renderOption}
+        .renderDivider=${this.renderDivider}
         .renderOptionDetail=${this.renderOptionDetail}
         @temba-scroll-threshold=${this.handleScrollThreshold}
         @temba-selection=${this.handleSelection.bind(this)}

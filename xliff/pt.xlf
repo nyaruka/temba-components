@@ -41,6 +41,9 @@
 <trans-unit id="s7722a91d3a512442">
   <source>Last seen <x id="0" equiv-text="${lastSeen.duration}"/></source>
 </trans-unit>
+<trans-unit id="s6dbbe2646b239ca5">
+  <source>Closed</source>
+</trans-unit>
 </body>
 </file>
 </xliff>

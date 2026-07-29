@@ -338,6 +338,13 @@ export class Options extends RapidElement {
   @property({ attribute: false })
   renderOption: { (option: any, selected: boolean): TemplateResult };
 
+  // renders between rows (and above the first) when the data crosses a
+  // grouping boundary - the result sits outside the option rows so it never
+  // picks up their hover or selection treatment. Returning null means the
+  // rows aren't a boundary and nothing is rendered between them.
+  @property({ attribute: false })
+  renderDivider: { (prev: any, option: any): TemplateResult | null };
+
   @property({ attribute: false })
   renderOptionName: { (option: any, selected: boolean): TemplateResult };
 
@@ -816,20 +823,26 @@ export class Options extends RapidElement {
           <div class="${classesInner}" style=${styleMap(optionsStyle)}>
             ${options.length > 0
               ? options.map((option, index) => {
-                  return html`<div
-                    data-option-index="${index}"
-                    @mousemove=${this.handleMouseMove}
-                    @mousedown=${this.handleOptionClick}
-                    class="option ${index === this.cursorIndex &&
-                    !this.internalFocusDisabled
-                      ? 'focused'
-                      : ''}"
-                  >
-                    ${this.resolvedRenderOption(
-                      option,
-                      index === this.cursorIndex
-                    )}
-                  </div>`;
+                  return html`${this.renderDivider
+                      ? this.renderDivider(
+                          index > 0 ? options[index - 1] : null,
+                          option
+                        )
+                      : null}
+                    <div
+                      data-option-index="${index}"
+                      @mousemove=${this.handleMouseMove}
+                      @mousedown=${this.handleOptionClick}
+                      class="option ${index === this.cursorIndex &&
+                      !this.internalFocusDisabled
+                        ? 'focused'
+                        : ''}"
+                    >
+                      ${this.resolvedRenderOption(
+                        option,
+                        index === this.cursorIndex
+                      )}
+                    </div>`;
                 })
               : this.visible && this.showEmptyMessage
                 ? html`<div
