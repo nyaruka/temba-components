@@ -120,6 +120,10 @@ export class ContactNotepad extends ContactStoreElement {
   private resizer: ResizeObserver;
   private lastWidth = 0;
 
+  // the contact our current note was taken off - an edit only belongs to the
+  // contact it was typed against, so a switch to another one re-derives
+  private noteContact: string = null;
+
   public connectedCallback(): void {
     super.connectedCallback();
     // text rewraps when our width changes (browser resize, layout mode
@@ -177,6 +181,7 @@ export class ContactNotepad extends ContactStoreElement {
   // takes the newest note off the contact, copied so editing it never writes
   // into the contact data we share with everything else
   private syncNote() {
+    this.noteContact = this.data?.uuid || null;
     this.note =
       this.data?.notes?.length > 0
         ? { ...this.data.notes[this.data.notes.length - 1] }
@@ -186,6 +191,16 @@ export class ContactNotepad extends ContactStoreElement {
       dirty: false
     });
     this.markClean();
+
+    // lit dirty checks the .value binding against the last string it wrote,
+    // not what's actually in the textarea, so re-deriving an unchanged note
+    // wouldn't take the user's typing back off - write the note through
+    const notepad = this.shadowRoot?.querySelector(
+      '.notepad'
+    ) as HTMLTextAreaElement;
+    if (notepad) {
+      notepad.value = this.note ? this.note.text : '';
+    }
   }
 
   protected updated(
@@ -195,8 +210,13 @@ export class ContactNotepad extends ContactStoreElement {
 
     // the central watcher re-delivers the contact on any activity, not just
     // note changes, so a delivery mid-edit would otherwise drop what the user
-    // has typed - hold the note until the edit is saved or abandoned
-    if (changes.has('data') && !this.dirty) {
+    // has typed - hold the note until the edit is saved or abandoned. Only
+    // for the contact it was typed against though: on a switch the edit goes
+    // with the contact we left, so the new one's note lands right away
+    if (
+      changes.has('data') &&
+      (!this.dirty || (this.data?.uuid || null) !== this.noteContact)
+    ) {
       this.syncNote();
     }
 

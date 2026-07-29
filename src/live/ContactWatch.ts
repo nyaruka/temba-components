@@ -227,9 +227,11 @@ const retryFetch = (
 const fetchContact = (uuid: string, entry: WatchedContact, attempt = 0) => {
   const store = getStore();
   if (!store) {
-    // the store element can upgrade after the components that watch through
-    // it - come back for it instead of leaving watchers empty for good
-    retryFetch(uuid, entry, attempt, entry.fetchSeq);
+    // the store element can be added to the page after the components that
+    // watch through it - come back for it instead of leaving watchers empty
+    // for good. Claim a seq like a real fetch does so a later call supersedes
+    // this chain instead of running alongside it
+    retryFetch(uuid, entry, attempt, ++entry.fetchSeq);
     return;
   }
 

@@ -13,10 +13,12 @@ import {
 
 const TAG = 'temba-contact-notepad';
 
+const OTHER_CONTACT = 'other-notepad-contact';
+
 // a contact as the central watcher would hand it to us, carrying whatever
 // note the server has for it
-const contactWithNote = (text: string): any => ({
-  uuid: 'notepad-contact',
+const contactWithNote = (text: string, uuid = 'notepad-contact'): any => ({
+  uuid,
   name: 'Dave Matthews',
   urns: [],
   groups: [],
@@ -41,15 +43,32 @@ const getNotepad = async (attrs: any = {}) => {
   return notepad;
 };
 
+const getTextarea = (notepad: ContactNotepad) =>
+  notepad.shadowRoot.querySelector('.notepad') as HTMLTextAreaElement;
+
+// the note is taken off a delivery from updated(), so the render that shows
+// it is a follow-up pass
+const settle = async (notepad: ContactNotepad) => {
+  while (!(await notepad.updateComplete)) {
+    // another update was scheduled while the last one ran
+  }
+};
+
 describe('temba-contact-notepad', () => {
   let previousProvider: SocketProvider;
 
   beforeEach(() => {
     previousProvider = setSocketProvider(new MockSocketProvider());
     mockGET(
-      /\/api\/v2\/contacts\.json\?uuid=notepad-contact/,
+      /\/api\/v2\/contacts\.json\?.*uuid=notepad-contact/,
       '/test-assets/contacts/contact-notepad.json'
     );
+    // the contact we switch to mid-edit
+    mockGET(/\/api\/v2\/contacts\.json\?.*uuid=other-notepad-contact/, {
+      next: null,
+      previous: null,
+      results: [contactWithNote('other note', OTHER_CONTACT)]
+    });
   });
 
   afterEach(() => {
@@ -122,27 +141,17 @@ describe('temba-contact-notepad', () => {
     });
     await waitForWatchedContact('notepad-contact');
 
-    const textarea = notepad.shadowRoot.querySelector(
-      '.notepad'
-    ) as HTMLTextAreaElement;
-
-    // the note is taken off a delivery from updated(), so the render that
-    // shows it is a follow-up pass
-    const settle = async () => {
-      while (!(await notepad.updateComplete)) {
-        // another update was scheduled while the last one ran
-      }
-    };
+    const textarea = getTextarea(notepad);
 
     textarea.value = 'unsaved edit';
     textarea.dispatchEvent(new Event('input'));
-    await settle();
+    await settle(notepad);
     expect(notepad.dirty).to.be.true;
 
     // the watcher re-delivers the whole contact on any activity, not just
     // note changes - it can't take the edit down with it
     updateContact('notepad-contact', contactWithNote('server note'));
-    await settle();
+    await settle(notepad);
 
     expect(notepad.dirty).to.be.true;
     expect(textarea.value).to.equal('unsaved edit');
@@ -150,10 +159,52 @@ describe('temba-contact-notepad', () => {
     // once the edit is no longer pending, deliveries land as usual
     notepad.markClean();
     updateContact('notepad-contact', contactWithNote('newer note'));
-    await settle();
+    await settle(notepad);
 
     expect(notepad.note.text).to.equal('newer note');
     expect(textarea.value).to.equal('newer note');
+
+    // an abandoned edit comes back off even when the delivery carries the
+    // same note it was typed over - the textarea is what has to end up right,
+    // not just the note we derived
+    textarea.value = 'abandoned edit';
+    textarea.dispatchEvent(new Event('input'));
+    await settle(notepad);
+    notepad.markClean();
+
+    updateContact('notepad-contact', contactWithNote('newer note'));
+    await settle(notepad);
+
+    expect(textarea.value).to.equal('newer note');
+  });
+
+  it('drops an unsaved edit when the contact switches', async () => {
+    await loadStore();
+    const notepad = await getNotepad({
+      contact: 'notepad-contact',
+      autogrow: true
+    });
+    await waitForWatchedContact('notepad-contact');
+
+    const textarea = getTextarea(notepad);
+    textarea.value = 'unsaved edit';
+    textarea.dispatchEvent(new Event('input'));
+    await settle(notepad);
+    expect(notepad.dirty).to.be.true;
+
+    // the notepad is reused across contacts (a ticket page swaps the contact
+    // under it), and an edit only belongs to the contact it was typed
+    // against - it goes with the one we left rather than being held for a
+    // delivery it was never meant for
+    notepad.contact = OTHER_CONTACT;
+    await settle(notepad);
+    await waitForWatchedContact(OTHER_CONTACT);
+    updateContact(OTHER_CONTACT, contactWithNote('other note', OTHER_CONTACT));
+    await settle(notepad);
+
+    expect(notepad.dirty).to.be.false;
+    expect(notepad.note.text).to.equal('other note');
+    expect(getTextarea(notepad).value).to.equal('other note');
   });
 
   it('fills a bounded pane without overflowing it', async () => {

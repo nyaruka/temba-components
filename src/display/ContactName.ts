@@ -32,6 +32,10 @@ export class ContactName extends RapidElement {
   private watch: RealtimeSubscription = null;
   private watchedContact: string = null;
 
+  // the contact the name and urn on screen came from - only what we put there
+  // is ours to clear, and only when we're pointed somewhere else
+  private displayedContact: string = null;
+
   // the contact behind a refresh notification we've already queued - a name
   // and a urn change arrive as separate deliveries, as does a burst of live
   // events, so the notification is coalesced into a microtask
@@ -96,10 +100,17 @@ export class ContactName extends RapidElement {
     // only values we put there are ours to clear - a name and urn supplied
     // alongside the contact render until the watcher has something better.
     // Leaving the DOM isn't a switch, and blanking there would flash empty
-    // and refetch when we're only being moved
-    if (this.watchedContact && this.isConnected) {
+    // and refetch when we're only being moved - but a swap made while we were
+    // detached is, so compare against the contact on screen rather than the
+    // one we were last watching
+    if (
+      this.isConnected &&
+      this.displayedContact &&
+      this.displayedContact !== target
+    ) {
       this.name = null;
       this.urn = null;
+      this.displayedContact = null;
     }
     this.watchedContact = target;
 
@@ -123,10 +134,12 @@ export class ContactName extends RapidElement {
       // back to their highest priority URN if none are sendable
       const urn = getDestinationURN(contact) || (contact.urns || [])[0] || null;
       this.urn = urn ? `${urn.scheme}:${urn.display || urn.path}` : null;
+      this.displayedContact = this.watchedContact;
       this.fireRefreshed(contact);
     } else if (event && event.type === Events.CONTACT_NAME_CHANGED) {
       // a live event can outrun the initial fetch - show the name we have
       this.name = event.name || null;
+      this.displayedContact = this.watchedContact;
     }
   }
 
