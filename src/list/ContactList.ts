@@ -4,6 +4,7 @@ import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
 import { Contact } from '../interfaces';
 import { getUrl, postJSON } from '../utils';
+import type { Store } from '../store/Store';
 
 const FIELD_PREFIX = 'field:';
 
@@ -73,6 +74,11 @@ export class ContactList extends ContentList<Contact> {
 
   private pendingFieldsController?: AbortController;
 
+  /** The page's store element, when the host mounted one. The list
+   * doesn't read from it — it fetches its own fields — but it does have
+   * to tell it when a drop changes the workspace's featured order. */
+  private store?: Store;
+
   constructor() {
     super();
     this.valueKey = 'uuid';
@@ -101,6 +107,7 @@ export class ContactList extends ContentList<Contact> {
 
   public connectedCallback(): void {
     super.connectedCallback();
+    this.store = document.querySelector('temba-store') as Store;
     this.loadFields();
   }
 
@@ -248,6 +255,13 @@ export class ContactList extends ContentList<Contact> {
    * same contract as the fields management page, whose endpoint this
    * posts to with the full featured list. */
   protected onColumnOrderChanged(columns: ContentListColumn[]): void {
+    // A fields fetch still in flight was started against the old order
+    // and would land on top of the drop, snapping the columns back with
+    // the new order already on its way to the server.
+    if (this.pendingFieldsController) {
+      this.pendingFieldsController.abort();
+      this.pendingFieldsController = undefined;
+    }
     const keys = columns
       .filter((c) => c.key.startsWith(FIELD_PREFIX))
       .map((c) => c.key.substring(FIELD_PREFIX.length));
@@ -255,12 +269,25 @@ export class ContactList extends ContentList<Contact> {
       .map((key) => (this.featuredFields || []).find((f: any) => f.key === key))
       .filter(Boolean);
     if (!this.priorityEndpoint) return;
-    postJSON(this.priorityEndpoint, { featured: keys }).catch((error) => {
-      // The columns stay in their dragged order — the save failing
-      // just means the order won't stick across a reload; the next
-      // successful drag re-saves the full list.
-      console.warn('failed to save featured field order', error);
-    });
+    postJSON(this.priorityEndpoint, { featured: keys })
+      .catch((error) => {
+        console.warn('failed to save featured field order', error);
+        // Nothing made the dragged order durable, so stop showing it —
+        // refetch and fall back on whatever the server still holds. The
+        // success path deliberately doesn't refetch: we already display
+        // exactly what we just saved, and a read-replica answering with
+        // pre-write data would yank the columns back for no reason.
+        this.loadFields();
+      })
+      .finally(() => {
+        // Featured fields are workspace state other components on the
+        // page read from the store (contact details, the fields page),
+        // so its cached copy has to hear about the new order too.
+        this.store?.refreshFields().catch(() => {
+          // a stale store cache is cosmetic and elsewhere; the list
+          // itself is already showing the saved order
+        });
+      });
   }
 
   protected getRowIcon(_item: Contact): string | null {

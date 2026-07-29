@@ -479,6 +479,7 @@ export enum CustomEventType {
   StoreUpdated = 'temba-store-updated',
   Ready = 'temba-ready',
   OrderChanged = 'temba-order-changed',
+  ColumnOrderChanged = 'temba-column-order-changed',
   DragStart = 'temba-drag-start',
   DragStop = 'temba-drag-stop',
   DragExternal = 'temba-drag-external',

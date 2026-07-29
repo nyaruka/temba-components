@@ -2121,6 +2121,32 @@ describe('temba-content-list', () => {
       await list.updateComplete;
     };
 
+    /** Press a header and cross the dead zone, leaving the drag live. */
+    const beginDrag = async (list: ContentList, fromKey: string) => {
+      const header = headerFor(list, fromKey);
+      const rect = header.getBoundingClientRect();
+      const startX = rect.left + rect.width / 2;
+      header.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: startX,
+          pointerType: 'mouse'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: startX + 30,
+          pointerType: 'mouse'
+        })
+      );
+      await list.updateComplete;
+    };
+
+    /** The ghost lives on document.body, outside the shadow root. */
+    const ghostCount = () =>
+      document.querySelectorAll('.column-drag-ghost').length;
+
     it('reorders field columns by dragging and saves the featured order', async () => {
       await loadStore();
       mockPOST(priorityRegex, { status: 'OK' });
@@ -2149,6 +2175,13 @@ describe('temba-content-list', () => {
       expect(headerFor(list, 'created_on').classList.contains('reorderable')).to
         .be.false;
 
+      // the reorder announces itself on its own event type — the shared
+      // OrderChanged carries other, incompatible payloads
+      const orderEvents: any[] = [];
+      list.addEventListener(CustomEventType.ColumnOrderChanged, (event: any) =>
+        orderEvents.push(event.detail)
+      );
+
       // drag State just past District's midpoint — they swap
       const district = headerFor(list, 'field:district');
       const dRect = district.getBoundingClientRect();
@@ -2166,6 +2199,13 @@ describe('temba-content-list', () => {
         'last_seen_on',
         'created_on'
       ]);
+
+      expect(orderEvents.length).to.equal(1);
+      expect(orderEvents[0].from).to.equal(2);
+      expect(orderEvents[0].to).to.equal(3);
+
+      // the floating ghost is torn down with the drag
+      expect(ghostCount()).to.equal(0);
 
       // featuredFields follows the columns so later rebuilds keep the order
       expect(
@@ -2264,6 +2304,136 @@ describe('temba-content-list', () => {
       );
       header.click();
       expect((list as any).sort).to.equal('field:state');
+    });
+
+    it('abandons the drag on pointercancel', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+      const before = columnKeys(list);
+      const posts = getPriorityPosts().length;
+
+      await beginDrag(list, 'field:state');
+      expect(ghostCount()).to.equal(1);
+      expect(document.body.style.userSelect).to.equal('none');
+
+      window.dispatchEvent(
+        new PointerEvent('pointercancel', {
+          clientX: 900,
+          pointerType: 'mouse'
+        })
+      );
+      await list.updateComplete;
+
+      // nothing moved, nothing saved, and no ghost left on the body
+      expect(columnKeys(list)).to.deep.equal(before);
+      expect(getPriorityPosts().length).to.equal(posts);
+      expect(ghostCount()).to.equal(0);
+      expect(document.body.style.userSelect).to.equal('');
+
+      // the drag is gone, so a stray release can't commit it either
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 900, pointerType: 'mouse' })
+      );
+      await list.updateComplete;
+      expect(columnKeys(list)).to.deep.equal(before);
+    });
+
+    it('tears the drag down when the list disconnects mid-drag', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+      const before = columnKeys(list);
+      const posts = getPriorityPosts().length;
+
+      await beginDrag(list, 'field:state');
+      expect(ghostCount()).to.equal(1);
+
+      list.remove();
+      expect(ghostCount()).to.equal(0);
+      expect(document.body.style.userSelect).to.equal('');
+
+      // the window listeners went with it — these must be inert
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 900, pointerType: 'mouse' })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 900, pointerType: 'mouse' })
+      );
+      expect(ghostCount()).to.equal(0);
+      expect(columnKeys(list)).to.deep.equal(before);
+      expect(getPriorityPosts().length).to.equal(posts);
+    });
+
+    it('ignores a second pointer during a drag', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+      const before = columnKeys(list);
+      const posts = getPriorityPosts().length;
+
+      await beginDrag(list, 'field:state');
+
+      // a second touch can neither steer the drag nor commit it
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          pointerId: 7,
+          clientX: 900,
+          pointerType: 'touch'
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          pointerId: 7,
+          clientX: 900,
+          pointerType: 'touch'
+        })
+      );
+      await list.updateComplete;
+      expect(columnKeys(list)).to.deep.equal(before);
+      expect(getPriorityPosts().length).to.equal(posts);
+      expect(ghostCount()).to.equal(1);
+
+      // the owning pointer still finishes the job
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 900, pointerType: 'mouse' })
+      );
+      await list.updateComplete;
+      expect(ghostCount()).to.equal(0);
+    });
+
+    it('starts a resize cleanly while a drag is live', async () => {
+      await loadStore();
+      mockPOST(priorityRegex, { status: 'OK' });
+      const list = await getContactList({ 'priority-endpoint': PRIORITY_URL });
+      const before = columnKeys(list);
+
+      await beginDrag(list, 'field:state');
+      const handle = getResizeHandle(headerFor(list, 'field:district'));
+      handle!.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          clientX: 500,
+          pointerType: 'mouse'
+        })
+      );
+      await list.updateComplete;
+
+      // the drag is cancelled rather than left running alongside
+      expect(ghostCount()).to.equal(0);
+      expect(columnKeys(list)).to.deep.equal(before);
+
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 540, pointerType: 'mouse' })
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 540, pointerType: 'mouse' })
+      );
+      await list.updateComplete;
+
+      // and the resize hands the body's selection style back
+      expect(document.body.style.userSelect).to.equal('');
     });
   });
 });

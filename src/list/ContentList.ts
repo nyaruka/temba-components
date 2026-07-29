@@ -777,13 +777,28 @@ export class ContentList<T = any> extends RapidElement {
          small pointer threshold the label lifts into a floating ghost,
          the origin column dims, and an accent insertion bar tracks the
          drop slot. touch-action: none lets the same drag work on touch
-         — the sticky header row isn't a scroll surface, so nothing is
-         lost by claiming its gestures. */
+         — the 36px sticky header row is a negligible scroll-start
+         surface, so claiming its gestures (including the vertical
+         swipe that would otherwise scroll the list) costs little. */
       .head-cell.reorderable {
         touch-action: none;
       }
+      /* Advertise the drag while idle. The th prefix out-specifies
+         .head-cell.sortable's pointer cursor, which is declared later
+         in this sheet and would otherwise win on a sortable column. */
+      th.head-cell.reorderable {
+        cursor: grab;
+      }
       .head-cell.dragging {
         opacity: 0.35;
+      }
+      /* The bars overhang the cell edges, so the marked header has to
+         out-stack its neighbours (opaque, z-index 2) or the following
+         cell paints over the trailing bar. Stays under a pinned header
+         cell (z-index 5) so the frozen region still covers it. */
+      .head-cell.drop-before,
+      .head-cell.drop-after {
+        z-index: 3;
       }
       /* The insertion bar straddles the column boundary; the header
          cell is the positioning context (it's position: sticky). */
@@ -1545,6 +1560,16 @@ export class ContentList<T = any> extends RapidElement {
         ghost?: HTMLElement;
       }
     | undefined;
+
+  /** The drag keeps its own copy of body user-select: a resize started
+   * mid-drag cancels the drag, and sharing one field would let whichever
+   * finished last restore the other's (already overwritten) value. */
+  private previousBodyUserSelectDrag = '';
+
+  /** Pointer travel, in px, that separates a click (sort) from a drag
+   * (reorder). Only horizontal travel counts — that's the axis the
+   * reorder happens on. */
+  private static readonly DRAG_DEAD_ZONE = 5;
 
   /** Key of the column being drag-reordered, '' when idle — drives the
    * dimmed treatment on the origin header. */
@@ -2966,9 +2991,11 @@ export class ContentList<T = any> extends RapidElement {
     column: ContentListColumn
   ): void {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
-    // A second pointer should replace, not overlap, an active drag and
-    // must preserve the body's original selection style for cleanup.
+    // A second pointer should replace, not overlap, an active resize or
+    // reorder — both stash the body's selection style, so leaving one
+    // running would strand `user-select: none` on the body.
     this.stopColumnResize();
+    this.cancelColumnDrag();
     event.preventDefault();
     event.stopPropagation();
     const handle = event.currentTarget as HTMLElement;
@@ -3084,7 +3111,11 @@ export class ContentList<T = any> extends RapidElement {
   ): void {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     if (this.columnResize || this.columnDrag) return;
-    if (!this.reorderableRange()) return;
+    // Only a column inside the reorderable run can be dragged; one that
+    // opted in from outside it has nowhere legal to land.
+    const range = this.reorderableRange();
+    const index = this.columns.indexOf(column);
+    if (!range || index < range[0] || index > range[1]) return;
     const header = event.currentTarget as HTMLElement;
     // No preventDefault and no pointer capture yet — until the pointer
     // clears the dead zone this may still be a plain sort click, which
@@ -3105,11 +3136,13 @@ export class ContentList<T = any> extends RapidElement {
   private handleColumnDragMove = (event: PointerEvent): void => {
     const drag = this.columnDrag;
     if (!drag) return;
+    // A second (e.g. touch) pointer must not drive a drag it didn't
+    // start.
+    if (event.pointerId !== drag.pointerId) return;
     if (!drag.started) {
-      // The dead zone distinguishes a click (sort) from a drag
-      // (reorder); only horizontal travel counts since that's the
-      // axis the reorder happens on.
-      if (Math.abs(event.clientX - drag.startX) < 5) return;
+      if (Math.abs(event.clientX - drag.startX) < ContentList.DRAG_DEAD_ZONE) {
+        return;
+      }
       drag.started = true;
       // Capture so the drag survives excursions outside the window and
       // the release's synthesized click retargets to the origin header,
@@ -3121,7 +3154,7 @@ export class ContentList<T = any> extends RapidElement {
       }
       drag.ghost = this.createColumnDragGhost(drag.header);
       this.draggingColumnKey = drag.key;
-      this.previousBodyUserSelect = document.body.style.userSelect;
+      this.previousBodyUserSelectDrag = document.body.style.userSelect;
       document.body.style.userSelect = 'none';
       this.toggleAttribute('column-dragging', true);
     }
@@ -3151,6 +3184,11 @@ export class ContentList<T = any> extends RapidElement {
   private stopColumnDrag = (event?: Event): void => {
     const drag = this.columnDrag;
     if (!drag) return;
+    // Ignore the release of any pointer other than the one that started
+    // the drag. Teardown paths without an event (disconnect) still run.
+    if (event instanceof PointerEvent && event.pointerId !== drag.pointerId) {
+      return;
+    }
     const slot = this.columnDropSlot;
     this.teardownColumnDrag();
     if (!drag.started) return;
@@ -3172,7 +3210,10 @@ export class ContentList<T = any> extends RapidElement {
     const [moved] = columns.splice(from, 1);
     columns.splice(to, 0, moved);
     this.columns = columns;
-    this.fireCustomEvent(CustomEventType.OrderChanged, {
+    // Its own event type: the generic OrderChanged is a bubbling,
+    // composed event whose other producers carry different payloads
+    // (`ids`, `swap`), and its listeners would choke on this one.
+    this.fireCustomEvent(CustomEventType.ColumnOrderChanged, {
       keys: columns.map((c) => c.key),
       from,
       to
@@ -3180,8 +3221,15 @@ export class ContentList<T = any> extends RapidElement {
     this.onColumnOrderChanged(columns);
   };
 
-  private cancelColumnDrag = (): void => {
-    if (!this.columnDrag) return;
+  /** Abandons the drag without committing a drop. Doubles as the
+   * pointercancel listener (where it only answers to its own pointer)
+   * and as the unconditional cleanup hook for disconnect / resize. */
+  private cancelColumnDrag = (event?: Event): void => {
+    const drag = this.columnDrag;
+    if (!drag) return;
+    if (event instanceof PointerEvent && event.pointerId !== drag.pointerId) {
+      return;
+    }
     this.teardownColumnDrag();
   };
 
@@ -3194,7 +3242,7 @@ export class ContentList<T = any> extends RapidElement {
     window.removeEventListener('pointerup', this.stopColumnDrag);
     window.removeEventListener('pointercancel', this.cancelColumnDrag);
     if (drag?.started) {
-      document.body.style.userSelect = this.previousBodyUserSelect;
+      document.body.style.userSelect = this.previousBodyUserSelectDrag;
       this.toggleAttribute('column-dragging', false);
     }
     drag?.ghost?.remove();
@@ -3212,6 +3260,9 @@ export class ContentList<T = any> extends RapidElement {
     const rect = header.getBoundingClientRect();
     const style = getComputedStyle(header);
     const ghost = document.createElement('div');
+    ghost.className = 'column-drag-ghost';
+    // Purely decorative — it duplicates the header it was lifted from.
+    ghost.setAttribute('aria-hidden', 'true');
     ghost.textContent =
       header.querySelector('.label')?.textContent?.trim() ?? '';
     Object.assign(ghost.style, {
@@ -3499,6 +3550,9 @@ export class ContentList<T = any> extends RapidElement {
     const allSelected =
       allIds.length > 0 && allIds.every((id) => this.selectedIds.has(id));
     const someSelected = !allSelected && this.selectedIds.size > 0;
+    // Computed once for the whole row rather than per cell — every
+    // header cell needs it to resolve its reorder affordances.
+    const reorderableRange = this.reorderableRange();
 
     return html`
       <thead>
@@ -3536,6 +3590,8 @@ export class ContentList<T = any> extends RapidElement {
             const outerResize = index === this.columns.length - 1;
             return html`${this.renderHeaderCell(
               column,
+              index,
+              reorderableRange,
               leadingResizeColumn,
               trailingResize,
               outerResize
@@ -3583,6 +3639,8 @@ export class ContentList<T = any> extends RapidElement {
 
   private renderHeaderCell(
     column: ContentListColumn,
+    index: number,
+    range: [number, number] | null,
     leadingResizeColumn?: ContentListColumn,
     trailingResize = false,
     outerResize = false
@@ -3590,20 +3648,24 @@ export class ContentList<T = any> extends RapidElement {
     const active = this.sort === column.key || this.sort === '-' + column.key;
     const desc = this.sort === '-' + column.key;
     // Reorder affordances: a column is only draggable when it sits in
-    // a reorderable run of two or more; during a drag the origin
-    // header dims and an insertion bar marks the current drop slot —
-    // suppressed when the slot would put the column right back where
-    // it already is (a no-op drop needs no affordance).
-    const range = this.reorderableRange();
-    const index = this.columns.indexOf(column);
-    const reorderable = !!(column.reorderable && range);
+    // the reorderable run of two or more — a stray `reorderable` column
+    // outside that run has nowhere to go, so it gets no drag. During a
+    // drag the origin header dims and an insertion bar marks the current
+    // drop slot — suppressed when the slot would put the column right
+    // back where it already is (a no-op drop needs no affordance).
+    const reorderable = !!(
+      column.reorderable &&
+      range &&
+      index >= range[0] &&
+      index <= range[1]
+    );
     const dragging = this.draggingColumnKey === column.key;
     const fromIndex = this.draggingColumnKey
       ? this.columns.findIndex((c) => c.key === this.draggingColumnKey)
       : -1;
     const dropSlot = fromIndex === -1 ? -1 : this.columnDropSlot;
     const noopSlot = dropSlot === fromIndex || dropSlot === fromIndex + 1;
-    const dropBefore = !noopSlot && dropSlot === index && !!column.reorderable;
+    const dropBefore = !noopSlot && dropSlot === index && reorderable;
     const dropAfter =
       !noopSlot && !!range && dropSlot === range[1] + 1 && index === range[1];
     const cls = `head-cell ${column.align || ''} ${
