@@ -537,10 +537,11 @@ export class ContentList<T = any> extends RapidElement {
            its own stacking context so those values can only order
            against each other and never interleave with page-level
            layers like floating windows or open dropdowns. Without it
-           any ancestor that raises this frame would let the table's
-           z-index 6 compete directly with page chrome. Note this also
-           caps this list's own label dropdown, which renders inside
-           the frame and so cannot escape it. */
+           the frame is z-index auto, so the table's 1-6 would join the
+           nearest ancestor stacking context — normally the root — and
+           tie against page chrome using comparably small values. Note
+           this also caps this list's own label dropdown, which renders
+           inside the frame and so cannot escape it. */
         isolation: isolate;
       }
       .table-scroll {

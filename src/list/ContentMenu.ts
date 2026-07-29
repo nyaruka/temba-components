@@ -40,8 +40,10 @@ export class ContentMenu extends RapidElement {
            the dropdown inside it — keep it in sync with the dropdown's
            z-index (9000) so the open menu clears floating windows like
            the simulator (5000). This also keeps the closed toggle above
-           those windows, which is intended: the menu has to stay
-           clickable when a floating window overlaps the header. */
+           those windows — a behavior change from the old 5000, which
+           tied with floating windows and lost on DOM order — and an
+           intended one: the menu has to stay clickable when a floating
+           window overlaps the header. */
         z-index: 9000;
       }
       .container {
