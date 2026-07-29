@@ -230,6 +230,121 @@ describe('temba-ticket-list', () => {
     now.restore();
   });
 
+  it('keeps the selection pinned when an appended page sorts above it', async () => {
+    const now = mockNow('2024-05-01T12:00:00.000Z');
+    mockAgents();
+
+    await loadStore();
+    const list = await getList('/test-assets/list/tickets-merged.json');
+
+    // select a closed ticket, the second one in the closed block
+    list.setSelection(MERGED[4]);
+    await list.updateComplete;
+    assert.equal(list.cursorIndex, 4);
+
+    // the next page has an open ticket, which sorts above every closed one we
+    // already have loaded, plus a ticket we already have
+    // note the distinct page, mocked gets are matched first-registered-wins and
+    // are never cleared between tests
+    const appended = 'a1000000-0000-0000-0000-000000000007';
+    mockGET(/tickets-merged-page3\.json/, {
+      results: [
+        {
+          uuid: 'c1000000-0000-0000-0000-000000000007',
+          name: 'Grace Wanjiru',
+          last_seen_on: '2024-04-28T09:00:00.000000Z',
+          last_msg: null,
+          ticket: {
+            uuid: appended,
+            assignee: null,
+            topic: {
+              uuid: 'b1000000-0000-0000-0000-000000000001',
+              name: 'General'
+            },
+            last_activity_on: '2024-04-28T09:00:00.000000Z',
+            closed_on: null
+          }
+        },
+        {
+          uuid: 'c1000000-0000-0000-0000-000000000006',
+          name: 'Femi Adeyemi',
+          last_seen_on: '2024-04-18T11:05:00.000000Z',
+          last_msg: null,
+          ticket: {
+            uuid: MERGED[5],
+            assignee: null,
+            topic: {
+              uuid: 'b1000000-0000-0000-0000-000000000001',
+              name: 'General'
+            },
+            last_activity_on: '2024-04-18T11:05:00.000000Z',
+            closed_on: '2024-04-18T11:05:00.000000Z'
+          }
+        }
+      ]
+    });
+
+    const fetched = new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+
+    list.nextPage = '/test-assets/list/tickets-merged-page3.json';
+    const options = list.shadowRoot.querySelector('temba-options') as any;
+    options.fireCustomEvent(CustomEventType.ScrollThreshold);
+
+    await fetched;
+    await list.updateComplete;
+
+    // the already loaded ticket wasn't appended a second time
+    const uuids = ticketUuids(list);
+    assert.deepEqual(uuids, [
+      MERGED[0],
+      MERGED[1],
+      MERGED[2],
+      appended,
+      MERGED[3],
+      MERGED[4],
+      MERGED[5]
+    ]);
+    assert.equal(new Set(uuids).size, uuids.length);
+
+    // the new open ticket pushed our selection down a row, but we stayed on it
+    assert.equal(list.getSelection().ticket.uuid, MERGED[4]);
+    assert.equal(list.cursorIndex, 5);
+    assert.equal(list.items[list.cursorIndex].ticket.uuid, MERGED[4]);
+    now.restore();
+  });
+
+  it('recovers from a failed page fetch', async () => {
+    const now = mockNow('2024-05-01T12:00:00.000Z');
+    mockAgents();
+
+    await loadStore();
+    const list = await getList('/test-assets/list/tickets-merged.json');
+
+    mockGET(/tickets-merged-page4\.json/, {}, {}, '500');
+
+    const fetched = new Promise<void>((resolve) => {
+      list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
+        once: true
+      });
+    });
+
+    list.nextPage = '/test-assets/list/tickets-merged-page4.json';
+    const options = list.shadowRoot.querySelector('temba-options') as any;
+    options.fireCustomEvent(CustomEventType.ScrollThreshold);
+
+    await fetched;
+    await list.updateComplete;
+
+    // loading was released so the next scroll can try again
+    assert.isFalse(list.loading);
+    assert.deepEqual(ticketUuids(list), MERGED);
+    now.restore();
+  });
+
   it('refreshes using the newest activity in the list', async () => {
     const tickets: TicketList = await fixture(getHTML());
     tickets.endpoint = '/ticket/folder/mine/';
