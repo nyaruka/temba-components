@@ -57,7 +57,7 @@ export class TembaList extends RapidElement {
   renderOption: (option: any, selected: boolean) => TemplateResult;
 
   @property({ attribute: false })
-  renderDivider: (prev: any, option: any) => TemplateResult;
+  renderDivider: (prev: any, option: any) => TemplateResult | null;
 
   @property({ attribute: false })
   renderOptionDetail: (option: any, selected: boolean) => TemplateResult;
@@ -309,11 +309,16 @@ export class TembaList extends RapidElement {
           results = sanitizedResults.reverse();
         }
         const newItems = [...results, ...items];
+
+        // capture the top item before any display sort - it means "the newest
+        // item we just fetched, or the previous top if we fetched nothing" and
+        // drives the Refreshed event
+        const topItem = newItems[0];
+
         if (this.compareItems) {
           newItems.sort(this.compareItems);
         }
 
-        const topItem = newItems[0];
         if (
           !this.mostRecentItem ||
           JSON.stringify(this.mostRecentItem) !== JSON.stringify(topItem)
@@ -473,7 +478,17 @@ export class TembaList extends RapidElement {
             sanitizedResults.forEach(this.sanitizeOption);
           }
 
-          this.items = [...this.items, ...sanitizedResults];
+          const items = [...this.items, ...sanitizedResults];
+
+          // the server pages in the same total order we display in, so this is
+          // normally a no-op, but a poll can re-sort an item (say a ticket that
+          // just closed) into the loaded window - without this the appended
+          // page would land below it
+          if (this.compareItems) {
+            items.sort(this.compareItems);
+          }
+
+          this.items = items;
           this.nextPage = page.next;
           this.pages++;
           this.loading = false;

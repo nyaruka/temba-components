@@ -10,14 +10,15 @@ export class TicketList extends TembaList {
   agent = '';
 
   public getRefreshEndpoint() {
-    if (this.items.length > 0) {
-      // open tickets sort above closed ones, so the newest activity can be
-      // anywhere in the list, not just the top
-      const lastActivity = Math.max(
-        ...this.items.map((item) =>
-          new Date(item.ticket.last_activity_on).getTime()
-        )
-      );
+    // open tickets sort above closed ones, so the newest activity can be
+    // anywhere in the list, not just the top. Skip anything unparseable so a
+    // single bad timestamp can't poison the cursor with NaN
+    const lastActivity = this.items.reduce((newest, item) => {
+      const activity = new Date(item.ticket.last_activity_on).getTime();
+      return isNaN(activity) ? newest : Math.max(newest, activity);
+    }, 0);
+
+    if (lastActivity > 0) {
       const separator = this.endpoint.includes('?') ? '&' : '?';
       return this.endpoint + separator + 'after=' + lastActivity * 1000;
     }
@@ -37,6 +38,11 @@ export class TicketList extends TembaList {
     super();
 
     this.valueKey = 'ticket.uuid';
+
+    // refreshed items get sorted into place by compareItems below, so
+    // reversing them on the way in is just contradictory work
+    this.reverseRefresh = false;
+
     this.compareItems = (a: Contact, b: Contact): number => {
       const aClosed = !!a.ticket.closed_on;
       const bClosed = !!b.ticket.closed_on;
@@ -50,21 +56,27 @@ export class TicketList extends TembaList {
     };
     // a quiet label marks where the list crosses from open into closed
     // tickets - the rows themselves then only need gentle muting
-    this.renderDivider = (prev: Contact, contact: Contact): TemplateResult => {
+    this.renderDivider = (
+      prev: Contact,
+      contact: Contact
+    ): TemplateResult | null => {
       if (!contact.ticket.closed_on || (prev && prev.ticket.closed_on)) {
         return null;
       }
+      const closed = msg('Closed');
       return html`
         <div
-          style="display:flex; align-items:center; gap:0.6em; padding:0.9em var(--pad, 0.75em) 0.2em var(--pad, 0.75em);"
+          role="separator"
+          aria-label=${closed}
+          style="display:flex; align-items:center; gap:0.6em; padding:0.9em var(--pad) 0.2em var(--pad);"
         >
           <div
-            style="font-size:0.7em; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-4, #a2abb8);"
+            style="font-size:0.7em; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-4);"
           >
-            ${msg('Closed')}
+            ${closed}
           </div>
           <div
-            style="flex-grow:1; height:1px; background:var(--color-widget-border, #e6e6e6);"
+            style="flex-grow:1; height:1px; background:var(--color-widget-border);"
           ></div>
         </div>
       `;
@@ -80,7 +92,7 @@ export class TicketList extends TembaList {
           <div
             style="display:flex; align-items:baseline; margin-top:0.1em; margin-bottom:0.1em; ${selected
               ? ''
-              : 'color:var(--text-3, #7b8593);'}"
+              : 'color:var(--text-3);'}"
           >
             <div
               style="flex:1; min-width:0; font-weight:400; line-height:1.6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"

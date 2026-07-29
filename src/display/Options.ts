@@ -340,9 +340,10 @@ export class Options extends RapidElement {
 
   // renders between rows (and above the first) when the data crosses a
   // grouping boundary - the result sits outside the option rows so it never
-  // picks up their hover or selection treatment
+  // picks up their hover or selection treatment. Returning null means the
+  // rows aren't a boundary and nothing is rendered between them.
   @property({ attribute: false })
-  renderDivider: { (prev: any, option: any): TemplateResult };
+  renderDivider: { (prev: any, option: any): TemplateResult | null };
 
   @property({ attribute: false })
   renderOptionName: { (option: any, selected: boolean): TemplateResult };
