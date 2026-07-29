@@ -4,106 +4,152 @@ import { DateTime } from 'luxon';
 import { html, css, PropertyValues } from 'lit';
 import { DatePicker } from './DatePicker';
 import { CustomEventType } from '../interfaces';
+import { Icon } from '../Icons';
+import { designTokens } from '../styles/designTokens';
 
 export class RangePicker extends RapidElement {
   static styles = css`
+    ${designTokens}
+
+    :host {
+      display: inline-block;
+      font-family: var(--font);
+    }
+
     .range-container {
       display: flex;
-      gap: 0.5em;
+      gap: 8px;
       align-items: center;
+      font-size: 13.5px;
+      color: var(--text-1);
     }
+
     .date-display {
       cursor: pointer;
-      padding: 0.2em 0.5em;
-      margin: 0.6em 0;
-      border-radius: var(--curvature-widget);
-      border: 1px solid transparent;
-      transition: border 0.2s;
+      padding: 3px 6px;
+      border-radius: var(--r-sm);
+      transition:
+        background 120ms,
+        color 120ms;
     }
 
     .date-display:hover {
-      border: 1px solid var(--color-widget-border);
       background: var(--sunken);
     }
 
-    input[type='date'] {
-      font-size: 1em;
-      padding: 0.2em 0.5em;
-      border-radius: var(--curvature-widget);
-      border: 1px solid var(--color-widget-border);
+    .range-separator {
+      color: var(--text-3);
     }
 
     .navigation-container {
       display: flex;
       align-items: center;
-      gap: 0.25em;
+      gap: 4px;
     }
 
+    /* Chevron-only step buttons, same chrome as the list pager: bare
+       glyph at rest, sunken wash on hover. No border of their own, so
+       they don't compete with the period track between them. */
     .nav-arrow {
-      background: var(--sunken);
-      border: 1px solid var(--color-widget-border);
-
-      border-radius: var(--curvature-widget);
-      padding: 0em 0em;
-      cursor: pointer;
-      font-size: 0.6em;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 23px;
-      height: 23px;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      border-radius: var(--r-sm);
+      color: var(--text-3);
+      cursor: pointer;
       transition:
-        background 0.2s,
-        border 0.2s,
-        opacity 0.2s;
+        background 120ms,
+        color 120ms,
+        opacity 120ms;
+    }
+
+    .nav-arrow temba-icon {
+      --icon-color: currentColor;
     }
 
     .nav-arrow:hover:not(:disabled) {
-      background: var(--accent-50);
-      border-color: var(--accent);
+      background: var(--sunken);
+      color: var(--text-1);
     }
 
     .nav-arrow:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      background: var(--sunken);
+      opacity: 0.35;
+      cursor: default;
     }
 
     .nav-arrow.hidden {
       visibility: hidden;
     }
 
+    /* Segmented control — one bordered sunken track holds every
+       period and the selected one lifts out as a surface pill. The
+       buttons carry no borders themselves, so there are no
+       overlapping 1px edges to clip the selection's outline (the old
+       -1px margin stacking left the selected button's left border
+       painted over by its neighbor). */
     .button-group {
-      display: flex;
-      margin-left: 0em;
-    }
-    .range-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
       background: var(--sunken);
-      border: 1px solid var(--color-widget-border);
-      border-radius: 0px;
-      margin-left: -1px;
-      padding: 0.2em 0.8em;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+    }
+
+    .range-btn {
+      height: 22px;
+      padding: 0 10px;
+      border: 0;
+      background: transparent;
+      border-radius: var(--r-xs);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: var(--w-medium);
+      line-height: 1;
+      color: var(--text-2);
       cursor: pointer;
-      font-size: 0.95em;
       transition:
-        background 0.2s,
-        border 0.2s;
+        background 120ms,
+        color 120ms,
+        box-shadow 120ms;
     }
 
-    .button-group .range-btn:first-child {
-      border-radius: var(--curvature-widget) 0 0 var(--curvature-widget);
+    .range-btn:hover:not(.selected) {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--text-1);
     }
 
-    .button-group .range-btn:last-child {
-      border-radius: 0 var(--curvature-widget) var(--curvature-widget) 0;
+    .range-btn.selected {
+      background: var(--surface);
+      color: var(--accent-700);
+      box-shadow: var(--shadow-1);
+      cursor: default;
     }
 
-    .range-btn.selected,
-    .range-btn:active {
-      background: var(--accent-50);
-      border-color: var(--accent);
+    .range-btn:focus-visible,
+    .nav-arrow:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-halo);
     }
   `;
+
+  // the periods in the segmented control, in display order
+  private static RANGES: {
+    type: 'W' | 'M' | 'Y' | 'ALL';
+    label: string;
+    title: string;
+  }[] = [
+    { type: 'W', label: 'W', title: 'Last week' },
+    { type: 'M', label: 'M', title: 'Last month' },
+    { type: 'Y', label: 'Y', title: 'Last year' },
+    { type: 'ALL', label: 'All', title: 'All time' }
+  ];
 
   @property({ type: String, attribute: 'start' })
   startDate = '';
@@ -465,6 +511,15 @@ export class RangePicker extends RapidElement {
     } ${amount} ${unit}`;
   }
 
+  private getNavigationTitle(direction: 'previous' | 'next'): string {
+    const prefix = direction === 'previous' ? 'Previous' : 'Next';
+    if (this.selectedRange === 'W') return `${prefix} week`;
+    if (this.selectedRange === 'M') return `${prefix} month`;
+    if (this.selectedRange === 'Y') return `${prefix} year`;
+    if (this.selectedRange === '') return this.getNavigationLabel(direction);
+    return `${prefix} period`;
+  }
+
   willUpdate(changed: PropertyValues) {
     super.willUpdate(changed);
 
@@ -543,7 +598,7 @@ export class RangePicker extends RapidElement {
               >${this.formatDateForDisplay(this.startDate) ||
               'Start date'}</span
             >`}
-        <span> - </span>
+        <span class="range-separator">–</span>
         ${this.editingEnd
           ? html`<temba-datepicker
               .value=${this.endDate}
@@ -566,61 +621,34 @@ export class RangePicker extends RapidElement {
             class="nav-arrow ${this.selectedRange === 'ALL' ? 'hidden' : ''}"
             ?disabled=${!this.canNavigatePrevious()}
             @click=${this.navigatePrevious}
-            title="Previous ${this.selectedRange === 'W'
-              ? 'week'
-              : this.selectedRange === 'M'
-                ? 'month'
-                : this.selectedRange === 'Y'
-                  ? 'year'
-                  : this.selectedRange === ''
-                    ? this.getNavigationLabel('previous')
-                    : 'period'}"
+            title=${this.getNavigationTitle('previous')}
+            aria-label=${this.getNavigationTitle('previous')}
           >
-            ◀
+            <temba-icon name=${Icon.arrow_left}></temba-icon>
           </button>
-          <div class="button-group">
-            <button
-              class="range-btn ${this.selectedRange === 'W' ? 'selected' : ''}"
-              @click=${() => this.setRange('W')}
-            >
-              W
-            </button>
-            <button
-              class="range-btn ${this.selectedRange === 'M' ? 'selected' : ''}"
-              @click=${() => this.setRange('M')}
-            >
-              M
-            </button>
-            <button
-              class="range-btn ${this.selectedRange === 'Y' ? 'selected' : ''}"
-              @click=${() => this.setRange('Y')}
-            >
-              Y
-            </button>
-            <button
-              class="range-btn ${this.selectedRange === 'ALL'
-                ? 'selected'
-                : ''}"
-              @click=${() => this.setRange('ALL')}
-            >
-              All
-            </button>
+          <div class="button-group" role="group" aria-label="Period">
+            ${RangePicker.RANGES.map(
+              (range) =>
+                html`<button
+                  class="range-btn ${this.selectedRange === range.type
+                    ? 'selected'
+                    : ''}"
+                  title=${range.title}
+                  aria-pressed=${this.selectedRange === range.type}
+                  @click=${() => this.setRange(range.type)}
+                >
+                  ${range.label}
+                </button>`
+            )}
           </div>
           <button
             class="nav-arrow ${this.selectedRange === 'ALL' ? 'hidden' : ''}"
             ?disabled=${!this.canNavigateNext()}
             @click=${this.navigateNext}
-            title="Next ${this.selectedRange === 'W'
-              ? 'week'
-              : this.selectedRange === 'M'
-                ? 'month'
-                : this.selectedRange === 'Y'
-                  ? 'year'
-                  : this.selectedRange === ''
-                    ? this.getNavigationLabel('next')
-                    : 'period'}"
+            title=${this.getNavigationTitle('next')}
+            aria-label=${this.getNavigationTitle('next')}
           >
-            ▶
+            <temba-icon name=${Icon.arrow_right}></temba-icon>
           </button>
         </div>
       </div>
