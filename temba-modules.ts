@@ -30,7 +30,6 @@ import { ContactUrn } from './src/display/ContactUrn';
 import { ContactFields } from './src/live/ContactFields';
 import { ContactFieldEditor } from './src/live/ContactFieldEditor';
 
-import { ContactBadges } from './src/live/ContactBadges';
 import { ContactTimeline } from './src/live/ContactTimeline';
 import { CampaignEvents } from './src/live/CampaignEvents';
 import { TembaSlider } from './src/form/TembaSlider';
@@ -160,7 +159,6 @@ addCustomElement('temba-icon', VectorIcon);
 addCustomElement('temba-dropdown', Dropdown);
 addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
-addCustomElement('temba-contact-badges', ContactBadges);
 addCustomElement('temba-contact-timeline', ContactTimeline);
 addCustomElement('temba-campaign-events', CampaignEvents);
 addCustomElement('temba-slider', TembaSlider);
