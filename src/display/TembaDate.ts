@@ -1,4 +1,4 @@
-import { css, html, PropertyValues, TemplateResult } from 'lit';
+import { css, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Store } from '../store/Store';
@@ -47,12 +47,12 @@ export class TembaDate extends RapidElement {
     }
   }
 
-  public render(): TemplateResult {
+  public render(): TemplateResult | typeof nothing {
     // unparseable values and zero-value times (e.g. go's zero time,
     // 0001-01-01T00:00:00Z, for a contact that has never been seen) aren't
     // real dates - render nothing rather than something like "2025 years ago"
     if (this.datetime && !(this.datetime.isValid && this.datetime.year > 1)) {
-      return undefined;
+      return nothing;
     }
 
     if (this.datetime && this.store) {
