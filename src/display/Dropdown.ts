@@ -31,7 +31,8 @@ export class Dropdown extends RapidElement {
         position: fixed;
         /* open popups sit above floating windows (simulator, 5000) and
            other page chrome, but below dialogs and toasts (10000);
-           temba-content-menu's :host mirrors this value (see ContentMenu.ts) */
+           temba-content-menu mirrors this value on its temba-dropdown
+           flex item (see ContentMenu.ts) */
         z-index: 9000;
         /* the dormant (height: 0) rule is applied 250ms after close, so
            until then this stays a laid-out, invisible fixed box at
