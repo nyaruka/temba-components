@@ -2,7 +2,7 @@ import '../temba-modules';
 import { fixture, expect } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { StartProgress } from '../src/live/StartProgress';
-import { mockGET, clearMockGets } from './utils.test';
+import { mockGET, clearMockGets, waitForCondition } from './utils.test';
 
 const STATUS_URL = '/api/v2/flow_starts.json';
 
@@ -136,8 +136,9 @@ describe('temba-start-progress', () => {
         start({ status: 'Completed', progress: { current: 100, total: 100 } })
       ]);
 
-      // the backoff after the first refresh is 1s
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // the backoff after the first refresh is 1s; poll for the follow-up
+      // rather than sleeping a fixed margin, which goes flaky under load
+      await waitForCondition(() => progress.refreshes > 1, 60, 50);
       expect(progress.refreshes).to.equal(2);
       expect(progress.complete).to.equal(true);
     });

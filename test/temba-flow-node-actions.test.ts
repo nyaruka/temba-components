@@ -51,7 +51,10 @@ describe('temba-flow-node actions', () => {
     node = (await fixture('<temba-flow-node></temba-flow-node>')) as CanvasNode;
     inner = node as any;
     inner.node = flowNode() as any;
-    inner.ui = { type: 'execute_actions', position: { left: 0, top: 0 } } as any;
+    inner.ui = {
+      type: 'execute_actions',
+      position: { left: 0, top: 0 }
+    } as any;
     inner.plumber = plumber as any;
     await node.updateComplete;
   });

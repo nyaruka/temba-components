@@ -171,19 +171,64 @@ describe('temba-node-editor fields', () => {
       return editor;
     };
 
+    // headers come back as {key, value} or {name, value} depending on the widget
+    const headerPairs = (editor: NodeEditor) =>
+      (formData(editor).headers || []).map((h: any) => ({
+        key: h.key ?? h.name,
+        value: h.value
+      }));
+
+    const setFormData = (editor: NodeEditor, values: any) => {
+      (editor as any).formData = { ...formData(editor), ...values };
+    };
+
     it('recomputes dependent fields when the method changes', async () => {
       const editor = await createWebhookEditor();
-      const before = JSON.stringify(formData(editor).headers);
 
-      (editor as any).formData = {
-        ...formData(editor),
-        method: [{ value: 'POST', name: 'POST' }]
-      };
+      // start on the GET defaults, which are eligible to be replaced
+      setFormData(editor, {
+        method: [{ value: 'GET', name: 'GET' }],
+        headers: [{ key: 'Accept', value: 'application/json' }]
+      });
+
+      setFormData(editor, { method: [{ value: 'POST', name: 'POST' }] });
       (editor as any).updateComputedFields('method');
 
-      expect(JSON.stringify(formData(editor).headers)).to.not.equal(undefined);
-      // the default headers follow the selected method
-      expect(before).to.be.a('string');
+      // POST additionally sends a Content-Type
+      expect(headerPairs(editor)).to.deep.equal([
+        { key: 'Accept', value: 'application/json' },
+        { key: 'Content-Type', value: 'application/json' }
+      ]);
+    });
+
+    it('drops back to the GET defaults when the method changes back', async () => {
+      const editor = await createWebhookEditor();
+
+      setFormData(editor, {
+        method: [{ value: 'GET', name: 'GET' }],
+        headers: [
+          { key: 'Accept', value: 'application/json' },
+          { key: 'Content-Type', value: 'application/json' }
+        ]
+      });
+      (editor as any).updateComputedFields('method');
+
+      expect(headerPairs(editor)).to.deep.equal([
+        { key: 'Accept', value: 'application/json' }
+      ]);
+    });
+
+    it('leaves headers the user has customized alone', async () => {
+      const editor = await createWebhookEditor();
+      const custom = [{ key: 'X-Api-Key', value: 'secret' }];
+
+      setFormData(editor, {
+        method: [{ value: 'POST', name: 'POST' }],
+        headers: custom
+      });
+      (editor as any).updateComputedFields('method');
+
+      expect(headerPairs(editor)).to.deep.equal(custom);
     });
 
     it('leaves fields alone when nothing depends on the change', async () => {
