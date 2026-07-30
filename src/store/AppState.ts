@@ -18,12 +18,15 @@ import { produce } from 'immer';
 import {
   FlowDependency,
   replaceDependencies,
-  replaceDependency,
   resolveDependencyNames
 } from '../flow/dependencies';
 
 export const FLOW_SPEC_VERSION = '14.3';
 const CANVAS_PADDING = 800;
+
+// how long a revision load will wait on canonical names before rendering the
+// names embedded in the definition, which the editor heals asynchronously
+const DEPENDENCY_RESOLVE_TIMEOUT = 3000;
 
 export type DependencyResolver = (
   dependencies: FlowDependency[]
@@ -39,6 +42,31 @@ export const setDependencyResolver = (
   const previous = dependencyResolver;
   dependencyResolver = resolver;
   return previous;
+};
+
+/** The currently installed resolver, so a store can tell whether it is still
+ * the owner before restoring the one it replaced. */
+export const getDependencyResolver = (): DependencyResolver | null =>
+  dependencyResolver;
+
+/** Resolves with null if the given promise hasn't settled in time. */
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeout: number
+): Promise<T | null> => {
+  let timer: any = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), timeout);
+      })
+    ]);
+  } finally {
+    if (timer !== null) {
+      clearTimeout(timer);
+    }
+  }
 };
 
 /**
@@ -233,7 +261,6 @@ export interface AppState {
 
   setFlowContents: (flow: FlowContents) => void;
   setFlowInfo: (info: FlowInfo) => void;
-  updateDependencyName: (dependency: FlowDependency) => void;
   updateDependencyNames: (dependencies: FlowDependency[]) => void;
   setRevision: (revision: number) => void;
   setLanguageCode: (languageCode: string) => void;
@@ -322,11 +349,16 @@ export const zustand = createStore<AppState>()(
         const data = (await response.json()) as FlowContents;
         if (dependencyResolver && data.info?.dependencies?.length) {
           try {
-            const canonical = await dependencyResolver(data.info.dependencies);
-            const dependencies = replaceDependencies(
-              data.info.dependencies,
-              canonical
+            // resolving before the first paint avoids a visible flash of stale
+            // names, but a slow endpoint must never hold the editor hostage -
+            // past the timeout we render and let the editor's watcher heal it
+            const canonical = await withTimeout(
+              dependencyResolver(data.info.dependencies),
+              DEPENDENCY_RESOLVE_TIMEOUT
             );
+            const dependencies = canonical
+              ? replaceDependencies(data.info.dependencies, canonical)
+              : null;
             if (dependencies) {
               data.info = { ...data.info, dependencies };
               data.definition = resolveDependencyNames(
@@ -470,25 +502,6 @@ export const zustand = createStore<AppState>()(
           const issueMaps = buildIssueMaps(info?.issues);
           state.issuesByNode = issueMaps.byNode;
           state.issuesByAction = issueMaps.byAction;
-        });
-      },
-
-      updateDependencyName: (dependency: FlowDependency) => {
-        set((state: AppState) => {
-          if (!state.flowInfo || !state.flowDefinition) {
-            return;
-          }
-          const dependencies = replaceDependency(
-            state.flowInfo.dependencies,
-            dependency
-          );
-          if (!dependencies) {
-            return;
-          }
-          state.flowInfo.dependencies = dependencies;
-          state.flowDefinition = resolveDependencyNames(state.flowDefinition, [
-            dependency
-          ]);
         });
       },
 

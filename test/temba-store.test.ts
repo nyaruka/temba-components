@@ -1,11 +1,17 @@
-import { assert, fixture } from '@open-wc/testing';
+import { aTimeout, assert, fixture } from '@open-wc/testing';
 import { Store } from '../src/store/Store';
+import { getDependencyResolver } from '../src/store/AppState';
 import {
   setRealtimeContext,
   subscribeToNotifications
 } from '../src/live/Realtime';
 import { setSocketProvider } from '../src/live/SocketService';
-import { mockAssetResolver, MockSocketProvider } from './utils.test';
+import {
+  clearMockPosts,
+  mockAssetResolver,
+  mockPOST,
+  MockSocketProvider
+} from './utils.test';
 
 const createStore = async (def: string): Promise<Store> => {
   const store = (await fixture(def)) as Store;
@@ -13,7 +19,18 @@ const createStore = async (def: string): Promise<Store> => {
   return store;
 };
 
+// bodies of every asset request made to the given endpoint so far
+const assetRequests = (endpoint: string): any[] =>
+  (window.fetch as any)
+    .getCalls()
+    .filter((call) => `${call.args[0]}`.includes(endpoint))
+    .map((call) => JSON.parse(call.args[1].body));
+
 describe('temba-store', () => {
+  afterEach(() => {
+    clearMockPosts();
+  });
+
   it('is defined', async () => {
     const store = await createStore('<temba-store></temba-store>');
     assert.instanceOf(store, Store);
@@ -183,5 +200,225 @@ describe('temba-store', () => {
       setRealtimeContext(null);
       setSocketProvider(previousProvider);
     }
+  });
+
+  it('splits a large request into batches the endpoint accepts', async () => {
+    const endpoint = '/test-assets/store/assets-batch.json';
+    mockPOST(/assets-batch\.json/, { results: [] });
+    const store = await createStore(
+      `<temba-store assets="${endpoint}"></temba-store>`
+    );
+
+    const uuids = Array.from({ length: 150 }, (_, index) => `flow-${index}`);
+    await store.resolveAssets(uuids.map((uuid) => ({ type: 'flow', uuid })));
+
+    const requests = assetRequests(endpoint);
+    assert.equal(requests.length, 2);
+    assert.equal(requests[0].flow.length, 100);
+    assert.equal(requests[1].flow.length, 50);
+    assert.deepEqual(
+      [...requests[0].flow, ...requests[1].flow].sort(),
+      [...uuids].sort()
+    );
+  });
+
+  it('remembers identities the endpoint had no asset for', async () => {
+    const endpoint = '/test-assets/store/assets-missing.json';
+    mockPOST(/assets-missing\.json/, { results: [] });
+    const store = await createStore(
+      `<temba-store assets="${endpoint}"></temba-store>`
+    );
+
+    const reference = { type: 'flow', uuid: 'deleted-flow' };
+    await store.resolveAssets([reference]);
+    await store.resolveAssets([reference]);
+
+    assert.equal(assetRequests(endpoint).length, 1);
+    assert.isNull(store.getAsset('flow', 'deleted-flow'));
+  });
+
+  it('does not negatively cache identities a rejected request covered', async () => {
+    const endpoint = '/test-assets/store/assets-error.json';
+    // a 4xx resolves with an empty body rather than raising
+    mockPOST(/assets-error\.json/, { error: 'nope' }, {}, '400');
+    const store = await createStore(
+      `<temba-store assets="${endpoint}"></temba-store>`
+    );
+
+    const reference = { type: 'flow', uuid: 'flow-1' };
+    await store.resolveAssets([reference]);
+    assert.equal(assetRequests(endpoint).length, 1);
+    assert.isNull(store.getAsset('flow', 'flow-1'));
+
+    clearMockPosts();
+    mockPOST(/assets-error\.json/, {
+      results: [{ type: 'flow', uuid: 'flow-1', name: 'Registration' }]
+    });
+    await store.resolveAssets([reference]);
+
+    assert.equal(assetRequests(endpoint).length, 2);
+    assert.equal(store.getAsset('flow', 'flow-1').name, 'Registration');
+  });
+
+  it('shares a single request between concurrent callers', async () => {
+    const endpoint = '/test-assets/store/assets-concurrent.json';
+    mockPOST(/assets-concurrent\.json/, {
+      results: [{ type: 'group', uuid: 'group-1', name: 'Farmers' }]
+    });
+    const store = await createStore(
+      `<temba-store assets="${endpoint}"></temba-store>`
+    );
+
+    const reference = { type: 'group', uuid: 'group-1' };
+    const [first, second] = await Promise.all([
+      store.resolveAssets([reference]),
+      store.resolveAssets([reference])
+    ]);
+
+    assert.equal(assetRequests(endpoint).length, 1);
+    assert.deepEqual(first, second);
+    assert.equal(first[0].name, 'Farmers');
+  });
+
+  it('keeps a rename that arrives while a request is in flight', async () => {
+    const endpoint = '/test-assets/store/assets-race.json';
+    const groupUuid = 'group-1';
+    const mockSocket = new MockSocketProvider();
+    const previousProvider = setSocketProvider(mockSocket);
+
+    try {
+      mockPOST(/assets-race\.json/, {
+        results: [{ type: 'group', uuid: groupUuid, name: 'Stale name' }]
+      });
+      const store = await createStore(`
+        <temba-store
+          org="org-uuid"
+          user="user-uuid"
+          assets="${endpoint}"
+        ></temba-store>
+      `);
+
+      const pending = store.resolveAssets([{ type: 'group', uuid: groupUuid }]);
+      // the response was already on the wire when this rename landed
+      mockSocket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: { type: 'group', uuid: groupUuid, name: 'Renamed' }
+      });
+      await pending;
+
+      assert.equal(store.getAsset('group', groupUuid).name, 'Renamed');
+    } finally {
+      setRealtimeContext(null);
+      setSocketProvider(previousProvider);
+    }
+  });
+
+  it('keeps a page-authoritative name written while a request is in flight', async () => {
+    const endpoint = '/test-assets/store/assets-cached.json';
+    mockPOST(/assets-cached\.json/, {
+      results: [{ type: 'flow', uuid: 'flow-1', name: 'Stale name' }]
+    });
+    const store = await createStore(
+      `<temba-store assets="${endpoint}"></temba-store>`
+    );
+
+    const pending = store.resolveAssets([{ type: 'flow', uuid: 'flow-1' }]);
+    // a list whose own response carries canonical names seeds the cache while
+    // the batch above is still on the wire
+    store.cacheAssets([{ type: 'flow', uuid: 'flow-1', name: 'Fresh name' }]);
+    await pending;
+
+    assert.equal(store.getAsset('flow', 'flow-1').name, 'Fresh name');
+  });
+
+  it('refreshes watched assets when the socket resubscribes', async () => {
+    const endpoint = '/test-assets/store/assets-reconnect.json';
+    const groupUuid = 'group-1';
+    const mockSocket = new MockSocketProvider();
+    const previousProvider = setSocketProvider(mockSocket);
+
+    try {
+      mockPOST(/assets-reconnect\.json/, {
+        results: [{ type: 'group', uuid: groupUuid, name: 'First' }]
+      });
+      const store = await createStore(`
+        <temba-store
+          org="org-uuid"
+          user="user-uuid"
+          assets="${endpoint}"
+        ></temba-store>
+      `);
+      const events = [];
+      store.watchAssets([{ type: 'group', uuid: groupUuid }], (event) =>
+        events.push(event)
+      );
+      // let the initial subscription confirm
+      await aTimeout(0);
+      await store.resolveAssets([{ type: 'group', uuid: groupUuid }]);
+      assert.equal(store.getAsset('group', groupUuid).name, 'First');
+      assert.equal(assetRequests(endpoint).length, 1);
+
+      clearMockPosts();
+      mockPOST(/assets-reconnect\.json/, {
+        results: [{ type: 'group', uuid: groupUuid, name: 'Second' }]
+      });
+
+      // a reconnect confirms the subscription again
+      const organizationSub = mockSocket.subs.find(
+        (sub) => sub.channel === 'org:org-uuid'
+      );
+      organizationSub.onSubscribed();
+      await aTimeout(50);
+
+      assert.equal(assetRequests(endpoint).length, 2);
+      assert.deepEqual(assetRequests(endpoint)[1], { group: [groupUuid] });
+      assert.equal(store.getAsset('group', groupUuid).name, 'Second');
+      // watchers are told to reapply everything after a refresh
+      assert.equal(events.length, 2);
+      assert.isNull(events[1]);
+    } finally {
+      setRealtimeContext(null);
+      setSocketProvider(previousProvider);
+    }
+  });
+
+  it('ignores an interest with no identifier', async () => {
+    const mockSocket = new MockSocketProvider();
+    const previousProvider = setSocketProvider(mockSocket);
+
+    try {
+      const store = await createStore(
+        "<temba-store org='org-uuid' user='user-uuid'></temba-store>"
+      );
+      const events = [];
+      store.watchAssets([{ type: 'group' }], (event) => events.push(event));
+      await aTimeout(0);
+
+      mockSocket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: { type: 'group', uuid: 'group-1', name: 'Customers' }
+      });
+
+      // only the initial eventless delivery, no wildcard match
+      assert.deepEqual(events, [null]);
+    } finally {
+      setRealtimeContext(null);
+      setSocketProvider(previousProvider);
+    }
+  });
+
+  it('leaves the live resolver alone when an unrendered store is removed', async () => {
+    const store = await createStore('<temba-store></temba-store>');
+    const installed = getDependencyResolver();
+    assert.isNotNull(installed);
+
+    // created and removed before it ever rendered
+    const orphan = document.createElement('temba-store');
+    document.body.appendChild(orphan);
+    orphan.remove();
+
+    assert.equal(getDependencyResolver(), installed);
+    assert.deepEqual(await installed([]), []);
+    assert.deepEqual(await store.resolveAssets([]), []);
   });
 });

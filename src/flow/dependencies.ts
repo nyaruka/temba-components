@@ -50,7 +50,9 @@ export const resolveDependencyNames = (
         return;
       }
       if (Array.isArray(value)) {
-        value.forEach((item) => visit(item));
+        // keep the owning property name so `field` scoping still applies to
+        // references nested in an array
+        value.forEach((item) => visit(item, propertyName));
         return;
       }
 
@@ -80,36 +82,9 @@ export const resolveDependencyNames = (
 };
 
 /**
- * Replaces a dependency already registered by the editor. Socket events for
- * assets the loaded flow isn't interested in are ignored.
+ * Replaces every matching dependency whose canonical name has changed. Assets
+ * the loaded flow isn't interested in are ignored.
  */
-export const replaceDependency = (
-  dependencies: FlowDependency[] = [],
-  changed: FlowDependency
-): FlowDependency[] | null => {
-  const changedIdentity = dependencyIdentity(changed);
-  if (!changedIdentity) {
-    return null;
-  }
-
-  const index = dependencies.findIndex(
-    (dependency) => dependencyIdentity(dependency) === changedIdentity
-  );
-  if (index < 0) {
-    return null;
-  }
-
-  const current = dependencies[index];
-  if (current.name === changed.name) {
-    return null;
-  }
-
-  const updated = [...dependencies];
-  updated[index] = { ...current, name: changed.name };
-  return updated;
-};
-
-/** Replaces every matching dependency whose canonical name has changed. */
 export const replaceDependencies = (
   dependencies: FlowDependency[] = [],
   changed: FlowDependency[]

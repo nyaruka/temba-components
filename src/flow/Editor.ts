@@ -8,7 +8,7 @@ import {
   Node,
   NodeUI
 } from '../store/flow-definition';
-import { getStore, Store, StoreAssetChangedEvent } from '../store/Store';
+import { getStore, Store } from '../store/Store';
 import { AppState, FlowIssue, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
@@ -107,6 +107,10 @@ const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 // Used in both the CSS animation and the JS setTimeout.
 const PENDING_SAVE_DELAY = 5000;
 
+// Shortest gap (in ms) between activity reads, however many changes the flow
+// socket announces in that window.
+const ACTIVITY_FETCH_INTERVAL = 3000;
+
 /**
  * Manages a timed "pending changes" card that lets users discard or auto-save
  * after a delay.  Used for both auto-layout and shift+drag copy.
@@ -204,7 +208,11 @@ export class Editor extends RapidElement {
 
   private activityWatch: RealtimeSubscription = null;
   private watchedActivityFlow: string = null;
+  private activityFetchTimer: number | null = null;
+  private activityFetchInFlight = false;
+  private activityFetchQueued = false;
   private assetWatch: RealtimeSubscription = null;
+  private watchedAssetStore: Store = null;
   private flowInfoWatch: () => void = null;
   private assetResolveVersion = 0;
   private watchedAssetSignature = '';
@@ -1668,6 +1676,7 @@ export class Editor extends RapidElement {
       this.activityWatch.unsubscribe();
       this.activityWatch = null;
     }
+    this.clearActivityFetch();
     this.watchedActivityFlow = flow;
     if (!flow) {
       return;
@@ -1677,11 +1686,40 @@ export class Editor extends RapidElement {
       flow,
       (event) => {
         if (event?.type === 'activity') {
-          this.fetchActivityData(flow);
+          this.scheduleActivityFetch(flow);
         }
       },
-      () => this.fetchActivityData(flow)
+      // fires on every (re)subscribe, so catch up on anything published while
+      // we were disconnected
+      () => this.scheduleActivityFetch(flow)
     );
+
+    // the socket only tells us about *changes*, and it may never connect at
+    // all, so the first read doesn't wait on it
+    this.fetchActivityData(flow);
+  }
+
+  private clearActivityFetch(): void {
+    if (this.activityFetchTimer !== null) {
+      clearTimeout(this.activityFetchTimer);
+      this.activityFetchTimer = null;
+    }
+    this.activityFetchQueued = false;
+  }
+
+  /**
+   * Coalesces activity publications into at most one request per window.
+   * Mailroom publishes once per committed sprint batch, so a flow running
+   * against a large group can otherwise announce many changes a second.
+   */
+  private scheduleActivityFetch(flow: string): void {
+    if (flow !== this.watchedActivityFlow || this.activityFetchTimer !== null) {
+      return;
+    }
+    this.activityFetchTimer = window.setTimeout(() => {
+      this.activityFetchTimer = null;
+      this.fetchActivityData(flow);
+    }, ACTIVITY_FETCH_INTERVAL);
   }
 
   private fetchActivityData(flow: string): void {
@@ -1697,7 +1735,24 @@ export class Editor extends RapidElement {
     if (!store) {
       return;
     }
-    store.getState().fetchActivity(`/flow/activity/${flow}/`);
+
+    // one request at a time, so responses can't land out of order and a burst
+    // of publications collapses into a single follow-up read
+    if (this.activityFetchInFlight) {
+      this.activityFetchQueued = true;
+      return;
+    }
+    this.activityFetchInFlight = true;
+    const done = () => {
+      this.activityFetchInFlight = false;
+      if (this.activityFetchQueued) {
+        this.activityFetchQueued = false;
+        this.scheduleActivityFetch(flow);
+      }
+    };
+    Promise.resolve(
+      store.getState().fetchActivity(`/flow/activity/${flow}/`)
+    ).then(done, done);
   }
 
   private syncAssetNames(): void {
@@ -1753,23 +1808,23 @@ export class Editor extends RapidElement {
       )
       .sort()
       .join('|');
-    if (this.assetWatch && signature === this.watchedAssetSignature) {
+    // the store is part of the key: a replaced <temba-store> leaves us
+    // watching a dead one otherwise
+    if (
+      this.assetWatch &&
+      store === this.watchedAssetStore &&
+      signature === this.watchedAssetSignature
+    ) {
       return;
     }
     if (this.assetWatch) {
       this.assetWatch.unsubscribe();
     }
+    this.watchedAssetStore = store;
     this.watchedAssetSignature = signature;
-    this.assetWatch = store.watchAssets(
-      interests,
-      (event: StoreAssetChangedEvent | null) => {
-        if (event) {
-          zustand.getState().updateDependencyName(event.asset);
-        } else {
-          this.syncAssetNames();
-        }
-      }
-    );
+    // the store caches the changed asset before publishing, so applying
+    // everything it has covers both a single change and a reconnect refresh
+    this.assetWatch = store.watchAssets(interests, () => this.syncAssetNames());
     if (!this.flowInfoWatch) {
       this.flowInfoWatch = zustand.subscribe(
         (state) => state.flowInfo,
@@ -2043,7 +2098,9 @@ export class Editor extends RapidElement {
       this.activityWatch.unsubscribe();
       this.activityWatch = null;
     }
+    this.clearActivityFetch();
     this.watchedActivityFlow = null;
+    this.watchedAssetStore = null;
     this.watchedAssetSignature = '';
     if (this.flowInfoWatch) {
       this.flowInfoWatch();

@@ -1,5 +1,7 @@
 import { expect } from '@open-wc/testing';
+import { useFakeTimers } from 'sinon';
 import { setDependencyResolver, zustand } from '../src/store/AppState';
+import { resolveDependencyNames } from '../src/flow/dependencies';
 import { mockGET, clearMockGets } from './utils.test';
 
 const definition = (overrides: any = {}) => ({
@@ -121,7 +123,7 @@ describe('store/AppState actions', () => {
     });
   });
 
-  describe('updateDependencyName', () => {
+  describe('updateDependencyNames', () => {
     beforeEach(() => {
       zustand.setState({
         flowDefinition: definition({
@@ -149,11 +151,13 @@ describe('store/AppState actions', () => {
     });
 
     it('updates a registered reference throughout the definition', () => {
-      state().updateDependencyName({
-        type: 'group',
-        uuid: 'group-1',
-        name: 'Customers'
-      });
+      state().updateDependencyNames([
+        {
+          type: 'group',
+          uuid: 'group-1',
+          name: 'Customers'
+        }
+      ]);
 
       const action = state().flowDefinition.nodes[0].actions[0] as any;
       expect(action.groups[0].name).to.equal('Customers');
@@ -163,11 +167,13 @@ describe('store/AppState actions', () => {
 
     it('ignores an asset outside the registered dependency interests', () => {
       const before = state().flowDefinition;
-      state().updateDependencyName({
-        type: 'group',
-        uuid: 'group-2',
-        name: 'Unrelated'
-      });
+      state().updateDependencyNames([
+        {
+          type: 'group',
+          uuid: 'group-2',
+          name: 'Unrelated'
+        }
+      ]);
 
       expect(state().flowDefinition).to.equal(before);
       expect(state().flowInfo.dependencies).to.have.length(1);
@@ -622,6 +628,57 @@ describe('store/AppState actions', () => {
       expect(actions[1].flow.name).to.equal('Current Child Two');
     });
 
+    it('renders the flow when canonical names never arrive', async () => {
+      let entered: () => void;
+      const resolverEntered = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      const clock = useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        // a resolver that hangs must not hold the editor hostage
+        setDependencyResolver(() => {
+          entered();
+          return new Promise<any>(() => {});
+        });
+        mockRevision({
+          definition: definition({
+            nodes: [
+              {
+                uuid: 'node-1',
+                exits: [],
+                actions: [
+                  {
+                    type: 'add_contact_groups',
+                    uuid: 'action-1',
+                    groups: [{ uuid: 'group-1', name: 'Embedded name' }]
+                  }
+                ]
+              }
+            ],
+            _ui: { nodes: { 'node-1': { position: { left: 0, top: 0 } } } }
+          }),
+          info: info({
+            dependencies: [
+              { type: 'group', uuid: 'group-1', name: 'Embedded name' }
+            ]
+          })
+        });
+
+        const pending = state().fetchRevision(REVISION_URL);
+        // the timeout is armed as soon as the resolver is entered
+        await resolverEntered;
+        clock.tick(3100);
+        await pending;
+
+        expect(state().flowDefinition).to.not.equal(null);
+        expect(
+          (state().flowDefinition.nodes[0].actions[0] as any).groups[0].name
+        ).to.equal('Embedded name');
+      } finally {
+        clock.restore();
+      }
+    });
+
     it('raises when the request fails', async () => {
       clearMockGets();
       mockGET(/\/flow\/revisions\/flow-1\//, { detail: 'boom' }, {}, '500');
@@ -633,5 +690,114 @@ describe('store/AppState actions', () => {
       }
       expect(raised).to.equal(true);
     });
+  });
+});
+
+describe('flow/dependencies resolveDependencyNames', () => {
+  const withNodes = (nodes: any[]): any => ({
+    uuid: 'flow-1',
+    name: 'Test Flow',
+    language: 'eng',
+    type: 'messaging',
+    revision: 1,
+    spec_version: '14.3',
+    localization: {},
+    nodes,
+    _ui: { nodes: {}, languages: [] }
+  });
+
+  it('rewrites a uuid reference wherever it appears', () => {
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [
+          {
+            type: 'add_contact_groups',
+            uuid: 'action-1',
+            groups: [{ uuid: 'group-1', name: 'Old' }]
+          }
+        ]
+      }
+    ]);
+
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'group', uuid: 'group-1', name: 'Customers' }
+    ]);
+
+    expect(resolved.nodes[0].actions[0].groups[0].name).to.equal('Customers');
+  });
+
+  it('rewrites a keyed field reference under a field property', () => {
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [
+          {
+            type: 'set_contact_field',
+            uuid: 'action-1',
+            field: { key: 'age', name: 'Old age label' },
+            value: '10'
+          }
+        ]
+      }
+    ]);
+
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'field', key: 'age', name: 'Age' }
+    ]);
+
+    expect(resolved.nodes[0].actions[0].field.name).to.equal('Age');
+  });
+
+  it('rewrites keyed field references nested in an array', () => {
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [
+          {
+            type: 'set_contact_field',
+            uuid: 'action-1',
+            field: [{ key: 'age', name: 'Old age label' }]
+          }
+        ]
+      }
+    ]);
+
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'field', key: 'age', name: 'Age' }
+    ]);
+
+    expect(resolved.nodes[0].actions[0].field[0].name).to.equal('Age');
+  });
+
+  it('leaves keyed structures outside a field property alone', () => {
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [],
+        router: {
+          type: 'switch',
+          result_name: 'age',
+          categories: [],
+          // a keyed structure that happens to share the field key
+          result: { key: 'age', name: 'Result label' }
+        }
+      }
+    ]);
+
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'field', key: 'age', name: 'Age' }
+    ]);
+
+    expect(resolved.nodes[0].router.result.name).to.equal('Result label');
+  });
+
+  it('returns the definition untouched when nothing is registered', () => {
+    const definition = withNodes([]);
+    expect(resolveDependencyNames(definition, [])).to.equal(definition);
   });
 });

@@ -1,4 +1,4 @@
-import { html, fixture, expect } from '@open-wc/testing';
+import { html, fixture, expect, aTimeout } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { EditorToolbar } from '../src/flow/EditorToolbar';
 import { IssuesWindow } from '../src/flow/IssuesWindow';
@@ -371,7 +371,7 @@ describe('Editor', () => {
       expect(editor.version).to.equal('2.0');
     });
 
-    it('fetches activity only when the flow socket signals', async () => {
+    it('watches the flow socket and reads activity once on load', async () => {
       const flowUuid = '33333333-3333-4333-8333-333333333333';
       const socket = new EditorSocketProvider();
       const previousProvider = setSocketProvider(socket);
@@ -434,25 +434,112 @@ describe('Editor', () => {
           (candidate) => candidate.channel === `flow:${flowUuid}`
         );
         expect(subscription).to.exist;
-        expect(activityRequests).to.have.length(0);
 
-        subscription.onSubscribed();
-        await Promise.resolve();
-        await Promise.resolve();
+        // the first read doesn't wait on the socket, which may never connect
         expect(activityRequests).to.deep.equal([`/flow/activity/${flowUuid}/`]);
+        await aTimeout(0);
 
         socket.serverPublish(`flow:${flowUuid}`, { type: 'unrelated' });
-        await Promise.resolve();
+        await aTimeout(0);
         expect(activityRequests).to.have.length(1);
-
-        socket.serverPublish(`flow:${flowUuid}`, { type: 'activity' });
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(activityRequests).to.have.length(2);
 
         wrapper.remove();
         expect(subscription.active).to.be.false;
       } finally {
+        setRealtimeContext(null);
+        setSocketProvider(previousProvider);
+        zustand.setState(previousState as any, true);
+      }
+    });
+
+    it('coalesces activity publications into one request per window', async () => {
+      const flowUuid = '33333333-3333-4333-8333-333333333333';
+      const socket = new EditorSocketProvider();
+      const previousProvider = setSocketProvider(socket);
+      const previousState = zustand.getState();
+      const activityRequests: string[] = [];
+      let clock: any = null;
+
+      try {
+        stub(window, 'fetch').callsFake(async (input: RequestInfo) => {
+          const endpoint = `${input}`;
+          if (endpoint.includes('/flow/activity/')) {
+            activityRequests.push(endpoint);
+            return new Response(
+              JSON.stringify({ nodes: { 'node-1': 1 }, segments: {} }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              }
+            );
+          }
+          return new Response('', { status: 404 });
+        });
+        zustand.setState({
+          flowDefinition: null,
+          flowInfo: null,
+          simulatorActive: false,
+          activity: null
+        } as any);
+
+        const wrapper = await fixture(
+          html`<div>
+            <temba-store
+              org="44444444-4444-4444-8444-444444444444"
+              user="55555555-5555-4555-8555-555555555555"
+            ></temba-store>
+            <temba-flow-editor>
+              <div id="canvas"></div>
+            </temba-flow-editor>
+          </div>`
+        );
+        const store = wrapper.querySelector('temba-store') as Store;
+        editor = wrapper.querySelector('temba-flow-editor') as Editor;
+        await store.initialHttpComplete;
+
+        zustand.setState({
+          flowDefinition: {
+            uuid: flowUuid,
+            name: 'Test',
+            language: 'eng',
+            type: 'messaging',
+            revision: 1,
+            spec_version: '14.3',
+            localization: {},
+            nodes: [],
+            _ui: { nodes: {}, languages: [] }
+          }
+        } as any);
+        await editor.updateComplete;
+        await aTimeout(0);
+        expect(activityRequests).to.have.length(1);
+
+        clock = useFakeTimers({ now: Date.now(), shouldAdvanceTime: false });
+
+        // mailroom announces every committed sprint batch
+        for (let i = 0; i < 10; i++) {
+          socket.serverPublish(`flow:${flowUuid}`, { type: 'activity' });
+        }
+        await clock.tickAsync(100);
+        expect(activityRequests).to.have.length(1);
+
+        await clock.tickAsync(3000);
+        expect(activityRequests).to.have.length(2);
+
+        socket.serverPublish(`flow:${flowUuid}`, { type: 'activity' });
+        await clock.tickAsync(1000);
+        expect(activityRequests).to.have.length(2);
+
+        await clock.tickAsync(2500);
+        expect(activityRequests).to.have.length(3);
+
+        // nothing further is read once the editor goes away
+        wrapper.remove();
+        socket.serverPublish(`flow:${flowUuid}`, { type: 'activity' });
+        await clock.tickAsync(5000);
+        expect(activityRequests).to.have.length(3);
+      } finally {
+        clock?.restore();
         setRealtimeContext(null);
         setSocketProvider(previousProvider);
         zustand.setState(previousState as any, true);

@@ -1,4 +1,4 @@
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
 import { CustomEventType, Flow, ObjectReference } from '../interfaces';
@@ -155,13 +155,7 @@ export class FlowList extends ContentList<Flow> {
 
   public connectedCallback(): void {
     super.connectedCallback();
-    this.syncAssetWatch();
-  }
-
-  protected firstUpdated(
-    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.firstUpdated(changes);
+    // rows we already have (if any) - each load re-syncs from prepareItems
     this.syncAssetWatch();
   }
 

@@ -36,6 +36,7 @@ import { getFullName } from '../display/TembaUser';
 import {
   AppState,
   DependencyResolver,
+  getDependencyResolver,
   setDependencyResolver,
   zustand
 } from './AppState';
@@ -91,7 +92,13 @@ interface AssetWatcher {
 }
 
 const STORE_ASSET_TYPE_SET = new Set<string>(STORE_ASSET_TYPES);
+
+// the endpoint rejects a request carrying more than this many identifiers
 const ASSET_BATCH_SIZE = 100;
+
+// long-lived pages (a flow list paged through many times) would otherwise
+// accumulate an entry for every asset ever seen
+const ASSET_CACHE_SIZE = 500;
 
 const isStoreAssetType = (type: string): type is StoreAssetType =>
   STORE_ASSET_TYPE_SET.has(type);
@@ -107,13 +114,11 @@ const assetIdentity = (
 };
 
 const watchesAsset = (watcher: AssetWatcher, asset: StoreAsset): boolean =>
-  watcher.interests.some((interest) => {
-    if (interest.type !== asset.type) {
-      return false;
-    }
-    const identity = interest.uuid || interest.key;
-    return !identity || identity === (asset.uuid || asset.key);
-  });
+  watcher.interests.some(
+    (interest) =>
+      interest.type === asset.type &&
+      (interest.uuid || interest.key) === (asset.uuid || asset.key)
+  );
 
 declare const __TEMBA_DEV_SERVER__: boolean;
 
@@ -213,10 +218,13 @@ export class Store extends RapidElement {
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
   private assetWatchers: AssetWatcher[] = [];
-  private assets = new Map<string, StoreAsset>();
-  private resolvedAssetReferences = new Map<string, StoreAssetReference>();
+  // canonical names, the identities we've already asked about (including ones
+  // the endpoint had no asset for) and their last-write versions, all bounded
+  // so a long-lived page doesn't keep every asset it has ever rendered
+  private assets = lru<StoreAsset>(ASSET_CACHE_SIZE);
+  private resolvedAssetIdentities = lru<boolean>(ASSET_CACHE_SIZE);
+  private assetVersions = lru<number>(ASSET_CACHE_SIZE);
   private pendingAssetRequests = new Map<string, Promise<void>>();
-  private assetVersions = new Map<string, number>();
   private assetVersion = 0;
   private assetGeneration = 0;
   private organizationWatch: RealtimeSubscription = null;
@@ -288,7 +296,7 @@ export class Store extends RapidElement {
     zustand.setState({ brand: this.brand });
     this.groups = {};
     this.assets.clear();
-    this.resolvedAssetReferences.clear();
+    this.resolvedAssetIdentities.clear();
     this.pendingAssetRequests.clear();
     this.assetVersions.clear();
     this.assetVersion = 0;
@@ -369,32 +377,56 @@ export class Store extends RapidElement {
     return this.shortcuts || [];
   }
 
+  public connectedCallback(): void {
+    super.connectedCallback();
+    // lit only runs firstUpdated once, so a store that is detached and
+    // re-attached has to reinstall its page hooks here
+    if (this.hasUpdated) {
+      this.installPageHooks();
+    }
+  }
+
   public firstUpdated() {
-    this.previousDependencyResolver = setDependencyResolver(
-      this.dependencyResolver
-    );
+    this.installPageHooks();
+    this.reset();
+  }
+
+  /**
+   * Installs the hooks this store owns on behalf of the page: the canonical
+   * name resolver and the workspace realtime subscription. Idempotent so it
+   * can run again when a store is re-attached.
+   */
+  private installPageHooks(): void {
+    if (getDependencyResolver() !== this.dependencyResolver) {
+      this.previousDependencyResolver = setDependencyResolver(
+        this.dependencyResolver
+      );
+    }
     if (this.org && this.user) {
       setRealtimeContext({ org: this.org, user: this.user });
-    }
-    this.reset();
-    if (this.org && this.user) {
-      this.organizationWatch = subscribeToOrganization(
-        (event) => this.handleOrganizationEvent(event),
-        () => {
-          if (this.organizationSubscribed) {
-            this.refreshAssetCache().catch((error) => {
-              console.error('failed to refresh store assets', error);
-            });
+      if (!this.organizationWatch) {
+        this.organizationWatch = subscribeToOrganization(
+          (event) => this.handleOrganizationEvent(event),
+          () => {
+            if (this.organizationSubscribed) {
+              this.refreshAssetCache().catch((error) => {
+                console.error('failed to refresh store assets', error);
+              });
+            }
+            this.organizationSubscribed = true;
           }
-          this.organizationSubscribed = true;
-        }
-      );
+        );
+      }
     }
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
-    setDependencyResolver(this.previousDependencyResolver);
+    // only hand the resolver back if we're still the installed one, otherwise
+    // a store that never installed it would clear the live store's resolver
+    if (getDependencyResolver() === this.dependencyResolver) {
+      setDependencyResolver(this.previousDependencyResolver);
+    }
     this.previousDependencyResolver = null;
     if (this.organizationWatch) {
       this.organizationWatch.unsubscribe();
@@ -597,7 +629,7 @@ export class Store extends RapidElement {
       const pending = this.pendingAssetRequests.get(identity);
       if (pending) {
         waits.add(pending);
-      } else if (force || !this.resolvedAssetReferences.has(identity)) {
+      } else if (force || !this.resolvedAssetIdentities.has(identity)) {
         missing.push(reference);
       }
     }
@@ -654,8 +686,13 @@ export class Store extends RapidElement {
     onEvent: StoreAssetHandler
   ): RealtimeSubscription {
     const watcher: AssetWatcher = {
+      // an interest without an identifier is dropped rather than treated as a
+      // type wildcard, matching how resolveAssets ignores those references
       interests: (requested || [])
-        .filter((interest) => isStoreAssetType(interest.type))
+        .filter(
+          (interest) =>
+            isStoreAssetType(interest.type) && !!(interest.uuid || interest.key)
+        )
         .map((interest) => ({
           type: interest.type as StoreAssetType,
           ...(interest.uuid ? { uuid: interest.uuid } : {}),
@@ -680,8 +717,25 @@ export class Store extends RapidElement {
     };
   }
 
+  /**
+   * Refetches the assets the page is currently displaying after a reconnect,
+   * when we may have missed changes. Only live interests are refreshed - the
+   * identities we resolved for content that has since scrolled away would
+   * otherwise fan out into a request per hundred for no visible benefit.
+   */
   private async refreshAssetCache(): Promise<void> {
-    await this.resolveAssets([...this.resolvedAssetReferences.values()], true);
+    const interests = new Map<string, StoreAssetReference>();
+    for (const watcher of this.assetWatchers) {
+      for (const interest of watcher.interests) {
+        const identity = assetIdentity(interest);
+        if (identity) {
+          interests.set(identity, interest);
+        }
+      }
+    }
+    if (interests.size > 0) {
+      await this.resolveAssets([...interests.values()], true);
+    }
     for (const watcher of this.assetWatchers) {
       this.deliverAssetEvent(watcher, null);
     }
@@ -696,7 +750,7 @@ export class Store extends RapidElement {
 
     const generation = this.assetGeneration;
     const startVersions = new Map<string, number>();
-    const requested = new Map<string, StoreAssetReference>();
+    const requested = new Set<string>();
     const payload: Partial<Record<StoreAssetType, string[]>> = {};
     for (const reference of references) {
       const identity = assetIdentity(reference);
@@ -704,13 +758,20 @@ export class Store extends RapidElement {
       if (!identity || !value) {
         continue;
       }
-      requested.set(identity, reference);
+      requested.add(identity);
       startVersions.set(identity, this.assetVersions.get(identity) || 0);
       (payload[reference.type] ||= []).push(value);
     }
 
     const response = await postJSON(this.assetsEndpoint, payload);
-    if (generation !== this.assetGeneration) {
+    // postJSON only rejects on a server error, so a 4xx arrives here as an
+    // empty body - bail before the bookkeeping below negatively caches every
+    // requested identity for the life of the page
+    if (
+      generation !== this.assetGeneration ||
+      response.status < 200 ||
+      response.status >= 300
+    ) {
       return;
     }
 
@@ -727,8 +788,8 @@ export class Store extends RapidElement {
     }
     // Remember every requested identity, including assets the endpoint
     // omitted, so deleted/missing references aren't repeatedly fetched.
-    for (const [identity, reference] of requested) {
-      this.resolvedAssetReferences.set(identity, reference);
+    for (const identity of requested) {
+      this.resolvedAssetIdentities.set(identity, true);
     }
   }
 
@@ -737,13 +798,11 @@ export class Store extends RapidElement {
     if (!identity || typeof asset.name !== 'string') {
       return;
     }
-    const reference: StoreAssetReference = {
-      type: asset.type,
-      ...(asset.uuid ? { uuid: asset.uuid } : {}),
-      ...(asset.key ? { key: asset.key } : {})
-    };
     this.assets.set(identity, { ...asset });
-    this.resolvedAssetReferences.set(identity, reference);
+    this.resolvedAssetIdentities.set(identity, true);
+    // every direct write is newer than any batch already in flight, so bump
+    // the version to discard a response that read an older name
+    this.assetVersions.set(identity, ++this.assetVersion);
   }
 
   private handleOrganizationEvent(event: any): void {
@@ -761,7 +820,7 @@ export class Store extends RapidElement {
     const interested = this.assetWatchers.filter((watcher) =>
       watchesAsset(watcher, changed)
     );
-    const previouslyResolved = this.resolvedAssetReferences.has(identity);
+    const previouslyResolved = this.resolvedAssetIdentities.has(identity);
     const pending = this.pendingAssetRequests.has(identity);
     const legacyGroup =
       changed.type === 'group' &&
@@ -779,7 +838,8 @@ export class Store extends RapidElement {
       return;
     }
 
-    this.assetVersions.set(identity, ++this.assetVersion);
+    // cacheAsset records the write version, discarding any batch in flight
+    // for this identity that read the name before this change
     this.cacheAsset(changed);
 
     const publication: StoreAssetChangedEvent = {
