@@ -618,11 +618,12 @@ export class Store extends RapidElement {
     if (!isStoreAssetType(type) || !identity) {
       return null;
     }
-    // the identity may be a uuid (cached under its canonical form) or a key
-    // (cached verbatim), so try both
+    // the identity may be a key (cached verbatim, and case-sensitive) or a uuid
+    // (cached under its canonical form), so try verbatim first — a canonical
+    // uuid already hits on that pass, and keys never reach the normalizing one
     return (
-      this.assets.get(`${type}:${normalizeUuid(identity)}`) ||
       this.assets.get(`${type}:${identity}`) ||
+      this.assets.get(`${type}:${normalizeUuid(identity)}`) ||
       null
     );
   }
