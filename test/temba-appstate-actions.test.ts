@@ -728,6 +728,37 @@ describe('flow/dependencies resolveDependencyNames', () => {
     expect(resolved.nodes[0].actions[0].groups[0].name).to.equal('Customers');
   });
 
+  it('rewrites a reference whose embedded uuid is not canonical', () => {
+    const uuid = '9de3663f-c5c5-4c92-9f45-ecbc09abcc85';
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [
+          {
+            type: 'add_contact_groups',
+            uuid: 'action-1',
+            groups: [
+              // uppercase, braced and unhyphenated forms of the same uuid
+              { uuid: uuid.toUpperCase(), name: 'Old' },
+              { uuid: `{${uuid}}`, name: 'Old' },
+              { uuid: uuid.replace(/-/g, ''), name: 'Old' }
+            ]
+          }
+        ]
+      }
+    ]);
+
+    // the dependency list carries the canonical form the server echoes back
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'group', uuid, name: 'Customers' }
+    ]);
+
+    for (const group of resolved.nodes[0].actions[0].groups) {
+      expect(group.name).to.equal('Customers');
+    }
+  });
+
   it('rewrites a keyed field reference under a field property', () => {
     const definition = withNodes([
       {

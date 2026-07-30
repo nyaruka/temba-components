@@ -1,5 +1,6 @@
 import { produce } from 'immer';
 import { FlowDefinition } from '../store/flow-definition';
+import { normalizeUuid } from '../store/identity';
 
 export interface FlowDependency {
   type: string;
@@ -34,7 +35,10 @@ export const resolveDependencyNames = (
   const fieldNamesByKey = new Map<string, string>();
   for (const dependency of dependencies) {
     if (dependency.uuid && dependency.name != null) {
-      namesByUuid.set(dependency.uuid, dependency.name);
+      // normalized on both set and lookup so a reference embedded in the
+      // definition in a non-canonical form still matches, the same way the
+      // store's asset cache resolves it
+      namesByUuid.set(normalizeUuid(dependency.uuid), dependency.name);
     } else if (
       dependency.type === 'field' &&
       dependency.key &&
@@ -57,7 +61,7 @@ export const resolveDependencyNames = (
       }
 
       if (typeof value.uuid === 'string' && 'name' in value) {
-        const canonical = namesByUuid.get(value.uuid);
+        const canonical = namesByUuid.get(normalizeUuid(value.uuid));
         if (canonical != null) {
           value.name = canonical;
         }

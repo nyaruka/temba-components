@@ -41,6 +41,7 @@ import {
   zustand
 } from './AppState';
 import { StoreApi } from 'zustand/vanilla';
+import { normalizeUuid } from './identity';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -102,32 +103,16 @@ const ASSET_BATCH_SIZE = 100;
 // is fetched again next time it is asked for.
 export const ASSET_CACHE_SIZE = 500;
 
+/**
+ * Versions are held well above the asset cache because losing one doesn't just
+ * forget a name, it drops the in-flight guard for that identity - and `assets`
+ * is bumped by reads that never touch `assetVersions`, so the two ages drift
+ * apart. Entries are a single number, so the extra headroom is cheap.
+ */
+export const ASSET_VERSION_CACHE_SIZE = ASSET_CACHE_SIZE * 8;
+
 const isStoreAssetType = (type: string): type is StoreAssetType =>
   STORE_ASSET_TYPE_SET.has(type);
-
-const UNHYPHENATED_UUID = /^[0-9a-f]{32}$/;
-
-/**
- * Canonicalizes a uuid the way the server does, so a reference embedded in a
- * flow definition in some other form (uppercase, braced, unhyphenated) still
- * matches the normalized uuid the endpoint echoes back.
- */
-const normalizeUuid = (uuid: string): string => {
-  const trimmed = uuid
-    .trim()
-    .replace(/^\{|\}$/g, '')
-    .toLowerCase();
-  if (UNHYPHENATED_UUID.test(trimmed)) {
-    return [
-      trimmed.slice(0, 8),
-      trimmed.slice(8, 12),
-      trimmed.slice(12, 16),
-      trimmed.slice(16, 20),
-      trimmed.slice(20)
-    ].join('-');
-  }
-  return trimmed;
-};
 
 const assetIdentity = (
   asset: { type?: string; uuid?: string; key?: string } | null
@@ -250,7 +235,7 @@ export class Store extends RapidElement {
   // so a long-lived page doesn't keep every asset it has ever rendered
   private assets = lru<StoreAsset>(ASSET_CACHE_SIZE);
   private resolvedAssetIdentities = lru<boolean>(ASSET_CACHE_SIZE);
-  private assetVersions = lru<number>(ASSET_CACHE_SIZE);
+  private assetVersions = lru<number>(ASSET_VERSION_CACHE_SIZE);
   private pendingAssetRequests = new Map<string, Promise<void>>();
   private assetVersion = 0;
   // bumped by reset(), which only firstUpdated() calls today - the guard exists
@@ -850,6 +835,13 @@ export class Store extends RapidElement {
    * read. A version we no longer have (evicted from the bounded map) can't
    * prove a newer write, so the response is allowed through - keeping a name
    * we know is stale forever is the worse failure.
+   *
+   * Note what that costs when it happens: the write it can't see may be a live
+   * socket rename that landed mid-batch, so this doesn't merely fail to protect
+   * a name we've forgotten, it can overwrite a fresher one we still hold. That
+   * needs an eviction inside a single batch's flight time, which is why
+   * ASSET_VERSION_CACHE_SIZE is kept well clear of the asset cache; the next
+   * socket event or reconnect refresh heals it either way.
    */
   private isCurrentAssetVersion(
     identity: string,
