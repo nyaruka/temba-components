@@ -13,7 +13,7 @@ describe('flow form config limits', () => {
   });
 
   it('caps contact field value length', () => {
-    expect((set_contact_field.form.value as any).maxLength).to.equal(1000);
+    expect((set_contact_field.form.value as any).maxLength).to.equal(10000);
   });
 
   it('caps contact name length', () => {
