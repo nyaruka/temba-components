@@ -120,8 +120,12 @@ export class RangePicker extends RapidElement {
         box-shadow 120ms;
     }
 
+    /* The hover wash sits on the sunken track, so --sunken itself
+       would be invisible here. Derived from --text-1 rather than a raw
+       rgba literal so it follows the palette (the tokens file mixes
+       against transparent the same way for --focus-halo). */
     .range-btn:hover:not(.selected) {
-      background: rgba(0, 0, 0, 0.04);
+      background: color-mix(in srgb, var(--text-1) 6%, transparent);
       color: var(--text-1);
     }
 
