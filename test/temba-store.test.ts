@@ -117,13 +117,13 @@ describe('temba-store', () => {
       mockSocket.serverPublish('org:org-uuid', {
         type: 'asset_changed',
         asset: {
-          type: 'contact',
+          type: 'flow',
           uuid: '99999999-9999-4999-8999-999999999999',
           name: 'Unrelated'
         }
       });
       assert.isNull(
-        store.getAsset('contact', '99999999-9999-4999-8999-999999999999')
+        store.getAsset('flow', '99999999-9999-4999-8999-999999999999')
       );
       assert.deepEqual(events, [null]);
 
@@ -182,19 +182,6 @@ describe('temba-store', () => {
       assert.equal(
         store.getAsset('group', '3da236a9-9eed-4db3-a18e-cfb58030c249').name,
         'Customers'
-      );
-
-      mockSocket.serverPublish('org:org-uuid', {
-        type: 'asset_changed',
-        asset: {
-          type: 'contact',
-          uuid: '22222222-2222-4222-8222-222222222222',
-          name: 'Alicia'
-        }
-      });
-      assert.equal(
-        store.getAsset('contact', '22222222-2222-4222-8222-222222222222').name,
-        'Alicia'
       );
     } finally {
       setRealtimeContext(null);

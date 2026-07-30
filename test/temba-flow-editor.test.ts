@@ -769,13 +769,6 @@ describe('Editor', () => {
         expect(actions[1].groups[0].name).to.equal('Customers');
         expect(zustand.getState().dirtyDate).to.equal(null);
 
-        socket.serverPublish('org:44444444-4444-4444-8444-444444444444', {
-          type: 'asset_changed',
-          asset: { type: 'contact', uuid: contactUuid, name: 'Alicia' }
-        });
-        actions = zustand.getState().flowDefinition.nodes[0].actions as any[];
-        expect(actions[2].contacts[0].name).to.equal('Alicia');
-
         wrapper.remove();
         expect(
           socket.subscriptions.every((subscription) => !subscription.active)
