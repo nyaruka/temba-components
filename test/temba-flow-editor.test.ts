@@ -546,6 +546,99 @@ describe('Editor', () => {
       }
     });
 
+    it('reads the new flow when the loaded flow changes mid-read', async () => {
+      const firstUuid = '33333333-3333-4333-8333-333333333333';
+      const secondUuid = '66666666-6666-4666-8666-666666666666';
+      const socket = new EditorSocketProvider();
+      const previousProvider = setSocketProvider(socket);
+      const previousState = zustand.getState();
+      const activityRequests: string[] = [];
+      let releaseFirst: () => void = null;
+
+      const definition = (uuid: string) => ({
+        uuid,
+        name: 'Test',
+        language: 'eng',
+        type: 'messaging',
+        revision: 1,
+        spec_version: '14.3',
+        localization: {},
+        nodes: [],
+        _ui: { nodes: {}, languages: [] }
+      });
+      const activity = () =>
+        new Response(JSON.stringify({ nodes: { 'node-1': 1 }, segments: {} }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+      try {
+        stub(window, 'fetch').callsFake((input: RequestInfo) => {
+          const endpoint = `${input}`;
+          if (endpoint.includes(`/flow/activity/${firstUuid}/`)) {
+            activityRequests.push(endpoint);
+            // the first flow's read stays in flight until we let it finish
+            return new Promise<Response>((resolve) => {
+              releaseFirst = () => resolve(activity());
+            });
+          }
+          if (endpoint.includes('/flow/activity/')) {
+            activityRequests.push(endpoint);
+            return Promise.resolve(activity());
+          }
+          return Promise.resolve(new Response('', { status: 404 }));
+        });
+        zustand.setState({
+          flowDefinition: null,
+          flowInfo: null,
+          simulatorActive: false,
+          activity: null
+        } as any);
+
+        const wrapper = await fixture(
+          html`<div>
+            <temba-store
+              org="44444444-4444-4444-8444-444444444444"
+              user="55555555-5555-4555-8555-555555555555"
+            ></temba-store>
+            <temba-flow-editor>
+              <div id="canvas"></div>
+            </temba-flow-editor>
+          </div>`
+        );
+        const store = wrapper.querySelector('temba-store') as Store;
+        editor = wrapper.querySelector('temba-flow-editor') as Editor;
+        await store.initialHttpComplete;
+
+        zustand.setState({ flowDefinition: definition(firstUuid) } as any);
+        await editor.updateComplete;
+        await aTimeout(0);
+        expect(activityRequests).to.deep.equal([
+          `/flow/activity/${firstUuid}/`
+        ]);
+
+        // a different flow is loaded while the first read is still open
+        zustand.setState({ flowDefinition: definition(secondUuid) } as any);
+        await editor.updateComplete;
+        await aTimeout(0);
+        expect(activityRequests).to.deep.equal([
+          `/flow/activity/${firstUuid}/`,
+          `/flow/activity/${secondUuid}/`
+        ]);
+
+        // the abandoned read landing doesn't queue anything else
+        releaseFirst();
+        await aTimeout(0);
+        expect(activityRequests).to.have.length(2);
+
+        wrapper.remove();
+      } finally {
+        setRealtimeContext(null);
+        setSocketProvider(previousProvider);
+        zustand.setState(previousState as any, true);
+      }
+    });
+
     it('uses store asset caches and applies organization name events', async () => {
       const flowUuid = '33333333-3333-4333-8333-333333333333';
       const childUuid = '11111111-1111-4111-8111-111111111111';

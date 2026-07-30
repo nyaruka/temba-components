@@ -41,7 +41,7 @@ describe('temba-flow-list', () => {
     );
   });
 
-  it('uses store flow interests to keep row names current', async () => {
+  it('seeds the store from a fetched page and keeps row names current', async () => {
     const flowUuid = 'f-001';
     const socket = new MockSocketProvider();
     const previousProvider = setSocketProvider(socket);
@@ -63,14 +63,20 @@ describe('temba-flow-list', () => {
       const list = wrapper.querySelector('temba-flow-list') as FlowList;
       await store.initialHttpComplete;
       await store.resolveAssets([{ type: 'flow', uuid: flowUuid }]);
+      expect(store.getAsset('flow', flowUuid).name).to.equal(
+        'Canonical Welcome Campaign'
+      );
       const fetched = oneEvent(list, CustomEventType.FetchComplete, false);
       list.endpoint = '/test-assets/content-list/flows.json';
       await fetched;
 
-      expect((list as any).items[0].name).to.equal(
-        'Canonical Welcome Campaign'
-      );
+      // the fetched page is newer than anything cached, so it wins and
+      // replaces what the store had
+      expect((list as any).items[0].name).to.equal('Welcome Campaign');
       expect((list as any).items[0].runs).to.equal(12450);
+      expect(store.getAsset('flow', flowUuid).name).to.equal(
+        'Welcome Campaign'
+      );
 
       socket.serverPublish('org:org-uuid', {
         type: 'asset_changed',

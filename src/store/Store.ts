@@ -97,11 +97,37 @@ const STORE_ASSET_TYPE_SET = new Set<string>(STORE_ASSET_TYPES);
 const ASSET_BATCH_SIZE = 100;
 
 // long-lived pages (a flow list paged through many times) would otherwise
-// accumulate an entry for every asset ever seen
-const ASSET_CACHE_SIZE = 500;
+// accumulate an entry for every asset ever seen. Once an entry is evicted the
+// component falls back to the name its own response carried, and the identity
+// is fetched again next time it is asked for.
+export const ASSET_CACHE_SIZE = 500;
 
 const isStoreAssetType = (type: string): type is StoreAssetType =>
   STORE_ASSET_TYPE_SET.has(type);
+
+const UNHYPHENATED_UUID = /^[0-9a-f]{32}$/;
+
+/**
+ * Canonicalizes a uuid the way the server does, so a reference embedded in a
+ * flow definition in some other form (uppercase, braced, unhyphenated) still
+ * matches the normalized uuid the endpoint echoes back.
+ */
+const normalizeUuid = (uuid: string): string => {
+  const trimmed = uuid
+    .trim()
+    .replace(/^\{|\}$/g, '')
+    .toLowerCase();
+  if (UNHYPHENATED_UUID.test(trimmed)) {
+    return [
+      trimmed.slice(0, 8),
+      trimmed.slice(8, 12),
+      trimmed.slice(12, 16),
+      trimmed.slice(16, 20),
+      trimmed.slice(20)
+    ].join('-');
+  }
+  return trimmed;
+};
 
 const assetIdentity = (
   asset: { type?: string; uuid?: string; key?: string } | null
@@ -109,16 +135,17 @@ const assetIdentity = (
   if (!asset || !isStoreAssetType(asset.type)) {
     return null;
   }
-  const identity = asset.uuid || asset.key;
+  const identity = asset.uuid ? normalizeUuid(asset.uuid) : asset.key;
   return identity ? `${asset.type}:${identity}` : null;
 };
 
-const watchesAsset = (watcher: AssetWatcher, asset: StoreAsset): boolean =>
-  watcher.interests.some(
-    (interest) =>
-      interest.type === asset.type &&
-      (interest.uuid || interest.key) === (asset.uuid || asset.key)
+const watchesAsset = (watcher: AssetWatcher, asset: StoreAsset): boolean => {
+  const identity = assetIdentity(asset);
+  return (
+    !!identity &&
+    watcher.interests.some((interest) => assetIdentity(interest) === identity)
   );
+};
 
 declare const __TEMBA_DEV_SERVER__: boolean;
 
@@ -226,6 +253,9 @@ export class Store extends RapidElement {
   private assetVersions = lru<number>(ASSET_CACHE_SIZE);
   private pendingAssetRequests = new Map<string, Promise<void>>();
   private assetVersion = 0;
+  // bumped by reset(), which only firstUpdated() calls today - the guard exists
+  // so a future caller that resets a live store can't have the cleared cache
+  // repopulated by a batch that was already in flight
   private assetGeneration = 0;
   private organizationWatch: RealtimeSubscription = null;
   private organizationSubscribed = false;
@@ -341,9 +371,9 @@ export class Store extends RapidElement {
 
     if (this.groupsEndpoint) {
       fetches.push(
-        getAssets(this.groupsEndpoint).then((groups: Asset[]) => {
+        getAssets<ContactGroup>(this.groupsEndpoint).then((groups) => {
           for (const group of groups) {
-            this.groups[group.uuid] = group as unknown as ContactGroup;
+            this.groups[group.uuid] = group;
           }
         })
       );
@@ -588,7 +618,13 @@ export class Store extends RapidElement {
     if (!isStoreAssetType(type) || !identity) {
       return null;
     }
-    return this.assets.get(`${type}:${identity}`) || null;
+    // the identity may be a uuid (cached under its canonical form) or a key
+    // (cached verbatim), so try both
+    return (
+      this.assets.get(`${type}:${normalizeUuid(identity)}`) ||
+      this.assets.get(`${type}:${identity}`) ||
+      null
+    );
   }
 
   /** Adds server-authoritative assets to the page cache. Components whose
@@ -664,7 +700,14 @@ export class Store extends RapidElement {
       }
     }
 
-    await Promise.all(waits);
+    // one failed batch mustn't discard the names the others resolved
+    await Promise.all(
+      [...waits].map((wait) =>
+        wait.catch((error) => {
+          console.error('failed to resolve assets', error);
+        })
+      )
+    );
 
     const resolved: StoreAsset[] = [];
     for (const identity of references.keys()) {
@@ -749,7 +792,10 @@ export class Store extends RapidElement {
     }
 
     const generation = this.assetGeneration;
-    const startVersions = new Map<string, number>();
+    // undefined means "no write recorded", which is not the same as version 0:
+    // assetVersions is bounded, so an evicted entry must not be read as a
+    // newer write and throw away a perfectly fresh name
+    const startVersions = new Map<string, number | undefined>();
     const requested = new Set<string>();
     const payload: Partial<Record<StoreAssetType, string[]>> = {};
     for (const reference of references) {
@@ -759,29 +805,34 @@ export class Store extends RapidElement {
         continue;
       }
       requested.add(identity);
-      startVersions.set(identity, this.assetVersions.get(identity) || 0);
+      startVersions.set(identity, this.assetVersions.get(identity));
       (payload[reference.type] ||= []).push(value);
     }
 
     const response = await postJSON(this.assetsEndpoint, payload);
+    if (generation !== this.assetGeneration) {
+      return;
+    }
     // postJSON only rejects on a server error, so a 4xx arrives here as an
     // empty body - bail before the bookkeeping below negatively caches every
     // requested identity for the life of the page
-    if (
-      generation !== this.assetGeneration ||
-      response.status < 200 ||
-      response.status >= 300
-    ) {
+    if (response.status < 200 || response.status >= 300) {
+      console.warn(
+        `asset request failed with status ${response.status}`,
+        payload
+      );
       return;
     }
 
     for (const candidate of response.json?.results || []) {
+      // the endpoint echoes normalized uuids, which assetIdentity matches back
+      // to whatever form the reference was embedded in
       const identity = assetIdentity(candidate);
       if (
         identity &&
         requested.has(identity) &&
         typeof candidate.name === 'string' &&
-        (this.assetVersions.get(identity) || 0) === startVersions.get(identity)
+        this.isCurrentAssetVersion(identity, startVersions.get(identity))
       ) {
         this.cacheAsset(candidate as StoreAsset);
       }
@@ -791,6 +842,20 @@ export class Store extends RapidElement {
     for (const identity of requested) {
       this.resolvedAssetIdentities.set(identity, true);
     }
+  }
+
+  /**
+   * True when nothing has written this identity since the given version was
+   * read. A version we no longer have (evicted from the bounded map) can't
+   * prove a newer write, so the response is allowed through - keeping a name
+   * we know is stale forever is the worse failure.
+   */
+  private isCurrentAssetVersion(
+    identity: string,
+    startVersion: number | undefined
+  ): boolean {
+    const current = this.assetVersions.get(identity);
+    return current === undefined || current === startVersion;
   }
 
   private cacheAsset(asset: StoreAsset): void {

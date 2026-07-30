@@ -191,10 +191,17 @@ export class FlowList extends ContentList<Flow> {
     }
   }
 
+  /**
+   * A freshly fetched page is authoritative, so it seeds the store cache
+   * rather than being overwritten by it - a cached name can predate this
+   * response (e.g. a rename missed while another page was on screen), and
+   * writing it back would make the stale name self-reinforcing. Cached names
+   * only ever move rows through syncFlowNames, driven by socket changes and
+   * the reconnect refresh, which are the paths that are actually newer.
+   */
   protected prepareItems(items: Flow[]): Flow[] {
-    const canonical = this.withCanonicalFlowNames(items);
     getStore()?.cacheAssets(
-      canonical
+      items
         .filter((item) => !!item.uuid && typeof item.name === 'string')
         .map((item) => ({
           type: 'flow',
@@ -203,7 +210,7 @@ export class FlowList extends ContentList<Flow> {
         }))
     );
     Promise.resolve().then(() => this.syncAssetWatch());
-    return canonical;
+    return items;
   }
 
   private withCanonicalFlowNames(items: Flow[], changed?: StoreAsset): Flow[] {

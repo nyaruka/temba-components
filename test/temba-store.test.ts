@@ -1,5 +1,5 @@
 import { aTimeout, assert, fixture } from '@open-wc/testing';
-import { Store } from '../src/store/Store';
+import { ASSET_CACHE_SIZE, Store } from '../src/store/Store';
 import { getDependencyResolver } from '../src/store/AppState';
 import {
   setRealtimeContext,
@@ -311,6 +311,84 @@ describe('temba-store', () => {
       setRealtimeContext(null);
       setSocketProvider(previousProvider);
     }
+  });
+
+  it('matches a normalized uuid back to the reference that asked for it', async () => {
+    const endpoint = '/test-assets/store/assets-uuid.json';
+    const canonical = '11111111-1111-4111-8111-111111111111';
+    // the endpoint normalizes uuids and echoes the normalized form
+    mockPOST(/assets-uuid\.json/, {
+      results: [{ type: 'flow', uuid: canonical, name: 'Registration' }]
+    });
+    const store = await createStore(
+      `<temba-store assets="${endpoint}"></temba-store>`
+    );
+
+    const embedded = canonical.toUpperCase();
+    const resolved = await store.resolveAssets([
+      { type: 'flow', uuid: embedded }
+    ]);
+
+    assert.deepEqual(
+      resolved.map((asset) => asset.name),
+      ['Registration']
+    );
+    assert.equal(store.getAsset('flow', embedded).name, 'Registration');
+    assert.equal(store.getAsset('flow', canonical).name, 'Registration');
+
+    // and it isn't asked for a second time
+    await store.resolveAssets([{ type: 'flow', uuid: embedded }]);
+    assert.equal(assetRequests(endpoint).length, 1);
+  });
+
+  it('returns the names it has when a batch fails', async () => {
+    const endpoint = '/test-assets/store/assets-partial.json';
+    mockPOST(/assets-partial\.json/, {
+      results: [{ type: 'flow', uuid: 'flow-1', name: 'Registration' }]
+    });
+    const store = await createStore(
+      `<temba-store assets="${endpoint}"></temba-store>`
+    );
+    await store.resolveAssets([{ type: 'flow', uuid: 'flow-1' }]);
+
+    clearMockPosts();
+    mockPOST(/assets-partial\.json/, { detail: 'boom' }, {}, '500');
+    const resolved = await store.resolveAssets([
+      { type: 'flow', uuid: 'flow-1' },
+      { type: 'flow', uuid: 'flow-2' }
+    ]);
+
+    assert.deepEqual(
+      resolved.map((asset) => asset.name),
+      ['Registration']
+    );
+
+    // the failed identity isn't remembered as resolved, so it can be retried
+    clearMockPosts();
+    mockPOST(/assets-partial\.json/, {
+      results: [{ type: 'flow', uuid: 'flow-2', name: 'Follow up' }]
+    });
+    await store.resolveAssets([{ type: 'flow', uuid: 'flow-2' }]);
+    assert.equal(store.getAsset('flow', 'flow-2').name, 'Follow up');
+  });
+
+  it('drops the oldest entries once the cache is full', async () => {
+    const store = await createStore('<temba-store></temba-store>');
+    store.cacheAssets(
+      Array.from({ length: ASSET_CACHE_SIZE + 1 }, (_, index) => ({
+        type: 'flow' as const,
+        uuid: `flow-${index}`,
+        name: `Flow ${index}`
+      }))
+    );
+
+    // the evicted identity reads as unknown, so components keep the name their
+    // own response carried
+    assert.isNull(store.getAsset('flow', 'flow-0'));
+    assert.equal(
+      store.getAsset('flow', `flow-${ASSET_CACHE_SIZE}`).name,
+      `Flow ${ASSET_CACHE_SIZE}`
+    );
   });
 
   it('keeps a page-authoritative name written while a request is in flight', async () => {

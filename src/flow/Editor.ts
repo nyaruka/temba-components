@@ -211,6 +211,7 @@ export class Editor extends RapidElement {
   private activityFetchTimer: number | null = null;
   private activityFetchInFlight = false;
   private activityFetchQueued = false;
+  private activityFetchToken = 0;
   private assetWatch: RealtimeSubscription = null;
   private watchedAssetStore: Store = null;
   private flowInfoWatch: () => void = null;
@@ -1699,12 +1700,19 @@ export class Editor extends RapidElement {
     this.fetchActivityData(flow);
   }
 
+  /**
+   * Abandons any scheduled or in-flight read. The token makes the in-flight
+   * one a no-op when it lands, so a read for the flow we've stopped watching
+   * can neither hold up nor swallow the next flow's first read.
+   */
   private clearActivityFetch(): void {
     if (this.activityFetchTimer !== null) {
       clearTimeout(this.activityFetchTimer);
       this.activityFetchTimer = null;
     }
     this.activityFetchQueued = false;
+    this.activityFetchInFlight = false;
+    this.activityFetchToken++;
   }
 
   /**
@@ -1743,7 +1751,13 @@ export class Editor extends RapidElement {
       return;
     }
     this.activityFetchInFlight = true;
+    const token = ++this.activityFetchToken;
     const done = () => {
+      // a flow change (or teardown) since this read started has already
+      // reset the bookkeeping for the flow we now care about
+      if (token !== this.activityFetchToken) {
+        return;
+      }
       this.activityFetchInFlight = false;
       if (this.activityFetchQueued) {
         this.activityFetchQueued = false;
