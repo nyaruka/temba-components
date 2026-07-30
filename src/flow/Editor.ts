@@ -8,7 +8,7 @@ import {
   Node,
   NodeUI
 } from '../store/flow-definition';
-import { getStore, Store } from '../store/Store';
+import { getStore, Store, StoreAssetChangedEvent } from '../store/Store';
 import { AppState, FlowIssue, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
@@ -58,6 +58,8 @@ import { Dialog } from '../layout/Dialog';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import { FlowSearch, SearchResult } from './FlowSearch';
+import { RealtimeSubscription, subscribeToFlow } from '../live/Realtime';
+import { FlowDependency } from './dependencies';
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -200,8 +202,12 @@ export class Editor extends RapidElement {
   @property({ type: Array })
   public features: string[] = [];
 
-  private activityTimer: number | null = null;
-  private activityInterval = 100; // Start with 100ms interval for fast initial load
+  private activityWatch: RealtimeSubscription = null;
+  private watchedActivityFlow: string = null;
+  private assetWatch: RealtimeSubscription = null;
+  private flowInfoWatch: () => void = null;
+  private assetResolveVersion = 0;
+  private watchedAssetSignature = '';
 
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   public definition!: FlowDefinition;
@@ -1198,10 +1204,17 @@ export class Editor extends RapidElement {
     this.zoomManager = new ZoomManager(this);
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.syncAssetWatch(zustand.getState().flowInfo);
+    this.syncActivityWatch();
+  }
+
   protected firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
+    this.syncAssetWatch(zustand.getState().flowInfo);
     this.plumber = new Plumber(this.querySelector('#canvas'), this);
     this.plumber.zoom = this.zoom;
     this.setupGlobalEventListeners();
@@ -1422,23 +1435,15 @@ export class Editor extends RapidElement {
       // defer to avoid triggering a reactive canvasSize update during this cycle
       setTimeout(() => this.updateCanvasSize(), 0);
 
-      // Start fetching activity data when definition is loaded
-      if (this.definition?.uuid) {
-        this.startActivityFetching();
-      }
+      this.syncActivityWatch();
     }
 
     if (changes.has('simulatorActive')) {
       if (this.simulatorActive) {
         // Close any open floating windows when simulator opens
         this.closeFloatingWindows();
-        // Stop polling when simulator becomes active
-        this.stopActivityFetching();
-      } else {
-        // Resume polling and refresh activity when simulator closes
-        this.activityInterval = 100; // Reset to fast initial interval
-        this.startActivityFetching();
       }
+      this.syncActivityWatch();
     }
 
     if (changes.has('activityData')) {
@@ -1653,55 +1658,128 @@ export class Editor extends RapidElement {
     });
   }
 
-  private startActivityFetching(): void {
-    // Don't start if simulator is active
-    if (this.simulatorActive) {
+  private syncActivityWatch(): void {
+    const flow = this.simulatorActive ? null : this.definition?.uuid;
+    if (this.activityWatch && flow === this.watchedActivityFlow) {
       return;
     }
-    // Fetch immediately
-    this.fetchActivityData();
+
+    if (this.activityWatch) {
+      this.activityWatch.unsubscribe();
+      this.activityWatch = null;
+    }
+    this.watchedActivityFlow = flow;
+    if (!flow) {
+      return;
+    }
+
+    this.activityWatch = subscribeToFlow(
+      flow,
+      (event) => {
+        if (event?.type === 'activity') {
+          this.fetchActivityData(flow);
+        }
+      },
+      () => this.fetchActivityData(flow)
+    );
   }
 
-  private stopActivityFetching(): void {
-    if (this.activityTimer !== null) {
-      clearTimeout(this.activityTimer);
-      this.activityTimer = null;
-    }
-  }
-
-  private fetchActivityData(): void {
-    if (!this.definition?.uuid) {
+  private fetchActivityData(flow: string): void {
+    if (
+      !this.isConnected ||
+      this.simulatorActive ||
+      flow !== this.watchedActivityFlow
+    ) {
       return;
     }
 
-    // Don't fetch if simulator is active
-    if (this.simulatorActive) {
-      return;
-    }
-
-    const activityEndpoint = `/flow/activity/${this.definition.uuid}/`;
     const store = getStore();
     if (!store) {
       return;
     }
-    const state = store.getState();
-    state.fetchActivity(activityEndpoint).then(() => {
-      // Guard against responses arriving after the editor is disconnected
-      if (!this.isConnected) {
-        return;
+    store.getState().fetchActivity(`/flow/activity/${flow}/`);
+  }
+
+  private syncAssetNames(): void {
+    const store = getStore();
+    const state = zustand.getState();
+    if (!store || !state.flowDefinition || !state.flowInfo) {
+      return;
+    }
+
+    const canonical: FlowDependency[] = [];
+    for (const dependency of state.flowInfo.dependencies || []) {
+      const identity = dependency.uuid || dependency.key;
+      if (!identity) {
+        continue;
       }
-
-      // Schedule next fetch with exponential backoff (max 5 minutes)
-      this.activityInterval = Math.min(60000 * 5, this.activityInterval + 100);
-
-      if (this.activityTimer !== null) {
-        clearTimeout(this.activityTimer);
+      const asset = store.getAsset(dependency.type, identity);
+      if (asset) {
+        canonical.push({ ...dependency, name: asset.name });
       }
+    }
+    state.updateDependencyNames(canonical);
+  }
 
-      this.activityTimer = window.setTimeout(() => {
-        this.fetchActivityData();
-      }, this.activityInterval);
-    });
+  private async resolveAssetNames(info: AppState['flowInfo']): Promise<void> {
+    const store = getStore();
+    if (!store || !info) {
+      return;
+    }
+    const version = ++this.assetResolveVersion;
+    try {
+      const canonical = await store.resolveAssets(info.dependencies || []);
+      if (version === this.assetResolveVersion && this.isConnected) {
+        zustand.getState().updateDependencyNames(canonical);
+      }
+    } catch (error) {
+      console.error('failed to resolve flow dependency assets', error);
+    }
+  }
+
+  private syncAssetWatch(info: AppState['flowInfo']): void {
+    if (!this.isConnected) {
+      return;
+    }
+    const store = getStore();
+    if (!store) {
+      return;
+    }
+    const interests = info?.dependencies || [];
+    const signature = interests
+      .map(
+        (dependency) =>
+          `${dependency.type}:${dependency.uuid || dependency.key || ''}`
+      )
+      .sort()
+      .join('|');
+    if (this.assetWatch && signature === this.watchedAssetSignature) {
+      return;
+    }
+    if (this.assetWatch) {
+      this.assetWatch.unsubscribe();
+    }
+    this.watchedAssetSignature = signature;
+    this.assetWatch = store.watchAssets(
+      interests,
+      (event: StoreAssetChangedEvent | null) => {
+        if (event) {
+          zustand.getState().updateDependencyName(event.asset);
+        } else {
+          this.syncAssetNames();
+        }
+      }
+    );
+    if (!this.flowInfoWatch) {
+      this.flowInfoWatch = zustand.subscribe(
+        (state) => state.flowInfo,
+        (info) => {
+          this.syncAssetWatch(info);
+          this.resolveAssetNames(info);
+        }
+      );
+      this.resolveAssetNames(zustand.getState().flowInfo);
+    }
   }
 
   private handleLanguageChange(languageCode: string): void {
@@ -1957,6 +2035,21 @@ export class Editor extends RapidElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    if (this.assetWatch) {
+      this.assetWatch.unsubscribe();
+      this.assetWatch = null;
+    }
+    if (this.activityWatch) {
+      this.activityWatch.unsubscribe();
+      this.activityWatch = null;
+    }
+    this.watchedActivityFlow = null;
+    this.watchedAssetSignature = '';
+    if (this.flowInfoWatch) {
+      this.flowInfoWatch();
+      this.flowInfoWatch = null;
+    }
+    this.assetResolveVersion++;
     this.zoomManager.teardownLoupe();
     getStore()?.getState().setFlushSave(null);
     this.dragManager.teardownListeners();
@@ -1968,10 +2061,6 @@ export class Editor extends RapidElement {
     if (this.saveTimer !== null) {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
-    }
-    if (this.activityTimer !== null) {
-      clearTimeout(this.activityTimer);
-      this.activityTimer = null;
     }
     this.pendingTimer.clearTimer();
     window.removeEventListener('resize', this.boundWindowResize);

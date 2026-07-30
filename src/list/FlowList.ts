@@ -1,7 +1,9 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
 import { CustomEventType, Flow, ObjectReference } from '../interfaces';
+import { getStore, StoreAsset, StoreAssetChangedEvent } from '../store/Store';
+import { RealtimeSubscription } from '../live/Realtime';
 
 /**
  * Flow CRUDL list — drop-in replacement for the rapidpro
@@ -11,6 +13,8 @@ import { CustomEventType, Flow, ObjectReference } from '../interfaces';
  * bar, activity sparkline.
  */
 export class FlowList extends ContentList<Flow> {
+  private assetWatch: RealtimeSubscription = null;
+
   static get styles() {
     return css`
       ${ContentList.styles}
@@ -147,6 +151,83 @@ export class FlowList extends ContentList<Flow> {
       { key: 'export', label: 'Export results', icon: Icon.export },
       { key: 'archive', label: 'Archive', icon: Icon.archive }
     ];
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    this.syncAssetWatch();
+  }
+
+  protected firstUpdated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(changes);
+    this.syncAssetWatch();
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this.assetWatch) {
+      this.assetWatch.unsubscribe();
+      this.assetWatch = null;
+    }
+  }
+
+  private syncAssetWatch(): void {
+    if (!this.isConnected) {
+      return;
+    }
+    const store = getStore();
+    if (!store) {
+      return;
+    }
+    if (this.assetWatch) {
+      this.assetWatch.unsubscribe();
+    }
+    this.assetWatch = store.watchAssets(
+      (this.items || []).map((flow) => ({ type: 'flow', uuid: flow.uuid })),
+      (event: StoreAssetChangedEvent | null) => this.syncFlowNames(event?.asset)
+    );
+  }
+
+  private syncFlowNames(changed?: StoreAsset): void {
+    const items = this.withCanonicalFlowNames(this.items, changed);
+    if (items !== this.items) {
+      this.items = items;
+    }
+  }
+
+  protected prepareItems(items: Flow[]): Flow[] {
+    const canonical = this.withCanonicalFlowNames(items);
+    getStore()?.cacheAssets(
+      canonical
+        .filter((item) => !!item.uuid && typeof item.name === 'string')
+        .map((item) => ({
+          type: 'flow',
+          uuid: item.uuid,
+          name: item.name
+        }))
+    );
+    Promise.resolve().then(() => this.syncAssetWatch());
+    return canonical;
+  }
+
+  private withCanonicalFlowNames(items: Flow[], changed?: StoreAsset): Flow[] {
+    const store = getStore();
+    let updated = false;
+    const canonical = items.map((item) => {
+      const asset = changed
+        ? changed.uuid === item.uuid
+          ? changed
+          : null
+        : store?.getAsset('flow', item.uuid);
+      if (asset && asset.name !== item.name) {
+        updated = true;
+        return { ...item, name: asset.name };
+      }
+      return item;
+    });
+    return updated ? canonical : items;
   }
 
   protected getRowIcon(item: Flow): string | null {

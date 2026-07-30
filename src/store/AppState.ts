@@ -15,9 +15,31 @@ import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { property } from 'lit/decorators.js';
 import { produce } from 'immer';
+import {
+  FlowDependency,
+  replaceDependencies,
+  replaceDependency,
+  resolveDependencyNames
+} from '../flow/dependencies';
 
 export const FLOW_SPEC_VERSION = '14.3';
 const CANVAS_PADDING = 800;
+
+export type DependencyResolver = (
+  dependencies: FlowDependency[]
+) => Promise<FlowDependency[]>;
+
+let dependencyResolver: DependencyResolver | null = null;
+
+/** Installs the page-level canonical-name resolver and returns the previous
+ * resolver so a disconnected store can restore it in tests. */
+export const setDependencyResolver = (
+  resolver: DependencyResolver | null
+): DependencyResolver | null => {
+  const previous = dependencyResolver;
+  dependencyResolver = resolver;
+  return previous;
+};
 
 /**
  * Temporary: Reclassify nodes based on whether they contain terminal actions.
@@ -105,15 +127,6 @@ export interface InfoResult {
   node_uuids: string[];
 }
 
-export interface ObjectRef {
-  uuid: string;
-  name: string;
-}
-
-export interface TypedObjectRef extends ObjectRef {
-  type: string;
-}
-
 export interface Language {
   code: string;
   name: string;
@@ -133,7 +146,7 @@ export interface FlowIssue {
 
 export interface FlowInfo {
   results: InfoResult[];
-  dependencies: TypedObjectRef[];
+  dependencies: FlowDependency[];
   counts: { nodes: number; languages: number };
   locals: string[];
   issues?: FlowIssue[];
@@ -220,6 +233,8 @@ export interface AppState {
 
   setFlowContents: (flow: FlowContents) => void;
   setFlowInfo: (info: FlowInfo) => void;
+  updateDependencyName: (dependency: FlowDependency) => void;
+  updateDependencyNames: (dependencies: FlowDependency[]) => void;
   setRevision: (revision: number) => void;
   setLanguageCode: (languageCode: string) => void;
   setDirtyDate: (date: Date) => void;
@@ -305,6 +320,26 @@ export const zustand = createStore<AppState>()(
           throw new Error('Network response was not ok');
         }
         const data = (await response.json()) as FlowContents;
+        if (dependencyResolver && data.info?.dependencies?.length) {
+          try {
+            const canonical = await dependencyResolver(data.info.dependencies);
+            const dependencies = replaceDependencies(
+              data.info.dependencies,
+              canonical
+            );
+            if (dependencies) {
+              data.info = { ...data.info, dependencies };
+              data.definition = resolveDependencyNames(
+                data.definition,
+                canonical
+              );
+            }
+          } catch (error) {
+            // A name lookup shouldn't make an otherwise valid flow unusable.
+            // Keep its embedded names and let a later socket/reconnect heal it.
+            console.error('failed to resolve flow dependency names', error);
+          }
+        }
         reclassifyTerminalNodes(data.definition);
         reclassifyVoiceWaitNodes(data.definition);
         const issueMaps = buildIssueMaps(data.info?.issues);
@@ -435,6 +470,45 @@ export const zustand = createStore<AppState>()(
           const issueMaps = buildIssueMaps(info?.issues);
           state.issuesByNode = issueMaps.byNode;
           state.issuesByAction = issueMaps.byAction;
+        });
+      },
+
+      updateDependencyName: (dependency: FlowDependency) => {
+        set((state: AppState) => {
+          if (!state.flowInfo || !state.flowDefinition) {
+            return;
+          }
+          const dependencies = replaceDependency(
+            state.flowInfo.dependencies,
+            dependency
+          );
+          if (!dependencies) {
+            return;
+          }
+          state.flowInfo.dependencies = dependencies;
+          state.flowDefinition = resolveDependencyNames(state.flowDefinition, [
+            dependency
+          ]);
+        });
+      },
+
+      updateDependencyNames: (changed: FlowDependency[]) => {
+        set((state: AppState) => {
+          if (!state.flowInfo || !state.flowDefinition) {
+            return;
+          }
+          const dependencies = replaceDependencies(
+            state.flowInfo.dependencies,
+            changed
+          );
+          if (!dependencies) {
+            return;
+          }
+          state.flowInfo.dependencies = dependencies;
+          state.flowDefinition = resolveDependencyNames(
+            state.flowDefinition,
+            changed
+          );
         });
       },
 

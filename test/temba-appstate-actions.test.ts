@@ -1,5 +1,5 @@
 import { expect } from '@open-wc/testing';
-import { zustand } from '../src/store/AppState';
+import { setDependencyResolver, zustand } from '../src/store/AppState';
 import { mockGET, clearMockGets } from './utils.test';
 
 const definition = (overrides: any = {}) => ({
@@ -46,6 +46,7 @@ describe('store/AppState actions', () => {
 
   afterEach(() => {
     clearMockGets();
+    setDependencyResolver(null);
     zustand.setState(pristine as any);
   });
 
@@ -117,6 +118,98 @@ describe('store/AppState actions', () => {
       state().setFlowInfo(info({ issues: [] }));
       expect(state().issuesByNode.size).to.equal(0);
       expect(state().issuesByAction.size).to.equal(0);
+    });
+  });
+
+  describe('updateDependencyName', () => {
+    beforeEach(() => {
+      zustand.setState({
+        flowDefinition: definition({
+          nodes: [
+            {
+              uuid: 'node-1',
+              exits: [],
+              actions: [
+                {
+                  type: 'add_contact_groups',
+                  uuid: 'action-1',
+                  groups: [{ uuid: 'group-1', name: 'Old group name' }]
+                }
+              ]
+            }
+          ]
+        }),
+        flowInfo: info({
+          dependencies: [
+            { type: 'group', uuid: 'group-1', name: 'Old group name' }
+          ]
+        }),
+        dirtyDate: null
+      } as any);
+    });
+
+    it('updates a registered reference throughout the definition', () => {
+      state().updateDependencyName({
+        type: 'group',
+        uuid: 'group-1',
+        name: 'Customers'
+      });
+
+      const action = state().flowDefinition.nodes[0].actions[0] as any;
+      expect(action.groups[0].name).to.equal('Customers');
+      expect(state().flowInfo.dependencies[0].name).to.equal('Customers');
+      expect(state().dirtyDate).to.equal(null);
+    });
+
+    it('ignores an asset outside the registered dependency interests', () => {
+      const before = state().flowDefinition;
+      state().updateDependencyName({
+        type: 'group',
+        uuid: 'group-2',
+        name: 'Unrelated'
+      });
+
+      expect(state().flowDefinition).to.equal(before);
+      expect(state().flowInfo.dependencies).to.have.length(1);
+    });
+
+    it('updates several cached assets in one state change', () => {
+      const flow = { uuid: 'flow-1', name: 'Old flow' };
+      zustand.setState({
+        flowDefinition: definition({
+          nodes: [
+            {
+              uuid: 'node-1',
+              exits: [],
+              actions: [
+                {
+                  type: 'enter_flow',
+                  uuid: 'action-2',
+                  flow
+                },
+                ...(state().flowDefinition.nodes[0].actions as any[])
+              ]
+            }
+          ]
+        }),
+        flowInfo: info({
+          dependencies: [
+            { type: 'flow', uuid: 'flow-1', name: 'Old flow' },
+            { type: 'group', uuid: 'group-1', name: 'Old group name' }
+          ]
+        }),
+        dirtyDate: null
+      } as any);
+
+      state().updateDependencyNames([
+        { type: 'flow', uuid: 'flow-1', name: 'Current flow' },
+        { type: 'group', uuid: 'group-1', name: 'Customers' }
+      ]);
+
+      const actions = state().flowDefinition.nodes[0].actions as any[];
+      expect(actions[0].flow.name).to.equal('Current flow');
+      expect(actions[1].groups[0].name).to.equal('Customers');
+      expect(state().dirtyDate).to.equal(null);
     });
   });
 
@@ -433,6 +526,100 @@ describe('store/AppState actions', () => {
       });
       await state().fetchRevision(REVISION_URL);
       expect(state().issuesByNode.get('node-9')).to.have.length(1);
+    });
+
+    it('resolves canonical dependency names before exposing a revision', async () => {
+      const contactUuid = '22222222-2222-4222-8222-222222222222';
+      let resolvedBeforeDisplay = false;
+      setDependencyResolver(async () => {
+        resolvedBeforeDisplay = state().flowDefinition === null;
+        return [{ type: 'contact', uuid: contactUuid, name: 'Alice' }];
+      });
+      mockRevision({
+        definition: definition({
+          nodes: [
+            {
+              uuid: 'node-1',
+              exits: [],
+              actions: [
+                {
+                  type: 'send_broadcast',
+                  uuid: 'action-1',
+                  text: 'Hello',
+                  contacts: [{ uuid: contactUuid, name: 'Old contact' }],
+                  groups: []
+                }
+              ]
+            }
+          ],
+          _ui: { nodes: { 'node-1': { position: { left: 0, top: 0 } } } }
+        }),
+        info: info({
+          dependencies: [
+            { type: 'contact', uuid: contactUuid, name: 'Old contact' }
+          ]
+        })
+      });
+
+      await state().fetchRevision(REVISION_URL);
+
+      expect(resolvedBeforeDisplay).to.equal(true);
+      expect(
+        (state().flowDefinition.nodes[0].actions[0] as any).contacts[0].name
+      ).to.equal('Alice');
+      expect(state().flowInfo.dependencies[0].name).to.equal('Alice');
+    });
+
+    it('resolves every referenced flow before exposing a revision', async () => {
+      const flow1Uuid = '11111111-1111-4111-8111-111111111111';
+      const flow2Uuid = '22222222-2222-4222-8222-222222222222';
+      let requested: any[] = [];
+      setDependencyResolver(async (dependencies) => {
+        requested = dependencies;
+        return [
+          { type: 'flow', uuid: flow1Uuid, name: 'Current Child One' },
+          { type: 'flow', uuid: flow2Uuid, name: 'Current Child Two' }
+        ];
+      });
+      mockRevision({
+        definition: definition({
+          nodes: [
+            {
+              uuid: 'node-1',
+              exits: [],
+              actions: [
+                {
+                  type: 'enter_flow',
+                  uuid: 'action-1',
+                  flow: { uuid: flow1Uuid, name: 'Old Child One' }
+                },
+                {
+                  type: 'enter_flow',
+                  uuid: 'action-2',
+                  flow: { uuid: flow2Uuid, name: 'Old Child Two' }
+                }
+              ]
+            }
+          ],
+          _ui: { nodes: { 'node-1': { position: { left: 0, top: 0 } } } }
+        }),
+        info: info({
+          dependencies: [
+            { type: 'flow', uuid: flow1Uuid, name: 'Old Child One' },
+            { type: 'flow', uuid: flow2Uuid, name: 'Old Child Two' }
+          ]
+        })
+      });
+
+      await state().fetchRevision(REVISION_URL);
+
+      expect(requested).to.deep.equal([
+        { type: 'flow', uuid: flow1Uuid, name: 'Old Child One' },
+        { type: 'flow', uuid: flow2Uuid, name: 'Old Child Two' }
+      ]);
+      const actions = state().flowDefinition.nodes[0].actions as any[];
+      expect(actions[0].flow.name).to.equal('Current Child One');
+      expect(actions[1].flow.name).to.equal('Current Child Two');
     });
 
     it('raises when the request fails', async () => {

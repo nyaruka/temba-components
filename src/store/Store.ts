@@ -22,14 +22,23 @@ import {
   DirtyTrackable
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { setRealtimeContext } from '../live/Realtime';
+import {
+  RealtimeSubscription,
+  setRealtimeContext,
+  subscribeToOrganization
+} from '../live/Realtime';
 import { lru } from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { getFullName } from '../display/TembaUser';
-import { AppState, zustand } from './AppState';
+import {
+  AppState,
+  DependencyResolver,
+  setDependencyResolver,
+  zustand
+} from './AppState';
 import { StoreApi } from 'zustand/vanilla';
 
 const { setLocale } = configureLocalization({
@@ -41,6 +50,70 @@ const { setLocale } = configureLocalization({
 export const getStore = () => {
   return document.querySelector('temba-store') as Store;
 };
+
+export const STORE_ASSET_TYPES = [
+  'channel',
+  'contact',
+  'field',
+  'flow',
+  'global',
+  'group',
+  'label',
+  'llm',
+  'optin',
+  'template',
+  'topic',
+  'user'
+] as const;
+
+export type StoreAssetType = (typeof STORE_ASSET_TYPES)[number];
+
+export interface StoreAssetReference {
+  type: StoreAssetType;
+  uuid?: string;
+  key?: string;
+}
+
+export interface StoreAsset extends StoreAssetReference {
+  name: string;
+}
+
+export interface StoreAssetChangedEvent {
+  type: 'asset_changed';
+  asset: StoreAsset;
+}
+
+export type StoreAssetHandler = (event: StoreAssetChangedEvent | null) => void;
+
+interface AssetWatcher {
+  interests: StoreAssetReference[];
+  onEvent: StoreAssetHandler;
+}
+
+const STORE_ASSET_TYPE_SET = new Set<string>(STORE_ASSET_TYPES);
+const ASSET_BATCH_SIZE = 100;
+
+const isStoreAssetType = (type: string): type is StoreAssetType =>
+  STORE_ASSET_TYPE_SET.has(type);
+
+const assetIdentity = (
+  asset: { type?: string; uuid?: string; key?: string } | null
+): string | null => {
+  if (!asset || !isStoreAssetType(asset.type)) {
+    return null;
+  }
+  const identity = asset.uuid || asset.key;
+  return identity ? `${asset.type}:${identity}` : null;
+};
+
+const watchesAsset = (watcher: AssetWatcher, asset: StoreAsset): boolean =>
+  watcher.interests.some((interest) => {
+    if (interest.type !== asset.type) {
+      return false;
+    }
+    const identity = interest.uuid || interest.key;
+    return !identity || identity === (asset.uuid || asset.key);
+  });
 
 declare const __TEMBA_DEV_SERVER__: boolean;
 
@@ -100,6 +173,9 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'groups' })
   groupsEndpoint: string;
 
+  @property({ type: String, attribute: 'assets' })
+  assetsEndpoint: string;
+
   @property({ type: String, attribute: 'globals' })
   globalsEndpoint: string;
 
@@ -136,6 +212,18 @@ export class Store extends RapidElement {
   private shortcuts: Shortcut[] = [];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
+  private assetWatchers: AssetWatcher[] = [];
+  private assets = new Map<string, StoreAsset>();
+  private resolvedAssetReferences = new Map<string, StoreAssetReference>();
+  private pendingAssetRequests = new Map<string, Promise<void>>();
+  private assetVersions = new Map<string, number>();
+  private assetVersion = 0;
+  private assetGeneration = 0;
+  private organizationWatch: RealtimeSubscription = null;
+  private organizationSubscribed = false;
+  private previousDependencyResolver: DependencyResolver = null;
+  private dependencyResolver: DependencyResolver = (dependencies) =>
+    this.resolveAssets(dependencies);
 
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
@@ -198,6 +286,13 @@ export class Store extends RapidElement {
     this.clearCache();
     this.settings = JSON.parse(getCookie('settings') || '{}');
     zustand.setState({ brand: this.brand });
+    this.groups = {};
+    this.assets.clear();
+    this.resolvedAssetReferences.clear();
+    this.pendingAssetRequests.clear();
+    this.assetVersions.clear();
+    this.assetVersion = 0;
+    this.assetGeneration++;
 
     /* 
     // This will create a shorthand unit
@@ -238,10 +333,10 @@ export class Store extends RapidElement {
 
     if (this.groupsEndpoint) {
       fetches.push(
-        getAssets(this.groupsEndpoint).then((groups: any[]) => {
-          groups.forEach((group: any) => {
-            this.groups[group.uuid] = group;
-          });
+        getAssets(this.groupsEndpoint).then((groups: Asset[]) => {
+          for (const group of groups) {
+            this.groups[group.uuid] = group as unknown as ContactGroup;
+          }
         })
       );
     }
@@ -275,10 +370,36 @@ export class Store extends RapidElement {
   }
 
   public firstUpdated() {
+    this.previousDependencyResolver = setDependencyResolver(
+      this.dependencyResolver
+    );
     if (this.org && this.user) {
       setRealtimeContext({ org: this.org, user: this.user });
     }
     this.reset();
+    if (this.org && this.user) {
+      this.organizationWatch = subscribeToOrganization(
+        (event) => this.handleOrganizationEvent(event),
+        () => {
+          if (this.organizationSubscribed) {
+            this.refreshAssetCache().catch((error) => {
+              console.error('failed to refresh store assets', error);
+            });
+          }
+          this.organizationSubscribed = true;
+        }
+      );
+    }
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    setDependencyResolver(this.previousDependencyResolver);
+    this.previousDependencyResolver = null;
+    if (this.organizationWatch) {
+      this.organizationWatch.unsubscribe();
+      this.organizationWatch = null;
+    }
   }
 
   public getLanguageCode() {
@@ -429,6 +550,256 @@ export class Store extends RapidElement {
 
   public getFeaturedFields(): ContactField[] {
     return this.featuredFields;
+  }
+
+  public getAsset(type: string, identity: string): StoreAsset | null {
+    if (!isStoreAssetType(type) || !identity) {
+      return null;
+    }
+    return this.assets.get(`${type}:${identity}`) || null;
+  }
+
+  /** Adds server-authoritative assets to the page cache. Components whose
+   * own response already contains canonical names can seed the same cache
+   * without making another request. */
+  public cacheAssets(assets: StoreAsset[]): void {
+    for (const asset of assets) {
+      this.cacheAsset(asset);
+    }
+  }
+
+  /** Resolves every requested reference from the cache, fetching only the
+   * identities this page hasn't resolved before. Concurrent callers share
+   * each in-flight batch and absent assets are negatively cached. */
+  public async resolveAssets(
+    requested: { type: string; uuid?: string; key?: string }[],
+    force = false
+  ): Promise<StoreAsset[]> {
+    const references = new Map<string, StoreAssetReference>();
+    for (const candidate of requested || []) {
+      if (!isStoreAssetType(candidate.type)) {
+        continue;
+      }
+      const reference: StoreAssetReference = {
+        type: candidate.type,
+        ...(candidate.uuid ? { uuid: candidate.uuid } : {}),
+        ...(candidate.key ? { key: candidate.key } : {})
+      };
+      const identity = assetIdentity(reference);
+      if (identity) {
+        references.set(identity, reference);
+      }
+    }
+
+    const waits = new Set<Promise<void>>();
+    const missing: StoreAssetReference[] = [];
+    for (const [identity, reference] of references) {
+      const pending = this.pendingAssetRequests.get(identity);
+      if (pending) {
+        waits.add(pending);
+      } else if (force || !this.resolvedAssetReferences.has(identity)) {
+        missing.push(reference);
+      }
+    }
+
+    if (this.assetsEndpoint) {
+      for (
+        let offset = 0;
+        offset < missing.length;
+        offset += ASSET_BATCH_SIZE
+      ) {
+        const batch = missing.slice(offset, offset + ASSET_BATCH_SIZE);
+        const pending = this.fetchAssetBatch(batch);
+        waits.add(pending);
+        for (const reference of batch) {
+          const identity = assetIdentity(reference);
+          if (identity) {
+            this.pendingAssetRequests.set(identity, pending);
+          }
+        }
+        const cleanup = () => {
+          for (const reference of batch) {
+            const identity = assetIdentity(reference);
+            if (
+              identity &&
+              this.pendingAssetRequests.get(identity) === pending
+            ) {
+              this.pendingAssetRequests.delete(identity);
+            }
+          }
+        };
+        void pending.then(cleanup, cleanup);
+      }
+    }
+
+    await Promise.all(waits);
+
+    const resolved: StoreAsset[] = [];
+    for (const identity of references.keys()) {
+      const asset = this.assets.get(identity);
+      if (asset) {
+        resolved.push(asset);
+      }
+    }
+    return resolved;
+  }
+
+  /**
+   * Registers interest in workspace asset changes. An eventless delivery
+   * lets the watcher apply anything already cached and is repeated after a
+   * reconnect refresh; live changes carry the changed asset.
+   */
+  public watchAssets(
+    requested: { type: string; uuid?: string; key?: string }[],
+    onEvent: StoreAssetHandler
+  ): RealtimeSubscription {
+    const watcher: AssetWatcher = {
+      interests: (requested || [])
+        .filter((interest) => isStoreAssetType(interest.type))
+        .map((interest) => ({
+          type: interest.type as StoreAssetType,
+          ...(interest.uuid ? { uuid: interest.uuid } : {}),
+          ...(interest.key ? { key: interest.key } : {})
+        })),
+      onEvent
+    };
+    this.assetWatchers.push(watcher);
+    Promise.resolve().then(() => {
+      if (this.assetWatchers.includes(watcher)) {
+        this.deliverAssetEvent(watcher, null);
+      }
+    });
+
+    return {
+      unsubscribe: () => {
+        const index = this.assetWatchers.indexOf(watcher);
+        if (index >= 0) {
+          this.assetWatchers.splice(index, 1);
+        }
+      }
+    };
+  }
+
+  private async refreshAssetCache(): Promise<void> {
+    await this.resolveAssets([...this.resolvedAssetReferences.values()], true);
+    for (const watcher of this.assetWatchers) {
+      this.deliverAssetEvent(watcher, null);
+    }
+  }
+
+  private async fetchAssetBatch(
+    references: StoreAssetReference[]
+  ): Promise<void> {
+    if (!this.assetsEndpoint || references.length === 0) {
+      return;
+    }
+
+    const generation = this.assetGeneration;
+    const startVersions = new Map<string, number>();
+    const requested = new Map<string, StoreAssetReference>();
+    const payload: Partial<Record<StoreAssetType, string[]>> = {};
+    for (const reference of references) {
+      const identity = assetIdentity(reference);
+      const value = reference.uuid || reference.key;
+      if (!identity || !value) {
+        continue;
+      }
+      requested.set(identity, reference);
+      startVersions.set(identity, this.assetVersions.get(identity) || 0);
+      (payload[reference.type] ||= []).push(value);
+    }
+
+    const response = await postJSON(this.assetsEndpoint, payload);
+    if (generation !== this.assetGeneration) {
+      return;
+    }
+
+    for (const candidate of response.json?.results || []) {
+      const identity = assetIdentity(candidate);
+      if (
+        identity &&
+        requested.has(identity) &&
+        typeof candidate.name === 'string' &&
+        (this.assetVersions.get(identity) || 0) === startVersions.get(identity)
+      ) {
+        this.cacheAsset(candidate as StoreAsset);
+      }
+    }
+    // Remember every requested identity, including assets the endpoint
+    // omitted, so deleted/missing references aren't repeatedly fetched.
+    for (const [identity, reference] of requested) {
+      this.resolvedAssetReferences.set(identity, reference);
+    }
+  }
+
+  private cacheAsset(asset: StoreAsset): void {
+    const identity = assetIdentity(asset);
+    if (!identity || typeof asset.name !== 'string') {
+      return;
+    }
+    const reference: StoreAssetReference = {
+      type: asset.type,
+      ...(asset.uuid ? { uuid: asset.uuid } : {}),
+      ...(asset.key ? { key: asset.key } : {})
+    };
+    this.assets.set(identity, { ...asset });
+    this.resolvedAssetReferences.set(identity, reference);
+  }
+
+  private handleOrganizationEvent(event: any): void {
+    const asset = event?.asset as StoreAsset;
+    const identity = assetIdentity(asset);
+    if (
+      event?.type !== 'asset_changed' ||
+      !identity ||
+      typeof asset.name !== 'string'
+    ) {
+      return;
+    }
+
+    const changed = { ...asset };
+    const interested = this.assetWatchers.filter((watcher) =>
+      watchesAsset(watcher, changed)
+    );
+    const previouslyResolved = this.resolvedAssetReferences.has(identity);
+    const pending = this.pendingAssetRequests.has(identity);
+    const legacyGroup =
+      changed.type === 'group' &&
+      changed.uuid &&
+      Object.prototype.hasOwnProperty.call(this.groups, changed.uuid);
+
+    if (legacyGroup) {
+      this.groups[changed.uuid] = {
+        ...this.groups[changed.uuid],
+        uuid: changed.uuid,
+        name: changed.name
+      };
+    }
+    if (!previouslyResolved && !pending && interested.length === 0) {
+      return;
+    }
+
+    this.assetVersions.set(identity, ++this.assetVersion);
+    this.cacheAsset(changed);
+
+    const publication: StoreAssetChangedEvent = {
+      type: 'asset_changed',
+      asset: changed
+    };
+    for (const watcher of interested) {
+      this.deliverAssetEvent(watcher, publication);
+    }
+  }
+
+  private deliverAssetEvent(
+    watcher: AssetWatcher,
+    event: StoreAssetChangedEvent | null
+  ): void {
+    try {
+      watcher.onEvent(event);
+    } catch (error) {
+      console.error('store asset watcher failed', error);
+    }
   }
 
   public isDynamicGroup(uuid: string): boolean {

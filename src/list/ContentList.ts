@@ -1615,6 +1615,12 @@ export class ContentList<T = any> extends RapidElement {
     super();
   }
 
+  /** Gives specialized lists a chance to normalize a fetched page before it
+   * becomes visible. The default keeps the server response unchanged. */
+  protected prepareItems(items: T[]): T[] {
+    return items;
+  }
+
   protected willUpdate(changes: PropertyValues): void {
     super.willUpdate(changes);
     if (
@@ -2021,7 +2027,7 @@ export class ContentList<T = any> extends RapidElement {
       // empty results) with an `error` message — surface it over the
       // empty table rather than the plain empty-state copy.
       this.searchError = typeof data.error === 'string' ? data.error : '';
-      this.items = data.results || [];
+      this.items = this.prepareItems(data.results || []);
       this.nextCursor = data.next ? this.toRequestUrl(data.next) : '';
       this.prevCursor = data.previous ? this.toRequestUrl(data.previous) : '';
       // Cursor mode is detected from the shape of next/previous,

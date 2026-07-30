@@ -2,7 +2,9 @@ import { assert } from '@open-wc/testing';
 import {
   setRealtimeContext,
   subscribeToContactHistory,
-  subscribeToNotifications
+  subscribeToFlow,
+  subscribeToNotifications,
+  subscribeToOrganization
 } from '../src/live/Realtime';
 import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import { MockSocketProvider } from './utils.test';
@@ -63,6 +65,19 @@ describe('temba-realtime', () => {
     }, 0);
   });
 
+  it('subscribes to the current organization when context is known', () => {
+    setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+    const received = [];
+    subscribeToOrganization((event) => received.push(event));
+
+    assert.deepEqual(mockSocket.activeChannels(), ['org:org-uuid']);
+    mockSocket.serverPublish('org:org-uuid', {
+      type: 'asset_changed',
+      asset: { type: 'flow', uuid: 'flow-1', name: 'Registration' }
+    });
+    assert.equal(received[0].asset.name, 'Registration');
+  });
+
   it('never subscribes when unsubscribed while pending', () => {
     const sub = subscribeToNotifications(() => {});
     sub.unsubscribe();
@@ -90,5 +105,14 @@ describe('temba-realtime', () => {
       'history:contact-uuid',
       'history:contact-uuid:ticket-uuid'
     ]);
+  });
+
+  it('subscribes to a flow without context', () => {
+    const received = [];
+    subscribeToFlow('flow-uuid', (event) => received.push(event));
+
+    assert.deepEqual(mockSocket.activeChannels(), ['flow:flow-uuid']);
+    mockSocket.serverPublish('flow:flow-uuid', { type: 'activity' });
+    assert.deepEqual(received, [{ type: 'activity' }]);
   });
 });
