@@ -22,15 +22,26 @@ import {
   DirtyTrackable
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { setRealtimeContext } from '../live/Realtime';
+import {
+  RealtimeSubscription,
+  setRealtimeContext,
+  subscribeToOrganization
+} from '../live/Realtime';
 import { lru } from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { getFullName } from '../display/TembaUser';
-import { AppState, zustand } from './AppState';
+import {
+  AppState,
+  DependencyResolver,
+  getDependencyResolver,
+  setDependencyResolver,
+  zustand
+} from './AppState';
 import { StoreApi } from 'zustand/vanilla';
+import { normalizeUuid } from './identity';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -40,6 +51,85 @@ const { setLocale } = configureLocalization({
 
 export const getStore = () => {
   return document.querySelector('temba-store') as Store;
+};
+
+export const STORE_ASSET_TYPES = [
+  'channel',
+  'contact',
+  'field',
+  'flow',
+  'global',
+  'group',
+  'label',
+  'llm',
+  'optin',
+  'template',
+  'topic',
+  'user'
+] as const;
+
+export type StoreAssetType = (typeof STORE_ASSET_TYPES)[number];
+
+export interface StoreAssetReference {
+  type: StoreAssetType;
+  uuid?: string;
+  key?: string;
+}
+
+export interface StoreAsset extends StoreAssetReference {
+  name: string;
+}
+
+export interface StoreAssetChangedEvent {
+  type: 'asset_changed';
+  asset: StoreAsset;
+}
+
+export type StoreAssetHandler = (event: StoreAssetChangedEvent | null) => void;
+
+interface AssetWatcher {
+  interests: StoreAssetReference[];
+  onEvent: StoreAssetHandler;
+}
+
+const STORE_ASSET_TYPE_SET = new Set<string>(STORE_ASSET_TYPES);
+
+// the endpoint rejects a request carrying more than this many identifiers
+const ASSET_BATCH_SIZE = 100;
+
+// long-lived pages (a flow list paged through many times) would otherwise
+// accumulate an entry for every asset ever seen. Once an entry is evicted the
+// component falls back to the name its own response carried, and the identity
+// is fetched again next time it is asked for.
+export const ASSET_CACHE_SIZE = 500;
+
+/**
+ * Versions are held well above the asset cache because losing one doesn't just
+ * forget a name, it drops the in-flight guard for that identity - and `assets`
+ * is bumped by reads that never touch `assetVersions`, so the two ages drift
+ * apart. Entries are a single number, so the extra headroom is cheap.
+ */
+export const ASSET_VERSION_CACHE_SIZE = ASSET_CACHE_SIZE * 8;
+
+const isStoreAssetType = (type: string): type is StoreAssetType =>
+  STORE_ASSET_TYPE_SET.has(type);
+
+const assetIdentity = (
+  asset: { type?: string; uuid?: string; key?: string } | null
+): string | null => {
+  if (!asset || !isStoreAssetType(asset.type)) {
+    return null;
+  }
+  const identity = asset.uuid ? normalizeUuid(asset.uuid) : asset.key;
+  return identity ? `${asset.type}:${identity}` : null;
+};
+
+const watchesAsset = (watcher: AssetWatcher, asset: StoreAsset): boolean => {
+  const identity = assetIdentity(asset);
+  return (
+    !!identity &&
+    watcher.interests.some((interest) => assetIdentity(interest) === identity)
+  );
 };
 
 declare const __TEMBA_DEV_SERVER__: boolean;
@@ -100,6 +190,9 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'groups' })
   groupsEndpoint: string;
 
+  @property({ type: String, attribute: 'assets' })
+  assetsEndpoint: string;
+
   @property({ type: String, attribute: 'globals' })
   globalsEndpoint: string;
 
@@ -136,6 +229,24 @@ export class Store extends RapidElement {
   private shortcuts: Shortcut[] = [];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
+  private assetWatchers: AssetWatcher[] = [];
+  // canonical names, the identities we've already asked about (including ones
+  // the endpoint had no asset for) and their last-write versions, all bounded
+  // so a long-lived page doesn't keep every asset it has ever rendered
+  private assets = lru<StoreAsset>(ASSET_CACHE_SIZE);
+  private resolvedAssetIdentities = lru<boolean>(ASSET_CACHE_SIZE);
+  private assetVersions = lru<number>(ASSET_VERSION_CACHE_SIZE);
+  private pendingAssetRequests = new Map<string, Promise<void>>();
+  private assetVersion = 0;
+  // bumped by reset(), which only firstUpdated() calls today - the guard exists
+  // so a future caller that resets a live store can't have the cleared cache
+  // repopulated by a batch that was already in flight
+  private assetGeneration = 0;
+  private organizationWatch: RealtimeSubscription = null;
+  private organizationSubscribed = false;
+  private previousDependencyResolver: DependencyResolver = null;
+  private dependencyResolver: DependencyResolver = (dependencies) =>
+    this.resolveAssets(dependencies);
 
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
@@ -198,6 +309,13 @@ export class Store extends RapidElement {
     this.clearCache();
     this.settings = JSON.parse(getCookie('settings') || '{}');
     zustand.setState({ brand: this.brand });
+    this.groups = {};
+    this.assets.clear();
+    this.resolvedAssetIdentities.clear();
+    this.pendingAssetRequests.clear();
+    this.assetVersions.clear();
+    this.assetVersion = 0;
+    this.assetGeneration++;
 
     /* 
     // This will create a shorthand unit
@@ -238,10 +356,10 @@ export class Store extends RapidElement {
 
     if (this.groupsEndpoint) {
       fetches.push(
-        getAssets(this.groupsEndpoint).then((groups: any[]) => {
-          groups.forEach((group: any) => {
+        getAssets<ContactGroup>(this.groupsEndpoint).then((groups) => {
+          for (const group of groups) {
             this.groups[group.uuid] = group;
-          });
+          }
         })
       );
     }
@@ -274,11 +392,61 @@ export class Store extends RapidElement {
     return this.shortcuts || [];
   }
 
+  public connectedCallback(): void {
+    super.connectedCallback();
+    // lit only runs firstUpdated once, so a store that is detached and
+    // re-attached has to reinstall its page hooks here
+    if (this.hasUpdated) {
+      this.installPageHooks();
+    }
+  }
+
   public firstUpdated() {
+    this.installPageHooks();
+    this.reset();
+  }
+
+  /**
+   * Installs the hooks this store owns on behalf of the page: the canonical
+   * name resolver and the workspace realtime subscription. Idempotent so it
+   * can run again when a store is re-attached.
+   */
+  private installPageHooks(): void {
+    if (getDependencyResolver() !== this.dependencyResolver) {
+      this.previousDependencyResolver = setDependencyResolver(
+        this.dependencyResolver
+      );
+    }
     if (this.org && this.user) {
       setRealtimeContext({ org: this.org, user: this.user });
+      if (!this.organizationWatch) {
+        this.organizationWatch = subscribeToOrganization(
+          (event) => this.handleOrganizationEvent(event),
+          () => {
+            if (this.organizationSubscribed) {
+              this.refreshAssetCache().catch((error) => {
+                console.error('failed to refresh store assets', error);
+              });
+            }
+            this.organizationSubscribed = true;
+          }
+        );
+      }
     }
-    this.reset();
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    // only hand the resolver back if we're still the installed one, otherwise
+    // a store that never installed it would clear the live store's resolver
+    if (getDependencyResolver() === this.dependencyResolver) {
+      setDependencyResolver(this.previousDependencyResolver);
+    }
+    this.previousDependencyResolver = null;
+    if (this.organizationWatch) {
+      this.organizationWatch.unsubscribe();
+      this.organizationWatch = null;
+    }
   }
 
   public getLanguageCode() {
@@ -429,6 +597,327 @@ export class Store extends RapidElement {
 
   public getFeaturedFields(): ContactField[] {
     return this.featuredFields;
+  }
+
+  public getAsset(type: string, identity: string): StoreAsset | null {
+    if (!isStoreAssetType(type) || !identity) {
+      return null;
+    }
+    // the identity may be a key (cached verbatim, and case-sensitive) or a uuid
+    // (cached under its canonical form), so try verbatim first — a canonical
+    // uuid already hits on that pass, and keys never reach the normalizing one
+    return (
+      this.assets.get(`${type}:${identity}`) ||
+      this.assets.get(`${type}:${normalizeUuid(identity)}`) ||
+      null
+    );
+  }
+
+  /** Adds server-authoritative assets to the page cache. Components whose
+   * own response already contains canonical names can seed the same cache
+   * without making another request. */
+  public cacheAssets(assets: StoreAsset[]): void {
+    for (const asset of assets) {
+      this.cacheAsset(asset);
+    }
+  }
+
+  /** Resolves every requested reference from the cache, fetching only the
+   * identities this page hasn't resolved before. Concurrent callers share
+   * each in-flight batch and absent assets are negatively cached. */
+  public async resolveAssets(
+    requested: { type: string; uuid?: string; key?: string }[],
+    force = false
+  ): Promise<StoreAsset[]> {
+    const references = new Map<string, StoreAssetReference>();
+    for (const candidate of requested || []) {
+      if (!isStoreAssetType(candidate.type)) {
+        continue;
+      }
+      const reference: StoreAssetReference = {
+        type: candidate.type,
+        ...(candidate.uuid ? { uuid: candidate.uuid } : {}),
+        ...(candidate.key ? { key: candidate.key } : {})
+      };
+      const identity = assetIdentity(reference);
+      if (identity) {
+        references.set(identity, reference);
+      }
+    }
+
+    const waits = new Set<Promise<void>>();
+    const missing: StoreAssetReference[] = [];
+    for (const [identity, reference] of references) {
+      const pending = this.pendingAssetRequests.get(identity);
+      if (pending) {
+        waits.add(pending);
+      } else if (force || !this.resolvedAssetIdentities.has(identity)) {
+        missing.push(reference);
+      }
+    }
+
+    if (this.assetsEndpoint) {
+      for (
+        let offset = 0;
+        offset < missing.length;
+        offset += ASSET_BATCH_SIZE
+      ) {
+        const batch = missing.slice(offset, offset + ASSET_BATCH_SIZE);
+        const pending = this.fetchAssetBatch(batch);
+        waits.add(pending);
+        for (const reference of batch) {
+          const identity = assetIdentity(reference);
+          if (identity) {
+            this.pendingAssetRequests.set(identity, pending);
+          }
+        }
+        const cleanup = () => {
+          for (const reference of batch) {
+            const identity = assetIdentity(reference);
+            if (
+              identity &&
+              this.pendingAssetRequests.get(identity) === pending
+            ) {
+              this.pendingAssetRequests.delete(identity);
+            }
+          }
+        };
+        void pending.then(cleanup, cleanup);
+      }
+    }
+
+    // one failed batch mustn't discard the names the others resolved
+    await Promise.all(
+      [...waits].map((wait) =>
+        wait.catch((error) => {
+          console.error('failed to resolve assets', error);
+        })
+      )
+    );
+
+    const resolved: StoreAsset[] = [];
+    for (const identity of references.keys()) {
+      const asset = this.assets.get(identity);
+      if (asset) {
+        resolved.push(asset);
+      }
+    }
+    return resolved;
+  }
+
+  /**
+   * Registers interest in workspace asset changes. An eventless delivery
+   * lets the watcher apply anything already cached and is repeated after a
+   * reconnect refresh; live changes carry the changed asset.
+   */
+  public watchAssets(
+    requested: { type: string; uuid?: string; key?: string }[],
+    onEvent: StoreAssetHandler
+  ): RealtimeSubscription {
+    const watcher: AssetWatcher = {
+      // an interest without an identifier is dropped rather than treated as a
+      // type wildcard, matching how resolveAssets ignores those references
+      interests: (requested || [])
+        .filter(
+          (interest) =>
+            isStoreAssetType(interest.type) && !!(interest.uuid || interest.key)
+        )
+        .map((interest) => ({
+          type: interest.type as StoreAssetType,
+          ...(interest.uuid ? { uuid: interest.uuid } : {}),
+          ...(interest.key ? { key: interest.key } : {})
+        })),
+      onEvent
+    };
+    this.assetWatchers.push(watcher);
+    Promise.resolve().then(() => {
+      if (this.assetWatchers.includes(watcher)) {
+        this.deliverAssetEvent(watcher, null);
+      }
+    });
+
+    return {
+      unsubscribe: () => {
+        const index = this.assetWatchers.indexOf(watcher);
+        if (index >= 0) {
+          this.assetWatchers.splice(index, 1);
+        }
+      }
+    };
+  }
+
+  /**
+   * Refetches the assets the page is currently displaying after a reconnect,
+   * when we may have missed changes. Only live interests are refreshed - the
+   * identities we resolved for content that has since scrolled away would
+   * otherwise fan out into a request per hundred for no visible benefit.
+   */
+  private async refreshAssetCache(): Promise<void> {
+    const interests = new Map<string, StoreAssetReference>();
+    for (const watcher of this.assetWatchers) {
+      for (const interest of watcher.interests) {
+        const identity = assetIdentity(interest);
+        if (identity) {
+          interests.set(identity, interest);
+        }
+      }
+    }
+    if (interests.size > 0) {
+      await this.resolveAssets([...interests.values()], true);
+    }
+    for (const watcher of this.assetWatchers) {
+      this.deliverAssetEvent(watcher, null);
+    }
+  }
+
+  private async fetchAssetBatch(
+    references: StoreAssetReference[]
+  ): Promise<void> {
+    if (!this.assetsEndpoint || references.length === 0) {
+      return;
+    }
+
+    const generation = this.assetGeneration;
+    // undefined means "no write recorded", which is not the same as version 0:
+    // assetVersions is bounded, so an evicted entry must not be read as a
+    // newer write and throw away a perfectly fresh name
+    const startVersions = new Map<string, number | undefined>();
+    const requested = new Set<string>();
+    const payload: Partial<Record<StoreAssetType, string[]>> = {};
+    for (const reference of references) {
+      const identity = assetIdentity(reference);
+      const value = reference.uuid || reference.key;
+      if (!identity || !value) {
+        continue;
+      }
+      requested.add(identity);
+      startVersions.set(identity, this.assetVersions.get(identity));
+      (payload[reference.type] ||= []).push(value);
+    }
+
+    const response = await postJSON(this.assetsEndpoint, payload);
+    if (generation !== this.assetGeneration) {
+      return;
+    }
+    // postJSON only rejects on a server error, so a 4xx arrives here as an
+    // empty body - bail before the bookkeeping below negatively caches every
+    // requested identity for the life of the page
+    if (response.status < 200 || response.status >= 300) {
+      console.warn(
+        `asset request failed with status ${response.status}`,
+        payload
+      );
+      return;
+    }
+
+    for (const candidate of response.json?.results || []) {
+      // the endpoint echoes normalized uuids, which assetIdentity matches back
+      // to whatever form the reference was embedded in
+      const identity = assetIdentity(candidate);
+      if (
+        identity &&
+        requested.has(identity) &&
+        typeof candidate.name === 'string' &&
+        this.isCurrentAssetVersion(identity, startVersions.get(identity))
+      ) {
+        this.cacheAsset(candidate as StoreAsset);
+      }
+    }
+    // Remember every requested identity, including assets the endpoint
+    // omitted, so deleted/missing references aren't repeatedly fetched.
+    for (const identity of requested) {
+      this.resolvedAssetIdentities.set(identity, true);
+    }
+  }
+
+  /**
+   * True when nothing has written this identity since the given version was
+   * read. A version we no longer have (evicted from the bounded map) can't
+   * prove a newer write, so the response is allowed through - keeping a name
+   * we know is stale forever is the worse failure.
+   *
+   * Note what that costs when it happens: the write it can't see may be a live
+   * socket rename that landed mid-batch, so this doesn't merely fail to protect
+   * a name we've forgotten, it can overwrite a fresher one we still hold. That
+   * needs an eviction inside a single batch's flight time, which is why
+   * ASSET_VERSION_CACHE_SIZE is kept well clear of the asset cache; the next
+   * socket event or reconnect refresh heals it either way.
+   */
+  private isCurrentAssetVersion(
+    identity: string,
+    startVersion: number | undefined
+  ): boolean {
+    const current = this.assetVersions.get(identity);
+    return current === undefined || current === startVersion;
+  }
+
+  private cacheAsset(asset: StoreAsset): void {
+    const identity = assetIdentity(asset);
+    if (!identity || typeof asset.name !== 'string') {
+      return;
+    }
+    this.assets.set(identity, { ...asset });
+    this.resolvedAssetIdentities.set(identity, true);
+    // every direct write is newer than any batch already in flight, so bump
+    // the version to discard a response that read an older name
+    this.assetVersions.set(identity, ++this.assetVersion);
+  }
+
+  private handleOrganizationEvent(event: any): void {
+    const asset = event?.asset as StoreAsset;
+    const identity = assetIdentity(asset);
+    if (
+      event?.type !== 'asset_changed' ||
+      !identity ||
+      typeof asset.name !== 'string'
+    ) {
+      return;
+    }
+
+    const changed = { ...asset };
+    const interested = this.assetWatchers.filter((watcher) =>
+      watchesAsset(watcher, changed)
+    );
+    const previouslyResolved = this.resolvedAssetIdentities.has(identity);
+    const pending = this.pendingAssetRequests.has(identity);
+    const legacyGroup =
+      changed.type === 'group' &&
+      changed.uuid &&
+      Object.prototype.hasOwnProperty.call(this.groups, changed.uuid);
+
+    if (legacyGroup) {
+      this.groups[changed.uuid] = {
+        ...this.groups[changed.uuid],
+        uuid: changed.uuid,
+        name: changed.name
+      };
+    }
+    if (!previouslyResolved && !pending && interested.length === 0) {
+      return;
+    }
+
+    // cacheAsset records the write version, discarding any batch in flight
+    // for this identity that read the name before this change
+    this.cacheAsset(changed);
+
+    const publication: StoreAssetChangedEvent = {
+      type: 'asset_changed',
+      asset: changed
+    };
+    for (const watcher of interested) {
+      this.deliverAssetEvent(watcher, publication);
+    }
+  }
+
+  private deliverAssetEvent(
+    watcher: AssetWatcher,
+    event: StoreAssetChangedEvent | null
+  ): void {
+    try {
+      watcher.onEvent(event);
+    } catch (error) {
+      console.error('store asset watcher failed', error);
+    }
   }
 
   public isDynamicGroup(uuid: string): boolean {

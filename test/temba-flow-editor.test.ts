@@ -1,4 +1,4 @@
-import { html, fixture, expect } from '@open-wc/testing';
+import { html, fixture, expect, aTimeout } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { EditorToolbar } from '../src/flow/EditorToolbar';
 import { IssuesWindow } from '../src/flow/IssuesWindow';
@@ -7,9 +7,54 @@ import { Plumber } from '../src/flow/Plumber';
 import { stub, restore, useFakeTimers } from 'sinon';
 import { zustand } from '../src/store/AppState';
 import { TEMBA_COMPONENTS_VERSION } from '../src/version';
+import {
+  SocketProvider,
+  SocketSubscription,
+  setSocketProvider
+} from '../src/live/SocketService';
+import { Store } from '../src/store/Store';
+import { setRealtimeContext } from '../src/live/Realtime';
+
+class EditorSocketProvider implements SocketProvider {
+  subscriptions: {
+    channel: string;
+    handler: (event: any) => void;
+    onSubscribed?: () => void;
+    active: boolean;
+  }[] = [];
+
+  subscribe(
+    channel: string,
+    handler: (event: any) => void,
+    onSubscribed?: () => void
+  ): SocketSubscription {
+    const subscription = { channel, handler, onSubscribed, active: true };
+    this.subscriptions.push(subscription);
+    return {
+      unsubscribe: () => {
+        subscription.active = false;
+      }
+    };
+  }
+
+  publish(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  serverPublish(channel: string, event: any): void {
+    this.subscriptions
+      .filter(
+        (subscription) =>
+          subscription.active && subscription.channel === channel
+      )
+      .forEach((subscription) => subscription.handler(event));
+  }
+}
 
 // Register the components
-customElements.define('temba-flow-editor', Editor);
+if (!customElements.get('temba-flow-editor')) {
+  customElements.define('temba-flow-editor', Editor);
+}
 if (!customElements.get('temba-editor-toolbar')) {
   customElements.define('temba-editor-toolbar', EditorToolbar);
 }
@@ -18,6 +63,9 @@ if (!customElements.get('temba-issues-window')) {
 }
 if (!customElements.get('temba-revisions-window')) {
   customElements.define('temba-revisions-window', RevisionsWindow);
+}
+if (!customElements.get('temba-store')) {
+  customElements.define('temba-store', Store);
 }
 
 async function getToolbarButton(
@@ -321,6 +369,415 @@ describe('Editor', () => {
       await editor.updateComplete;
 
       expect(editor.version).to.equal('2.0');
+    });
+
+    it('watches the flow socket and reads activity once on load', async () => {
+      const flowUuid = '33333333-3333-4333-8333-333333333333';
+      const socket = new EditorSocketProvider();
+      const previousProvider = setSocketProvider(socket);
+      const previousState = zustand.getState();
+      const activityRequests: string[] = [];
+
+      try {
+        stub(window, 'fetch').callsFake(async (input: RequestInfo) => {
+          const endpoint = `${input}`;
+          if (endpoint.includes('/flow/activity/')) {
+            activityRequests.push(endpoint);
+            return new Response(
+              JSON.stringify({ nodes: { 'node-1': 1 }, segments: {} }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              }
+            );
+          }
+          return new Response('', { status: 404 });
+        });
+        zustand.setState({
+          flowDefinition: null,
+          flowInfo: null,
+          simulatorActive: false,
+          activity: null
+        } as any);
+
+        const wrapper = await fixture(
+          html`<div>
+            <temba-store
+              org="44444444-4444-4444-8444-444444444444"
+              user="55555555-5555-4555-8555-555555555555"
+            ></temba-store>
+            <temba-flow-editor>
+              <div id="canvas"></div>
+            </temba-flow-editor>
+          </div>`
+        );
+        const store = wrapper.querySelector('temba-store') as Store;
+        editor = wrapper.querySelector('temba-flow-editor') as Editor;
+        await store.initialHttpComplete;
+
+        zustand.setState({
+          flowDefinition: {
+            uuid: flowUuid,
+            name: 'Test',
+            language: 'eng',
+            type: 'messaging',
+            revision: 1,
+            spec_version: '14.3',
+            localization: {},
+            nodes: [],
+            _ui: { nodes: {}, languages: [] }
+          }
+        } as any);
+        await editor.updateComplete;
+
+        const subscription = socket.subscriptions.find(
+          (candidate) => candidate.channel === `flow:${flowUuid}`
+        );
+        expect(subscription).to.exist;
+
+        // the first read doesn't wait on the socket, which may never connect
+        expect(activityRequests).to.deep.equal([`/flow/activity/${flowUuid}/`]);
+        await aTimeout(0);
+
+        socket.serverPublish(`flow:${flowUuid}`, { type: 'unrelated' });
+        await aTimeout(0);
+        expect(activityRequests).to.have.length(1);
+
+        wrapper.remove();
+        expect(subscription.active).to.be.false;
+      } finally {
+        setRealtimeContext(null);
+        setSocketProvider(previousProvider);
+        zustand.setState(previousState as any, true);
+      }
+    });
+
+    it('coalesces activity publications into one request per window', async () => {
+      const flowUuid = '33333333-3333-4333-8333-333333333333';
+      const socket = new EditorSocketProvider();
+      const previousProvider = setSocketProvider(socket);
+      const previousState = zustand.getState();
+      const activityRequests: string[] = [];
+      let clock: any = null;
+
+      try {
+        stub(window, 'fetch').callsFake(async (input: RequestInfo) => {
+          const endpoint = `${input}`;
+          if (endpoint.includes('/flow/activity/')) {
+            activityRequests.push(endpoint);
+            return new Response(
+              JSON.stringify({ nodes: { 'node-1': 1 }, segments: {} }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              }
+            );
+          }
+          return new Response('', { status: 404 });
+        });
+        zustand.setState({
+          flowDefinition: null,
+          flowInfo: null,
+          simulatorActive: false,
+          activity: null
+        } as any);
+
+        const wrapper = await fixture(
+          html`<div>
+            <temba-store
+              org="44444444-4444-4444-8444-444444444444"
+              user="55555555-5555-4555-8555-555555555555"
+            ></temba-store>
+            <temba-flow-editor>
+              <div id="canvas"></div>
+            </temba-flow-editor>
+          </div>`
+        );
+        const store = wrapper.querySelector('temba-store') as Store;
+        editor = wrapper.querySelector('temba-flow-editor') as Editor;
+        await store.initialHttpComplete;
+
+        zustand.setState({
+          flowDefinition: {
+            uuid: flowUuid,
+            name: 'Test',
+            language: 'eng',
+            type: 'messaging',
+            revision: 1,
+            spec_version: '14.3',
+            localization: {},
+            nodes: [],
+            _ui: { nodes: {}, languages: [] }
+          }
+        } as any);
+        await editor.updateComplete;
+        await aTimeout(0);
+        expect(activityRequests).to.have.length(1);
+
+        clock = useFakeTimers({ now: Date.now(), shouldAdvanceTime: false });
+
+        // mailroom announces every committed sprint batch
+        for (let i = 0; i < 10; i++) {
+          socket.serverPublish(`flow:${flowUuid}`, { type: 'activity' });
+        }
+        await clock.tickAsync(100);
+        expect(activityRequests).to.have.length(1);
+
+        await clock.tickAsync(3000);
+        expect(activityRequests).to.have.length(2);
+
+        socket.serverPublish(`flow:${flowUuid}`, { type: 'activity' });
+        await clock.tickAsync(1000);
+        expect(activityRequests).to.have.length(2);
+
+        await clock.tickAsync(2500);
+        expect(activityRequests).to.have.length(3);
+
+        // nothing further is read once the editor goes away
+        wrapper.remove();
+        socket.serverPublish(`flow:${flowUuid}`, { type: 'activity' });
+        await clock.tickAsync(5000);
+        expect(activityRequests).to.have.length(3);
+      } finally {
+        clock?.restore();
+        setRealtimeContext(null);
+        setSocketProvider(previousProvider);
+        zustand.setState(previousState as any, true);
+      }
+    });
+
+    it('reads the new flow when the loaded flow changes mid-read', async () => {
+      const firstUuid = '33333333-3333-4333-8333-333333333333';
+      const secondUuid = '66666666-6666-4666-8666-666666666666';
+      const socket = new EditorSocketProvider();
+      const previousProvider = setSocketProvider(socket);
+      const previousState = zustand.getState();
+      const activityRequests: string[] = [];
+      let releaseFirst: () => void = null;
+
+      const definition = (uuid: string) => ({
+        uuid,
+        name: 'Test',
+        language: 'eng',
+        type: 'messaging',
+        revision: 1,
+        spec_version: '14.3',
+        localization: {},
+        nodes: [],
+        _ui: { nodes: {}, languages: [] }
+      });
+      const activity = () =>
+        new Response(JSON.stringify({ nodes: { 'node-1': 1 }, segments: {} }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+      try {
+        stub(window, 'fetch').callsFake((input: RequestInfo) => {
+          const endpoint = `${input}`;
+          if (endpoint.includes(`/flow/activity/${firstUuid}/`)) {
+            activityRequests.push(endpoint);
+            // the first flow's read stays in flight until we let it finish
+            return new Promise<Response>((resolve) => {
+              releaseFirst = () => resolve(activity());
+            });
+          }
+          if (endpoint.includes('/flow/activity/')) {
+            activityRequests.push(endpoint);
+            return Promise.resolve(activity());
+          }
+          return Promise.resolve(new Response('', { status: 404 }));
+        });
+        zustand.setState({
+          flowDefinition: null,
+          flowInfo: null,
+          simulatorActive: false,
+          activity: null
+        } as any);
+
+        const wrapper = await fixture(
+          html`<div>
+            <temba-store
+              org="44444444-4444-4444-8444-444444444444"
+              user="55555555-5555-4555-8555-555555555555"
+            ></temba-store>
+            <temba-flow-editor>
+              <div id="canvas"></div>
+            </temba-flow-editor>
+          </div>`
+        );
+        const store = wrapper.querySelector('temba-store') as Store;
+        editor = wrapper.querySelector('temba-flow-editor') as Editor;
+        await store.initialHttpComplete;
+
+        zustand.setState({ flowDefinition: definition(firstUuid) } as any);
+        await editor.updateComplete;
+        await aTimeout(0);
+        expect(activityRequests).to.deep.equal([
+          `/flow/activity/${firstUuid}/`
+        ]);
+
+        // a different flow is loaded while the first read is still open
+        zustand.setState({ flowDefinition: definition(secondUuid) } as any);
+        await editor.updateComplete;
+        await aTimeout(0);
+        expect(activityRequests).to.deep.equal([
+          `/flow/activity/${firstUuid}/`,
+          `/flow/activity/${secondUuid}/`
+        ]);
+
+        // the abandoned read landing doesn't queue anything else
+        releaseFirst();
+        await aTimeout(0);
+        expect(activityRequests).to.have.length(2);
+
+        wrapper.remove();
+      } finally {
+        setRealtimeContext(null);
+        setSocketProvider(previousProvider);
+        zustand.setState(previousState as any, true);
+      }
+    });
+
+    it('uses store asset caches and applies organization name events', async () => {
+      const flowUuid = '33333333-3333-4333-8333-333333333333';
+      const childUuid = '11111111-1111-4111-8111-111111111111';
+      const groupUuid = '3da236a9-9eed-4db3-a18e-cfb58030c249';
+      const contactUuid = '22222222-2222-4222-8222-222222222222';
+      const socket = new EditorSocketProvider();
+      const previousProvider = setSocketProvider(socket);
+      const previousState = zustand.getState();
+
+      try {
+        stub(window, 'fetch').callsFake(async (input: RequestInfo) => {
+          if (`${input}`.includes('/test-assets/store/assets.json')) {
+            return new Response(
+              JSON.stringify({
+                results: [
+                  {
+                    type: 'flow',
+                    uuid: childUuid,
+                    name: 'Current Child Flow'
+                  },
+                  { type: 'group', uuid: groupUuid, name: 'Farmers' },
+                  { type: 'contact', uuid: contactUuid, name: 'Alice' }
+                ]
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              }
+            );
+          }
+          return new Response('', { status: 404 });
+        });
+        zustand.setState({
+          flowDefinition: null,
+          flowInfo: null,
+          dirtyDate: null
+        } as any);
+
+        const wrapper = await fixture(
+          html`<div>
+            <temba-store
+              org="44444444-4444-4444-8444-444444444444"
+              user="55555555-5555-4555-8555-555555555555"
+              assets="/test-assets/store/assets.json"
+            ></temba-store>
+            <temba-flow-editor .flow=${flowUuid}>
+              <div id="canvas"></div>
+            </temba-flow-editor>
+          </div>`
+        );
+        const store = wrapper.querySelector('temba-store') as Store;
+        editor = wrapper.querySelector('temba-flow-editor') as Editor;
+        await store.initialHttpComplete;
+
+        expect(
+          socket.subscriptions.some(
+            (subscription) =>
+              subscription.channel ===
+              'org:44444444-4444-4444-8444-444444444444'
+          )
+        ).to.be.true;
+
+        zustand.setState({
+          flowDefinition: {
+            uuid: flowUuid,
+            name: 'Test',
+            language: 'eng',
+            type: 'messaging',
+            revision: 1,
+            spec_version: '14.3',
+            localization: {},
+            nodes: [
+              {
+                uuid: 'node-1',
+                exits: [],
+                actions: [
+                  {
+                    type: 'enter_flow',
+                    uuid: 'action-0',
+                    flow: { uuid: childUuid, name: 'Old child name' }
+                  },
+                  {
+                    type: 'add_contact_groups',
+                    uuid: 'action-1',
+                    groups: [{ uuid: groupUuid, name: 'Old name' }]
+                  },
+                  {
+                    type: 'send_broadcast',
+                    uuid: 'action-2',
+                    text: 'Hello',
+                    contacts: [{ uuid: contactUuid, name: 'Old contact' }],
+                    groups: []
+                  }
+                ]
+              }
+            ],
+            _ui: { nodes: {}, languages: [] }
+          },
+          flowInfo: {
+            results: [],
+            dependencies: [
+              { type: 'flow', uuid: childUuid, name: 'Old child name' },
+              { type: 'group', uuid: groupUuid, name: 'Old name' },
+              { type: 'contact', uuid: contactUuid, name: 'Old contact' }
+            ],
+            counts: { nodes: 1, languages: 1 },
+            locals: []
+          },
+          dirtyDate: null
+        } as any);
+        await editor.updateComplete;
+        await store.resolveAssets(
+          zustand.getState().flowInfo.dependencies as any
+        );
+        await Promise.resolve();
+
+        let actions = zustand.getState().flowDefinition.nodes[0]
+          .actions as any[];
+        expect(actions[0].flow.name).to.equal('Current Child Flow');
+        expect(actions[1].groups[0].name).to.equal('Farmers');
+        expect(actions[2].contacts[0].name).to.equal('Alice');
+
+        socket.serverPublish('org:44444444-4444-4444-8444-444444444444', {
+          type: 'asset_changed',
+          asset: { type: 'group', uuid: groupUuid, name: 'Customers' }
+        });
+        actions = zustand.getState().flowDefinition.nodes[0].actions as any[];
+        expect(actions[1].groups[0].name).to.equal('Customers');
+        expect(zustand.getState().dirtyDate).to.equal(null);
+
+        wrapper.remove();
+        expect(
+          socket.subscriptions.every((subscription) => !subscription.active)
+        ).to.be.true;
+      } finally {
+        setRealtimeContext(null);
+        setSocketProvider(previousProvider);
+        zustand.setState(previousState as any, true);
+      }
     });
   });
 

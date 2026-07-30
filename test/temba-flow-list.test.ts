@@ -1,8 +1,15 @@
-import { assert, expect } from '@open-wc/testing';
+import { assert, expect, fixture, html, oneEvent } from '@open-wc/testing';
 import * as sinon from 'sinon';
 import { CustomEventType } from '../src/interfaces';
 import { FlowList } from '../src/list/FlowList';
-import { getComponent } from './utils.test';
+import { Store } from '../src/store/Store';
+import { setRealtimeContext } from '../src/live/Realtime';
+import { setSocketProvider } from '../src/live/SocketService';
+import {
+  getComponent,
+  mockAssetResolver,
+  MockSocketProvider
+} from './utils.test';
 
 const TAG = 'temba-flow-list';
 const getFlowList = async (attrs: any = {}, width = 400, height = 0) => {
@@ -32,6 +39,61 @@ describe('temba-flow-list', () => {
     expect((list as any).getRowHref({ uuid: 'flow-1' })).to.equal(
       '/flow/editor/flow-1/'
     );
+  });
+
+  it('seeds the store from a fetched page and keeps row names current', async () => {
+    const flowUuid = 'f-001';
+    const socket = new MockSocketProvider();
+    const previousProvider = setSocketProvider(socket);
+    let wrapper: HTMLElement;
+
+    try {
+      mockAssetResolver();
+      wrapper = await fixture(
+        html`<div>
+          <temba-store
+            org="org-uuid"
+            user="user-uuid"
+            assets="/test-assets/store/assets.json"
+          ></temba-store>
+          <temba-flow-list></temba-flow-list>
+        </div>`
+      );
+      const store = wrapper.querySelector('temba-store') as Store;
+      const list = wrapper.querySelector('temba-flow-list') as FlowList;
+      await store.initialHttpComplete;
+      await store.resolveAssets([{ type: 'flow', uuid: flowUuid }]);
+      expect(store.getAsset('flow', flowUuid).name).to.equal(
+        'Canonical Welcome Campaign'
+      );
+      const fetched = oneEvent(list, CustomEventType.FetchComplete, false);
+      list.endpoint = '/test-assets/content-list/flows.json';
+      await fetched;
+
+      // the fetched page is newer than anything cached, so it wins and
+      // replaces what the store had
+      expect((list as any).items[0].name).to.equal('Welcome Campaign');
+      expect((list as any).items[0].runs).to.equal(12450);
+      expect(store.getAsset('flow', flowUuid).name).to.equal(
+        'Welcome Campaign'
+      );
+
+      socket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: { type: 'flow', uuid: flowUuid, name: 'Renamed Child Flow' }
+      });
+      await list.updateComplete;
+
+      expect((list as any).items[0].name).to.equal('Renamed Child Flow');
+      expect((list as any).items[1].name).to.equal('IVR Survey');
+      expect(
+        list.shadowRoot.querySelector('tr.row .flow-name .name').textContent
+      ).to.equal('Renamed Child Flow');
+    } finally {
+      wrapper?.remove();
+      setRealtimeContext(null);
+      setSocketProvider(previousProvider);
+    }
   });
 
   it('navigates to the label view when a label chip is clicked', async () => {

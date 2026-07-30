@@ -116,6 +116,28 @@ export const subscribeToNotifications = (
 };
 
 /**
+ * Workspace-wide state changes shared by every component on the page.
+ */
+export const subscribeToOrganization = (
+  onEvent: (event: any) => void,
+  onSubscribed?: () => void
+): RealtimeSubscription => {
+  return subscribeWhenReady((ctx) => `org:${ctx.org}`, onEvent, onSubscribed);
+};
+
+/**
+ * Realtime events for a flow open in the editor. Needs no page context
+ * because the flow UUID uniquely identifies the authorized channel.
+ */
+export const subscribeToFlow = (
+  flow: string,
+  onEvent: (event: any) => void,
+  onSubscribed?: () => void
+): RealtimeSubscription => {
+  return subscribeToSocket(`flow:${flow}`, onEvent, onSubscribed);
+};
+
+/**
  * A contact's history events, or a ticket's detail events when a ticket is
  * given. Needs no page context so subscribes immediately.
  */

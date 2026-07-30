@@ -58,6 +58,8 @@ import { Dialog } from '../layout/Dialog';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import { FlowSearch, SearchResult } from './FlowSearch';
+import { RealtimeSubscription, subscribeToFlow } from '../live/Realtime';
+import { FlowDependency } from './dependencies';
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -104,6 +106,10 @@ const EMPTY_FLOW_ISSUES: FlowIssue[] = [];
 // How long the pending-changes auto-save countdown runs (in ms).
 // Used in both the CSS animation and the JS setTimeout.
 const PENDING_SAVE_DELAY = 5000;
+
+// Shortest gap (in ms) between activity reads, however many changes the flow
+// socket announces in that window.
+const ACTIVITY_FETCH_INTERVAL = 3000;
 
 /**
  * Manages a timed "pending changes" card that lets users discard or auto-save
@@ -200,8 +206,17 @@ export class Editor extends RapidElement {
   @property({ type: Array })
   public features: string[] = [];
 
-  private activityTimer: number | null = null;
-  private activityInterval = 100; // Start with 100ms interval for fast initial load
+  private activityWatch: RealtimeSubscription = null;
+  private watchedActivityFlow: string = null;
+  private activityFetchTimer: number | null = null;
+  private activityFetchInFlight = false;
+  private activityFetchQueued = false;
+  private activityFetchToken = 0;
+  private assetWatch: RealtimeSubscription = null;
+  private watchedAssetStore: Store = null;
+  private flowInfoWatch: () => void = null;
+  private assetResolveVersion = 0;
+  private watchedAssetSignature = '';
 
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   public definition!: FlowDefinition;
@@ -1198,10 +1213,17 @@ export class Editor extends RapidElement {
     this.zoomManager = new ZoomManager(this);
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.syncAssetWatch(zustand.getState().flowInfo);
+    this.syncActivityWatch();
+  }
+
   protected firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
+    this.syncAssetWatch(zustand.getState().flowInfo);
     this.plumber = new Plumber(this.querySelector('#canvas'), this);
     this.plumber.zoom = this.zoom;
     this.setupGlobalEventListeners();
@@ -1422,23 +1444,15 @@ export class Editor extends RapidElement {
       // defer to avoid triggering a reactive canvasSize update during this cycle
       setTimeout(() => this.updateCanvasSize(), 0);
 
-      // Start fetching activity data when definition is loaded
-      if (this.definition?.uuid) {
-        this.startActivityFetching();
-      }
+      this.syncActivityWatch();
     }
 
     if (changes.has('simulatorActive')) {
       if (this.simulatorActive) {
         // Close any open floating windows when simulator opens
         this.closeFloatingWindows();
-        // Stop polling when simulator becomes active
-        this.stopActivityFetching();
-      } else {
-        // Resume polling and refresh activity when simulator closes
-        this.activityInterval = 100; // Reset to fast initial interval
-        this.startActivityFetching();
       }
+      this.syncActivityWatch();
     }
 
     if (changes.has('activityData')) {
@@ -1653,55 +1667,188 @@ export class Editor extends RapidElement {
     });
   }
 
-  private startActivityFetching(): void {
-    // Don't start if simulator is active
-    if (this.simulatorActive) {
+  private syncActivityWatch(): void {
+    const flow = this.simulatorActive ? null : this.definition?.uuid;
+    if (this.activityWatch && flow === this.watchedActivityFlow) {
       return;
     }
-    // Fetch immediately
-    this.fetchActivityData();
+
+    if (this.activityWatch) {
+      this.activityWatch.unsubscribe();
+      this.activityWatch = null;
+    }
+    this.clearActivityFetch();
+    this.watchedActivityFlow = flow;
+    if (!flow) {
+      return;
+    }
+
+    this.activityWatch = subscribeToFlow(
+      flow,
+      (event) => {
+        if (event?.type === 'activity') {
+          this.scheduleActivityFetch(flow);
+        }
+      },
+      // fires on every (re)subscribe, so catch up on anything published while
+      // we were disconnected
+      () => this.scheduleActivityFetch(flow)
+    );
+
+    // the socket only tells us about *changes*, and it may never connect at
+    // all, so the first read doesn't wait on it
+    this.fetchActivityData(flow);
   }
 
-  private stopActivityFetching(): void {
-    if (this.activityTimer !== null) {
-      clearTimeout(this.activityTimer);
-      this.activityTimer = null;
+  /**
+   * Abandons any scheduled or in-flight read. The token makes the in-flight
+   * one a no-op when it lands, so a read for the flow we've stopped watching
+   * can neither hold up nor swallow the next flow's first read.
+   */
+  private clearActivityFetch(): void {
+    if (this.activityFetchTimer !== null) {
+      clearTimeout(this.activityFetchTimer);
+      this.activityFetchTimer = null;
     }
+    this.activityFetchQueued = false;
+    this.activityFetchInFlight = false;
+    this.activityFetchToken++;
   }
 
-  private fetchActivityData(): void {
-    if (!this.definition?.uuid) {
+  /**
+   * Coalesces activity publications into at most one request per window.
+   * Mailroom publishes once per committed sprint batch, so a flow running
+   * against a large group can otherwise announce many changes a second.
+   */
+  private scheduleActivityFetch(flow: string): void {
+    if (flow !== this.watchedActivityFlow || this.activityFetchTimer !== null) {
+      return;
+    }
+    this.activityFetchTimer = window.setTimeout(() => {
+      this.activityFetchTimer = null;
+      this.fetchActivityData(flow);
+    }, ACTIVITY_FETCH_INTERVAL);
+  }
+
+  private fetchActivityData(flow: string): void {
+    if (
+      !this.isConnected ||
+      this.simulatorActive ||
+      flow !== this.watchedActivityFlow
+    ) {
       return;
     }
 
-    // Don't fetch if simulator is active
-    if (this.simulatorActive) {
-      return;
-    }
-
-    const activityEndpoint = `/flow/activity/${this.definition.uuid}/`;
     const store = getStore();
     if (!store) {
       return;
     }
-    const state = store.getState();
-    state.fetchActivity(activityEndpoint).then(() => {
-      // Guard against responses arriving after the editor is disconnected
-      if (!this.isConnected) {
+
+    // one request at a time, so responses can't land out of order and a burst
+    // of publications collapses into a single follow-up read
+    if (this.activityFetchInFlight) {
+      this.activityFetchQueued = true;
+      return;
+    }
+    this.activityFetchInFlight = true;
+    const token = ++this.activityFetchToken;
+    const done = () => {
+      // a flow change (or teardown) since this read started has already
+      // reset the bookkeeping for the flow we now care about
+      if (token !== this.activityFetchToken) {
         return;
       }
-
-      // Schedule next fetch with exponential backoff (max 5 minutes)
-      this.activityInterval = Math.min(60000 * 5, this.activityInterval + 100);
-
-      if (this.activityTimer !== null) {
-        clearTimeout(this.activityTimer);
+      this.activityFetchInFlight = false;
+      if (this.activityFetchQueued) {
+        this.activityFetchQueued = false;
+        this.scheduleActivityFetch(flow);
       }
+    };
+    Promise.resolve(
+      store.getState().fetchActivity(`/flow/activity/${flow}/`)
+    ).then(done, done);
+  }
 
-      this.activityTimer = window.setTimeout(() => {
-        this.fetchActivityData();
-      }, this.activityInterval);
-    });
+  private syncAssetNames(): void {
+    const store = getStore();
+    const state = zustand.getState();
+    if (!store || !state.flowDefinition || !state.flowInfo) {
+      return;
+    }
+
+    const canonical: FlowDependency[] = [];
+    for (const dependency of state.flowInfo.dependencies || []) {
+      const identity = dependency.uuid || dependency.key;
+      if (!identity) {
+        continue;
+      }
+      const asset = store.getAsset(dependency.type, identity);
+      if (asset) {
+        canonical.push({ ...dependency, name: asset.name });
+      }
+    }
+    state.updateDependencyNames(canonical);
+  }
+
+  private async resolveAssetNames(info: AppState['flowInfo']): Promise<void> {
+    const store = getStore();
+    if (!store || !info) {
+      return;
+    }
+    const version = ++this.assetResolveVersion;
+    try {
+      const canonical = await store.resolveAssets(info.dependencies || []);
+      if (version === this.assetResolveVersion && this.isConnected) {
+        zustand.getState().updateDependencyNames(canonical);
+      }
+    } catch (error) {
+      console.error('failed to resolve flow dependency assets', error);
+    }
+  }
+
+  private syncAssetWatch(info: AppState['flowInfo']): void {
+    if (!this.isConnected) {
+      return;
+    }
+    const store = getStore();
+    if (!store) {
+      return;
+    }
+    const interests = info?.dependencies || [];
+    const signature = interests
+      .map(
+        (dependency) =>
+          `${dependency.type}:${dependency.uuid || dependency.key || ''}`
+      )
+      .sort()
+      .join('|');
+    // the store is part of the key: a replaced <temba-store> leaves us
+    // watching a dead one otherwise
+    if (
+      this.assetWatch &&
+      store === this.watchedAssetStore &&
+      signature === this.watchedAssetSignature
+    ) {
+      return;
+    }
+    if (this.assetWatch) {
+      this.assetWatch.unsubscribe();
+    }
+    this.watchedAssetStore = store;
+    this.watchedAssetSignature = signature;
+    // the store caches the changed asset before publishing, so applying
+    // everything it has covers both a single change and a reconnect refresh
+    this.assetWatch = store.watchAssets(interests, () => this.syncAssetNames());
+    if (!this.flowInfoWatch) {
+      this.flowInfoWatch = zustand.subscribe(
+        (state) => state.flowInfo,
+        (info) => {
+          this.syncAssetWatch(info);
+          this.resolveAssetNames(info);
+        }
+      );
+      this.resolveAssetNames(zustand.getState().flowInfo);
+    }
   }
 
   private handleLanguageChange(languageCode: string): void {
@@ -1957,6 +2104,23 @@ export class Editor extends RapidElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    if (this.assetWatch) {
+      this.assetWatch.unsubscribe();
+      this.assetWatch = null;
+    }
+    if (this.activityWatch) {
+      this.activityWatch.unsubscribe();
+      this.activityWatch = null;
+    }
+    this.clearActivityFetch();
+    this.watchedActivityFlow = null;
+    this.watchedAssetStore = null;
+    this.watchedAssetSignature = '';
+    if (this.flowInfoWatch) {
+      this.flowInfoWatch();
+      this.flowInfoWatch = null;
+    }
+    this.assetResolveVersion++;
     this.zoomManager.teardownLoupe();
     getStore()?.getState().setFlushSave(null);
     this.dragManager.teardownListeners();
@@ -1968,10 +2132,6 @@ export class Editor extends RapidElement {
     if (this.saveTimer !== null) {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
-    }
-    if (this.activityTimer !== null) {
-      clearTimeout(this.activityTimer);
-      this.activityTimer = null;
     }
     this.pendingTimer.clearTimer();
     window.removeEventListener('resize', this.boundWindowResize);

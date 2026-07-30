@@ -1,5 +1,7 @@
 import { expect } from '@open-wc/testing';
-import { zustand } from '../src/store/AppState';
+import { useFakeTimers } from 'sinon';
+import { setDependencyResolver, zustand } from '../src/store/AppState';
+import { resolveDependencyNames } from '../src/flow/dependencies';
 import { mockGET, clearMockGets } from './utils.test';
 
 const definition = (overrides: any = {}) => ({
@@ -46,6 +48,7 @@ describe('store/AppState actions', () => {
 
   afterEach(() => {
     clearMockGets();
+    setDependencyResolver(null);
     zustand.setState(pristine as any);
   });
 
@@ -117,6 +120,102 @@ describe('store/AppState actions', () => {
       state().setFlowInfo(info({ issues: [] }));
       expect(state().issuesByNode.size).to.equal(0);
       expect(state().issuesByAction.size).to.equal(0);
+    });
+  });
+
+  describe('updateDependencyNames', () => {
+    beforeEach(() => {
+      zustand.setState({
+        flowDefinition: definition({
+          nodes: [
+            {
+              uuid: 'node-1',
+              exits: [],
+              actions: [
+                {
+                  type: 'add_contact_groups',
+                  uuid: 'action-1',
+                  groups: [{ uuid: 'group-1', name: 'Old group name' }]
+                }
+              ]
+            }
+          ]
+        }),
+        flowInfo: info({
+          dependencies: [
+            { type: 'group', uuid: 'group-1', name: 'Old group name' }
+          ]
+        }),
+        dirtyDate: null
+      } as any);
+    });
+
+    it('updates a registered reference throughout the definition', () => {
+      state().updateDependencyNames([
+        {
+          type: 'group',
+          uuid: 'group-1',
+          name: 'Customers'
+        }
+      ]);
+
+      const action = state().flowDefinition.nodes[0].actions[0] as any;
+      expect(action.groups[0].name).to.equal('Customers');
+      expect(state().flowInfo.dependencies[0].name).to.equal('Customers');
+      expect(state().dirtyDate).to.equal(null);
+    });
+
+    it('ignores an asset outside the registered dependency interests', () => {
+      const before = state().flowDefinition;
+      state().updateDependencyNames([
+        {
+          type: 'group',
+          uuid: 'group-2',
+          name: 'Unrelated'
+        }
+      ]);
+
+      expect(state().flowDefinition).to.equal(before);
+      expect(state().flowInfo.dependencies).to.have.length(1);
+    });
+
+    it('updates several cached assets in one state change', () => {
+      const flow = { uuid: 'flow-1', name: 'Old flow' };
+      zustand.setState({
+        flowDefinition: definition({
+          nodes: [
+            {
+              uuid: 'node-1',
+              exits: [],
+              actions: [
+                {
+                  type: 'enter_flow',
+                  uuid: 'action-2',
+                  flow
+                },
+                ...(state().flowDefinition.nodes[0].actions as any[])
+              ]
+            }
+          ]
+        }),
+        flowInfo: info({
+          dependencies: [
+            { type: 'flow', uuid: 'flow-1', name: 'Old flow' },
+            { type: 'group', uuid: 'group-1', name: 'Old group name' }
+          ]
+        }),
+        dirtyDate: null
+      } as any);
+
+      state().updateDependencyNames([
+        { type: 'flow', uuid: 'flow-1', name: 'Current flow' },
+        { type: 'group', uuid: 'group-1', name: 'Customers' }
+      ]);
+
+      const actions = state().flowDefinition.nodes[0].actions as any[];
+      expect(actions[0].flow.name).to.equal('Current flow');
+      expect(actions[1].groups[0].name).to.equal('Customers');
+      expect(state().dirtyDate).to.equal(null);
     });
   });
 
@@ -435,6 +534,151 @@ describe('store/AppState actions', () => {
       expect(state().issuesByNode.get('node-9')).to.have.length(1);
     });
 
+    it('resolves canonical dependency names before exposing a revision', async () => {
+      const contactUuid = '22222222-2222-4222-8222-222222222222';
+      let resolvedBeforeDisplay = false;
+      setDependencyResolver(async () => {
+        resolvedBeforeDisplay = state().flowDefinition === null;
+        return [{ type: 'contact', uuid: contactUuid, name: 'Alice' }];
+      });
+      mockRevision({
+        definition: definition({
+          nodes: [
+            {
+              uuid: 'node-1',
+              exits: [],
+              actions: [
+                {
+                  type: 'send_broadcast',
+                  uuid: 'action-1',
+                  text: 'Hello',
+                  contacts: [{ uuid: contactUuid, name: 'Old contact' }],
+                  groups: []
+                }
+              ]
+            }
+          ],
+          _ui: { nodes: { 'node-1': { position: { left: 0, top: 0 } } } }
+        }),
+        info: info({
+          dependencies: [
+            { type: 'contact', uuid: contactUuid, name: 'Old contact' }
+          ]
+        })
+      });
+
+      await state().fetchRevision(REVISION_URL);
+
+      expect(resolvedBeforeDisplay).to.equal(true);
+      expect(
+        (state().flowDefinition.nodes[0].actions[0] as any).contacts[0].name
+      ).to.equal('Alice');
+      expect(state().flowInfo.dependencies[0].name).to.equal('Alice');
+    });
+
+    it('resolves every referenced flow before exposing a revision', async () => {
+      const flow1Uuid = '11111111-1111-4111-8111-111111111111';
+      const flow2Uuid = '22222222-2222-4222-8222-222222222222';
+      let requested: any[] = [];
+      setDependencyResolver(async (dependencies) => {
+        requested = dependencies;
+        return [
+          { type: 'flow', uuid: flow1Uuid, name: 'Current Child One' },
+          { type: 'flow', uuid: flow2Uuid, name: 'Current Child Two' }
+        ];
+      });
+      mockRevision({
+        definition: definition({
+          nodes: [
+            {
+              uuid: 'node-1',
+              exits: [],
+              actions: [
+                {
+                  type: 'enter_flow',
+                  uuid: 'action-1',
+                  flow: { uuid: flow1Uuid, name: 'Old Child One' }
+                },
+                {
+                  type: 'enter_flow',
+                  uuid: 'action-2',
+                  flow: { uuid: flow2Uuid, name: 'Old Child Two' }
+                }
+              ]
+            }
+          ],
+          _ui: { nodes: { 'node-1': { position: { left: 0, top: 0 } } } }
+        }),
+        info: info({
+          dependencies: [
+            { type: 'flow', uuid: flow1Uuid, name: 'Old Child One' },
+            { type: 'flow', uuid: flow2Uuid, name: 'Old Child Two' }
+          ]
+        })
+      });
+
+      await state().fetchRevision(REVISION_URL);
+
+      expect(requested).to.deep.equal([
+        { type: 'flow', uuid: flow1Uuid, name: 'Old Child One' },
+        { type: 'flow', uuid: flow2Uuid, name: 'Old Child Two' }
+      ]);
+      const actions = state().flowDefinition.nodes[0].actions as any[];
+      expect(actions[0].flow.name).to.equal('Current Child One');
+      expect(actions[1].flow.name).to.equal('Current Child Two');
+    });
+
+    it('renders the flow when canonical names never arrive', async () => {
+      let entered: () => void;
+      const resolverEntered = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      const clock = useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        // a resolver that hangs must not hold the editor hostage
+        setDependencyResolver(() => {
+          entered();
+          return new Promise<any>(() => {});
+        });
+        mockRevision({
+          definition: definition({
+            nodes: [
+              {
+                uuid: 'node-1',
+                exits: [],
+                actions: [
+                  {
+                    type: 'add_contact_groups',
+                    uuid: 'action-1',
+                    groups: [{ uuid: 'group-1', name: 'Embedded name' }]
+                  }
+                ]
+              }
+            ],
+            _ui: { nodes: { 'node-1': { position: { left: 0, top: 0 } } } }
+          }),
+          info: info({
+            dependencies: [
+              { type: 'group', uuid: 'group-1', name: 'Embedded name' }
+            ]
+          })
+        });
+
+        const pending = state().fetchRevision(REVISION_URL);
+        // the timeout is armed as soon as the resolver is entered
+        await resolverEntered;
+        clock.tick(3100);
+        await pending;
+
+        expect(state().flowDefinition).to.not.equal(null);
+        expect(
+          (state().flowDefinition.nodes[0].actions[0] as any).groups[0].name
+        ).to.equal('Embedded name');
+      } finally {
+        clock.restore();
+      }
+    });
+
     it('raises when the request fails', async () => {
       clearMockGets();
       mockGET(/\/flow\/revisions\/flow-1\//, { detail: 'boom' }, {}, '500');
@@ -446,5 +690,145 @@ describe('store/AppState actions', () => {
       }
       expect(raised).to.equal(true);
     });
+  });
+});
+
+describe('flow/dependencies resolveDependencyNames', () => {
+  const withNodes = (nodes: any[]): any => ({
+    uuid: 'flow-1',
+    name: 'Test Flow',
+    language: 'eng',
+    type: 'messaging',
+    revision: 1,
+    spec_version: '14.3',
+    localization: {},
+    nodes,
+    _ui: { nodes: {}, languages: [] }
+  });
+
+  it('rewrites a uuid reference wherever it appears', () => {
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [
+          {
+            type: 'add_contact_groups',
+            uuid: 'action-1',
+            groups: [{ uuid: 'group-1', name: 'Old' }]
+          }
+        ]
+      }
+    ]);
+
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'group', uuid: 'group-1', name: 'Customers' }
+    ]);
+
+    expect(resolved.nodes[0].actions[0].groups[0].name).to.equal('Customers');
+  });
+
+  it('rewrites a reference whose embedded uuid is not canonical', () => {
+    const uuid = '9de3663f-c5c5-4c92-9f45-ecbc09abcc85';
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [
+          {
+            type: 'add_contact_groups',
+            uuid: 'action-1',
+            groups: [
+              // uppercase, braced and unhyphenated forms of the same uuid
+              { uuid: uuid.toUpperCase(), name: 'Old' },
+              { uuid: `{${uuid}}`, name: 'Old' },
+              { uuid: uuid.replace(/-/g, ''), name: 'Old' }
+            ]
+          }
+        ]
+      }
+    ]);
+
+    // the dependency list carries the canonical form the server echoes back
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'group', uuid, name: 'Customers' }
+    ]);
+
+    for (const group of resolved.nodes[0].actions[0].groups) {
+      expect(group.name).to.equal('Customers');
+    }
+  });
+
+  it('rewrites a keyed field reference under a field property', () => {
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [
+          {
+            type: 'set_contact_field',
+            uuid: 'action-1',
+            field: { key: 'age', name: 'Old age label' },
+            value: '10'
+          }
+        ]
+      }
+    ]);
+
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'field', key: 'age', name: 'Age' }
+    ]);
+
+    expect(resolved.nodes[0].actions[0].field.name).to.equal('Age');
+  });
+
+  it('rewrites keyed field references nested in an array', () => {
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [
+          {
+            type: 'set_contact_field',
+            uuid: 'action-1',
+            field: [{ key: 'age', name: 'Old age label' }]
+          }
+        ]
+      }
+    ]);
+
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'field', key: 'age', name: 'Age' }
+    ]);
+
+    expect(resolved.nodes[0].actions[0].field[0].name).to.equal('Age');
+  });
+
+  it('leaves keyed structures outside a field property alone', () => {
+    const definition = withNodes([
+      {
+        uuid: 'node-1',
+        exits: [],
+        actions: [],
+        router: {
+          type: 'switch',
+          result_name: 'age',
+          categories: [],
+          // a keyed structure that happens to share the field key
+          result: { key: 'age', name: 'Result label' }
+        }
+      }
+    ]);
+
+    const resolved: any = resolveDependencyNames(definition, [
+      { type: 'field', key: 'age', name: 'Age' }
+    ]);
+
+    expect(resolved.nodes[0].router.result.name).to.equal('Result label');
+  });
+
+  it('returns the definition untouched when nothing is registered', () => {
+    const definition = withNodes([]);
+    expect(resolveDependencyNames(definition, [])).to.equal(definition);
   });
 });

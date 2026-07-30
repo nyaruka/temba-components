@@ -47,8 +47,8 @@ interface KeyedAsset {
   key?: string;
 }
 
-interface AssetPage {
-  assets: Asset[];
+interface AssetPage<T = Asset> {
+  assets: T[];
   next: string;
 }
 
@@ -233,8 +233,10 @@ export const fetchResults = async (
   return results;
 };
 
-export const getAssetPage = (url: string): Promise<AssetPage> => {
-  return new Promise<AssetPage>((resolve, reject) => {
+/** Fetches one page of an asset endpoint. The caller names the shape it
+ * expects, since these endpoints serve everything from groups to shortcuts. */
+export const getAssetPage = <T = Asset>(url: string): Promise<AssetPage<T>> => {
+  return new Promise<AssetPage<T>>((resolve, reject) => {
     getUrl(url)
       .then((response: WebResponse) => {
         if (response.status >= 200 && response.status < 300) {
@@ -250,15 +252,15 @@ export const getAssetPage = (url: string): Promise<AssetPage> => {
   });
 };
 
-export const getAssets = async (url: string): Promise<Asset[]> => {
+export const getAssets = async <T = Asset>(url: string): Promise<T[]> => {
   if (!url) {
-    return new Promise<Asset[]>((resolve) => resolve([]));
+    return new Promise<T[]>((resolve) => resolve([]));
   }
 
-  let assets: Asset[] = [];
+  let assets: T[] = [];
   let pageUrl = url;
   while (pageUrl) {
-    const assetPage = await getAssetPage(pageUrl);
+    const assetPage = await getAssetPage<T>(pageUrl);
     if (assetPage.assets) {
       assets = assets.concat(assetPage.assets);
       pageUrl = assetPage.next;

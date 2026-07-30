@@ -280,6 +280,33 @@ export const mockPOST = (
   posts.push({ endpoint, body, headers, status });
 };
 
+export const mockAssetResolver = () => {
+  mockPOST(/\/test-assets\/store\/assets\.json/, {
+    results: [
+      {
+        type: 'flow',
+        uuid: 'f-001',
+        name: 'Canonical Welcome Campaign'
+      },
+      {
+        type: 'flow',
+        uuid: '11111111-1111-4111-8111-111111111111',
+        name: 'Current Child Flow'
+      },
+      {
+        type: 'group',
+        uuid: '3da236a9-9eed-4db3-a18e-cfb58030c249',
+        name: 'Farmers'
+      },
+      {
+        type: 'contact',
+        uuid: '22222222-2222-4222-8222-222222222222',
+        name: 'Alice'
+      }
+    ]
+  });
+};
+
 export const clearMockPosts = () => {
   posts = [];
 };
