@@ -37,4 +37,6 @@ jobs:
           echo "Updated npm version:"
           npm --version
       - name: Publish to NPM
-        run: npm publish --provenance --access public
+        # backport releases from this maintenance branch must not take the
+        # "latest" dist-tag away from newer versions already published
+        run: npm publish --provenance --access public --tag backport
