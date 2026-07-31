@@ -371,14 +371,27 @@ export class Select<T extends SelectOption> extends FieldElement {
         margin: 0;
         border: 0;
         border-radius: 999px;
-        background: color-mix(in oklab, currentColor 25%, transparent);
+        /* Neutral wash first for browsers without color-mix(); the
+           currentColor-tinted version below needs the @supports gate
+           because currentColor keeps the declaration valid until
+           computed-value time. */
+        background: rgba(0, 0, 0, 0.12);
         color: inherit;
         opacity: 0.8;
         --icon-color: currentColor;
       }
       .multi .remove-item:hover {
         opacity: 1;
-        background: color-mix(in oklab, currentColor 45%, transparent);
+        background: rgba(0, 0, 0, 0.22);
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .multi .remove-item {
+          background: color-mix(in oklab, currentColor 25%, transparent);
+        }
+        .multi .remove-item:hover {
+          background: color-mix(in oklab, currentColor 45%, transparent);
+        }
       }
 
       input {

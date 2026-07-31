@@ -100,10 +100,14 @@ export const pillVariants = css`
     border-color: var(--pill-border, var(--border));
     --icon-color: var(--text-2);
   }
+  /* Anchor-derived variants carry static pre-mixed bg/border values
+     for browsers without color-mix() (pre-Chrome 111); the @supports
+     block at the bottom re-derives them from the anchors so host
+     re-theming still works where color-mix() is available. */
   .pill-flow {
-    background: color-mix(in srgb, var(--flow) 12%, white);
+    background: #e3f4e9;
     color: var(--flow);
-    border-color: color-mix(in srgb, var(--flow) 25%, white);
+    border-color: #c5e8d2;
     --icon-color: var(--flow);
   }
   /* Recipient color — shared by contacts and groups. Anchored to
@@ -111,27 +115,27 @@ export const pillVariants = css`
      identity even when the host page re-themes via --primary-rgb. */
   .pill-contact,
   .pill-group {
-    background: color-mix(in srgb, var(--recipient) 12%, white);
+    background: #e5eef6;
     color: var(--recipient);
-    border-color: color-mix(in srgb, var(--recipient) 25%, white);
+    border-color: #cadbec;
     --icon-color: var(--recipient);
   }
   .pill-channel {
-    background: color-mix(in srgb, var(--channel) 12%, white);
+    background: #ede4f5;
     color: var(--channel);
-    border-color: color-mix(in srgb, var(--channel) 25%, white);
+    border-color: #dac8e9;
     --icon-color: var(--channel);
   }
   .pill-topic {
-    background: color-mix(in srgb, var(--topic) 12%, white);
+    background: #faefe1;
     color: var(--topic);
-    border-color: color-mix(in srgb, var(--topic) 25%, white);
+    border-color: #f6ddc1;
     --icon-color: var(--topic);
   }
   .pill-campaign {
-    background: color-mix(in srgb, var(--campaign) 12%, white);
+    background: #e1f2f6;
     color: var(--campaign);
-    border-color: color-mix(in srgb, var(--campaign) 25%, white);
+    border-color: #c1e4ec;
     --icon-color: var(--campaign);
   }
   .pill-field {
@@ -170,5 +174,33 @@ export const pillVariants = css`
     color: var(--text-2);
     border-color: var(--pill-border, var(--border));
     --icon-color: var(--text-2);
+  }
+
+  /* Anchor-derived bg/border for browsers with color-mix(). These
+     can't be simple same-rule fallbacks: a declaration containing
+     var() isn't dropped at parse time, it goes invalid at
+     computed-value time and takes the earlier declaration with it. */
+  @supports (color: color-mix(in srgb, red, red)) {
+    .pill-flow {
+      background: color-mix(in srgb, var(--flow) 12%, white);
+      border-color: color-mix(in srgb, var(--flow) 25%, white);
+    }
+    .pill-contact,
+    .pill-group {
+      background: color-mix(in srgb, var(--recipient) 12%, white);
+      border-color: color-mix(in srgb, var(--recipient) 25%, white);
+    }
+    .pill-channel {
+      background: color-mix(in srgb, var(--channel) 12%, white);
+      border-color: color-mix(in srgb, var(--channel) 25%, white);
+    }
+    .pill-topic {
+      background: color-mix(in srgb, var(--topic) 12%, white);
+      border-color: color-mix(in srgb, var(--topic) 25%, white);
+    }
+    .pill-campaign {
+      background: color-mix(in srgb, var(--campaign) 12%, white);
+      border-color: color-mix(in srgb, var(--campaign) 25%, white);
+    }
   }
 `;

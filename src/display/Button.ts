@@ -101,9 +101,11 @@ export class Button extends LitElement {
         background: var(--success, #16a34a);
         color: #fff;
       }
+      /* Hover darkening: static pre-mixed values first for browsers
+         without color-mix(), re-derived from the token below. */
       .attention-button:hover,
       .affirmative:hover {
-        background: color-mix(in srgb, var(--success, #16a34a) 88%, black);
+        background: #138f41;
       }
 
       /* DS .btn-danger — flat danger fill (no lift). */
@@ -112,7 +114,17 @@ export class Button extends LitElement {
         color: #fff;
       }
       .destructive-button:hover {
-        background: color-mix(in srgb, var(--danger, #d03f3f) 88%, black);
+        background: #b73737;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .attention-button:hover,
+        .affirmative:hover {
+          background: color-mix(in srgb, var(--success, #16a34a) 88%, black);
+        }
+        .destructive-button:hover {
+          background: color-mix(in srgb, var(--danger, #d03f3f) 88%, black);
+        }
       }
 
       /* DS .btn-ghost — text-only, hover fills with sunken */

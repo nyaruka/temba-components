@@ -100,7 +100,10 @@ export default class Label extends LitElement {
          dark variant shade), so flow stays bluish, group stays purplish,
          etc. — no grey wash. */
       .label[class*='pill-'].clickable .mask:hover {
-        background: color-mix(in oklab, currentColor 10%, transparent);
+        /* Neutral wash first for browsers without color-mix() — the
+           currentColor mix can't fall back per-declaration because
+           currentColor keeps it valid until computed-value time. */
+        background: rgba(0, 0, 0, 0.06);
       }
       .label[class*='pill-'] temba-icon {
         margin-right: 0;
@@ -121,14 +124,26 @@ export default class Label extends LitElement {
         margin: 0;
         border: 0;
         border-radius: 999px;
-        background: color-mix(in oklab, currentColor 25%, transparent);
+        background: rgba(0, 0, 0, 0.12);
         color: inherit;
         opacity: 0.8;
         --icon-color: currentColor;
       }
       .label[class*='pill-'] .remove:hover {
         opacity: 1;
-        background: color-mix(in oklab, currentColor 45%, transparent);
+        background: rgba(0, 0, 0, 0.22);
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .label[class*='pill-'].clickable .mask:hover {
+          background: color-mix(in oklab, currentColor 10%, transparent);
+        }
+        .label[class*='pill-'] .remove {
+          background: color-mix(in oklab, currentColor 25%, transparent);
+        }
+        .label[class*='pill-'] .remove:hover {
+          background: color-mix(in oklab, currentColor 45%, transparent);
+        }
       }
 
       /* When a removable X is present, tighten the mask's left padding

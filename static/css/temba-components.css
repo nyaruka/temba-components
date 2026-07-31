@@ -41,15 +41,19 @@
     --curvature: 6px;
     --curvature-widget: 6px;
     --focus: rgb(var(--focus-rgb, 91, 156, 229));
-    --focus-50: color-mix(in srgb, var(--focus) 12%, white);
-    --focus-100: color-mix(in srgb, var(--focus) 24%, white);
-    --focus-200: color-mix(in srgb, var(--focus) 40%, white);
-    --focus-300: color-mix(in srgb, var(--focus) 60%, white);
-    --focus-600: color-mix(in srgb, var(--focus) 60%, black);
-    --focus-700: color-mix(in srgb, var(--focus) 45%, black);
-    --focus-muted: color-mix(in srgb, var(--focus) 60%, white);
-    --focus-halo: 0 0 0 3px
-      color-mix(in srgb, var(--focus) 30%, transparent);
+    /* Static values pre-mixed from the default focus hue for browsers
+       without color-mix(); re-derived in the @supports block below. */
+    --focus-50: #ebf3fc;
+    --focus-100: #d8e7f9;
+    --focus-200: #bdd7f5;
+    --focus-300: #9dc4ef;
+    --focus-600: #375e89;
+    --focus-700: #294667;
+    --focus-muted: #9dc4ef;
+    /* The halo is a translucent wash, so unlike the opaque ramp steps
+       it can keep tracking the theme without color-mix() — rgba(var())
+       substitution works wherever custom properties do. */
+    --focus-halo: 0 0 0 3px rgba(var(--focus-rgb, 91, 156, 229), 0.3);
     --color-focus: #a4cafe;
     --color-widget-bg: #fff;
     --color-widget-bg-focused: #fff;
@@ -199,6 +203,24 @@
 
     --color-automated: rgb(78, 205, 106);
 
+  }
+
+  /* Where color-mix() is supported, derive the focus ramp from --focus
+     so re-theming via --focus-rgb works. Custom properties can't fall
+     back per-declaration (they're never invalid at parse time), hence
+     the @supports gate. */
+  @supports (color: color-mix(in srgb, red, red)) {
+    html {
+      --focus-50: color-mix(in srgb, var(--focus) 12%, white);
+      --focus-100: color-mix(in srgb, var(--focus) 24%, white);
+      --focus-200: color-mix(in srgb, var(--focus) 40%, white);
+      --focus-300: color-mix(in srgb, var(--focus) 60%, white);
+      --focus-600: color-mix(in srgb, var(--focus) 60%, black);
+      --focus-700: color-mix(in srgb, var(--focus) 45%, black);
+      --focus-muted: color-mix(in srgb, var(--focus) 60%, white);
+      --focus-halo: 0 0 0 3px
+        color-mix(in srgb, var(--focus) 30%, transparent);
+    }
   }
 
   temba-button {

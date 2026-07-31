@@ -140,10 +140,18 @@ export class ContactChat extends ContactStoreElement {
 
       /* While the contact is in a flow the compose outline carries the
          flow hue: resting border matches the flow pill border, focus
-         goes solid flow green */
+         goes solid flow green. The pre-mixed static comes first — a
+         custom property can't fall back per-declaration, so the
+         derived version needs the @supports gate. */
       .in-flow .compose {
-        --compose-border: 1px solid
-          color-mix(in srgb, var(--flow, #16a34a) 25%, white);
+        --compose-border: 1px solid #c5e8d2;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .in-flow .compose {
+          --compose-border: 1px solid
+            color-mix(in srgb, var(--flow, #16a34a) 25%, white);
+        }
       }
 
       .in-flow .compose temba-compose {
@@ -459,10 +467,18 @@ export class ContactChat extends ContactStoreElement {
          status-area grey. Fallbacks match the --flow design token for
          pages without tokens. */
       .in-flow .contact-status {
-        background: color-mix(in srgb, var(--flow, #16a34a) 12%, white);
+        /* pre-mixed statics first for browsers without color-mix() */
+        background: #e3f4e9;
         color: var(--flow, #16a34a);
         --icon-color: var(--flow, #16a34a);
-        border-top-color: color-mix(in srgb, var(--flow, #16a34a) 25%, white);
+        border-top-color: #c5e8d2;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .in-flow .contact-status {
+          background: color-mix(in srgb, var(--flow, #16a34a) 12%, white);
+          border-top-color: color-mix(in srgb, var(--flow, #16a34a) 25%, white);
+        }
       }
 
       /* compact the interrupt button to the row's caption scale */
@@ -530,7 +546,14 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .in-flow .chat-box {
-        background: color-mix(in srgb, var(--flow, #16a34a) 12%, white);
+        /* pre-mixed static first for browsers without color-mix() */
+        background: #e3f4e9;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .in-flow .chat-box {
+          background: color-mix(in srgb, var(--flow, #16a34a) 12%, white);
+        }
       }
 
       .ticket-controls {

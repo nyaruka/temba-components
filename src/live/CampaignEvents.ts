@@ -273,11 +273,20 @@ export class CampaignEvents extends EndpointMonitorElement {
         justify-content: center;
         /* icons inside the dot take the dot's hue */
         --icon-color: var(--dot-color);
-        background: color-mix(
-          in srgb,
-          var(--dot-color) 12%,
-          var(--color-widget-bg, #fff)
-        );
+        /* plain widget bg for browsers without color-mix(); the tinted
+           fill below needs the @supports gate since var() keeps an
+           invalid declaration alive until computed-value time */
+        background: var(--color-widget-bg, #fff);
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .dot {
+          background: color-mix(
+            in srgb,
+            var(--dot-color) 12%,
+            var(--color-widget-bg, #fff)
+          );
+        }
       }
 
       /* the anchor marks the field's date itself - painted with the widget
@@ -470,7 +479,8 @@ export class CampaignEvents extends EndpointMonitorElement {
 
       .menu-button.destructive:hover {
         border-color: #dc2626;
-        background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
+        /* pre-mixed fallback for browsers without color-mix() */
+        background: #fdf2f2;
       }
 
       /* the event's action, contained with a leading type label. Children
@@ -481,14 +491,24 @@ export class CampaignEvents extends EndpointMonitorElement {
         align-items: flex-start;
         gap: 0.6em;
         padding: 0.9em 1em 1em;
-        background: color-mix(
-          in srgb,
-          var(--sunken, #f1f3f5) 45%,
-          var(--surface, #fff)
-        );
+        /* pre-mixed fallback for browsers without color-mix() */
+        background: #f9fafa;
         border: 1px solid var(--border, #e4e7ec);
         border-radius: var(--r);
         line-height: 1.5;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .menu-button.destructive:hover {
+          background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
+        }
+        .detail-action {
+          background: color-mix(
+            in srgb,
+            var(--sunken, #f1f3f5) 45%,
+            var(--surface, #fff)
+          );
+        }
       }
 
       /* the close (✕) in the header's upper right - the square
