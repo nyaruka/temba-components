@@ -154,24 +154,33 @@ export class ContentList<T = any> extends RapidElement {
         --sort-gutter: 16px;
         /* Selected-row wash — accent-50 on its own reads grey, so a
            touch of the accent-400 rail colour is mixed in to give
-           the selection a faint accent tint. */
-        --cl-selected: color-mix(
-          in oklab,
-          var(--accent-400) 9%,
-          var(--accent-50)
-        );
+           the selection a faint accent tint. Statics pre-mixed from
+           the default accent for browsers without color-mix(); the
+           @supports block below re-derives them from the tokens. */
+        --cl-selected: #e5ecf8;
         /* The dividers bracketing a selected row — the plain grey
            --border reads as a seam against the wash, so this is the
            same accent pushed a little further. */
-        --cl-selected-border: color-mix(
-          in oklab,
-          var(--accent-400) 24%,
-          var(--accent-50)
-        );
+        --cl-selected-border: #cbdaf1;
         /* Tint shared by the frozen (pinned) columns and the header
            row, so the header reads as the same quiet sub-panel as the
            pinned section. */
-        --cl-pin-bg: color-mix(in oklab, var(--sunken) 35%, var(--surface));
+        --cl-pin-bg: #fafbfc;
+      }
+      @supports (color: color-mix(in srgb, red, red)) {
+        :host {
+          --cl-selected: color-mix(
+            in oklab,
+            var(--accent-400) 9%,
+            var(--accent-50)
+          );
+          --cl-selected-border: color-mix(
+            in oklab,
+            var(--accent-400) 24%,
+            var(--accent-50)
+          );
+          --cl-pin-bg: color-mix(in oklab, var(--sunken) 35%, var(--surface));
+        }
       }
       /* fillWindow — take the slack of a height-bounded flex-column
          parent so the table scrolls internally; min-height: 0 (set
@@ -296,7 +305,14 @@ export class ContentList<T = any> extends RapidElement {
         color: var(--danger);
       }
       .bulk-action.destructive:hover {
-        background: color-mix(in oklab, var(--danger) 20%, white);
+        /* pre-mixed fallback for browsers without color-mix() */
+        background: #f6d9d9;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .bulk-action.destructive:hover {
+          background: color-mix(in oklab, var(--danger) 20%, white);
+        }
       }
       .bulk-action temba-icon {
         --icon-color: currentColor;

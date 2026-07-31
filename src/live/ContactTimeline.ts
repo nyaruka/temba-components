@@ -189,24 +189,36 @@ export class ContactTimeline extends EndpointMonitorElement {
         padding: 0.05em 0.65em;
         border-radius: 999px;
         white-space: nowrap;
-        background: color-mix(
-          in srgb,
-          var(--pill-hue) 12%,
-          var(--color-widget-bg, #fff)
-        );
-        border: 1px solid
-          color-mix(in srgb, var(--pill-hue) 25%, var(--color-widget-bg, #fff));
+        /* plain bg / neutral border for browsers without color-mix();
+           the hue-tinted versions live in the @supports block below */
+        background: var(--color-widget-bg, #fff);
+        border: 1px solid var(--pill-hue);
         color: var(--pill-hue);
         cursor: pointer;
         transition: background 100ms ease-in-out;
       }
 
-      .campaign-pill:hover {
-        background: color-mix(
-          in srgb,
-          var(--pill-hue) 22%,
-          var(--color-widget-bg, #fff)
-        );
+      @supports (color: color-mix(in srgb, red, red)) {
+        .campaign-pill {
+          background: color-mix(
+            in srgb,
+            var(--pill-hue) 12%,
+            var(--color-widget-bg, #fff)
+          );
+          border: 1px solid
+            color-mix(
+              in srgb,
+              var(--pill-hue) 25%,
+              var(--color-widget-bg, #fff)
+            );
+        }
+        .campaign-pill:hover {
+          background: color-mix(
+            in srgb,
+            var(--pill-hue) 22%,
+            var(--color-widget-bg, #fff)
+          );
+        }
       }
 
       .campaign-pill:focus-visible {
@@ -289,24 +301,34 @@ export class ContactTimeline extends EndpointMonitorElement {
       }
 
       /* past events are filled with a lighter tint of the same hue and keep
-         the solid border - they're settled, whether real or projected */
+         the solid border - they're settled, whether real or projected.
+         Plain widget bg first for browsers without color-mix(). */
       .dot.past {
-        background: color-mix(
-          in srgb,
-          var(--dot-color) 25%,
-          var(--color-widget-bg, #fff)
-        );
+        background: var(--color-widget-bg, #fff);
       }
 
       /* future events haven't occurred yet - signal that with a dotted
          border and the faintest tint of the hue inside */
       .dot.future {
         border-style: dotted;
-        background: color-mix(
-          in srgb,
-          var(--dot-color) 8%,
-          var(--color-widget-bg, #fff)
-        );
+        background: var(--color-widget-bg, #fff);
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .dot.past {
+          background: color-mix(
+            in srgb,
+            var(--dot-color) 25%,
+            var(--color-widget-bg, #fff)
+          );
+        }
+        .dot.future {
+          background: color-mix(
+            in srgb,
+            var(--dot-color) 8%,
+            var(--color-widget-bg, #fff)
+          );
+        }
       }
 
       /* the now dot and label both paint with the SPA content background
