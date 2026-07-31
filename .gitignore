@@ -14,6 +14,9 @@ run.sh
 /node_modules
 /npm-debug.log
 
+## stray local store left behind by pnpm runs (pre-bun tooling)
+/.pnpm-store/
+
 ## testing
 /coverage/
 /screenshots/test
