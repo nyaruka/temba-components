@@ -138,7 +138,10 @@ export const designTokens = css`
     --focus-600: #375e89;
     --focus-700: #294667;
     --focus-muted: #9dc4ef;
-    --focus-halo: 0 0 0 3px rgba(91, 156, 229, 0.3);
+    /* The halo is a translucent wash, so unlike the opaque ramp steps
+       it can keep tracking the theme without color-mix() — rgba(var())
+       substitution works wherever custom properties do. */
+    --focus-halo: 0 0 0 3px rgba(var(--focus-rgb, 91, 156, 229), 0.3);
     --color-focus: var(--focus-muted);
     --widget-box-shadow-focused: var(--focus-halo);
 
