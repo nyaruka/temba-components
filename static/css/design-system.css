@@ -20,18 +20,22 @@
   --primary-rgb: 73, 127, 206;
 
   /* accent ramp — derived from --primary-rgb via sRGB mixing.
-     400 == primary; the ramp computes outward in both directions. */
+     400 == primary; the ramp computes outward in both directions.
+     Static values pre-mixed from the default anchor come first for
+     browsers without color-mix() (pre-Chrome 111); the @supports
+     block below re-derives them from --accent so re-theming via
+     --primary-rgb still works where color-mix() is available. */
   --accent:      rgb(var(--primary-rgb));
-  --accent-50:   color-mix(in srgb, var(--accent) 6%,  white);
-  --accent-100:  color-mix(in srgb, var(--accent) 16%, white);
-  --accent-200:  color-mix(in srgb, var(--accent) 32%, white);
-  --accent-300:  color-mix(in srgb, var(--accent) 60%, white);
+  --accent-50:   #f4f7fc;
+  --accent-100:  #e2ebf7;
+  --accent-200:  #c5d6ef;
+  --accent-300:  #92b2e2;
   --accent-400:  var(--accent);
-  --accent-500:  color-mix(in srgb, var(--accent) 90%, black);
-  --accent-600:  color-mix(in srgb, var(--accent) 80%, black);
-  --accent-700:  color-mix(in srgb, var(--accent) 65%, black);
-  --accent-800:  color-mix(in srgb, var(--accent) 50%, black);
-  --accent-900:  color-mix(in srgb, var(--accent) 35%, black);
+  --accent-500:  #4272b9;
+  --accent-600:  #3a66a5;
+  --accent-700:  #2f5386;
+  --accent-800:  #244067;
+  --accent-900:  #1a2c48;
 
   /* neutrals */
   --bg:            #F6F7F9;
@@ -92,6 +96,24 @@
   --rail-w:               56px;
   --section-w:            248px;
   --section-w-collapsed:  56px;
+}
+
+/* Where color-mix() is supported, derive the accent ramp from --accent
+   so re-theming via --primary-rgb works without design-system.js.
+   Custom properties can't fall back per-declaration (they're never
+   invalid at parse time), hence the @supports gate. */
+@supports (color: color-mix(in srgb, red, red)) {
+  :root {
+    --accent-50:  color-mix(in srgb, var(--accent) 6%,  white);
+    --accent-100: color-mix(in srgb, var(--accent) 16%, white);
+    --accent-200: color-mix(in srgb, var(--accent) 32%, white);
+    --accent-300: color-mix(in srgb, var(--accent) 60%, white);
+    --accent-500: color-mix(in srgb, var(--accent) 90%, black);
+    --accent-600: color-mix(in srgb, var(--accent) 80%, black);
+    --accent-700: color-mix(in srgb, var(--accent) 65%, black);
+    --accent-800: color-mix(in srgb, var(--accent) 50%, black);
+    --accent-900: color-mix(in srgb, var(--accent) 35%, black);
+  }
 }
 
 /* ─── base ───────────────────────────────────────────────────────────── */
@@ -364,7 +386,13 @@
   color: white;
 }
 .ds .btn-danger:hover {
-  background: color-mix(in srgb, var(--danger) 88%, black);
+  /* pre-mixed fallback for browsers without color-mix() */
+  background: #b73737;
+}
+@supports (color: color-mix(in srgb, red, red)) {
+  .ds .btn-danger:hover {
+    background: color-mix(in srgb, var(--danger) 88%, black);
+  }
 }
 .ds .btn.is-disabled,
 .ds .btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -533,7 +561,14 @@
 .ds .input:focus-within {
   outline: 0;
   border-color: var(--accent-300);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  /* translucent-ring fallback for browsers without color-mix() */
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.25);
+}
+@supports (color: color-mix(in srgb, red, red)) {
+  .ds .input:focus,
+  .ds .input:focus-within {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
 }
 
 .ds .input-tokens {

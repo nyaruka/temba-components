@@ -377,7 +377,14 @@ export class FieldList extends EndpointMonitorElement {
 
       .menu-button.destructive:hover {
         border-color: #dc2626;
-        background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
+        /* pre-mixed fallback for browsers without color-mix() */
+        background: #fdf2f2;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .menu-button.destructive:hover {
+          background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
+        }
       }
 
       .detail-body {

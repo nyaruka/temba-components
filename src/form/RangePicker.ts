@@ -123,10 +123,18 @@ export class RangePicker extends RapidElement {
     /* The hover wash sits on the sunken track, so --sunken itself
        would be invisible here. Derived from --text-1 rather than a raw
        rgba literal so it follows the palette (the tokens file mixes
-       against transparent the same way for --focus-halo). */
+       against transparent the same way for --focus-halo). The rgba
+       fallback pre-mixes the default --text-1 for browsers without
+       color-mix(). */
     .range-btn:hover:not(.selected) {
-      background: color-mix(in srgb, var(--text-1) 6%, transparent);
+      background: rgba(26, 31, 38, 0.06);
       color: var(--text-1);
+    }
+
+    @supports (color: color-mix(in srgb, red, red)) {
+      .range-btn:hover:not(.selected) {
+        background: color-mix(in srgb, var(--text-1) 6%, transparent);
+      }
     }
 
     .range-btn.selected {

@@ -518,19 +518,15 @@ export class Chat extends RapidElement {
          same theme vars the flat fills used — color-mix keeps host
          re-theming working — with a whisper of shadow for depth and
          a hairline border mixed just darker than the fill so bubbles
-         hold their edge against the background. */
+         hold their edge against the background. Base rules carry flat
+         fills and pre-mixed borders for browsers without color-mix()
+         (pre-Chrome 111); the @supports block below layers the
+         gradients on top. */
       .bubble {
         padding: 10px 14px;
-        background: linear-gradient(
-          180deg,
-          color-mix(in srgb, var(--color-chat-in, #e5e5ea) 62%, white) 0%,
-          var(--color-chat-in, #e5e5ea) 100%
-        );
+        background: var(--color-chat-in, #e5e5ea);
         border-radius: 18px;
-        border: var(
-          --chat-border-in,
-          1px solid color-mix(in srgb, var(--color-chat-in, #e5e5ea) 93%, black)
-        );
+        border: var(--chat-border-in, 1px solid #d5d5da);
         box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
       }
 
@@ -550,18 +546,38 @@ export class Chat extends RapidElement {
       }
 
       .incoming .bubble {
-        background: linear-gradient(
-          180deg,
-          color-mix(in srgb, var(--color-chat-out, #007aff) 90%, white) 0%,
-          var(--color-chat-out, #007aff) 58%,
-          color-mix(in srgb, var(--color-chat-out, #007aff) 95%, black) 100%
-        );
-        border: var(
-          --chat-border-out,
-          1px solid
-            color-mix(in srgb, var(--color-chat-out, #007aff) 90%, black)
-        );
+        background: var(--color-chat-out, #007aff);
+        border: var(--chat-border-out, 1px solid #006ee6);
         color: white;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .bubble {
+          background: linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--color-chat-in, #e5e5ea) 62%, white) 0%,
+            var(--color-chat-in, #e5e5ea) 100%
+          );
+          border: var(
+            --chat-border-in,
+            1px solid
+              color-mix(in srgb, var(--color-chat-in, #e5e5ea) 93%, black)
+          );
+        }
+
+        .incoming .bubble {
+          background: linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--color-chat-out, #007aff) 90%, white) 0%,
+            var(--color-chat-out, #007aff) 58%,
+            color-mix(in srgb, var(--color-chat-out, #007aff) 95%, black) 100%
+          );
+          border: var(
+            --chat-border-out,
+            1px solid
+              color-mix(in srgb, var(--color-chat-out, #007aff) 90%, black)
+          );
+        }
       }
 
       .incoming .latest .bubble {
@@ -573,8 +589,11 @@ export class Chat extends RapidElement {
       }
 
       /* Notes get the same top-lit gradient treatment as message
-         bubbles, derived from their sticky-note yellow. */
+         bubbles, derived from their sticky-note yellow. The flat fill
+         first is the fallback for browsers without color-mix() — all
+         literals here, so the invalid gradient drops at parse time. */
       .note .bubble {
+        background: #fffac3;
         background: linear-gradient(
           180deg,
           color-mix(in srgb, #fffac3 62%, white) 0%,

@@ -20,16 +20,21 @@ export const designTokens = css`
        Fallback matches the design-system.css default so component-
        only test harnesses pick up the same brand colour. */
     --accent: rgb(var(--primary-rgb, 73, 127, 206));
-    --accent-50: color-mix(in srgb, var(--accent) 6%, white);
-    --accent-100: color-mix(in srgb, var(--accent) 16%, white);
-    --accent-200: color-mix(in srgb, var(--accent) 32%, white);
-    --accent-300: color-mix(in srgb, var(--accent) 60%, white);
+    /* Static ramp values are pre-mixed from the default anchor for
+       browsers without color-mix() (pre-Chrome 111, e.g. the last
+       Chrome available on Windows 7/8.1). The @supports block below
+       re-derives them from --accent so host re-theming still works
+       where color-mix() is available. */
+    --accent-50: #f4f7fc;
+    --accent-100: #e2ebf7;
+    --accent-200: #c5d6ef;
+    --accent-300: #92b2e2;
     --accent-400: var(--accent);
-    --accent-500: color-mix(in srgb, var(--accent) 90%, black);
-    --accent-600: color-mix(in srgb, var(--accent) 80%, black);
-    --accent-700: color-mix(in srgb, var(--accent) 65%, black);
-    --accent-800: color-mix(in srgb, var(--accent) 50%, black);
-    --accent-900: color-mix(in srgb, var(--accent) 35%, black);
+    --accent-500: #4272b9;
+    --accent-600: #3a66a5;
+    --accent-700: #2f5386;
+    --accent-800: #244067;
+    --accent-900: #1a2c48;
 
     /* neutrals */
     --bg: #f6f7f9;
@@ -124,14 +129,16 @@ export const designTokens = css`
        error state (e.g. the dropdown popup) reference --focus-muted
        / --focus-halo directly to skip that override. */
     --focus: rgb(var(--focus-rgb, 91, 156, 229));
-    --focus-50: color-mix(in srgb, var(--focus) 12%, white);
-    --focus-100: color-mix(in srgb, var(--focus) 24%, white);
-    --focus-200: color-mix(in srgb, var(--focus) 40%, white);
-    --focus-300: color-mix(in srgb, var(--focus) 60%, white);
-    --focus-600: color-mix(in srgb, var(--focus) 60%, black);
-    --focus-700: color-mix(in srgb, var(--focus) 45%, black);
-    --focus-muted: color-mix(in srgb, var(--focus) 60%, white);
-    --focus-halo: 0 0 0 3px color-mix(in srgb, var(--focus) 30%, transparent);
+    /* Static values pre-mixed from the default focus hue for browsers
+       without color-mix(); re-derived in the @supports block below. */
+    --focus-50: #ebf3fc;
+    --focus-100: #d8e7f9;
+    --focus-200: #bdd7f5;
+    --focus-300: #9dc4ef;
+    --focus-600: #375e89;
+    --focus-700: #294667;
+    --focus-muted: #9dc4ef;
+    --focus-halo: 0 0 0 3px rgba(91, 156, 229, 0.3);
     --color-focus: var(--focus-muted);
     --widget-box-shadow-focused: var(--focus-halo);
 
@@ -159,5 +166,35 @@ export const designTokens = css`
     --temba-select-selected-line-height: 1.4;
     --temba-select-selected-font-size: 13.5px;
     --temba-select-min-height: var(--input-h);
+  }
+
+  /* Where color-mix() is supported, derive the accent / focus ramps
+     from their anchors so host pages can re-theme by overriding just
+     --primary-rgb / --focus-rgb. Browsers without color-mix() keep the
+     static pre-mixed values above. Note the static values can't act as
+     per-declaration fallbacks — a custom property is never invalid at
+     parse time, so the last declaration always wins — hence the
+     @supports gate. */
+  @supports (color: color-mix(in srgb, red, red)) {
+    :host {
+      --accent-50: color-mix(in srgb, var(--accent) 6%, white);
+      --accent-100: color-mix(in srgb, var(--accent) 16%, white);
+      --accent-200: color-mix(in srgb, var(--accent) 32%, white);
+      --accent-300: color-mix(in srgb, var(--accent) 60%, white);
+      --accent-500: color-mix(in srgb, var(--accent) 90%, black);
+      --accent-600: color-mix(in srgb, var(--accent) 80%, black);
+      --accent-700: color-mix(in srgb, var(--accent) 65%, black);
+      --accent-800: color-mix(in srgb, var(--accent) 50%, black);
+      --accent-900: color-mix(in srgb, var(--accent) 35%, black);
+
+      --focus-50: color-mix(in srgb, var(--focus) 12%, white);
+      --focus-100: color-mix(in srgb, var(--focus) 24%, white);
+      --focus-200: color-mix(in srgb, var(--focus) 40%, white);
+      --focus-300: color-mix(in srgb, var(--focus) 60%, white);
+      --focus-600: color-mix(in srgb, var(--focus) 60%, black);
+      --focus-700: color-mix(in srgb, var(--focus) 45%, black);
+      --focus-muted: color-mix(in srgb, var(--focus) 60%, white);
+      --focus-halo: 0 0 0 3px color-mix(in srgb, var(--focus) 30%, transparent);
+    }
   }
 `;

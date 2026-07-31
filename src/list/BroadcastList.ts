@@ -198,7 +198,8 @@ export class BroadcastList extends ContentList<Broadcast> {
       }
       .menu-button.destructive:hover {
         border-color: #dc2626;
-        background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
+        /* pre-mixed fallback for browsers without color-mix() */
+        background: #fdf2f2;
       }
       .detail-body {
         display: flex;
@@ -243,14 +244,24 @@ export class BroadcastList extends ContentList<Broadcast> {
         align-items: flex-start;
         gap: 0.6em;
         padding: 0.9em 1em 1em;
-        background: color-mix(
-          in srgb,
-          var(--sunken, #f1f3f5) 45%,
-          var(--surface, #fff)
-        );
+        /* pre-mixed fallback for browsers without color-mix() */
+        background: #f9fafa;
         border: 1px solid var(--border, #e4e7ec);
         border-radius: var(--r);
         line-height: 1.5;
+      }
+
+      @supports (color: color-mix(in srgb, red, red)) {
+        .menu-button.destructive:hover {
+          background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
+        }
+        .detail-message {
+          background: color-mix(
+            in srgb,
+            var(--sunken, #f1f3f5) 45%,
+            var(--surface, #fff)
+          );
+        }
       }
       .detail-message temba-expression-highlight {
         align-self: stretch;
