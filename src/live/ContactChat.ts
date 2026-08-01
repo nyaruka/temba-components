@@ -49,6 +49,7 @@ import {
 } from '../events/eventRenderers';
 import { publishToSocket } from './SocketService';
 import { subscribeToContactHistory, RealtimeSubscription } from './Realtime';
+import { applyContactEvent, watchContact } from './ContactWatch';
 import { Icon } from '../Icons';
 import { designTokens } from '../styles/designTokens';
 import { DateTime } from 'luxon';
@@ -835,13 +836,24 @@ export class ContactChat extends ContactStoreElement {
       if (!this.subscriptions.has(key)) {
         this.subscriptions.set(
           key,
-          subscribeToContactHistory(
-            topic.contact,
-            topic.ticket,
-            (data: any) => this.handleSocketEvent(data),
-            // on every (re)subscribe fetch anything we might have missed
-            () => this.fetchMissedEvents()
-          )
+          // the contact's own channel is owned by the central watcher, which
+          // every other contact component on the page shares - we take it as
+          // a stream and keep rendering history ourselves. Ticket detail
+          // events aren't contact state and stay a direct subscription
+          topic.ticket
+            ? subscribeToContactHistory(
+                topic.contact,
+                topic.ticket,
+                (data: any) => this.handleSocketEvent(data),
+                // on every (re)subscribe fetch anything we might have missed
+                () => this.fetchMissedEvents()
+              )
+            : watchContact(
+                topic.contact,
+                '*',
+                (event: any) => this.handleSocketEvent(event),
+                () => this.fetchMissedEvents()
+              )
         );
       }
     });
@@ -882,26 +894,15 @@ export class ContactChat extends ContactStoreElement {
 
   /**
    * Ephemeral events that update contact state rather than record history.
-   * They are never persisted, so this is the only place they can be applied.
-   * The current contact is the store's cached copy of the contact, so
-   * updating it in place also keeps the cache fresh for later readers.
+   * They are never persisted, so applying them is the only way they show up.
+   * How each one applies is the central watcher's to define - we just run it
+   * against our copy, which is the store's cached contact, so applying it in
+   * place also keeps the cache fresh for later readers.
    */
   private handleContactStateEvent(
     event: ContactFlowChangedEvent | ContactLastSeenChangedEvent
   ) {
-    const contact = this.currentContact;
-    if (event.type === Events.CONTACT_LAST_SEEN_CHANGED) {
-      const lastSeenOn = (event as ContactLastSeenChangedEvent).last_seen_on;
-      // last seen only ever moves forward - ignore out of order deliveries
-      if (
-        !contact.last_seen_on ||
-        new Date(lastSeenOn) > new Date(contact.last_seen_on)
-      ) {
-        contact.last_seen_on = lastSeenOn;
-      }
-    } else {
-      contact.flow = (event as ContactFlowChangedEvent).flow || null;
-    }
+    applyContactEvent(this.currentContact, event);
     this.requestUpdate();
   }
 
