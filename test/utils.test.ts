@@ -36,6 +36,8 @@ import { Options } from '../src/display/Options';
 import { Attachment } from '../src/interfaces';
 import { Compose } from '../src/form/Compose';
 import {
+  ConnectionState,
+  ConnectionStateHandler,
   PublicationHandler,
   SocketProvider,
   SocketSubscription
@@ -109,6 +111,43 @@ export class MockSocketProvider implements SocketProvider {
     return this.subs
       .filter((sub) => !sub.unsubscribed)
       .map((sub) => sub.channel);
+  }
+
+  // a mock socket is connected from the start - tests that care drive it with
+  // setConnectionState
+  private state = ConnectionState.Connected;
+  private stateHandlers: ConnectionStateHandler[] = [];
+
+  public getConnectionState(): ConnectionState {
+    return this.state;
+  }
+
+  public onConnectionState(
+    handler: ConnectionStateHandler
+  ): SocketSubscription {
+    this.stateHandlers.push(handler);
+    Promise.resolve().then(() => {
+      if (this.stateHandlers.includes(handler)) {
+        handler(this.state);
+      }
+    });
+    return {
+      unsubscribe: () => {
+        const index = this.stateHandlers.indexOf(handler);
+        if (index >= 0) {
+          this.stateHandlers.splice(index, 1);
+        }
+      }
+    };
+  }
+
+  // drives a connection transition as the server would
+  public setConnectionState(state: ConnectionState) {
+    if (state === this.state) {
+      return;
+    }
+    this.state = state;
+    [...this.stateHandlers].forEach((handler) => handler(state));
   }
 }
 

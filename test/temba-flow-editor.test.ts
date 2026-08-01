@@ -8,6 +8,8 @@ import { stub, restore, useFakeTimers } from 'sinon';
 import { zustand } from '../src/store/AppState';
 import { TEMBA_COMPONENTS_VERSION } from '../src/version';
 import {
+  ConnectionState,
+  ConnectionStateHandler,
   SocketProvider,
   SocketSubscription,
   setSocketProvider
@@ -39,6 +41,15 @@ class EditorSocketProvider implements SocketProvider {
 
   publish(): Promise<void> {
     return Promise.resolve();
+  }
+
+  getConnectionState(): ConnectionState {
+    return ConnectionState.Connected;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onConnectionState(handler: ConnectionStateHandler): SocketSubscription {
+    return { unsubscribe: () => undefined };
   }
 
   serverPublish(channel: string, event: any): void {

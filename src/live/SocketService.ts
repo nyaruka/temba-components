@@ -1,4 +1,5 @@
 import { Centrifuge, Subscription, SubscriptionState } from 'centrifuge';
+import { Watchers } from './Watchers';
 
 /**
  * Access to our realtime messaging socket (centrifugo). The server lives
@@ -20,6 +21,11 @@ import { Centrifuge, Subscription, SubscriptionState } from 'centrifuge';
  * channel - the underlying centrifugo subscription is created on first use
  * and torn down when the last subscriber leaves. The connection itself stays
  * open for the life of the page. Each published event arrives as raw JSON.
+ *
+ * The connection's state is readable too, so a page can tell its user when it
+ * has gone quiet rather than silently showing stale data:
+ *
+ *   window.sockets.onConnectionState((state) => { ... });
  */
 
 export interface SocketSubscription {
@@ -27,6 +33,19 @@ export interface SocketSubscription {
 }
 
 export type PublicationHandler = (data: any) => void;
+
+/**
+ * Where the shared connection is. Mirrors centrifugo's own client states -
+ * connecting covers the first attempt and every reconnect after a drop, so a
+ * page showing a "reconnecting" hint wants that one.
+ */
+export enum ConnectionState {
+  Disconnected = 'disconnected',
+  Connecting = 'connecting',
+  Connected = 'connected'
+}
+
+export type ConnectionStateHandler = (state: ConnectionState) => void;
 
 export interface SocketProvider {
   subscribe(
@@ -36,6 +55,10 @@ export interface SocketProvider {
   ): SocketSubscription;
 
   publish(channel: string, data: any): Promise<void>;
+
+  getConnectionState(): ConnectionState;
+
+  onConnectionState(handler: ConnectionStateHandler): SocketSubscription;
 }
 
 interface ChannelEntry {
@@ -47,6 +70,13 @@ export class SocketManager implements SocketProvider {
   private socket: Centrifuge = null;
   private channels = new Map<string, ChannelEntry>();
   private createSocket: () => Centrifuge;
+
+  // no connection exists until something asks for one, so that is where we
+  // start rather than pretending we know the server is unreachable
+  private state = ConnectionState.Disconnected;
+  private stateHandlers = new Watchers<ConnectionStateHandler>(
+    'socket connection handler'
+  );
 
   constructor(createSocket?: () => Centrifuge) {
     this.createSocket =
@@ -67,16 +97,69 @@ export class SocketManager implements SocketProvider {
    * and fan-out; a rejection means the publication was denied.
    */
   public publish(channel: string, data: any): Promise<void> {
-    if (!this.socket) {
-      this.socket = this.createSocket();
-    }
+    const socket = this.ensureSocket();
 
     // prefer the channel's live subscription when we have one
     const entry = this.channels.get(channel);
     const published = entry
       ? entry.sub.publish(data)
-      : this.socket.publish(channel, data);
+      : socket.publish(channel, data);
     return published.then(() => undefined);
+  }
+
+  /**
+   * The shared connection, opened on first use. Its state is tracked from
+   * here on, seeded with whatever it is already in - creating it connects, so
+   * the first transition can happen before we are listening.
+   */
+  private ensureSocket(): Centrifuge {
+    if (!this.socket) {
+      this.socket = this.createSocket();
+      this.socket.on('connecting', () =>
+        this.setState(ConnectionState.Connecting)
+      );
+      this.socket.on('connected', () =>
+        this.setState(ConnectionState.Connected)
+      );
+      this.socket.on('disconnected', () =>
+        this.setState(ConnectionState.Disconnected)
+      );
+      this.setState(this.socket.state as unknown as ConnectionState);
+    }
+    return this.socket;
+  }
+
+  private setState(state: ConnectionState): void {
+    if (!state || state === this.state) {
+      return;
+    }
+    this.state = state;
+    this.stateHandlers.each((handler) => handler(state));
+  }
+
+  /**
+   * Where the shared connection is right now. Disconnected until something
+   * subscribes or publishes, since that is what opens it.
+   */
+  public getConnectionState(): ConnectionState {
+    return this.state;
+  }
+
+  /**
+   * Watches the connection. The handler is called on every transition, and
+   * once up front with the current state so a caller never has to pair this
+   * with getConnectionState to render.
+   */
+  public onConnectionState(
+    handler: ConnectionStateHandler
+  ): SocketSubscription {
+    this.stateHandlers.add(handler);
+    this.stateHandlers.prime(handler, () => handler(this.state));
+    return {
+      unsubscribe: () => {
+        this.stateHandlers.remove(handler);
+      }
+    };
   }
 
   public subscribe(
@@ -84,16 +167,12 @@ export class SocketManager implements SocketProvider {
     onPublication: PublicationHandler,
     onSubscribed?: () => void
   ): SocketSubscription {
-    if (!this.socket) {
-      this.socket = this.createSocket();
-    }
+    const socket = this.ensureSocket();
 
     let entry = this.channels.get(channel);
     if (!entry) {
       entry = {
-        sub:
-          this.socket.getSubscription(channel) ||
-          this.socket.newSubscription(channel),
+        sub: socket.getSubscription(channel) || socket.newSubscription(channel),
         count: 0
       };
       this.channels.set(channel, entry);
@@ -172,6 +251,16 @@ export const subscribeToSocket = (
 
 export const publishToSocket = (channel: string, data: any): Promise<void> => {
   return (provider || getManager()).publish(channel, data);
+};
+
+export const getSocketConnectionState = (): ConnectionState => {
+  return (provider || getManager()).getConnectionState();
+};
+
+export const onSocketConnectionState = (
+  handler: ConnectionStateHandler
+): SocketSubscription => {
+  return (provider || getManager()).onConnectionState(handler);
 };
 
 // for tests to swap in a mock provider, returns the previous provider
