@@ -1,7 +1,18 @@
 import { Contact } from '../interfaces';
 import { Events } from '../events/eventRenderers';
 import { getStore } from '../store/Store';
-import { RealtimeSubscription, subscribeToContactHistory } from './Realtime';
+import {
+  ContactFieldChangedEvent,
+  ContactFlowChangedEvent,
+  ContactGroupsChangedEvent,
+  ContactHistoryEvent,
+  ContactLanguageChangedEvent,
+  ContactLastSeenChangedEvent,
+  ContactNameChangedEvent,
+  ContactStatusChangedEvent,
+  RealtimeSubscription,
+  subscribeToContactHistory
+} from './Realtime';
 
 /**
  * Central interest registry for live contact state. Components declare what
@@ -65,7 +76,10 @@ export const CONTACT_STATE_TYPES = [
   Events.CONTACT_LAST_SEEN_CHANGED
 ];
 
-export type ContactEventHandler = (event: any, contact: Contact) => void;
+export type ContactEventHandler = (
+  event: ContactHistoryEvent | null,
+  contact: Contact
+) => void;
 
 interface Watcher {
   types: string[] | '*';
@@ -116,19 +130,28 @@ const serializeFieldValue = (key: string, value: any): string | undefined => {
 const appliers: {
   [type: string]: (contact: Contact, event: any) => boolean | void;
 } = {
-  [Events.CONTACT_NAME_CHANGED]: (contact, event) => {
+  [Events.CONTACT_NAME_CHANGED]: (contact, event: ContactNameChangedEvent) => {
     contact.name = event.name;
   },
-  [Events.CONTACT_LANGUAGE_CHANGED]: (contact, event) => {
+  [Events.CONTACT_LANGUAGE_CHANGED]: (
+    contact,
+    event: ContactLanguageChangedEvent
+  ) => {
     contact.language = event.language;
   },
-  [Events.CONTACT_STATUS_CHANGED]: (contact, event) => {
+  [Events.CONTACT_STATUS_CHANGED]: (
+    contact,
+    event: ContactStatusChangedEvent
+  ) => {
     contact.status = event.status;
   },
-  [Events.CONTACT_FLOW_CHANGED]: (contact, event) => {
+  [Events.CONTACT_FLOW_CHANGED]: (contact, event: ContactFlowChangedEvent) => {
     contact.flow = event.flow || null;
   },
-  [Events.CONTACT_LAST_SEEN_CHANGED]: (contact, event) => {
+  [Events.CONTACT_LAST_SEEN_CHANGED]: (
+    contact,
+    event: ContactLastSeenChangedEvent
+  ) => {
     // last seen only ever moves forward - ignore out of order deliveries
     if (
       !contact.last_seen_on ||
@@ -137,7 +160,10 @@ const appliers: {
       contact.last_seen_on = event.last_seen_on;
     }
   },
-  [Events.CONTACT_FIELD_CHANGED]: (contact, event) => {
+  [Events.CONTACT_FIELD_CHANGED]: (
+    contact,
+    event: ContactFieldChangedEvent
+  ) => {
     const key = event.field?.key;
     if (!key) {
       return;
@@ -150,19 +176,21 @@ const appliers: {
     // replace rather than mutate so earlier deliveries keep their values
     contact.fields = { ...contact.fields, [key]: value };
   },
-  [Events.CONTACT_GROUPS_CHANGED]: (contact, event) => {
+  [Events.CONTACT_GROUPS_CHANGED]: (
+    contact,
+    event: ContactGroupsChangedEvent
+  ) => {
     const added = event.groups_added || [];
     const removed = new Set(
-      (event.groups_removed || []).map((group: any) => group.uuid)
+      (event.groups_removed || []).map((group) => group.uuid)
     );
     contact.groups = [
       ...(contact.groups || []).filter(
         (group) =>
-          !removed.has(group.uuid) &&
-          !added.some((a: any) => a.uuid === group.uuid)
+          !removed.has(group.uuid) && !added.some((a) => a.uuid === group.uuid)
       ),
       // group references can arrive without a name, but consumers sort on it
-      ...added.map((group: any) => ({
+      ...added.map((group) => ({
         uuid: group.uuid,
         name: group.name || ''
       }))
@@ -199,7 +227,7 @@ const needsContact = (entry: WatchedContact): boolean => {
  */
 export const applyContactEvent = (
   contact: Contact,
-  event: any
+  event: ContactHistoryEvent
 ): boolean | void => {
   const apply = appliers[event.type];
   if (!contact || !apply) {
@@ -210,7 +238,11 @@ export const applyContactEvent = (
 
 // watchers are page components we don't control - one of them throwing can't
 // be allowed to cost the others their delivery
-const deliver = (watcher: Watcher, event: any, contact: Contact) => {
+const deliver = (
+  watcher: Watcher,
+  event: ContactHistoryEvent | null,
+  contact: Contact
+) => {
   try {
     watcher.onEvent(event, contact);
   } catch (error) {
@@ -322,7 +354,11 @@ const scheduleRefetch = (uuid: string, entry: WatchedContact) => {
   }, REFETCH_DEBOUNCE);
 };
 
-const handleEvent = (uuid: string, entry: WatchedContact, event: any) => {
+const handleEvent = (
+  uuid: string,
+  entry: WatchedContact,
+  event: ContactHistoryEvent
+) => {
   const apply = appliers[event.type];
   const applied = entry.contact && apply ? apply(entry.contact, event) : null;
 

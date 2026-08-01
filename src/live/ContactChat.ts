@@ -26,17 +26,13 @@ import {
 } from '../utils';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose, ComposeValue } from '../form/Compose';
-import {
-  ContactFlowChangedEvent,
-  ContactHistoryPage,
-  ContactLastSeenChangedEvent
-} from '../events';
+import { ContactHistoryPage } from '../events';
 import {
   Chat,
   MessageType,
   ContactEvent,
   MsgEvent,
-  TypingEvent
+  TypingEvent as RenderedTypingEvent
 } from '../display/Chat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
@@ -48,7 +44,12 @@ import {
   renderTicketAssigneeChanged
 } from '../events/eventRenderers';
 import { publishToSocket } from './SocketService';
-import { subscribeToContactHistory, RealtimeSubscription } from './Realtime';
+import {
+  ContactHistoryEvent,
+  RealtimeSubscription,
+  subscribeToContactHistory,
+  TypingEvent
+} from './Realtime';
 import { applyContactEvent, watchContact } from './ContactWatch';
 import { Icon } from '../Icons';
 import { designTokens } from '../styles/designTokens';
@@ -859,7 +860,7 @@ export class ContactChat extends ContactStoreElement {
     });
   }
 
-  private handleSocketEvent(event: any) {
+  private handleSocketEvent(event: ContactHistoryEvent) {
     if (!this.currentContact) {
       return;
     }
@@ -881,12 +882,20 @@ export class ContactChat extends ContactStoreElement {
     }
 
     // typing events are ephemeral indicator state, not history
-    if (event.type === 'typing_started' || event.type === 'typing_stopped') {
-      this.handleTypingEvent(event);
+    if (
+      event.type === Events.TYPING_STARTED ||
+      event.type === Events.TYPING_STOPPED
+    ) {
+      this.handleTypingEvent(event as TypingEvent);
       return;
     }
 
-    const messages = this.createMessages({ events: [event], next: null });
+    // createMessages parses the wire event into the rendered form the page
+    // type describes, dates and all
+    const messages = this.createMessages({
+      events: [event as unknown as ContactEvent],
+      next: null
+    });
     if (messages.length > 0) {
       this.chat.addMessages(messages, null, true);
     }
@@ -899,9 +908,7 @@ export class ContactChat extends ContactStoreElement {
    * against our copy, which is the store's cached contact, so applying it in
    * place also keeps the cache fresh for later readers.
    */
-  private handleContactStateEvent(
-    event: ContactFlowChangedEvent | ContactLastSeenChangedEvent
-  ) {
+  private handleContactStateEvent(event: ContactHistoryEvent) {
     applyContactEvent(this.currentContact, event);
     this.requestUpdate();
   }
@@ -938,13 +945,18 @@ export class ContactChat extends ContactStoreElement {
       return;
     }
 
-    event.created_on = new Date(event.created_on);
-    this.resolveUserAvatar(event);
+    // the wire event is handed to every subscriber on this channel, so render
+    // into our own copy rather than parsing its date in place
+    const typing = {
+      ...event,
+      created_on: new Date(event.created_on)
+    } as RenderedTypingEvent;
+    this.resolveUserAvatar(typing);
 
-    if (event.type === 'typing_started') {
-      this.chat.setTyping(event);
+    if (event.type === Events.TYPING_STARTED) {
+      this.chat.setTyping(typing);
     } else {
-      this.chat.clearTyping(event);
+      this.chat.clearTyping(typing);
     }
   }
 
