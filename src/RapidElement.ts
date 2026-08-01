@@ -40,6 +40,34 @@ export interface EventHandler {
   isWindow?: boolean;
 }
 
+/**
+ * Inline handlers compiled from an element's -<event-type> attribute, keyed
+ * by their source. Page authors write a finite set of these, so compiling
+ * each one once keeps dispatch off the Function constructor entirely.
+ */
+const inlineHandlers = new Map<string, (event: Event) => any>();
+
+const compileInlineHandler = (source: string): ((event: Event) => any) => {
+  let compiled = inlineHandlers.get(source);
+  if (!compiled) {
+    compiled = new Function(
+      'event',
+      `
+        with(document) {
+          with(this) {
+            let handler = ${source};
+            if(typeof handler === 'function') {
+              handler(event);
+            }
+          }
+        }
+      `
+    ) as (event: Event) => any;
+    inlineHandlers.set(source, compiled);
+  }
+  return compiled;
+};
+
 export class RapidElement extends LitElement {
   DEBUG = false;
   DEBUG_UPDATES = false;
@@ -49,34 +77,50 @@ export class RapidElement extends LitElement {
   service: string;
 
   private eles: { [selector: string]: HTMLDivElement } = {};
+
+  // teardowns for the listeners we installed, so disconnecting removes the
+  // exact functions we added
+  private listenerTeardowns: (() => void)[] = [];
+
   public getEventHandlers(): EventHandler[] {
     return [];
+  }
+
+  /**
+   * Adds a listener this element owns the teardown for - it is bound to this
+   * element and removed automatically when we disconnect. Use this instead of
+   * addEventListener for anything on document or window, where a listener
+   * that outlives its element keeps the whole element alive.
+   */
+  public listenTo(
+    target: EventTarget,
+    event: string,
+    method: EventListener,
+    options?: AddEventListenerOptions
+  ): void {
+    const bound = method.bind(this);
+    target.addEventListener(event, bound, options);
+    this.listenerTeardowns.push(() =>
+      target.removeEventListener(event, bound, options)
+    );
   }
 
   connectedCallback() {
     super.connectedCallback();
 
     for (const handler of this.getEventHandlers()) {
-      if (handler.isDocument) {
-        document.addEventListener(handler.event, handler.method.bind(this));
-      } else if (handler.isWindow) {
-        window.addEventListener(handler.event, handler.method.bind(this));
-      } else {
-        this.addEventListener(handler.event, handler.method.bind(this));
-      }
+      const target = handler.isDocument
+        ? document
+        : handler.isWindow
+          ? window
+          : this;
+      this.listenTo(target, handler.event, handler.method);
     }
   }
 
   disconnectedCallback() {
-    for (const handler of this.getEventHandlers()) {
-      if (handler.isDocument) {
-        document.removeEventListener(handler.event, handler.method);
-      } else if (handler.isWindow) {
-        window.removeEventListener(handler.event, handler.method);
-      } else {
-        this.removeEventListener(handler.event, handler.method);
-      }
-    }
+    this.listenerTeardowns.forEach((teardown) => teardown());
+    this.listenerTeardowns = [];
     super.disconnectedCallback();
   }
 
@@ -121,9 +165,7 @@ export class RapidElement extends LitElement {
   }
 
   public fireCustomEvent(type: CustomEventType, detail: any = {}): any {
-    if (this['DEBUG_EVENTS']) {
-      showEvent(this, type, detail);
-    }
+    showEvent(this, type, detail);
 
     const event = new CustomEvent(type, {
       detail,
@@ -135,30 +177,26 @@ export class RapidElement extends LitElement {
   }
 
   public dispatchEvent(event: any): any {
-    super.dispatchEvent(event);
+    const dispatched = super.dispatchEvent(event);
+
+    // the page can hang a handler off the target for any of our events, as a
+    // -<event-type> property or an attribute of the same name
     const ele = event.target;
-    if (ele) {
-      // lookup events with - prefix and try to invoke them
-      const eventFire = (ele as any)['-' + event.type];
-      if (eventFire) {
-        return eventFire(event);
-      } else {
-        const func = new Function(
-          'event',
-          `
-          with(document) {
-            with(this) {
-              let handler = ${ele.getAttribute('-' + event.type)};
-              if(typeof handler === 'function') { 
-                handler(event);
-              }
-            }
-          }
-        `
-        );
-        return func.call(ele, event);
-      }
+    if (!ele) {
+      return dispatched;
     }
+
+    const eventFire = (ele as any)['-' + event.type];
+    if (eventFire) {
+      return eventFire(event);
+    }
+
+    const inline = ele.getAttribute ? ele.getAttribute('-' + event.type) : null;
+    if (!inline) {
+      return dispatched;
+    }
+
+    return compileInlineHandler(inline).call(ele, event);
   }
 
   public closestElement(selector: string, base: Element = this) {
