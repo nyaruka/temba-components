@@ -41,6 +41,10 @@ interface MenuItemState {
   collapsed?: string;
 }
 
+// fields the menu maintains on an item rather than reading off the server, so
+// a reload carries them across instead of treating them as dropped
+const OWN_ITEM_FIELDS = ['items', 'level', 'loading'];
+
 const findItem = (
   items: MenuItem[],
   id: string
@@ -738,8 +742,17 @@ export class TembaMenu extends ResizeElement {
   @property({ type: Object })
   pressedItem: MenuItem;
 
-  // http promise to monitor for completeness
-  public httpComplete: Promise<void>;
+  /**
+   * Resolves when every load in flight has settled. Awaiting it has to mean
+   * "the menu has finished fetching", not "the last load anyone started has
+   * finished" - loads overlap (a click while a debounced refresh is armed),
+   * and a caller that awaited whichever promise happened to be here last
+   * would read the menu mid-update.
+   */
+  public httpComplete: Promise<void> = Promise.resolve();
+
+  private loadsInFlight = 0;
+  private loadsSettled: () => void;
 
   root: MenuItem;
   selection: string[] = [];
@@ -854,22 +867,66 @@ export class TembaMenu extends ResizeElement {
     });
   }
 
+  /**
+   * Folds a load into httpComplete, which stays unresolved until the last one
+   * outstanding settles.
+   */
+  private trackLoad(load: Promise<void>): void {
+    if (this.loadsInFlight === 0) {
+      this.httpComplete = new Promise((resolve) => {
+        this.loadsSettled = resolve;
+      });
+    }
+    this.loadsInFlight++;
+
+    load.then(() => {
+      if (--this.loadsInFlight === 0) {
+        this.loadsSettled();
+      }
+    });
+  }
+
+  /**
+   * Reloading a level reuses the item objects it already had. Replacing them
+   * would orphan anything already pointing at one - a rendered click handler,
+   * or a load in flight for that item's own children, which would then land
+   * on a copy no longer in the tree.
+   */
+  private mergeItems(item: MenuItem, items: MenuItem[]): MenuItem[] {
+    const previous = item.items || [];
+    return items.map((newItem) => {
+      const prevItem = previous.find((prev) => prev.id == newItem.id);
+      if (!prevItem) {
+        return newItem;
+      }
+
+      // sub-items the reload didn't speak to are ours to carry over - either
+      // ones we already had or ones still on their way
+      const carried = newItem.items || prevItem.items;
+
+      // anything the reload dropped is gone, so this reads as a replacement
+      // everywhere except identity - bar the fields the menu sets on an item
+      // itself, which the server never speaks to
+      Object.keys(prevItem).forEach((key) => {
+        if (!(key in newItem) && !OWN_ITEM_FIELDS.includes(key)) {
+          delete prevItem[key];
+        }
+      });
+      Object.assign(prevItem, newItem);
+      if (carried) {
+        prevItem.items = carried;
+      }
+      return prevItem;
+    });
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private loadItems(item: MenuItem, event: MouseEvent | KeyboardEvent = null) {
     if (item && item.endpoint) {
       item.loading = true;
-      this.httpComplete = fetchResults(item.endpoint)
+      const load = fetchResults(item.endpoint)
         .then((items: MenuItem[]) => {
-          items.forEach((newItem) => {
-            if (!newItem.items) {
-              const prevItem = (item.items || []).find(
-                (prev) => prev.id == newItem.id
-              );
-              if (prevItem && prevItem.items) {
-                newItem.items = prevItem.items;
-              }
-            }
-          });
+          items = this.mergeItems(item, items);
 
           // update our item level
           items.forEach((subItem) => {
@@ -901,6 +958,7 @@ export class TembaMenu extends ResizeElement {
         .catch((error) => {
           this.fireCustomEvent(CustomEventType.Error, { error });
         });
+      this.trackLoad(load);
     }
   }
 
