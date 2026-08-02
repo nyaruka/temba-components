@@ -590,10 +590,13 @@ describe('temba-simulator', () => {
     const newCount = getMessageCount(simulator);
     expect(newCount).to.be.greaterThan(initialCount);
 
+    // the attachment is an <img> fetched over the network, so the shot has to
+    // wait for it - without this it captures the empty box where it lands
     await assertScreenshot(
       'simulator/image-attachment',
       getSimulatorClip(simulator),
-      true
+      true,
+      simulator.shadowRoot
     );
   });
 
