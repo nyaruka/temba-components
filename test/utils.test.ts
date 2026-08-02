@@ -395,7 +395,7 @@ const collectImages = (root: ParentNode): HTMLImageElement[] => {
  */
 export const waitForImages = async (
   root: ParentNode,
-  timeout = 5000
+  timeout = 10000
 ): Promise<void> => {
   const images = collectImages(root);
 
@@ -428,8 +428,7 @@ export const waitForImages = async (
 export const assertScreenshot = async (
   filename: string,
   clip: Clip,
-  waitForNetwork: boolean = false,
-  imageRoot: ParentNode = null
+  waitForNetwork: boolean = false
 ) => {
   // detect if we're running in copilot's environment and use adaptive threshold
   const isCopilotEnvironment = (window as any).isCopilotEnvironment;
@@ -440,11 +439,6 @@ export const assertScreenshot = async (
   // standalone and full-suite runs (e.g. Roboto fallback vs loaded)
   if (document.fonts && document.fonts.ready) {
     await document.fonts.ready;
-  }
-
-  // and, when we were given something to look in, for its images to arrive
-  if (imageRoot) {
-    await waitForImages(imageRoot);
   }
 
   try {
