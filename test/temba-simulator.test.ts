@@ -1,5 +1,9 @@
 import { fixture, expect, assert } from '@open-wc/testing';
-import { Simulator } from '../src/simulator/Simulator';
+import {
+  SampleMedia,
+  setSampleMedia,
+  Simulator
+} from '../src/simulator/Simulator';
 import { getCookie, setCookie } from '../src/utils';
 import {
   assertScreenshot,
@@ -543,11 +547,24 @@ describe('temba-simulator', () => {
     );
   });
 
-  it('sends an image attachment', async function () {
-    // the attachment is fetched from s3, and this waits for it rather than
-    // screenshotting the empty box where it lands - which needs more room
-    // than the default per-test budget when that fetch is slow
-    this.timeout(30000);
+  it('sends an image attachment', async () => {
+    // the simulator's own samples are hosted on s3 - point at a local copy of
+    // the same image so this doesn't turn a screenshot comparison into a
+    // check that a third party is reachable and quick
+    let previousSamples: SampleMedia = null;
+    try {
+      previousSamples = setSampleMedia({
+        images: ['/test-assets/img/sim_image_c.jpg']
+      });
+      await sendImageAttachment();
+    } finally {
+      if (previousSamples) {
+        setSampleMedia(previousSamples);
+      }
+    }
+  });
+
+  const sendImageAttachment = async () => {
     mockSimulatorStart();
 
     const simulator: Simulator = await createSimulator();
@@ -595,13 +612,15 @@ describe('temba-simulator', () => {
     const newCount = getMessageCount(simulator);
     expect(newCount).to.be.greaterThan(initialCount);
 
-    await waitForImages(simulator.shadowRoot, 20000);
+    // still a fetch, just a local one - the shot has to wait for it or it
+    // captures the empty box where the image lands
+    await waitForImages(simulator.shadowRoot);
     await assertScreenshot(
       'simulator/image-attachment',
       getSimulatorClip(simulator),
       true
     );
-  });
+  };
 
   it('opens context explorer', async () => {
     mockSimulatorStart();

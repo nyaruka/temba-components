@@ -11,28 +11,49 @@ import { CustomEventType } from '../interfaces';
 import { Chat, ContactEvent, MessageType } from '../display/Chat';
 import { Events, renderEvent } from '../events/eventRenderers';
 
-// test attachment URLs
-const TEST_IMAGES = [
-  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_a.jpg',
-  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_b.jpg',
-  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_c.jpg',
-  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_d.jpg'
-];
+export interface SampleMedia {
+  images: string[];
+  videos: string[];
+  audio: string[];
+  locations: string[];
+}
 
-const TEST_VIDEOS = [
-  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_video_a.mp4'
-];
+// the sample media the simulator attaches, hosted alongside our other
+// simulator assets
+const HOSTED_SAMPLES: SampleMedia = {
+  images: [
+    'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_a.jpg',
+    'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_b.jpg',
+    'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_c.jpg',
+    'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_d.jpg'
+  ],
+  videos: [
+    'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_video_a.mp4'
+  ],
+  audio: [
+    'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_audio_a.mp3'
+  ],
+  locations: [
+    'geo:47.6062,-122.3321', // Seattle
+    'geo:-0.1807,-78.4678', // Quito
+    'geo:-2.9001,-79.0059', // Cuenca
+    'geo:-1.9536,30.0606' // Kigali
+  ]
+};
 
-const TEST_AUDIO = [
-  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_audio_a.mp3'
-];
+let samples: SampleMedia = HOSTED_SAMPLES;
 
-const TEST_LOCATIONS = [
-  'geo:47.6062,-122.3321', // Seattle
-  'geo:-0.1807,-78.4678', // Quito
-  'geo:-2.9001,-79.0059', // Cuenca
-  'geo:-1.9536,30.0606' // Kigali
-];
+/**
+ * Points the simulator's sample attachments somewhere else, returning the
+ * previous set so a caller can put it back. For tests, which shouldn't need
+ * our asset host to be reachable to run - the simulator itself always
+ * attaches the hosted samples above.
+ */
+export const setSampleMedia = (media: Partial<SampleMedia>): SampleMedia => {
+  const previous = samples;
+  samples = { ...samples, ...media };
+  return previous;
+};
 
 const truncateUrl = (url: string, maxLen = 50): string =>
   url && url.length > maxLen ? url.slice(0, maxLen) + '…' : url;
@@ -888,14 +909,15 @@ export class Simulator extends RapidElement {
   private boundClickOutsideHandler: ((event: MouseEvent) => void) | null = null;
 
   // attachment cycling indices - initialized randomly
-  private imageIndex = Math.floor(Math.random() * TEST_IMAGES.length);
-  private videoIndex = Math.floor(Math.random() * TEST_VIDEOS.length);
-  private audioIndex = Math.floor(Math.random() * TEST_AUDIO.length);
-  private locationIndex = Math.floor(Math.random() * TEST_LOCATIONS.length);
+  private imageIndex = Math.floor(Math.random() * samples.images.length);
+  private videoIndex = Math.floor(Math.random() * samples.videos.length);
+  private audioIndex = Math.floor(Math.random() * samples.audio.length);
+  private locationIndex = Math.floor(Math.random() * samples.locations.length);
 
-  // method to reset attachment indices for testing
+  // starts the attachment cycling from the top, so a test gets the same
+  // sample every run rather than wherever the random start landed
   public resetAttachmentIndices() {
-    this.imageIndex = 2;
+    this.imageIndex = 0;
     this.videoIndex = 0;
     this.audioIndex = 0;
     this.locationIndex = 0;
@@ -2176,20 +2198,21 @@ export class Simulator extends RapidElement {
     let attachment = '';
     switch (attachmentType) {
       case 'image':
-        attachment = `image/jpeg:${TEST_IMAGES[this.imageIndex]}`;
-        this.imageIndex = (this.imageIndex + 1) % TEST_IMAGES.length;
+        attachment = `image/jpeg:${samples.images[this.imageIndex]}`;
+        this.imageIndex = (this.imageIndex + 1) % samples.images.length;
         break;
       case 'video':
-        attachment = `video/mp4:${TEST_VIDEOS[this.videoIndex]}`;
-        this.videoIndex = (this.videoIndex + 1) % TEST_VIDEOS.length;
+        attachment = `video/mp4:${samples.videos[this.videoIndex]}`;
+        this.videoIndex = (this.videoIndex + 1) % samples.videos.length;
         break;
       case 'audio':
-        attachment = `audio/mp3:${TEST_AUDIO[this.audioIndex]}`;
-        this.audioIndex = (this.audioIndex + 1) % TEST_AUDIO.length;
+        attachment = `audio/mp3:${samples.audio[this.audioIndex]}`;
+        this.audioIndex = (this.audioIndex + 1) % samples.audio.length;
         break;
       case 'location':
-        attachment = TEST_LOCATIONS[this.locationIndex];
-        this.locationIndex = (this.locationIndex + 1) % TEST_LOCATIONS.length;
+        attachment = samples.locations[this.locationIndex];
+        this.locationIndex =
+          (this.locationIndex + 1) % samples.locations.length;
         break;
     }
 
