@@ -425,6 +425,39 @@ export const waitForImages = async (
   await new Promise((resolve) => window.setTimeout(resolve, 50));
 };
 
+/**
+ * Waits for the CSS transitions and animations running on an element to
+ * finish, so a screenshot catches the state they settle into rather than a
+ * frame partway through one.
+ *
+ * How far a transition has got by the time we capture depends on how busy the
+ * machine is, so comparing pixels mid-transition is a coin flip against the
+ * recorded truth - it passes locally and fails on a loaded CI box. Anything
+ * looping forever never settles, so those are left running and a timeout
+ * backstops the rest.
+ */
+export const waitForAnimations = async (
+  ele: Element,
+  timeout = 2000
+): Promise<void> => {
+  const animations = ele
+    .getAnimations()
+    .filter(
+      (animation) =>
+        (animation.effect as KeyframeEffect)?.getTiming().iterations !==
+        Infinity
+    );
+
+  await Promise.race([
+    // a cancelled animation rejects, which tells us the same thing as one that
+    // ran to completion - there is nothing left moving
+    Promise.all(
+      animations.map((animation) => animation.finished.catch(() => null))
+    ),
+    new Promise((resolve) => window.setTimeout(resolve, timeout))
+  ]);
+};
+
 export const assertScreenshot = async (
   filename: string,
   clip: Clip,
