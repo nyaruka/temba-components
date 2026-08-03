@@ -41,7 +41,7 @@ const createSearch = async (
 // runs a query through the component's own search path
 const search = async (element: FlowSearch, query: string) => {
   (element as any).searchQuery = query;
-  (element as any).performSearch();
+  (element as any).runSearch();
   await element.updateComplete;
   return (element as any).results;
 };
