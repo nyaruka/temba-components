@@ -893,7 +893,7 @@ export class ContactChat extends ContactStoreElement {
     // createMessages parses the wire event into the rendered form the page
     // type describes, dates and all
     const messages = this.createMessages({
-      events: [event as unknown as ContactEvent],
+      events: [this.copyWireEvent(event) as unknown as ContactEvent],
       next: null
     });
     if (messages.length > 0) {
@@ -948,7 +948,7 @@ export class ContactChat extends ContactStoreElement {
     // the wire event is handed to every subscriber on this channel, so render
     // into our own copy rather than parsing its date in place
     const typing = {
-      ...event,
+      ...this.copyWireEvent(event),
       created_on: new Date(event.created_on)
     } as RenderedTypingEvent;
     this.resolveUserAvatar(typing);
@@ -1667,6 +1667,23 @@ export class ContactChat extends ContactStoreElement {
    * second user ref (the assignee) whose avatar feeds the event's hover
    * tooltip.
    */
+  /**
+   * A copy of a wire event we can parse and resolve into. The event object is
+   * handed to every subscriber on the channel, and resolveUserAvatar writes an
+   * avatar onto the user objects hanging off it, so a shallow spread isn't
+   * enough on its own - those ride through it aliased.
+   */
+  private copyWireEvent(event: any): any {
+    const copy = { ...event };
+    if (copy._user) {
+      copy._user = { ...copy._user };
+    }
+    if (copy.assignee) {
+      copy.assignee = { ...copy.assignee };
+    }
+    return copy;
+  }
+
   private resolveUserAvatar(event: any) {
     for (const user of [event._user, event.assignee]) {
       if (user && user.uuid && this.store) {

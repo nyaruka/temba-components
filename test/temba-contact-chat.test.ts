@@ -1259,7 +1259,14 @@ describe('temba-contact-chat', () => {
     };
     mockSocket.publish(channel, unhydrated);
 
-    expect(unhydrated._user['avatar']).to.equal('/media/avatars/ann.jpg');
+    // the avatar is resolved onto what we render, not onto the wire event
+    // the channel handed every subscriber
+    const rendered = () =>
+      (getTembaChat(chat) as any).msgMap.get(unhydrated.uuid);
+    await settle(() => !!rendered(), 150);
+
+    expect(rendered()._user.avatar).to.equal('/media/avatars/ann.jpg');
+    expect(unhydrated._user).to.not.have.property('avatar');
   });
 
   it('unsubscribes when removed from the page', async () => {
@@ -1320,6 +1327,47 @@ describe('temba-contact-chat', () => {
 
     serverTyping(chat, 'typing_stopped');
     expect(await getTypingRow(chat)).to.not.exist;
+  });
+
+  it('renders socket events without writing back to the wire object', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const channel = `history:${chat.currentContact.uuid}`;
+
+    // every subscriber on the channel is handed these same objects, so
+    // parsing a date or resolving an avatar into one writes through to all
+    // of them
+    const typingUser = { uuid: 'user-bob', name: 'Bob' };
+    const typing = {
+      uuid: '01998888-0000-7000-8000-00000000aaaa',
+      type: 'typing_started',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      _user: typingUser,
+      direction: 'outgoing'
+    };
+    mockSocket.serverPublish(channel, typing);
+    expect(await getTypingRow(chat)).to.exist;
+
+    expect(typing.created_on).to.equal('2025-09-25T12:00:00.000000+00:00');
+    expect(typingUser).to.not.have.property('avatar');
+
+    // the same holds for events that land in the history rather than the
+    // typing indicator
+    const msgUser = { uuid: 'user-bob', name: 'Bob' };
+    const msg = {
+      uuid: '01998888-0000-7000-8000-00000000bbbb',
+      type: 'msg_created',
+      created_on: '2025-09-25T12:01:00.000000+00:00',
+      _user: msgUser,
+      msg: { text: 'hello there' }
+    };
+    mockSocket.serverPublish(channel, msg);
+    await chat.updateComplete;
+
+    expect(msg.created_on).to.equal('2025-09-25T12:01:00.000000+00:00');
+    expect(msgUser).to.not.have.property('avatar');
   });
 
   it('shows and clears contact typing with no user attached', async () => {
