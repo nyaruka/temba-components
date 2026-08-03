@@ -196,7 +196,11 @@ export class RapidElement extends LitElement {
       return dispatched;
     }
 
-    return compileInlineHandler(inline).call(ele, event);
+    // the compiled handler has no return value of its own, so handing its
+    // undefined back would read as a cancelled event - what the caller wants
+    // to know is whether anything called preventDefault
+    compileInlineHandler(inline).call(ele, event);
+    return dispatched;
   }
 
   public closestElement(selector: string, base: Element = this) {

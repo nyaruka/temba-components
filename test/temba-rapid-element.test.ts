@@ -508,6 +508,28 @@ describe('RapidElement', () => {
       delete (window as any).inlineAttrHandler;
     });
 
+    it('reports the dispatch as uncancelled once the handler has run', () => {
+      let ran = false;
+      (window as any).inlineAttrHandler = () => {
+        ran = true;
+      };
+
+      const host = document.createElement('div');
+      host.innerHTML = `<div -inline-attr-event="inlineAttrHandler"></div>`;
+      const target = host.firstElementChild;
+
+      const event = new CustomEvent('inline-attr-event');
+      Object.defineProperty(event, 'target', { value: target });
+
+      // the compiled handler returns nothing of its own, so handing that back
+      // would read as a cancelled event
+      const result = element.dispatchEvent(event);
+
+      expect(ran).to.equal(true);
+      expect(result).to.equal(true);
+      delete (window as any).inlineAttrHandler;
+    });
+
     it('does not compile anything when the target has no attribute', () => {
       const target = document.createElement('div');
       const compile = stub(window, 'Function' as any);
