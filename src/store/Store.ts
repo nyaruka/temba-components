@@ -28,6 +28,7 @@ import {
   subscribeToOrganization,
   OrganizationEvent
 } from '../live/Realtime';
+import { Watchers } from '../live/Watchers';
 import { lru } from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';
@@ -230,7 +231,7 @@ export class Store extends RapidElement {
   private shortcuts: Shortcut[] = [];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
-  private assetWatchers: AssetWatcher[] = [];
+  private assetWatchers = new Watchers<AssetWatcher>('store asset watcher');
   // canonical names, the identities we've already asked about (including ones
   // the endpoint had no asset for) and their last-write versions, all bounded
   // so a long-lived page doesn't keep every asset it has ever rendered
@@ -730,19 +731,12 @@ export class Store extends RapidElement {
         })),
       onEvent
     };
-    this.assetWatchers.push(watcher);
-    Promise.resolve().then(() => {
-      if (this.assetWatchers.includes(watcher)) {
-        this.deliverAssetEvent(watcher, null);
-      }
-    });
+    this.assetWatchers.add(watcher);
+    this.assetWatchers.prime(watcher, () => watcher.onEvent(null));
 
     return {
       unsubscribe: () => {
-        const index = this.assetWatchers.indexOf(watcher);
-        if (index >= 0) {
-          this.assetWatchers.splice(index, 1);
-        }
+        this.assetWatchers.remove(watcher);
       }
     };
   }
@@ -755,7 +749,7 @@ export class Store extends RapidElement {
    */
   private async refreshAssetCache(): Promise<void> {
     const interests = new Map<string, StoreAssetReference>();
-    for (const watcher of this.assetWatchers) {
+    for (const watcher of this.assetWatchers.all()) {
       for (const interest of watcher.interests) {
         const identity = assetIdentity(interest);
         if (identity) {
@@ -766,9 +760,7 @@ export class Store extends RapidElement {
     if (interests.size > 0) {
       await this.resolveAssets([...interests.values()], true);
     }
-    for (const watcher of this.assetWatchers) {
-      this.deliverAssetEvent(watcher, null);
-    }
+    this.assetWatchers.each((watcher) => watcher.onEvent(null));
   }
 
   private async fetchAssetBatch(
@@ -876,7 +868,7 @@ export class Store extends RapidElement {
     }
 
     const changed = { ...asset };
-    const interested = this.assetWatchers.filter((watcher) =>
+    const interested = this.assetWatchers.some((watcher) =>
       watchesAsset(watcher, changed)
     );
     const previouslyResolved = this.resolvedAssetIdentities.has(identity);
@@ -893,7 +885,7 @@ export class Store extends RapidElement {
         name: changed.name
       };
     }
-    if (!previouslyResolved && !pending && interested.length === 0) {
+    if (!previouslyResolved && !pending && !interested) {
       return;
     }
 
@@ -905,20 +897,10 @@ export class Store extends RapidElement {
       type: 'asset_changed',
       asset: changed
     };
-    for (const watcher of interested) {
-      this.deliverAssetEvent(watcher, publication);
-    }
-  }
-
-  private deliverAssetEvent(
-    watcher: AssetWatcher,
-    event: StoreAssetChangedEvent | null
-  ): void {
-    try {
-      watcher.onEvent(event);
-    } catch (error) {
-      console.error('store asset watcher failed', error);
-    }
+    this.assetWatchers.each(
+      (watcher) => watcher.onEvent(publication),
+      (watcher) => watchesAsset(watcher, changed)
+    );
   }
 
   public isDynamicGroup(uuid: string): boolean {

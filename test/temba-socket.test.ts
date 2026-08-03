@@ -1,5 +1,5 @@
 import { assert } from '@open-wc/testing';
-import { SocketManager } from '../src/live/SocketService';
+import { ConnectionState, SocketManager } from '../src/live/SocketService';
 
 class FakeSub {
   public handlers: { [event: string]: ((ctx: any) => void)[] } = {};
@@ -49,6 +49,22 @@ class FakeCentrifuge {
   public subs = new Map<string, FakeSub>();
   public removed: FakeSub[] = [];
   public published: { channel: string; data: any }[] = [];
+
+  // creating the real client connects, so a fake starts where that leaves it
+  public state = 'connecting';
+  public handlers: { [event: string]: ((ctx: any) => void)[] } = {};
+
+  public on(event: string, fn: (ctx: any) => void) {
+    this.handlers[event] = this.handlers[event] || [];
+    this.handlers[event].push(fn);
+    return this;
+  }
+
+  // drives a connection transition as the server would
+  public transition(state: string) {
+    this.state = state;
+    (this.handlers[state] || []).forEach((handler) => handler({}));
+  }
 
   public publish(channel: string, data: any): Promise<any> {
     this.published.push({ channel, data });
@@ -199,5 +215,95 @@ describe('SocketManager', () => {
         denied = true;
       });
     assert.isTrue(denied);
+  });
+});
+
+describe('SocketManager connection state', () => {
+  it('is disconnected until something opens the connection', () => {
+    const { manager, connections } = createManager();
+
+    assert.equal(manager.getConnectionState(), ConnectionState.Disconnected);
+    assert.equal(connections(), 0);
+  });
+
+  it('picks up the state the socket is already in', () => {
+    const { manager } = createManager();
+
+    // creating the client connects, so the first transition happens before we
+    // can be listening for it
+    manager.subscribe('history:abc', () => undefined);
+    assert.equal(manager.getConnectionState(), ConnectionState.Connecting);
+  });
+
+  it('follows the connection', () => {
+    const { fake, manager } = createManager();
+    manager.subscribe('history:abc', () => undefined);
+
+    const seen: ConnectionState[] = [];
+    manager.onConnectionState((state) => seen.push(state));
+
+    fake.transition('connected');
+    fake.transition('disconnected');
+    fake.transition('connecting');
+    fake.transition('connected');
+
+    assert.deepEqual(seen, [
+      ConnectionState.Connected,
+      ConnectionState.Disconnected,
+      ConnectionState.Connecting,
+      ConnectionState.Connected
+    ]);
+    assert.equal(manager.getConnectionState(), ConnectionState.Connected);
+  });
+
+  it('gives a new handler the current state without waiting for a change', async () => {
+    const { fake, manager } = createManager();
+    manager.subscribe('history:abc', () => undefined);
+    fake.transition('connected');
+
+    const seen: ConnectionState[] = [];
+    manager.onConnectionState((state) => seen.push(state));
+
+    await Promise.resolve();
+    assert.deepEqual(seen, [ConnectionState.Connected]);
+  });
+
+  it('does not repeat a state it is already in', () => {
+    const { fake, manager } = createManager();
+    manager.subscribe('history:abc', () => undefined);
+    fake.transition('connected');
+
+    const seen: ConnectionState[] = [];
+    manager.onConnectionState((state) => seen.push(state));
+
+    fake.transition('connected');
+    assert.deepEqual(seen, []);
+  });
+
+  it('does not repeat a state a same-tick transition already delivered', async () => {
+    const { manager } = createManager();
+
+    const seen: ConnectionState[] = [];
+    // nothing has opened the connection yet, and then something does before
+    // the initial delivery lands - that transition is the handler's first
+    // word on where we are, so priming would only say it twice
+    manager.onConnectionState((state) => seen.push(state));
+    manager.subscribe('history:abc', () => undefined);
+
+    await Promise.resolve();
+    assert.deepEqual(seen, [ConnectionState.Connecting]);
+  });
+
+  it('stops telling a handler once it unsubscribes', () => {
+    const { fake, manager } = createManager();
+    manager.subscribe('history:abc', () => undefined);
+
+    const seen: ConnectionState[] = [];
+    const watch = manager.onConnectionState((state) => seen.push(state));
+    fake.transition('connected');
+    watch.unsubscribe();
+    fake.transition('disconnected');
+
+    assert.deepEqual(seen, [ConnectionState.Connected]);
   });
 });

@@ -1,6 +1,7 @@
 import { Contact } from '../interfaces';
 import { Events } from '../events/eventRenderers';
 import { getStore } from '../store/Store';
+import { Watchers } from './Watchers';
 import {
   ContactFieldChangedEvent,
   ContactFlowChangedEvent,
@@ -88,7 +89,7 @@ interface Watcher {
 }
 
 interface WatchedContact {
-  watchers: Watcher[];
+  watchers: Watchers<Watcher>;
   sub: RealtimeSubscription;
   contact: Contact;
   fetchSeq: number;
@@ -102,6 +103,12 @@ interface WatchedContact {
 }
 
 const watched = new Map<string, WatchedContact>();
+
+const newWatchers = (watcher: Watcher): Watchers<Watcher> => {
+  const watchers = new Watchers<Watcher>('contact watcher');
+  watchers.add(watcher);
+  return watchers;
+};
 
 /**
  * Serializes an engine field value from an event the way the read API
@@ -236,30 +243,15 @@ export const applyContactEvent = (
   return apply(contact, event);
 };
 
-// watchers are page components we don't control - one of them throwing can't
-// be allowed to cost the others their delivery
-const deliver = (
-  watcher: Watcher,
-  event: ContactHistoryEvent | null,
-  contact: Contact
-) => {
-  try {
-    watcher.onEvent(event, contact);
-  } catch (error) {
-    console.error('contact watcher failed', error);
-  }
-};
-
 /**
  * Hands every non-wildcard watcher the current contact as an eventless
  * delivery.
  */
 const primeAll = (entry: WatchedContact) => {
-  for (const watcher of [...entry.watchers]) {
-    if (watcher.types !== '*') {
-      deliver(watcher, null, entry.contact);
-    }
-  }
+  entry.watchers.each(
+    (watcher) => watcher.onEvent(null, entry.contact),
+    (watcher) => watcher.types !== '*'
+  );
 };
 
 const clearRefetch = (entry: WatchedContact) => {
@@ -376,11 +368,10 @@ const handleEvent = (
     }
   }
 
-  for (const watcher of [...entry.watchers]) {
-    if (matches(watcher, event.type)) {
-      deliver(watcher, event, entry.contact);
-    }
-  }
+  entry.watchers.each(
+    (watcher) => watcher.onEvent(event, entry.contact),
+    (watcher) => matches(watcher, event.type)
+  );
 };
 
 /**
@@ -393,20 +384,10 @@ const handleSubscribed = (uuid: string, entry: WatchedContact) => {
   if (needsContact(entry)) {
     fetchContact(uuid, entry);
   }
-  for (const watcher of [...entry.watchers]) {
-    notifySubscribed(watcher);
-  }
-};
-
-const notifySubscribed = (watcher: Watcher) => {
-  if (!watcher.onSubscribed) {
-    return;
-  }
-  try {
-    watcher.onSubscribed();
-  } catch (error) {
-    console.error('contact watcher failed', error);
-  }
+  entry.watchers.each(
+    (watcher) => watcher.onSubscribed(),
+    (watcher) => !!watcher.onSubscribed
+  );
 };
 
 export const watchContact = (
@@ -422,7 +403,7 @@ export const watchContact = (
     const newEntry: WatchedContact = {
       // registered before we subscribe so the first (re)subscribe already
       // knows whether anyone needs a contact held for them
-      watchers: [watcher],
+      watchers: newWatchers(watcher),
       sub: null,
       contact: null,
       fetchSeq: 0,
@@ -442,7 +423,7 @@ export const watchContact = (
     return unwatch(uuid, newEntry, watcher);
   }
 
-  entry.watchers.push(watcher);
+  entry.watchers.add(watcher);
 
   // a watcher that renders contact state joining an entry that was holding
   // none (only stream consumers so far) needs one fetched for it. On a
@@ -455,21 +436,13 @@ export const watchContact = (
   // without waiting for another fetch - async so it mirrors the fetch path
   if (entry.contact && types !== '*') {
     const contact = entry.contact;
-    Promise.resolve().then(() => {
-      if (entry.watchers.includes(watcher)) {
-        deliver(watcher, null, contact);
-      }
-    });
+    entry.watchers.prime(watcher, () => watcher.onEvent(null, contact));
   }
 
   // and joiners on an already-live channel get their initial catch-up call,
   // which they'd otherwise wait for a reconnect to see
   if (entry.subscribed && onSubscribed) {
-    Promise.resolve().then(() => {
-      if (entry.watchers.includes(watcher)) {
-        notifySubscribed(watcher);
-      }
-    });
+    entry.watchers.prime(watcher, () => watcher.onSubscribed());
   }
 
   return unwatch(uuid, entry, watcher);
@@ -481,12 +454,7 @@ const unwatch = (
   watcher: Watcher
 ): RealtimeSubscription => ({
   unsubscribe: () => {
-    const index = entry.watchers.indexOf(watcher);
-    if (index < 0) {
-      return;
-    }
-    entry.watchers.splice(index, 1);
-    if (entry.watchers.length === 0) {
+    if (entry.watchers.remove(watcher) && entry.watchers.size === 0) {
       dropEntry(uuid, entry);
     } else if (!needsContact(entry)) {
       // only stream consumers left, and nothing keeps their contact current -
@@ -544,7 +512,7 @@ const dropEntry = (uuid: string, entry: WatchedContact) => {
 // for tests - real pages just unwatch
 export const resetContactWatches = () => {
   for (const [uuid, entry] of [...watched.entries()]) {
-    entry.watchers.length = 0;
+    entry.watchers.clear();
     dropEntry(uuid, entry);
   }
 };
