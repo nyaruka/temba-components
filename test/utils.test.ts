@@ -364,6 +364,67 @@ export const waitForWatchedContact = async (uuid: string) => {
   watch.unsubscribe();
 };
 
+// every img under a root, reaching into shadow roots - almost everything we
+// render lives in one
+const collectImages = (root: ParentNode): HTMLImageElement[] => {
+  const images: HTMLImageElement[] = Array.from(root.querySelectorAll('img'));
+  root.querySelectorAll('*').forEach((ele) => {
+    if (ele.shadowRoot) {
+      images.push(...collectImages(ele.shadowRoot));
+    }
+  });
+  return images;
+};
+
+/**
+ * Waits for the images under an element to load, decode and settle, so a
+ * screenshot of it captures the images rather than the empty boxes where
+ * they will be.
+ *
+ * Screenshots otherwise lean on puppeteer's network-idle wait for this, which
+ * is a proxy for "the images arrived" rather than a check of it - and one
+ * that gives up after two seconds and screenshots the page anyway. Anything
+ * rendering an image loaded over the network needs this.
+ *
+ * Decoding matters as well as loading: a loaded image can still paint a frame
+ * late. The beat afterwards lets whatever sizes itself from the loaded image
+ * catch up - temba-thumbnail takes its aspect ratio from a ResizeObserver,
+ * which can't run until the image has dimensions, and re-renders when it
+ * does. That beat is a timer rather than animation frames, since the suite
+ * runs pages concurrently and rAF barely fires in a backgrounded one.
+ */
+export const waitForImages = async (
+  root: ParentNode,
+  timeout = 10000
+): Promise<void> => {
+  const images = collectImages(root);
+
+  const loaded = images.map(
+    (img) =>
+      new Promise<void>((resolve) => {
+        if (img.complete) {
+          resolve();
+          return;
+        }
+        img.addEventListener('load', () => resolve(), { once: true });
+        // a broken image shouldn't hold us here - let the comparison be what
+        // fails, showing a screenshot of what actually rendered
+        img.addEventListener('error', () => resolve(), { once: true });
+      })
+  );
+
+  await Promise.race([
+    Promise.all(loaded),
+    new Promise((resolve) => window.setTimeout(resolve, timeout))
+  ]);
+
+  await Promise.all(
+    images.map((img) => (img.decode ? img.decode().catch(() => null) : null))
+  );
+
+  await new Promise((resolve) => window.setTimeout(resolve, 50));
+};
+
 export const assertScreenshot = async (
   filename: string,
   clip: Clip,
