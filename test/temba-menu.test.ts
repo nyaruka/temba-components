@@ -79,8 +79,10 @@ describe('temba-menu', () => {
     menu.getDiv('#menu-tasks').click();
     await menu.httpComplete;
 
-    // now set the focus manually
-    menu.setFocusedItem('schedule');
+    // setFocusedItem is async and arms a debounced refresh of the selection
+    // path - leaving it in flight lets that refresh land in the middle of
+    // what follows
+    await menu.setFocusedItem('schedule');
 
     // setting focus does NOT fetch items
     expect(menu.root.items[IDX_SCHEDULE].items).to.equal(undefined);
@@ -92,11 +94,45 @@ describe('temba-menu', () => {
 
     await assertScreenshot('menu/menu-focused-with items', getClip(menu));
 
-    menu.setFocusedItem('tasks');
+    await menu.setFocusedItem('tasks');
     await assertScreenshot('menu/menu-tasks', getClip(menu));
 
-    menu.setFocusedItem('tasks/todo');
+    await menu.setFocusedItem('tasks/todo');
     await assertScreenshot('menu/menu-tasks-nextup', getClip(menu));
+  });
+
+  it('survives a level reloading while one of its items is loading', async () => {
+    const menu: TembaMenu = await getMenu({
+      endpoint: '/test-assets/menu/menu-root.json'
+    });
+    const schedule = menu.root.items[IDX_SCHEDULE];
+
+    // load an item's children, then reload the level underneath it before
+    // those children land - which is what a debounced refresh firing during
+    // a click does
+    menu.getDiv('#menu-schedule').click();
+    menu.reset();
+    await menu.httpComplete;
+
+    // the reload reused the item rather than swapping in a copy, so the
+    // children landed somewhere still in the tree
+    assert.strictEqual(menu.root.items[IDX_SCHEDULE], schedule);
+    expect(menu.root.items[IDX_SCHEDULE].items.length).to.equal(3);
+  });
+
+  it('waits for every load in flight', async () => {
+    const menu: TembaMenu = await getMenu({
+      endpoint: '/test-assets/menu/menu-root.json'
+    });
+
+    // two overlapping loads - awaiting has to cover both, not just whichever
+    // one was started last
+    menu.getDiv('#menu-tasks').click();
+    menu.getDiv('#menu-schedule').click();
+    await menu.httpComplete;
+
+    expect(menu.root.items[IDX_TASKS].items.length).to.equal(3);
+    expect(menu.root.items[IDX_SCHEDULE].items.length).to.equal(3);
   });
 
   it('refreshes', async () => {
