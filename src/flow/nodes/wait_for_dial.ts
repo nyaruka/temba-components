@@ -34,6 +34,7 @@ export const wait_for_dial: NodeConfig = {
       label: 'Phone Number',
       required: true,
       evaluated: true,
+      maxLength: 1000,
       placeholder: 'Phone number or expression'
     },
     dial_limit_seconds: {

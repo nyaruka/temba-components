@@ -20,6 +20,7 @@ export const set_contact_name: ActionConfig = {
       placeholder: 'Enter contact name...',
       required: true,
       evaluated: true,
+      maxLength: 1000,
       helpText:
         'The new name for the contact. You can use expressions like @contact.name'
     }

@@ -117,7 +117,8 @@ export const send_msg: ActionConfig = {
           type: 'text',
           placeholder: 'Expression (e.g. @contact.photo)',
           required: true,
-          evaluated: true
+          evaluated: true,
+          maxLength: 8192
         }
       }
     }
