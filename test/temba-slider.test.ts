@@ -1,12 +1,24 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import { TemplateResult } from 'lit';
 import { TembaSlider } from '../src/form/TembaSlider';
-import { assertScreenshot, getClip, showMouse } from './utils.test';
+import {
+  assertScreenshot,
+  getClip,
+  showMouse,
+  waitForAnimations
+} from './utils.test';
 
 const createSlider = async (def: TemplateResult) => {
   const parentNode = document.createElement('div');
   parentNode.setAttribute('style', 'width: 200px;');
   return await fixture<TembaSlider>(def, { parentNode });
+};
+
+// the circle scales up while it is grabbed and eases back over 200ms once it
+// is let go, so releasing the mouse leaves it mid-transition
+const settle = async (slider: TembaSlider) => {
+  await slider.updateComplete;
+  await waitForAnimations(slider.shadowRoot.querySelector('.circle'));
 };
 
 describe('temba-slider', () => {
@@ -174,6 +186,7 @@ describe('temba-slider', () => {
     await mouseUp();
 
     expect(slider.value).to.equal('75');
+    await settle(slider);
     await assertScreenshot(
       'slider/update-slider-on-track-clicked',
       getClip(slider)
@@ -198,6 +211,7 @@ describe('temba-slider', () => {
     await mouseUp();
 
     expect(slider.value).to.equal('80');
+    await settle(slider);
     await assertScreenshot(
       'slider/update-slider-on-circle-dragged',
       getClip(slider)
