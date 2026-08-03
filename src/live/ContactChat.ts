@@ -64,10 +64,11 @@ const STATE_REFRESH_INTERVAL = 60000;
 // re-export for backwards compatibility
 export { renderTicketAction, renderTicketAssigneeChanged };
 
-interface SearchResult {
+export interface SearchResult {
   uuid: string;
   type: string;
   created_on: string;
+  ticket_uuid?: string;
   msg?: any;
   _user?: any;
   [key: string]: any;
@@ -746,6 +747,9 @@ export class ContactChat extends ContactStoreElement {
   public connectedCallback() {
     super.connectedCallback();
     this.chat = this.shadowRoot.querySelector('temba-chat');
+    // a search handed off before we had a chat to run it in only waits on
+    // the contact, which may already be loaded
+    this.tryPendingSearch();
     this.updateSubscriptions();
     this.stateRefresh = window.setInterval(
       () => this.requestUpdate(),
@@ -782,6 +786,7 @@ export class ContactChat extends ContactStoreElement {
         this.fetchMissedEvents();
       }
       this.fetchPreviousMessages();
+      this.tryPendingSearch();
     }
   }
 
@@ -1056,22 +1061,44 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
+  /**
+   * Clears the state of the current search - its query, results and the
+   * flags driving the search bar. Opening a fresh search keeps whatever
+   * lastSearchedQuery was, so its results can be re-run; closing or
+   * starting a new one drops it too.
+   */
+  private resetSearchState(query = '', clearLastSearched = false) {
+    this.searchQuery = query;
+    this.searchResults = [];
+    this.searchIndex = -1;
+    this.searchLoading = false;
+    this.searchNoResults = false;
+    if (clearLastSearched) {
+      this.lastSearchedQuery = '';
+    }
+  }
+
+  /** Focuses the search input once the search bar has rendered. */
+  private focusSearchInput() {
+    window.setTimeout(() => {
+      const input = this.shadowRoot.querySelector('.search-input') as any;
+      if (input) {
+        input.focus();
+      }
+    }, 50);
+  }
+
   private handleSearchToggle() {
+    // an opening or closing search supersedes any hand-off still waiting
+    // on a contact to load
+    this.pendingSearch = null;
+
     if (this.searchMode) {
       this.handleSearchClose();
     } else {
       this.searchMode = true;
-      this.searchQuery = '';
-      this.searchResults = [];
-      this.searchIndex = -1;
-      this.searchLoading = false;
-      this.searchNoResults = false;
-      window.setTimeout(() => {
-        const input = this.shadowRoot.querySelector('.search-input') as any;
-        if (input) {
-          input.focus();
-        }
-      }, 50);
+      this.resetSearchState();
+      this.focusSearchInput();
     }
   }
 
@@ -1098,16 +1125,20 @@ export class ContactChat extends ContactStoreElement {
     // supersede any in-flight match navigation right away — its chain
     // must not re-assert highlights over the restored view below
     this.searchGeneration++;
+    // and a hand-off waiting on a contact must not reopen search behind
+    // the user once it lands
+    this.pendingSearch = null;
     this.searchClosing = true;
     window.setTimeout(() => {
       this.searchClosing = false;
       this.searchMode = false;
-      this.searchQuery = '';
-      this.searchResults = [];
-      this.searchIndex = -1;
-      this.searchLoading = false;
-      this.searchNoResults = false;
-      this.lastSearchedQuery = '';
+      // if a hand-off forced the search bar onto a conversation the host
+      // had opted out of, put the host's choice back
+      if (this.forcedShowSearch) {
+        this.forcedShowSearch = false;
+        this.showSearch = false;
+      }
+      this.resetSearchState('', true);
       this.restoreUnsearchedView();
     }, 150);
   }
@@ -1115,6 +1146,10 @@ export class ContactChat extends ContactStoreElement {
   private handleSearchInput(e: Event) {
     const input = e.target as HTMLInputElement;
     this.searchQuery = input.value;
+
+    // the user typing their own query supersedes any hand-off still
+    // waiting on a contact to load
+    this.pendingSearch = null;
 
     // any edit away from the searched query invalidates its results —
     // drop them and put the history back at its unsearched view rather
@@ -1138,6 +1173,77 @@ export class ContactChat extends ContactStoreElement {
 
   // tracks the query that produced the current searchResults
   private lastSearchedQuery = '';
+
+  // a search requested (e.g. from the cross-ticket search modal) before the
+  // contact had loaded — executed once that contact and the chat are ready
+  private pendingSearch: {
+    query: string;
+    event: SearchResult;
+    contactUuid: string;
+  } = null;
+
+  // whether startSearch turned showSearch on for a hand-off, so closing the
+  // search can restore the host's opt-out
+  private forcedShowSearch = false;
+
+  /**
+   * Opens search mode and executes the given query, landing on the given
+   * event — which is inserted into the results if the endpoint's matches
+   * don't reach back far enough to include it. Safe to call before the
+   * contact has finished loading — the search runs once it has.
+   */
+  public startSearch(query: string, event: SearchResult = null): void {
+    if (!query || !query.trim()) {
+      return;
+    }
+    this.searchMode = true;
+    // hosts only turn search on for some conversations (e.g. once a contact
+    // has been seen), but a hand-off always needs the bar - it carries the
+    // match stepper and the only way back out of the searched view. Track
+    // when we forced it so closing the search restores the host's choice
+    if (!this.showSearch) {
+      this.showSearch = true;
+      this.forcedShowSearch = true;
+    }
+    this.resetSearchState(query, true);
+    // the contact the host has asked us to show, which may still be
+    // loading — the search belongs to it and nobody else
+    this.pendingSearch = {
+      query: query.trim(),
+      event,
+      contactUuid: this.contact
+    };
+    this.focusSearchInput();
+    this.tryPendingSearch();
+  }
+
+  private tryPendingSearch(): void {
+    const pending = this.pendingSearch;
+    if (!pending || !this.currentContact || !this.chat) {
+      return;
+    }
+
+    // the search was requested for a specific contact — hold it while that
+    // contact is still loading, but drop it once the host has moved on to
+    // another one rather than running it against the wrong history
+    if (
+      pending.contactUuid &&
+      pending.contactUuid !== this.currentContact.uuid
+    ) {
+      if (pending.contactUuid !== this.contact) {
+        this.pendingSearch = null;
+      }
+      return;
+    }
+
+    // executeSearch declines while another search is still in flight — keep
+    // the hand-off queued in that case so a later update can run it rather
+    // than dropping it on the floor
+    this.searchQuery = pending.query;
+    if (this.executeSearch(pending.event)) {
+      this.pendingSearch = null;
+    }
+  }
 
   // bumped whenever the current search is superseded (new search, query
   // edit, close) — navigateToResult's async fade/load chain captures the
@@ -1163,10 +1269,11 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
-  private executeSearch() {
+  /** Runs the current query, returning whether it was actually started. */
+  private executeSearch(targetEvent: SearchResult = null): boolean {
     const query = this.searchQuery.trim();
     if (!query || !this.currentContact || this.searchLoading) {
-      return;
+      return false;
     }
 
     // a fresh search supersedes any navigation still in flight
@@ -1182,7 +1289,17 @@ export class ContactChat extends ContactStoreElement {
       this.chat.reset();
     }
 
-    const url = `/contact/chat_search/${this.currentContact.uuid}/?text=${encodeURIComponent(query)}`;
+    // a ticket-scoped chat only shows this ticket's history, so its search
+    // only covers this ticket's messages too. The endpoint narrows the
+    // search to ticket messages and drops the other tickets' matches
+    // itself, so its cap is no longer spent on messages this view can't
+    // show — matches from the contact's other tickets can still crowd out
+    // this one's, so the cap isn't per-ticket
+    let url = `/contact/chat_search/${this.currentContact.uuid}/?text=${encodeURIComponent(query)}`;
+    if (this.currentTicket) {
+      url += `&ticket=${encodeURIComponent(this.currentTicket.uuid)}`;
+    }
+
     getUrl(url)
       .then((response: WebResponse) => {
         this.searchLoading = false;
@@ -1198,15 +1315,32 @@ export class ContactChat extends ContactStoreElement {
         // through the list), so order the results newest-first here rather
         // than depending on the endpoint's ordering (uuid v7 sorts
         // chronologically, matching the uuid comparisons used elsewhere)
-        this.searchResults = (
-          (response.json.results || []) as SearchResult[]
-        ).sort((a, b) =>
-          b.uuid.toLowerCase().localeCompare(a.uuid.toLowerCase())
+        const results = ((response.json.results || []) as SearchResult[]).sort(
+          (a, b) => b.uuid.toLowerCase().localeCompare(a.uuid.toLowerCase())
         );
+
+        // the endpoint caps how many matches it returns, so the event we
+        // were handed off may not be among them — splice it into its own
+        // spot in the ordering so the hand-off always lands on it
+        if (targetEvent && !results.some((r) => r.uuid === targetEvent.uuid)) {
+          const older = results.findIndex(
+            (r) =>
+              r.uuid
+                .toLowerCase()
+                .localeCompare(targetEvent.uuid.toLowerCase()) < 0
+          );
+          results.splice(older === -1 ? results.length : older, 0, targetEvent);
+        }
+        this.searchResults = results;
+
         if (this.searchResults.length > 0) {
           this.searchNoResults = false;
-          this.searchIndex = 0;
-          this.navigateToResult(0);
+          const targetIndex = targetEvent
+            ? this.searchResults.findIndex((r) => r.uuid === targetEvent.uuid)
+            : -1;
+          const index = targetIndex !== -1 ? targetIndex : 0;
+          this.searchIndex = index;
+          this.navigateToResult(index);
         } else {
           this.searchNoResults = true;
           this.searchIndex = -1;
@@ -1221,6 +1355,8 @@ export class ContactChat extends ContactStoreElement {
         this.searchIndex = -1;
         this.searchNoResults = false;
       });
+
+    return true;
   }
 
   private navigateToResult(index: number) {
@@ -1638,6 +1774,8 @@ export class ContactChat extends ContactStoreElement {
     if (this.currentContact) {
       const endpoint = this.getEndpoint();
       if (!endpoint) {
+        // nothing to fetch — don't leave the chat wedged as fetching
+        chat.fetching = false;
         return;
       }
 
@@ -1649,12 +1787,21 @@ export class ContactChat extends ContactStoreElement {
         this.afterUUID = anchorUUID;
       }
 
+      const requestedBefore = this.beforeUUID;
       fetchContactHistory(
         endpoint,
         this.currentTicket?.uuid,
         this.beforeUUID,
         null
       ).then((page: ContactHistoryPage) => {
+        // the view was repositioned while this page was in flight (e.g. a
+        // search navigated to a match and re-anchored the history) — drop
+        // it rather than stacking the old view's messages on the new one
+        if (this.beforeUUID !== requestedBefore) {
+          chat.fetching = false;
+          return;
+        }
+
         const messages = this.createMessages(page);
         messages.reverse();
 
@@ -1925,7 +2072,7 @@ export class ContactChat extends ContactStoreElement {
                 clickable
                 title="Search"
                 aria-label="Run search"
-                @click=${this.executeSearch}
+                @click=${() => this.executeSearch()}
               ></temba-icon>`
           : this.searchResults.length > 0
             ? html`<div class="match-pager">

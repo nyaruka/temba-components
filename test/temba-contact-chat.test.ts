@@ -619,6 +619,208 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-search-result', getClip(chat));
   });
 
+  it('starts a search programmatically landing on the given event', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    // ask for the older of the two matches
+    chat.startSearch('primus', {
+      uuid: '01997d74-bf67-7199-8e8a-200e41a90d71',
+      type: 'msg_received',
+      created_on: '2025-09-23T20:40:27.239431+00:00'
+    });
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+
+    expect(chat.searchMode).to.equal(true);
+    expect(chat.searchQuery).to.equal('primus');
+    expect(chat.searchResults.length).to.equal(2);
+
+    // landed on the requested event, not the most recent match
+    expect(chat.searchIndex).to.equal(1);
+    expect(chat.searchResults[1].uuid).to.equal(
+      '01997d74-bf67-7199-8e8a-200e41a90d71'
+    );
+  });
+
+  it('runs a programmatic search requested before the contact loads', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat = (await getComponent(
+      TAG,
+      { contact: 'contact-dave-active', endpoint: '/test-assets/contacts/' },
+      '',
+      500,
+      500,
+      'display:flex;flex-direction:column;flex-grow:1;min-height:0;'
+    )) as ContactChat;
+
+    // request the search before the contact has finished loading - it should
+    // execute once it has
+    chat.startSearch('primus');
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      150,
+      400
+    );
+
+    expect(chat.searchMode).to.equal(true);
+    expect(chat.searchResults.length).to.equal(2);
+    expect(chat.searchIndex).to.equal(0);
+  });
+
+  it('restores the host search opt-out when a handed-off search closes', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    // the host has not enabled search for this conversation
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    expect(chat.showSearch).to.equal(false);
+
+    // a hand-off forces the bar on so the searched view can be navigated
+    chat.startSearch('primus');
+    expect(chat.showSearch).to.equal(true);
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+
+    // closing the search puts the host's opt-out back
+    (chat as any).handleSearchClose();
+    clock.tick(200);
+    await chat.updateComplete;
+    expect(chat.searchMode).to.equal(false);
+    expect(chat.showSearch).to.equal(false);
+  });
+
+  it('never runs a handed-off search against a different contact', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat = (await getComponent(
+      TAG,
+      { endpoint: '/test-assets/contacts/' },
+      '',
+      500,
+      500,
+      'display:flex;flex-direction:column;flex-grow:1;min-height:0;'
+    )) as ContactChat;
+
+    // hand a search off for dave and switch to carter in the same tick, so
+    // carter is the only contact that ever loads
+    chat.contact = 'contact-dave-active';
+    chat.startSearch('primus');
+    chat.contact = 'contact-carter-active';
+
+    await settle(
+      () => chat.currentContact?.uuid === 'contact-carter-active',
+      150,
+      400
+    );
+    await settleLoaded(chat);
+
+    // dave's search was dropped rather than run against carter's history
+    expect((chat as any).pendingSearch).to.equal(null);
+    expect(chat.searchResults.length).to.equal(0);
+  });
+
+  it('lands on a handed-off event the endpoint did not return', async () => {
+    await loadStore();
+
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    // the endpoint caps its matches, so hand off an event it didn't return -
+    // its uuid sorts between the two that it did
+    chat.startSearch('primus', {
+      uuid: '01997d74-bf67-7500-8e8a-200e41a90d71',
+      type: 'msg_received',
+      created_on: '2025-09-23T20:40:27.239432+00:00'
+    });
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+
+    // spliced into its newest-first spot, and navigated to
+    expect(chat.searchResults.length).to.equal(3);
+    expect(chat.searchResults[1].uuid).to.equal(
+      '01997d74-bf67-7500-8e8a-200e41a90d71'
+    );
+    expect(chat.searchIndex).to.equal(1);
+  });
+
+  it('scopes a ticket chat search to its ticket', async () => {
+    await loadStore();
+
+    // only a request carrying the ticket param is mocked, so results can
+    // only appear if the search was scoped server-side
+    mockGET(
+      /\/contact\/chat_search\/.*\?text=primus&ticket=ticket-1/,
+      '/test-assets/contacts/chat-search-primus.json'
+    );
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    chat.currentTicket = {
+      uuid: 'ticket-1',
+      topic: { uuid: 'topic-1', name: 'General' },
+      assignee: null,
+      closed_on: null
+    } as any;
+    await chat.updateComplete;
+
+    chat.startSearch('primus');
+
+    await settle(
+      () => chat.searchResults && chat.searchResults.length > 0,
+      50,
+      30
+    );
+
+    expect(chat.searchResults.length).to.equal(2);
+  });
+
   it('clears stale results when the query changes or is emptied', async () => {
     await loadStore();
 
