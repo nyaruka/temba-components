@@ -280,6 +280,20 @@ describe('SocketManager connection state', () => {
     assert.deepEqual(seen, []);
   });
 
+  it('does not repeat a state a same-tick transition already delivered', async () => {
+    const { manager } = createManager();
+
+    const seen: ConnectionState[] = [];
+    // nothing has opened the connection yet, and then something does before
+    // the initial delivery lands - that transition is the handler's first
+    // word on where we are, so priming would only say it twice
+    manager.onConnectionState((state) => seen.push(state));
+    manager.subscribe('history:abc', () => undefined);
+
+    await Promise.resolve();
+    assert.deepEqual(seen, [ConnectionState.Connecting]);
+  });
+
   it('stops telling a handler once it unsubscribes', () => {
     const { fake, manager } = createManager();
     manager.subscribe('history:abc', () => undefined);

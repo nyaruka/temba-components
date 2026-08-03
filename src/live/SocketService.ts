@@ -129,11 +129,16 @@ export class SocketManager implements SocketProvider {
     return this.socket;
   }
 
+  // counts transitions, so an initial delivery can tell whether one beat it
+  // to the handler
+  private stateSeq = 0;
+
   private setState(state: ConnectionState): void {
     if (!state || state === this.state) {
       return;
     }
     this.state = state;
+    this.stateSeq++;
     this.stateHandlers.each((handler) => handler(state));
   }
 
@@ -154,7 +159,18 @@ export class SocketManager implements SocketProvider {
     handler: ConnectionStateHandler
   ): SocketSubscription {
     this.stateHandlers.add(handler);
-    this.stateHandlers.prime(handler, () => handler(this.state));
+
+    // where we are now, rather than wherever we've got to by the time the
+    // prime lands - opening the connection in this same tick transitions us
+    // and delivers that to the handler ahead of it, and saying the same thing
+    // again is the repeat this is supposed to suppress
+    const initial = this.state;
+    const seq = this.stateSeq;
+    this.stateHandlers.prime(handler, () => {
+      if (this.stateSeq === seq) {
+        handler(initial);
+      }
+    });
     return {
       unsubscribe: () => {
         this.stateHandlers.remove(handler);
