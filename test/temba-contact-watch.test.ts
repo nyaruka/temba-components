@@ -165,6 +165,42 @@ describe('ContactWatch', () => {
       assert.equal(delivered.name, 'Dave Matthews');
       assert.equal(contactFetches(getUrl).length, 1);
     });
+
+    it('fetches again for a state watcher joining after the last one left', async () => {
+      let subscribed = 0;
+      watchContact(
+        CONTACT,
+        '*',
+        () => undefined,
+        () => subscribed++
+      );
+      await waitForCondition(() => subscribed === 1);
+
+      let delivered: Contact = null;
+      const state = watchContact(
+        CONTACT,
+        CONTACT_STATE_TYPES,
+        (_event, contact) => {
+          delivered = contact;
+        }
+      );
+      await waitForCondition(() => !!delivered);
+      assert.equal(contactFetches(getUrl).length, 1);
+
+      // the details pane closes, but the chat's stream keeps the entry alive
+      state.unsubscribe();
+
+      // nothing holds that contact current any more, so a state watcher
+      // joining later has to fetch rather than be primed with what we last
+      // saw and stopped maintaining
+      let rejoined: Contact = null;
+      watchContact(CONTACT, CONTACT_STATE_TYPES, (_event, contact) => {
+        rejoined = contact;
+      });
+
+      await waitForCondition(() => !!rejoined);
+      assert.equal(contactFetches(getUrl).length, 2);
+    });
   });
 
   describe('applyContactEvent', () => {

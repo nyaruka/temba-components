@@ -452,6 +452,12 @@ const unwatch = (
     entry.watchers.splice(index, 1);
     if (entry.watchers.length === 0) {
       dropEntry(uuid, entry);
+    } else if (!needsContact(entry)) {
+      // only stream consumers left, and nothing keeps their contact current -
+      // holding onto this one would leave it drifting until a state watcher
+      // joined later and got primed with the drift
+      entry.contact = null;
+      clearRefetch(entry);
     }
   }
 });
