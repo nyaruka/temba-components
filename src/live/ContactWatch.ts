@@ -28,7 +28,12 @@ import { RealtimeSubscription, subscribeToContactHistory } from './Realtime';
  * unsubscribes the socket subscription and cached contact are dropped.
  *
  * Wildcard watchers are event-stream consumers (e.g. chat renders history) -
- * they get every live event but no eventless deliveries.
+ * they get every live event but no eventless deliveries, and an entry with
+ * only those holds no contact and fetches nothing. They keep their own copy
+ * instead, applying events to it with applyContactEvent so how an event
+ * changes a contact is still defined in one place. Any watcher can pass
+ * onSubscribed to be told when the channel goes live, which is where a
+ * stream consumer catches up on what it missed while offline.
  */
 
 // same shape components previously fetched themselves - urns are expanded and
@@ -65,6 +70,7 @@ export type ContactEventHandler = (event: any, contact: Contact) => void;
 interface Watcher {
   types: string[] | '*';
   onEvent: ContactEventHandler;
+  onSubscribed?: () => void;
 }
 
 interface WatchedContact {
@@ -76,6 +82,9 @@ interface WatchedContact {
   // events landing while one is outstanding need a refetch to survive
   fetching: number;
   refetchTimer: number;
+  // whether the channel is live, so watchers joining an already-subscribed
+  // channel still get their initial catch-up call
+  subscribed: boolean;
 }
 
 const watched = new Map<string, WatchedContact>();
@@ -170,6 +179,33 @@ const refetchTypes = new Set<string>([Events.CONTACT_URNS_CHANGED]);
 
 const matches = (watcher: Watcher, type: string): boolean => {
   return watcher.types === '*' || watcher.types.includes(type);
+};
+
+/**
+ * Whether anyone is watching this contact's *state*. Wildcard watchers are
+ * stream consumers - they take the events and keep their own view of the
+ * contact - so an entry with only those has no contact to hold current and
+ * nothing to fetch.
+ */
+const needsContact = (entry: WatchedContact): boolean => {
+  return entry.watchers.some((watcher) => watcher.types !== '*');
+};
+
+/**
+ * Applies a live contact event to a contact, the same way the registry
+ * applies it to the one it holds. Exposed for stream consumers that keep
+ * their own copy, so how an event changes a contact is defined once.
+ * Returns false when the event couldn't be applied.
+ */
+export const applyContactEvent = (
+  contact: Contact,
+  event: any
+): boolean | void => {
+  const apply = appliers[event.type];
+  if (!contact || !apply) {
+    return;
+  }
+  return apply(contact, event);
 };
 
 // watchers are page components we don't control - one of them throwing can't
@@ -294,11 +330,14 @@ const handleEvent = (uuid: string, entry: WatchedContact, event: any) => {
   // was no snapshot to patch, a fetch that predates the event is still in
   // flight, or the applier couldn't resolve what it needed. Scheduling ahead
   // of the fan-out keeps a throwing watcher from costing us the refetch, and
-  // the debounce collapses a burst into a single fetch
-  const stale =
-    !!apply && (!entry.contact || entry.fetching > 0 || applied === false);
-  if (stale || refetchTypes.has(event.type)) {
-    scheduleRefetch(uuid, entry);
+  // the debounce collapses a burst into a single fetch. Entries nobody needs
+  // a contact from have nothing to keep current
+  if (needsContact(entry)) {
+    const stale =
+      !!apply && (!entry.contact || entry.fetching > 0 || applied === false);
+    if (stale || refetchTypes.has(event.type)) {
+      scheduleRefetch(uuid, entry);
+    }
   }
 
   for (const watcher of [...entry.watchers]) {
@@ -308,20 +347,52 @@ const handleEvent = (uuid: string, entry: WatchedContact, event: any) => {
   }
 };
 
+/**
+ * A (re)subscribe on the contact's channel. Watchers that render contact
+ * state get a fresh fetch; every watcher that asked for it gets told, so
+ * stream consumers can fetch whatever they missed while we were away.
+ */
+const handleSubscribed = (uuid: string, entry: WatchedContact) => {
+  entry.subscribed = true;
+  if (needsContact(entry)) {
+    fetchContact(uuid, entry);
+  }
+  for (const watcher of [...entry.watchers]) {
+    notifySubscribed(watcher);
+  }
+};
+
+const notifySubscribed = (watcher: Watcher) => {
+  if (!watcher.onSubscribed) {
+    return;
+  }
+  try {
+    watcher.onSubscribed();
+  } catch (error) {
+    console.error('contact watcher failed', error);
+  }
+};
+
 export const watchContact = (
   uuid: string,
   types: string[] | '*',
-  onEvent: ContactEventHandler
+  onEvent: ContactEventHandler,
+  onSubscribed?: () => void
 ): RealtimeSubscription => {
-  let entry = watched.get(uuid);
+  const entry = watched.get(uuid);
+  const watcher: Watcher = { types, onEvent, onSubscribed };
+
   if (!entry) {
     const newEntry: WatchedContact = {
-      watchers: [],
+      // registered before we subscribe so the first (re)subscribe already
+      // knows whether anyone needs a contact held for them
+      watchers: [watcher],
       sub: null,
       contact: null,
       fetchSeq: 0,
       fetching: 0,
-      refetchTimer: null
+      refetchTimer: null,
+      subscribed: false
     };
     watched.set(uuid, newEntry);
     newEntry.sub = subscribeToContactHistory(
@@ -330,13 +401,19 @@ export const watchContact = (
       (event) => handleEvent(uuid, newEntry, event),
       // fires on every (re)subscribe incl. after reconnects - (re)fetch so
       // watchers see anything that changed while we weren't listening
-      () => fetchContact(uuid, newEntry)
+      () => handleSubscribed(uuid, newEntry)
     );
-    entry = newEntry;
+    return unwatch(uuid, newEntry, watcher);
   }
 
-  const watcher: Watcher = { types, onEvent };
   entry.watchers.push(watcher);
+
+  // a watcher that renders contact state joining an entry that was holding
+  // none (only stream consumers so far) needs one fetched for it. On a
+  // channel that isn't live yet the pending (re)subscribe covers it
+  if (types !== '*' && entry.subscribed && !entry.contact && !entry.fetching) {
+    fetchContact(uuid, entry);
+  }
 
   // late joiners on an already-fetched contact get their initial delivery
   // without waiting for another fetch - async so it mirrors the fetch path
@@ -349,19 +426,41 @@ export const watchContact = (
     });
   }
 
-  return {
-    unsubscribe: () => {
-      const index = entry.watchers.indexOf(watcher);
-      if (index < 0) {
-        return;
+  // and joiners on an already-live channel get their initial catch-up call,
+  // which they'd otherwise wait for a reconnect to see
+  if (entry.subscribed && onSubscribed) {
+    Promise.resolve().then(() => {
+      if (entry.watchers.includes(watcher)) {
+        notifySubscribed(watcher);
       }
-      entry.watchers.splice(index, 1);
-      if (entry.watchers.length === 0) {
-        dropEntry(uuid, entry);
-      }
-    }
-  };
+    });
+  }
+
+  return unwatch(uuid, entry, watcher);
 };
+
+const unwatch = (
+  uuid: string,
+  entry: WatchedContact,
+  watcher: Watcher
+): RealtimeSubscription => ({
+  unsubscribe: () => {
+    const index = entry.watchers.indexOf(watcher);
+    if (index < 0) {
+      return;
+    }
+    entry.watchers.splice(index, 1);
+    if (entry.watchers.length === 0) {
+      dropEntry(uuid, entry);
+    } else if (!needsContact(entry)) {
+      // only stream consumers left, and nothing keeps their contact current -
+      // holding onto this one would leave it drifting until a state watcher
+      // joined later and got primed with the drift
+      entry.contact = null;
+      clearRefetch(entry);
+    }
+  }
+});
 
 /**
  * Pushes a fresh copy of a contact into the registry, priming its watchers.
