@@ -25,7 +25,8 @@ import { RapidElement } from '../RapidElement';
 import {
   RealtimeSubscription,
   setRealtimeContext,
-  subscribeToOrganization
+  subscribeToOrganization,
+  OrganizationEvent
 } from '../live/Realtime';
 import { lru } from 'tiny-lru';
 import { DateTime } from 'luxon';
@@ -863,8 +864,8 @@ export class Store extends RapidElement {
     this.assetVersions.set(identity, ++this.assetVersion);
   }
 
-  private handleOrganizationEvent(event: any): void {
-    const asset = event?.asset as StoreAsset;
+  private handleOrganizationEvent(event: OrganizationEvent): void {
+    const asset = event?.asset;
     const identity = assetIdentity(asset);
     if (
       event?.type !== 'asset_changed' ||

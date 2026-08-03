@@ -59,6 +59,10 @@ export enum Events {
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
   TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
+  // ephemeral, drives the chat's typing indicator instead of recording
+  // history - published by agents as they compose and never persisted
+  TYPING_STARTED = 'typing_started',
+  TYPING_STOPPED = 'typing_stopped',
   WARNING = 'warning',
   WEBHOOK_CALLED = 'webhook_called'
 }
