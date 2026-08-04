@@ -1,4 +1,5 @@
 import { fixture, assert, expect } from '@open-wc/testing';
+import { stub } from 'sinon';
 import { MarkdownEditor } from '../src/form/MarkdownEditor';
 import {
   blockOf,
@@ -802,6 +803,48 @@ describe(TAG, () => {
       await editor.updateComplete;
 
       assert.isNotOk(editor.shadowRoot.querySelector('.linkbar'));
+    });
+
+    it('places the caret on a click rather than following the link', async () => {
+      const editor = await getEditor('see the [docs](https://example.com) now');
+      const anchor = blocks(editor)[0].querySelector('a');
+
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        composed: true,
+        cancelable: true
+      });
+      anchor.dispatchEvent(click);
+
+      // navigating would take the unsaved article with it
+      assert.isTrue(click.defaultPrevented);
+    });
+
+    it('opens the link in a window of its own on cmd or ctrl click', async () => {
+      const editor = await getEditor('see the [docs](https://example.com) now');
+      const anchor = blocks(editor)[0].querySelector('a');
+      const opened = stub(window, 'open');
+
+      try {
+        for (const modifier of [{ metaKey: true }, { ctrlKey: true }]) {
+          opened.resetHistory();
+
+          const click = new MouseEvent('click', {
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+            ...modifier
+          });
+          anchor.dispatchEvent(click);
+
+          assert.isTrue(click.defaultPrevented);
+          assert.isTrue(
+            opened.calledOnceWith('https://example.com/', '_blank', 'noopener')
+          );
+        }
+      } finally {
+        opened.restore();
+      }
     });
   });
 
