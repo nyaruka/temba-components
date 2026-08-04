@@ -326,6 +326,19 @@ export interface Shortcut {
   modified_on: string;
 }
 
+/** One helpdesk article, as served by the articles endpoint. The
+ * endpoint returns the whole tree flattened into display order, so
+ * `depth` is what a row is nested by and `parent` is what the sort
+ * endpoint is told about. */
+export interface Article {
+  uuid: string;
+  title: string;
+  status: string;
+  parent: string | null;
+  depth: number;
+  modified_on: string;
+}
+
 export interface ContactField {
   key: string;
   label: string;
@@ -527,6 +540,7 @@ export enum CustomEventType {
   RowClick = 'temba-row-click',
   ShortcutEdit = 'temba-shortcut-edit',
   ShortcutDelete = 'temba-shortcut-delete',
+  ArticleDelete = 'temba-article-delete',
   SelectionChange = 'temba-selection-change',
   BulkAction = 'temba-bulk-action',
   /** The label dropdown's "New Label…" row was clicked — detail

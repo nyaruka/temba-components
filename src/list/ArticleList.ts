@@ -1,0 +1,683 @@
+import { css, html, PropertyValues, TemplateResult } from 'lit';
+import { property, state } from 'lit/decorators.js';
+import { Icon } from '../Icons';
+import { Article, CustomEventType } from '../interfaces';
+import { postJSON } from '../utils';
+import { ContentList, ContentListColumn } from './ContentList';
+
+/** Pixels of indent per level of nesting. Also the horizontal travel a
+ * drag needs to change the level it would land at, and the spacing of
+ * the guide rails - all three are the same measure, so a row always
+ * lands where its rail says it will. */
+export const INDENT = 20;
+
+/** An article annotated for display. The endpoint hands back the tree
+ * already flattened into display order, and everything below is
+ * derived from that order rather than from the parent links. */
+export interface ArticleRow extends Article {
+  /** Deepest descendant's depth relative to ours - 0 for a leaf. Taken
+   * over the whole tree rather than the visible rows, so a collapsed
+   * branch still counts against the depth cap when it's dragged. */
+  height: number;
+}
+
+/** One entry of the ordering posted to the sort endpoint. */
+export interface ArticleOrder {
+  uuid: string;
+  parent: string | null;
+  sort_order: number;
+}
+
+/**
+ * Annotates a flattened tree with each row's subtree height. Rows are
+ * in depth-first order, so an article's descendants are exactly the
+ * rows that follow it until one at its own depth or shallower.
+ */
+export function annotateTree(articles: Article[]): ArticleRow[] {
+  return articles.map((article, index) => {
+    const depth = article.depth || 0;
+    let height = 0;
+    for (
+      let i = index + 1;
+      i < articles.length && (articles[i].depth || 0) > depth;
+      i++
+    ) {
+      height = Math.max(height, (articles[i].depth || 0) - depth);
+    }
+    return { ...article, depth, height };
+  });
+}
+
+/** The rows a collapsed tree actually shows - everything except the
+ * descendants of a collapsed article. */
+export function visibleRows(
+  rows: ArticleRow[],
+  collapsed: Set<string>
+): ArticleRow[] {
+  const visible: ArticleRow[] = [];
+  let hidingBelow = -1; // depth of the collapsed row we're inside, -1 when we aren't
+
+  for (const row of rows) {
+    if (hidingBelow >= 0 && row.depth > hidingBelow) {
+      continue;
+    }
+    hidingBelow = collapsed.has(row.uuid) && row.height > 0 ? row.depth : -1;
+    visible.push(row);
+  }
+
+  return visible;
+}
+
+/**
+ * Moves the article at `from`, with its subtree, to flat position
+ * `dropIndex` at `wantedDepth`, and returns the resulting order.
+ * Returns null when the move isn't one that can be made - a subtree
+ * can't be dropped inside itself.
+ *
+ * Nothing here is authoritative: the resulting order is posted whole
+ * and the server re-derives the tree from it, rejecting cycles and
+ * anything nested past the cap. The clamping is so that what the user
+ * sees while dragging is what they'll get, not a validation step.
+ */
+export function moveSubtree(
+  rows: ArticleRow[],
+  from: number,
+  dropIndex: number,
+  wantedDepth: number,
+  maxDepth: number
+): ArticleRow[] | null {
+  const dragged = rows[from];
+  if (!dragged) {
+    return null;
+  }
+
+  // the rows travelling with the drag: the dragged row and those below it that are deeper
+  let size = 1;
+  while (from + size < rows.length && rows[from + size].depth > dragged.depth) {
+    size++;
+  }
+
+  if (dropIndex > from && dropIndex < from + size) {
+    return null;
+  }
+
+  const moving = rows.slice(from, from + size);
+  const rest = [...rows.slice(0, from), ...rows.slice(from + size)];
+  const insertAt = dropIndex > from ? dropIndex - size : dropIndex;
+
+  // the row we'd land under bounds how deep we can be - at most one level below it. Our descendants move by the same
+  // delta we do, so the cap has to leave room for the tallest of them as well as for us.
+  const above = rest[insertAt - 1];
+  const depth = Math.max(
+    0,
+    Math.min(
+      wantedDepth,
+      above ? above.depth + 1 : 0,
+      maxDepth - 1 - dragged.height
+    )
+  );
+
+  const delta = depth - dragged.depth;
+  const moved = moving.map((row) => ({ ...row, depth: row.depth + delta }));
+  const result = [
+    ...rest.slice(0, insertAt),
+    ...moved,
+    ...rest.slice(insertAt)
+  ];
+
+  // a gap would leave a row naming an ancestor that isn't above it, so depths are clamped to one more than the row
+  // before - which is also how the parent of each row is read back out in toOrder
+  let previous = -1;
+  return result.map((row) => {
+    const clamped = Math.min(row.depth, previous + 1);
+    previous = clamped;
+    return row.depth === clamped ? row : { ...row, depth: clamped };
+  });
+}
+
+/**
+ * Reads a flat order back out as the (uuid, parent, sort_order) triples
+ * the server validates. A row's parent is the nearest row above it one
+ * level shallower.
+ *
+ * Only the rows given are described, which is what lets a collapsed
+ * branch be dragged without being listed: the server starts from the
+ * tree as it stands, so a hidden article keeps the parent it already
+ * has - and therefore travels with it.
+ */
+export function toOrder(rows: ArticleRow[]): ArticleOrder[] {
+  const ancestors: string[] = [];
+
+  return rows.map((row, index) => {
+    ancestors[row.depth] = row.uuid;
+    return {
+      uuid: row.uuid,
+      parent: row.depth > 0 ? ancestors[row.depth - 1] : null,
+      sort_order: index
+    };
+  });
+}
+
+/**
+ * The helpdesk's article tree. Unlike the other content lists this one
+ * is a hierarchy rather than a flat page of rows: articles arrive
+ * already flattened into display order and are rendered with an indent,
+ * a guide rail per level of nesting and a disclosure chevron on
+ * anything with children.
+ *
+ * Rows are dragged by their handle to reorder and reparent them, and
+ * the whole resulting order is posted to `sort-endpoint`. The tree the
+ * client builds is never trusted - the server re-derives it.
+ */
+export class ArticleList extends ContentList<ArticleRow> {
+  static get styles() {
+    return css`
+      ${ContentList.styles}
+
+      :host {
+        /* the drop marker is positioned against the list */
+        position: relative;
+      }
+
+      /* The guide rails bleed a pixel past the row border so they read
+         as continuous lines, which the cell wrapper would otherwise
+         clip - so every cell in this list truncates its own content
+         instead of relying on the wrapper to do it. */
+      .cell-inner {
+        overflow: visible;
+      }
+
+      .tree-cell {
+        align-items: center;
+        display: flex;
+        gap: 6px;
+        min-height: 38px;
+        position: relative;
+      }
+
+      /* one muted vertical line per level of ancestry, centered under
+         the chevron of the level it belongs to */
+      .rail {
+        border-left: 1px solid var(--border);
+        bottom: -1px;
+        position: absolute;
+        top: 0;
+        width: 0;
+      }
+
+      .disclosure {
+        align-items: center;
+        border-radius: var(--r-sm);
+        color: var(--text-3);
+        cursor: pointer;
+        display: inline-flex;
+        flex: 0 0 16px;
+        height: 16px;
+        justify-content: center;
+        width: 16px;
+      }
+
+      .disclosure temba-icon {
+        --icon-color: currentColor;
+      }
+
+      .disclosure:hover {
+        background: var(--sunken);
+        color: var(--text-1);
+      }
+
+      .title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* an article with children reads as a heading for the ones under it */
+      .title.branch {
+        font-weight: var(--w-medium);
+      }
+
+      /* faint at rest so the column doesn't read as empty, and solid
+         under the pointer that's about to use it */
+      .drag-handle {
+        --icon-color: var(--text-3);
+        cursor: grab;
+        opacity: 0.35;
+      }
+
+      tr.row:hover .drag-handle {
+        opacity: 1;
+      }
+
+      /* the dragged row stays in place, dimmed, until the drop lands */
+      tr.row:has(.tree-cell.dragging) {
+        opacity: 0.4;
+      }
+
+      .row-actions {
+        display: flex;
+        gap: 4px;
+        justify-content: flex-end;
+        opacity: 0;
+      }
+
+      tr.row:hover .row-actions {
+        opacity: 1;
+      }
+
+      .row-action {
+        --icon-color: var(--text-3);
+      }
+
+      .row-action:hover {
+        --icon-color: var(--text-1);
+      }
+
+      .row-action.destructive:hover {
+        --icon-color: var(--danger);
+      }
+
+      /* where the dragged row would land, indented to the level it
+         would land at */
+      .drop-marker {
+        background: var(--accent-400);
+        height: 2px;
+        pointer-events: none;
+        position: absolute;
+        z-index: 10;
+      }
+    `;
+  }
+
+  /** Endpoint the reordered tree is posted to. Drag is only offered
+   * when this is set, so a viewer without the permission simply can't
+   * start one. */
+  @property({ type: String, attribute: 'sort-endpoint' })
+  sortEndpoint = '';
+
+  /** How deep the helpdesk allows articles to nest, mirroring the
+   * server's cap so a drag can't aim somewhere the server would then
+   * reject. */
+  @property({ type: Number, attribute: 'max-depth' })
+  maxDepth = 3;
+
+  @property({ type: Boolean })
+  editable = false;
+
+  @property({ type: Boolean })
+  deletable = false;
+
+  /** The whole tree, including the rows a collapsed branch hides. */
+  @state()
+  private tree: ArticleRow[] = [];
+
+  @state()
+  private collapsed: Set<string> = new Set();
+
+  @state()
+  private dragUuid = '';
+
+  /** Where the marker sits while dragging, in pixels from the list's
+   * top left. -1 marks a drag that currently has nowhere to land. */
+  @state()
+  private dropTop = -1;
+
+  @state()
+  private dropLeft = 0;
+
+  /** The order a drop would produce, recomputed as the pointer moves so
+   * the marker and the eventual post can never disagree. */
+  private preview: ArticleRow[] = null;
+
+  private dragStartX = 0;
+  private clickBlocker: (event: MouseEvent) => void = null;
+
+  constructor() {
+    super();
+    this.valueKey = 'uuid';
+    this.emptyMessage = 'No articles';
+    // the tree is the order, so there's nothing to sort or search by
+    this.searchable = false;
+    this.selectable = false;
+  }
+
+  private buildColumns(): ContentListColumn[] {
+    const columns: ContentListColumn[] = [];
+
+    // the drag and action columns are affordances rather than data, so they head up blank
+    if (this.sortEndpoint) {
+      columns.push({ key: 'drag', label: '', width: '28px' });
+    }
+
+    columns.push(
+      { key: 'title', label: 'Article', minWidth: '200px', grow: true },
+      { key: 'status', label: 'Status', width: '100px' },
+      { key: 'modified_on', label: 'Updated', width: '130px', align: 'right' }
+    );
+
+    if (this.editable || this.deletable) {
+      columns.push({
+        key: 'actions',
+        label: '',
+        width: '72px',
+        align: 'right'
+      });
+    }
+
+    return columns;
+  }
+
+  protected willUpdate(changes: PropertyValues): void {
+    // rebuilt before the base class runs so its width bookkeeping sees the columns this render will use
+    if (
+      changes.has('sortEndpoint') ||
+      changes.has('editable') ||
+      changes.has('deletable')
+    ) {
+      this.columns = this.buildColumns();
+    }
+    super.willUpdate(changes);
+  }
+
+  public disconnectedCallback(): void {
+    this.endDrag();
+    super.disconnectedCallback();
+  }
+
+  protected prepareItems(items: ArticleRow[]): ArticleRow[] {
+    this.tree = annotateTree(items);
+
+    // an article that's gone shouldn't hold a collapsed branch open forever
+    const present = new Set(this.tree.map((row) => row.uuid));
+    this.collapsed = new Set(
+      [...this.collapsed].filter((uuid) => present.has(uuid))
+    );
+
+    return visibleRows(this.tree, this.collapsed);
+  }
+
+  protected getRowHref(item: ArticleRow): string | null {
+    return item?.uuid ? `/article/read/${item.uuid}/` : null;
+  }
+
+  private toggleCollapsed(row: ArticleRow, event: Event): void {
+    // folding a branch isn't opening the article
+    event.stopPropagation();
+
+    const collapsed = new Set(this.collapsed);
+    if (collapsed.has(row.uuid)) {
+      collapsed.delete(row.uuid);
+    } else {
+      collapsed.add(row.uuid);
+    }
+
+    this.collapsed = collapsed;
+    this.items = visibleRows(this.tree, collapsed);
+  }
+
+  private handleEditClicked(row: ArticleRow, event: MouseEvent): void {
+    event.stopPropagation();
+    const href = `/article/update/${row.uuid}/`;
+    if (!this.isSafeHref(href)) {
+      return;
+    }
+    this.fireCustomEvent(CustomEventType.Redirected, { url: href });
+  }
+
+  private handleDeleteClicked(row: ArticleRow, event: MouseEvent): void {
+    event.stopPropagation();
+    this.fireCustomEvent(CustomEventType.ArticleDelete, { item: row });
+  }
+
+  // ==========================================================
+  // Dragging
+  // ==========================================================
+
+  private handleDragStart(row: ArticleRow, event: MouseEvent): void {
+    if (!this.sortEndpoint || event.button !== 0) {
+      return;
+    }
+
+    // keep the drag from selecting text as it crosses rows
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.dragUuid = row.uuid;
+    this.dragStartX = event.clientX;
+    this.preview = null;
+    this.dropTop = -1;
+
+    document.addEventListener('mousemove', this.handleDragMove);
+    document.addEventListener('mouseup', this.handleDragEnd);
+  }
+
+  private handleDragMove = (event: MouseEvent): void => {
+    const from = this.items.findIndex((row) => row.uuid === this.dragUuid);
+    if (from < 0) {
+      return;
+    }
+
+    const rows = Array.from(
+      this.shadowRoot.querySelectorAll('tr.row')
+    ) as HTMLElement[];
+    if (!rows.length) {
+      return;
+    }
+
+    // the row we'd land above - the first whose midpoint the pointer is above
+    let dropIndex = rows.length;
+    for (let i = 0; i < rows.length; i++) {
+      const box = rows[i].getBoundingClientRect();
+      if (event.clientY < box.top + box.height / 2) {
+        dropIndex = i;
+        break;
+      }
+    }
+
+    const wantedDepth =
+      this.items[from].depth +
+      Math.round((event.clientX - this.dragStartX) / INDENT);
+
+    this.preview = moveSubtree(
+      this.items,
+      from,
+      dropIndex,
+      wantedDepth,
+      this.maxDepth
+    );
+
+    if (!this.preview) {
+      this.dropTop = -1;
+      return;
+    }
+
+    // once the click blocker is armed this is a drag rather than a click, so the mouseup can't also open the article
+    this.armClickBlocker();
+
+    const host = this.getBoundingClientRect();
+    const edge = rows[Math.min(dropIndex, rows.length - 1)];
+    const box = edge.getBoundingClientRect();
+    const cell = edge.querySelector('.tree-cell');
+    const landed = this.preview.find((row) => row.uuid === this.dragUuid);
+
+    this.dropTop =
+      (dropIndex < rows.length ? box.top : box.bottom) - host.top - 1;
+    this.dropLeft =
+      (cell ? cell.getBoundingClientRect().left - host.left : 0) +
+      landed.depth * INDENT;
+  };
+
+  private handleDragEnd = (): void => {
+    const order = this.preview;
+    const moved =
+      order &&
+      order.some(
+        (row, index) =>
+          row.uuid !== this.items[index].uuid ||
+          row.depth !== this.items[index].depth
+      );
+    this.endDrag();
+
+    if (moved) {
+      // shown straight away, then reconciled against the server's tree either way - it's the authority on what the
+      // hierarchy is, and a rejected ordering has to snap back
+      this.items = order;
+      postJSON(this.sortEndpoint, toOrder(order))
+        .catch((error) => {
+          console.warn('Failed to save article order', error);
+        })
+        .finally(() => this.refresh());
+    }
+  };
+
+  private endDrag(): void {
+    document.removeEventListener('mousemove', this.handleDragMove);
+    document.removeEventListener('mouseup', this.handleDragEnd);
+
+    this.dragUuid = '';
+    this.dropTop = -1;
+    this.preview = null;
+    this.releaseClickBlocker();
+  }
+
+  /** Swallows the click the drop's mouseup synthesizes, which would
+   * otherwise fall through to the row and navigate. */
+  private armClickBlocker(): void {
+    if (this.clickBlocker) {
+      return;
+    }
+    this.clickBlocker = (event: MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    document.addEventListener('click', this.clickBlocker, true);
+  }
+
+  private releaseClickBlocker(): void {
+    if (!this.clickBlocker) {
+      return;
+    }
+    const blocker = this.clickBlocker;
+    this.clickBlocker = null;
+    // the drop's own click is dispatched after mouseup, so the blocker has to outlive this task to catch it
+    window.setTimeout(
+      () => document.removeEventListener('click', blocker, true),
+      0
+    );
+  }
+
+  // ==========================================================
+  // Rendering
+  // ==========================================================
+
+  private renderTitle(row: ArticleRow): TemplateResult {
+    const rails = [];
+    for (let level = 0; level < row.depth; level++) {
+      rails.push(
+        html`<span class="rail" style="left: ${level * INDENT + 8}px"></span>`
+      );
+    }
+
+    const branch = row.height > 0;
+    const open = branch && !this.collapsed.has(row.uuid);
+
+    return html`
+      <div
+        class="tree-cell ${row.uuid === this.dragUuid ? 'dragging' : ''}"
+        style="padding-left: ${row.depth * INDENT}px"
+      >
+        ${rails}
+        ${branch
+          ? html`<span
+              class="disclosure"
+              role="button"
+              tabindex="0"
+              aria-expanded=${open}
+              aria-label=${open ? 'Collapse' : 'Expand'}
+              @click=${(event: MouseEvent) => this.toggleCollapsed(row, event)}
+              @keydown=${(event: KeyboardEvent) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  this.toggleCollapsed(row, event);
+                }
+              }}
+              ><temba-icon
+                name=${open ? Icon.down : Icon.arrow_right}
+                size="1"
+              ></temba-icon
+            ></span>`
+          : html`<span class="disclosure" aria-hidden="true"></span>`}
+        <span class="title ${branch ? 'branch' : ''}" title=${row.title || ''}
+          >${row.title || ''}</span
+        >
+      </div>
+    `;
+  }
+
+  protected renderCell(
+    item: ArticleRow,
+    column: ContentListColumn
+  ): TemplateResult | string {
+    switch (column.key) {
+      case 'drag':
+        return html`<temba-icon
+          class="drag-handle"
+          name=${Icon.drag}
+          size="1"
+          @mousedown=${(event: MouseEvent) => this.handleDragStart(item, event)}
+          @click=${(event: MouseEvent) => event.stopPropagation()}
+        ></temba-icon>`;
+      case 'title':
+        return this.renderTitle(item);
+      case 'status':
+        // only a draft is worth calling out - published is what an article is for
+        return item.status === 'draft'
+          ? this.renderStatusPill('neutral', 'Draft')
+          : '';
+      case 'modified_on':
+        return item.modified_on
+          ? html`<temba-date
+              value=${item.modified_on}
+              display="timedate"
+            ></temba-date>`
+          : '';
+      case 'actions':
+        return html`<div class="row-actions">
+          ${this.editable
+            ? html`<temba-icon
+                class="row-action"
+                name=${Icon.edit}
+                size="1"
+                clickable
+                title="Edit"
+                @click=${(event: MouseEvent) =>
+                  this.handleEditClicked(item, event)}
+              ></temba-icon>`
+            : null}
+          ${this.deletable
+            ? html`<temba-icon
+                class="row-action destructive"
+                name=${Icon.delete}
+                size="1"
+                clickable
+                title="Delete"
+                @click=${(event: MouseEvent) =>
+                  this.handleDeleteClicked(item, event)}
+              ></temba-icon>`
+            : null}
+        </div>`;
+      default:
+        return super.renderCell(item, column);
+    }
+  }
+
+  public render(): TemplateResult {
+    return html`${super.render()}${this.dropTop >= 0
+      ? html`<div
+          class="drop-marker"
+          style="top: ${this.dropTop}px; left: ${this.dropLeft}px; right: 0"
+        ></div>`
+      : null}`;
+  }
+}
