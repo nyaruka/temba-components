@@ -684,6 +684,38 @@ describe(TAG, () => {
         'rgba(0, 0, 0, 0)'
       );
     });
+
+    it('scrolls the article inside itself when it fills what holds it', async () => {
+      const holder = (await fixture(`
+        <div style="height: 200px; display: flex">
+          <${TAG} widget_only fill endpoint="${UPLOAD}"></${TAG}>
+        </div>
+      `)) as HTMLElement;
+
+      const editor = holder.querySelector(TAG) as MarkdownEditor;
+      editor.value = new Array(40)
+        .fill('A paragraph of the article.')
+        .join('\n\n');
+      await editor.updateComplete;
+
+      const article = editor.doc;
+      assert.equal(getComputedStyle(article).overflowY, 'auto');
+
+      // the editor is the height it was given rather than the height of the article, so nothing outside it scrolls
+      assert.closeTo(editor.getBoundingClientRect().height, 200, 1);
+      assert.isAbove(article.scrollHeight, article.clientHeight);
+
+      // and the toolbar sits above the part that scrolls, so it can't be scrolled away at all
+      const chrome = editor.shadowRoot.querySelector('.chrome') as HTMLElement;
+      article.scrollTop = 300;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
+      assert.isAbove(article.scrollTop, 0);
+      assert.isAtMost(
+        chrome.getBoundingClientRect().bottom,
+        article.getBoundingClientRect().top + 1
+      );
+    });
   });
 
   describe('links', () => {

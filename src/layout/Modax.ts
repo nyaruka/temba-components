@@ -29,9 +29,11 @@ export class Modax extends RapidElement {
         display: none;
       }
 
+      /* No display of its own - a div is block anyway, and declaring it here only made it impossible for a body to
+         lay itself out (a form that fills the dialog and scrolls a pane inside it, say): these styles are adopted,
+         so they land after the <style> the body brings with it and win every tie. */
       .modax-body {
         padding: 20px;
-        display: block;
         position: relative;
         background: var(--body-bg);
       }

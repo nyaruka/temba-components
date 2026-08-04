@@ -138,6 +138,39 @@ export class MarkdownEditor extends FieldElement {
         box-shadow: var(--widget-box-shadow-focused);
       }
 
+      /* Filling the height it's given rather than growing to its content, with the document scrolling inside the
+         editor. That's what lets a dialog be as tall as it wants to be and stay that way - a long article scrolls
+         where it's being written instead of pushing the dialog past the bottom of the window. Every wrapper down to
+         the document has to pass the height along, which is what the run of flex rules below is for. */
+      :host([fill]) {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      /* the wrapper renderField puts around the widget - .field normally, anonymous when widget_only - and then
+         everything between it and the document */
+      :host([fill]) > div,
+      :host([fill]) .widget,
+      :host([fill]) .container {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      :host([fill]) .doc,
+      :host([fill]) textarea.document {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+      }
+
+      /* the editor is the size of what holds it, so there's no slack for a drag handle to take up */
+      :host([fill]) textarea.document {
+        resize: none;
+      }
+
       /* The controls stay put while the article scrolls under them - an article is usually taller than whatever is
          scrolling it, and reaching for a heading shouldn't mean scrolling back to the top for the toolbar. Sticky
          resolves against the nearest scrolling ancestor, which for the editor dialog is the modal body outside this
@@ -372,6 +405,11 @@ export class MarkdownEditor extends FieldElement {
 
   @property({ type: Number })
   minHeight = 320;
+
+  /** Fills the height of whatever holds the editor and scrolls the document inside it, rather than growing to fit
+   * the article. Leaves `minHeight` to the container, which is now the one being sized. */
+  @property({ type: Boolean, reflect: true })
+  fill = false;
 
   /** shows the whole document as raw markdown instead of rendering it */
   @property({ type: Boolean, attribute: 'source_mode' })
@@ -1481,11 +1519,17 @@ export class MarkdownEditor extends FieldElement {
     return this.renderField();
   }
 
+  /** A floor under the document, which a filled editor doesn't get - it's the container that's being sized, and an
+   * inline minimum here would win over the flex rules and put the scroll back on the page. */
+  private get documentStyle(): string {
+    return this.fill ? '' : `min-height:${this.minHeight}px`;
+  }
+
   private renderSource(): TemplateResult {
     return html`
       <textarea
         class="document"
-        style="min-height:${this.minHeight}px"
+        style=${this.documentStyle}
         .value=${this.value || ''}
         ?disabled=${this.disabled}
         @input=${this.handleInput}
@@ -1551,7 +1595,7 @@ export class MarkdownEditor extends FieldElement {
           : html`
               <div
                 class="doc"
-                style="min-height:${this.minHeight}px"
+                style=${this.documentStyle}
                 contenteditable=${this.disabled ? 'false' : 'true'}
                 @beforeinput=${this.handleBeforeInput}
                 @input=${this.handleInput}
