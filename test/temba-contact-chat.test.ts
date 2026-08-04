@@ -788,13 +788,13 @@ describe('temba-contact-chat', () => {
     expect(chat.searchIndex).to.equal(1);
   });
 
-  it('scopes a ticket chat search to its ticket', async () => {
+  it('searches the full contact history even when viewing a ticket', async () => {
     await loadStore();
 
-    // only a request carrying the ticket param is mocked, so results can
-    // only appear if the search was scoped server-side
+    // only a request without any ticket param is mocked, so results can
+    // only appear if the search wasn't scoped to the ticket
     mockGET(
-      /\/contact\/chat_search\/.*\?text=primus&ticket=ticket-1/,
+      /\/contact\/chat_search\/.*\?text=primus$/,
       '/test-assets/contacts/chat-search-primus.json'
     );
 

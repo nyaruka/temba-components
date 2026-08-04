@@ -1302,16 +1302,9 @@ export class ContactChat extends ContactStoreElement {
       this.chat.reset();
     }
 
-    // a ticket-scoped chat only shows this ticket's history, so its search
-    // only covers this ticket's messages too. The endpoint narrows the
-    // search to ticket messages and drops the other tickets' matches
-    // itself, so its cap is no longer spent on messages this view can't
-    // show — matches from the contact's other tickets can still crowd out
-    // this one's, so the cap isn't per-ticket
-    let url = `/contact/chat_search/${this.currentContact.uuid}/?text=${encodeURIComponent(query)}`;
-    if (this.currentTicket) {
-      url += `&ticket=${encodeURIComponent(this.currentTicket.uuid)}`;
-    }
+    // the chat always shows the contact's full history — even when viewing
+    // a ticket — so search always covers all of the contact's messages
+    const url = `/contact/chat_search/${this.currentContact.uuid}/?text=${encodeURIComponent(query)}`;
 
     getUrl(url)
       .then((response: WebResponse) => {
