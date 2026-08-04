@@ -1,7 +1,7 @@
 import { assert, expect } from '@open-wc/testing';
 import { CustomEventType } from '../src/interfaces';
 import { ShortcutContentList } from '../src/list/ShortcutContentList';
-import { getComponent } from './utils.test';
+import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-shortcut-list';
 
@@ -112,5 +112,28 @@ describe('temba-shortcut-list', () => {
     await openDetail(list);
 
     expect(list.shadowRoot.querySelector('.detail-actions')).to.not.exist;
+  });
+
+  it('renders the shortcut list (screenshot)', async () => {
+    const list = (await getComponent(TAG, {}, '', 800)) as ShortcutContentList;
+    (list as any).items = [
+      SHORTCUT,
+      {
+        uuid: 'shortcut-2',
+        name: 'Office hours',
+        text: 'We are open Monday to Friday, 9am to 5pm.',
+        modified_on: '2026-01-02T00:00:00Z'
+      },
+      {
+        uuid: 'shortcut-3',
+        name: 'Closing',
+        text: 'Thanks for getting in touch - closing this out now.',
+        modified_on: '2026-01-03T00:00:00Z'
+      }
+    ];
+    list.requestUpdate();
+    await list.updateComplete;
+
+    await assertScreenshot('shortcut-list/list', getClip(list));
   });
 });
