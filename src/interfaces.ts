@@ -525,6 +525,8 @@ export enum CustomEventType {
   RevisionReverted = 'temba-revision-reverted',
   RevisionsClosed = 'temba-revisions-closed',
   RowClick = 'temba-row-click',
+  ShortcutEdit = 'temba-shortcut-edit',
+  ShortcutDelete = 'temba-shortcut-delete',
   SelectionChange = 'temba-selection-change',
   BulkAction = 'temba-bulk-action',
   /** The label dropdown's "New Label…" row was clicked — detail

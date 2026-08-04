@@ -49,14 +49,19 @@ export class PageHeader extends RapidElement {
       /* One row: the title/subtitle block on the left and the
          actions/content-menu on the right, vertically centered against
          each other. The title block is the flexing column so the
-         actions hold their size. The vertical padding matches the
-         horizontal inset the host supplies (the list panel's 20px) so
-         the whole header is wrapped in even, consistent padding. */
+         actions hold their size. Hosts tune the vertical padding to match
+         their own horizontal inset — list panels use the default, header
+         bars pass down theirs — so the header always ends up with an even
+         surround. The height follows from that padding plus the content; a
+         host wanting a taller strip should raise the padding rather than
+         impose a height, which would be absorbed into the gap around the
+         title instead of growing the box. */
       .header {
+        box-sizing: border-box;
         display: flex;
         align-items: center;
         gap: var(--gap);
-        padding: 12px 0;
+        padding: var(--page-header-padding, 12px 0);
       }
       /* Title + subtitle stacked tight, sharing the left column. It
          flexes and clips so a long subtitle truncates against the
@@ -68,13 +73,15 @@ export class PageHeader extends RapidElement {
         flex-direction: column;
         gap: 1px;
       }
+      /* Sized from the shared tokens — temba-header-bar solves its inset
+         against --title-line, so the two stay in step. */
       .title {
-        font-size: 15.5px;
+        font-size: var(--title-size);
         /* slotted contact names render at the title's size */
-        --contact-name-font-size: 15.5px;
+        --contact-name-font-size: var(--title-size);
         font-weight: var(--w-semibold);
         color: var(--text-1);
-        line-height: 1.25;
+        line-height: var(--title-leading);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

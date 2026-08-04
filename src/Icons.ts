@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use bun run svg to update
-export const SVG_FINGERPRINT = '27198f759c371df944f8ec5de0a29dd6';
+export const SVG_FINGERPRINT = '132907abcfa6a4611ba27470e2c5c2c0';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -58,6 +58,7 @@ export enum Icon {
   delete = 'trash-03',
   delete_small = 'x',
   docs = 'file-02',
+  documents = 'folder',
   down = 'chevron-down',
   down_double = 'chevron-down-double',
   download = 'download-01',
@@ -97,6 +98,7 @@ export enum Icon {
   integrations = 'layers-three-01',
   invitations = 'user-plus-01',
   issue = 'alert-square',
+  knowledge = 'book-open-01',
   label = 'tag-01',
   language = 'translate-01',
   language_default = 'switch-horizontal-01',
@@ -210,6 +212,7 @@ export enum Icon {
   users = 'users-01',
   video = 'video-recorder',
   webhook = 'link-external-01',
+  website = 'layout-alt-03',
   workspace = 'folder',
   zoom_fit = 'maximize-02',
   zoom_in = 'expand-06',
