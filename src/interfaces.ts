@@ -540,7 +540,6 @@ export enum CustomEventType {
   RowClick = 'temba-row-click',
   ShortcutEdit = 'temba-shortcut-edit',
   ShortcutDelete = 'temba-shortcut-delete',
-  ArticleDelete = 'temba-article-delete',
   SelectionChange = 'temba-selection-change',
   BulkAction = 'temba-bulk-action',
   /** The label dropdown's "New Label…" row was clicked — detail

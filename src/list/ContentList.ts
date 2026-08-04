@@ -2153,6 +2153,15 @@ export class ContentList<T = any> extends RapidElement {
     return null;
   }
 
+  /** Whether a row reads as clickable — the pointer cursor that says
+   * the click leads somewhere. A row with an href always does;
+   * override for a list whose rows are opened by the host off
+   * `temba-row-click` rather than by navigating, so it keeps the
+   * affordance without a URL to link to. */
+  protected isRowClickable(item: T): boolean {
+    return !!this.getRowHref(item);
+  }
+
   /** Update the uncommitted input value as the user types. The
    * fetch is deferred until the user submits (Enter / search-icon
    * click) so we don't pound the server on every keystroke. */
@@ -3757,10 +3766,11 @@ export class ContentList<T = any> extends RapidElement {
   private renderRow(item: T): TemplateResult {
     const id = this.rowId(item);
     const selected = this.selectedIds.has(id);
-    const href = this.getRowHref(item);
     return html`
       <tr
-        class="row ${selected ? 'selected' : ''} ${href ? 'clickable' : ''}"
+        class="row ${selected ? 'selected' : ''} ${this.isRowClickable(item)
+          ? 'clickable'
+          : ''}"
         @click=${(e: MouseEvent) => this.handleRowClick(item, e)}
       >
         ${this.hasCheckboxes

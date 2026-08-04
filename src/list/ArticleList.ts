@@ -1,7 +1,7 @@
 import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { Icon } from '../Icons';
-import { Article, CustomEventType } from '../interfaces';
+import { Article } from '../interfaces';
 import { postJSON } from '../utils';
 import { ContentList, ContentListColumn } from './ContentList';
 
@@ -255,29 +255,6 @@ export class ArticleList extends ContentList<ArticleRow> {
         opacity: 0.4;
       }
 
-      .row-actions {
-        display: flex;
-        gap: 4px;
-        justify-content: flex-end;
-        opacity: 0;
-      }
-
-      tr.row:hover .row-actions {
-        opacity: 1;
-      }
-
-      .row-action {
-        --icon-color: var(--text-3);
-      }
-
-      .row-action:hover {
-        --icon-color: var(--text-1);
-      }
-
-      .row-action.destructive:hover {
-        --icon-color: var(--danger);
-      }
-
       /* where the dragged row would land, indented to the level it
          would land at */
       .drop-marker {
@@ -301,12 +278,6 @@ export class ArticleList extends ContentList<ArticleRow> {
    * reject. */
   @property({ type: Number, attribute: 'max-depth' })
   maxDepth = 3;
-
-  @property({ type: Boolean })
-  editable = false;
-
-  @property({ type: Boolean })
-  deletable = false;
 
   /** The whole tree, including the rows a collapsed branch hides. */
   @state()
@@ -340,12 +311,13 @@ export class ArticleList extends ContentList<ArticleRow> {
     // the tree is the order, so there's nothing to sort or search by
     this.searchable = false;
     this.selectable = false;
+    this.columns = this.buildColumns();
   }
 
   private buildColumns(): ContentListColumn[] {
     const columns: ContentListColumn[] = [];
 
-    // the drag and action columns are affordances rather than data, so they head up blank
+    // the drag column is an affordance rather than data, so it heads up blank
     if (this.sortEndpoint) {
       columns.push({ key: 'drag', label: '', width: '28px' });
     }
@@ -356,25 +328,12 @@ export class ArticleList extends ContentList<ArticleRow> {
       { key: 'modified_on', label: 'Updated', width: '130px', align: 'right' }
     );
 
-    if (this.editable || this.deletable) {
-      columns.push({
-        key: 'actions',
-        label: '',
-        width: '72px',
-        align: 'right'
-      });
-    }
-
     return columns;
   }
 
   protected willUpdate(changes: PropertyValues): void {
     // rebuilt before the base class runs so its width bookkeeping sees the columns this render will use
-    if (
-      changes.has('sortEndpoint') ||
-      changes.has('editable') ||
-      changes.has('deletable')
-    ) {
+    if (changes.has('sortEndpoint')) {
       this.columns = this.buildColumns();
     }
     super.willUpdate(changes);
@@ -397,8 +356,14 @@ export class ArticleList extends ContentList<ArticleRow> {
     return visibleRows(this.tree, this.collapsed);
   }
 
-  protected getRowHref(item: ArticleRow): string | null {
-    return item?.uuid ? `/article/read/${item.uuid}/` : null;
+  /** An article has no page of its own to link to - it's opened by the
+   * host from the row-click event, in a dialog over the list. */
+  protected getRowHref(): string | null {
+    return null;
+  }
+
+  protected isRowClickable(): boolean {
+    return true;
   }
 
   private toggleCollapsed(row: ArticleRow, event: Event): void {
@@ -414,20 +379,6 @@ export class ArticleList extends ContentList<ArticleRow> {
 
     this.collapsed = collapsed;
     this.items = visibleRows(this.tree, collapsed);
-  }
-
-  private handleEditClicked(row: ArticleRow, event: MouseEvent): void {
-    event.stopPropagation();
-    const href = `/article/update/${row.uuid}/`;
-    if (!this.isSafeHref(href)) {
-      return;
-    }
-    this.fireCustomEvent(CustomEventType.Redirected, { url: href });
-  }
-
-  private handleDeleteClicked(row: ArticleRow, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fireCustomEvent(CustomEventType.ArticleDelete, { item: row });
   }
 
   // ==========================================================
@@ -642,31 +593,6 @@ export class ArticleList extends ContentList<ArticleRow> {
               display="timedate"
             ></temba-date>`
           : '';
-      case 'actions':
-        return html`<div class="row-actions">
-          ${this.editable
-            ? html`<temba-icon
-                class="row-action"
-                name=${Icon.edit}
-                size="1"
-                clickable
-                title="Edit"
-                @click=${(event: MouseEvent) =>
-                  this.handleEditClicked(item, event)}
-              ></temba-icon>`
-            : null}
-          ${this.deletable
-            ? html`<temba-icon
-                class="row-action destructive"
-                name=${Icon.delete}
-                size="1"
-                clickable
-                title="Delete"
-                @click=${(event: MouseEvent) =>
-                  this.handleDeleteClicked(item, event)}
-              ></temba-icon>`
-            : null}
-        </div>`;
       default:
         return super.renderCell(item, column);
     }

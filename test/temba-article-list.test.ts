@@ -172,8 +172,7 @@ describe(TAG, () => {
 
     assert.instanceOf(list, ArticleList);
 
-    // the drag column is only offered when there's somewhere to post to,
-    // and the actions column only when there's an action to take
+    // the drag column is only offered when there's somewhere to post to
     expect(list.columns.map((column) => column.key)).to.deep.equal([
       'drag',
       'title',
@@ -186,14 +185,13 @@ describe(TAG, () => {
     expect(list.columns.some((column) => column.sortable)).to.be.false;
   });
 
-  it('drops the drag and action columns without permissions', async () => {
-    const list = await getList({ 'sort-endpoint': '', editable: true });
+  it('drops the drag column without permission to reorder', async () => {
+    const list = await getList({ 'sort-endpoint': '' });
 
     expect(list.columns.map((column) => column.key)).to.deep.equal([
       'title',
       'status',
-      'modified_on',
-      'actions'
+      'modified_on'
     ]);
     expect(list.shadowRoot.querySelector('.drag-handle')).to.not.exist;
   });
@@ -278,10 +276,14 @@ describe(TAG, () => {
     expect(getTitles(list)).to.have.length(6);
   });
 
-  it('navigates to an article when its row is clicked', async () => {
+  it('asks the host to open an article rather than navigating to one', async () => {
     const list = await getList();
 
+    const clicked: string[] = [];
     const redirects: string[] = [];
+    list.addEventListener(CustomEventType.RowClick, (event: any) =>
+      clicked.push(event.detail.item.uuid)
+    );
     list.addEventListener(CustomEventType.Redirected, (event: any) =>
       redirects.push(event.detail.url)
     );
@@ -289,31 +291,15 @@ describe(TAG, () => {
     getRows(list)[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await list.updateComplete;
 
-    expect(redirects).to.deep.equal(['/article/read/flows/']);
-  });
+    // an article is read and written in a dialog over the list, so there's no page to link a row to - not even one
+    // a ctrl-click could open in a tab
+    expect(clicked).to.deep.equal(['flows']);
+    expect(redirects).to.be.empty;
+    expect((list as any).getRowHref()).to.be.null;
 
-  it('offers edit and delete when permitted', async () => {
-    const list = await getList({ editable: true, deletable: true });
-
-    const redirects: string[] = [];
-    const deletes: any[] = [];
-    list.addEventListener(CustomEventType.Redirected, (event: any) =>
-      redirects.push(event.detail.url)
-    );
-    list.addEventListener(CustomEventType.ArticleDelete, (event: any) =>
-      deletes.push(event.detail.item)
-    );
-
-    const actions = getRows(list)[0].querySelectorAll('.row-action');
-    expect(actions).to.have.length(2);
-
-    actions[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    actions[1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await list.updateComplete;
-
-    // neither falls through to the row's own navigation
-    expect(redirects).to.deep.equal(['/article/update/getting-started/']);
-    expect(deletes.map((item) => item.uuid)).to.deep.equal(['getting-started']);
+    // and the rows still read as clickable, since clicking one does lead somewhere
+    expect(getRows(list).every((row) => row.classList.contains('clickable'))).to
+      .be.true;
   });
 
   it('reorders siblings by dragging', async () => {
@@ -365,7 +351,7 @@ describe(TAG, () => {
   it('renders the article tree (screenshot)', async () => {
     // the modified dates need a store to know the workspace's locale
     await loadStore();
-    const list = await getList({ editable: true, deletable: true });
+    const list = await getList();
     await assertScreenshot('article-list/list', getClip(list));
   });
 });
