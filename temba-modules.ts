@@ -1,4 +1,5 @@
 import { Checkbox } from './src/form/Checkbox';
+import { Toggle } from './src/form/Toggle';
 import { TextInput } from './src/form/TextInput';
 import { Store } from './src/store/Store';
 import { Select } from './src/form/select/Select';
@@ -119,6 +120,7 @@ addCustomElement('temba-range-picker', RangePicker);
 addCustomElement('temba-date', TembaDate);
 addCustomElement('temba-completion', Completion);
 addCustomElement('temba-checkbox', Checkbox);
+addCustomElement('temba-toggle', Toggle);
 addCustomElement('temba-select', Select);
 addCustomElement('temba-options', Options);
 addCustomElement('temba-loading', Loading);
