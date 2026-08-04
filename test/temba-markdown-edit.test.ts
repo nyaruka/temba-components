@@ -648,6 +648,42 @@ describe(TAG, () => {
       await editor.updateComplete;
       assert.isFalse(editor.sourceMode);
     });
+
+    it('stays in reach while the article scrolls under it', async () => {
+      // the scroller is outside the component, as the dialog's body is - sticky has to hold across the shadow boundary
+      const scroller = (await fixture(`
+        <div style="height: 150px; overflow-y: auto">
+          <${TAG} widget_only endpoint="${UPLOAD}"></${TAG}>
+        </div>
+      `)) as HTMLElement;
+
+      const editor = scroller.querySelector(TAG) as MarkdownEditor;
+      editor.minHeight = 0;
+      editor.value = new Array(40)
+        .fill('A paragraph of the article.')
+        .join('\n\n');
+      await editor.updateComplete;
+
+      const chrome = editor.shadowRoot.querySelector('.chrome') as HTMLElement;
+      assert.equal(getComputedStyle(chrome).position, 'sticky');
+
+      scroller.scrollTop = 300;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
+      // the article moved, and the controls held at the top of what moved it
+      assert.isAbove(scroller.scrollTop, 0);
+      assert.closeTo(
+        chrome.getBoundingClientRect().top,
+        scroller.getBoundingClientRect().top,
+        1
+      );
+
+      // and the toolbar is opaque, so the article passes behind it rather than through it
+      assert.notEqual(
+        getComputedStyle(chrome).backgroundColor,
+        'rgba(0, 0, 0, 0)'
+      );
+    });
   });
 
   describe('links', () => {

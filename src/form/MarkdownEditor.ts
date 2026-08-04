@@ -138,6 +138,23 @@ export class MarkdownEditor extends FieldElement {
         box-shadow: var(--widget-box-shadow-focused);
       }
 
+      /* The controls stay put while the article scrolls under them - an article is usually taller than whatever is
+         scrolling it, and reaching for a heading shouldn't mean scrolling back to the top for the toolbar. Sticky
+         resolves against the nearest scrolling ancestor, which for the editor dialog is the modal body outside this
+         shadow root, and against the container otherwise - so the controls leave with the editor rather than riding
+         the rest of the page.
+
+         The link bar sticks with the toolbar rather than under it, since it belongs to the command that opened it and
+         would otherwise slide away beneath a toolbar that stayed. Both need the container's own background now that
+         the document passes behind them, and the top corners rounded so they don't square off the container's. */
+      .chrome {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: inherit;
+        border-radius: var(--curvature-widget) var(--curvature-widget) 0 0;
+      }
+
       .toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -1481,52 +1498,54 @@ export class MarkdownEditor extends FieldElement {
   protected renderWidget(): TemplateResult {
     return html`
       <div class="container">
-        <div
-          class="toolbar"
-          @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
-        >
-          ${this.commands.map(
-            (command) => html`
-              <div
-                class="format ${command.format} ${this.active.includes(
-                  command.format
-                )
-                  ? 'on'
-                  : ''}"
-                title="${command.title}"
-                @click=${() => this.applyFormat(command)}
-              >
-                ${command.label}
-              </div>
-            `
-          )}
-          <temba-icon
-            name="${Icon.attachment}"
-            title="${msg('Screenshot')}"
-            class="${this.uploading ? 'uploading' : ''}"
-            @click=${this.handleUploadClick}
-          ></temba-icon>
-          <div class="spacer"></div>
+        <div class="chrome">
           <div
-            class="toggle"
-            @click=${() => (this.sourceMode = !this.sourceMode)}
+            class="toolbar"
+            @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
           >
-            ${this.sourceMode ? msg('Rich text') : msg('Markdown')}
+            ${this.commands.map(
+              (command) => html`
+                <div
+                  class="format ${command.format} ${this.active.includes(
+                    command.format
+                  )
+                    ? 'on'
+                    : ''}"
+                  title="${command.title}"
+                  @click=${() => this.applyFormat(command)}
+                >
+                  ${command.label}
+                </div>
+              `
+            )}
+            <temba-icon
+              name="${Icon.attachment}"
+              title="${msg('Screenshot')}"
+              class="${this.uploading ? 'uploading' : ''}"
+              @click=${this.handleUploadClick}
+            ></temba-icon>
+            <div class="spacer"></div>
+            <div
+              class="toggle"
+              @click=${() => (this.sourceMode = !this.sourceMode)}
+            >
+              ${this.sourceMode ? msg('Rich text') : msg('Markdown')}
+            </div>
           </div>
+          ${this.linkHref !== null && !this.sourceMode
+            ? html`<div class="linkbar">
+                <input
+                  type="text"
+                  .value=${this.linkHref}
+                  placeholder="https://"
+                  @input=${this.handleLinkInput}
+                />
+                <div class="link-action" @click=${this.handleLinkRemove}>
+                  ${msg('Remove')}
+                </div>
+              </div>`
+            : null}
         </div>
-        ${this.linkHref !== null && !this.sourceMode
-          ? html`<div class="linkbar">
-              <input
-                type="text"
-                .value=${this.linkHref}
-                placeholder="https://"
-                @input=${this.handleLinkInput}
-              />
-              <div class="link-action" @click=${this.handleLinkRemove}>
-                ${msg('Remove')}
-              </div>
-            </div>`
-          : null}
         ${this.sourceMode
           ? this.renderSource()
           : html`
