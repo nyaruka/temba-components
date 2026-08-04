@@ -50,12 +50,6 @@
 <trans-unit id="s523eb9043213ff0d">
   <source>Italic</source>
 </trans-unit>
-<trans-unit id="s2f2044f2431a32d5">
-  <source>Heading</source>
-</trans-unit>
-<trans-unit id="s3d249bb480032121">
-  <source>List</source>
-</trans-unit>
 <trans-unit id="s3cf89cb47fdde7e9">
   <source>Link</source>
 </trans-unit>
@@ -73,6 +67,30 @@
 </trans-unit>
 <trans-unit id="seb779a76fa43446c">
   <source>Markdown</source>
+</trans-unit>
+<trans-unit id="sbc5f2f81604bb81a">
+  <source>Heading 1</source>
+</trans-unit>
+<trans-unit id="sbc5f2e81604bb667">
+  <source>Heading 2</source>
+</trans-unit>
+<trans-unit id="sbc5f2d81604bb4b4">
+  <source>Heading 3</source>
+</trans-unit>
+<trans-unit id="sc3ff8a955b9b8518">
+  <source>Bulleted list</source>
+</trans-unit>
+<trans-unit id="sa1cc184ce2a00abb">
+  <source>Numbered list</source>
+</trans-unit>
+<trans-unit id="s70a5d875c5467e57">
+  <source>Quote</source>
+</trans-unit>
+<trans-unit id="s0bb51791194b4414">
+  <source>code</source>
+</trans-unit>
+<trans-unit id="sbf4b9bad694f4809">
+  <source>link</source>
 </trans-unit>
 </body>
 </file>

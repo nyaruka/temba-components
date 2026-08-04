@@ -1,287 +1,116 @@
 import { PropertyValues, TemplateResult, css, html } from 'lit';
 import { msg } from '@lit/localize';
 import { property, state } from 'lit/decorators.js';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { lru } from 'tiny-lru';
 import { FieldElement } from './FieldElement';
 import { Icon } from '../Icons';
+import { getSelectionFromRoot } from '../excellent/caret-utils';
 import { markdown } from '../markdown';
 import { postFormData } from '../utils';
+import {
+  Block,
+  blockOf,
+  isSerializable,
+  joinBlocks,
+  renderBlock,
+  splitBlocks
+} from './MarkdownDocument';
 
-interface Formatting {
+/** what the toolbar can do to the document */
+type Format =
+  | 'bold'
+  | 'italic'
+  | 'code'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'bullet'
+  | 'number'
+  | 'quote'
+  | 'link';
+
+interface Command {
+  format: Format;
   label: string;
   title: string;
+  /** the markers the same command writes in source mode, where there's nothing rendered to act on */
   prefix: string;
-  suffix: string;
-  block?: boolean;
+  suffix?: string;
+  /** whether the markers go on the front of every line the selection covers */
+  lines?: boolean;
 }
 
 /**
- * A top level chunk of the document - a paragraph, heading, list, fenced block, and so on.
- *
- * A block keeps the markdown it was authored with rather than anything derived from it, so a document that is only
- * partly edited comes back out byte for byte apart from the block that was touched. That's the whole reason the editor
- * models the document this way instead of parsing to a tree and serializing back: a round trip through an AST would
- * renormalize headings, emphasis markers, bullet characters and line wrapping across content nobody edited, and article
- * bodies have to stay diffable.
+ * A run of rendered elements that one block turned into, so the block's own markdown can be handed back untouched for
+ * as long as nothing in it has been edited. Most blocks render to a single element; a block only becomes several when
+ * its markdown holds more than one construct without a blank line between them.
  */
-export interface Block {
-  /** the block's markdown, exactly as authored */
+interface Run {
   source: string;
-  /** the blank lines that followed it, kept so untouched documents serialize back unchanged */
-  trailer: string;
+  /** everything after the element this is filed under */
+  rest: Element[];
+  /** what the run looked like when it was rendered, so an edit to it can be spotted */
+  signature: string;
 }
 
-const LIST_ITEM = /^ {0,3}([-*+]|\d+[.)])\s/;
-const FENCE = /^ {0,3}(```|~~~)/;
-// a fence only closes on a line that is nothing but fence characters, so an info string like ```js opens rather than
-// closes the block it appears in
-const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})\s*$/;
-const QUOTE = /^ {0,3}>/;
-const HEADING = /^ {0,3}(#{1,6})\s/;
-const SETEXT = /^ {0,3}(=+|-+)\s*$/;
-const INDENTED = /^ {4,}\S/;
-const CONTINUATION = /^ {2,}\S/;
+interface Caret {
+  index: number;
+  offset: number;
+}
 
-// rendering the same block over and over is the common case - only the block being edited changes while the rest of
-// the document sits there, and every keystroke re-runs render()
-const renderCache = lru<string>(200);
+// The document is a flat list of these. Anything else the browser leaves at the top level - a bare text node, or the
+// <div> it wraps a new line in - is turned into one of them before the document is read back.
+const TOP_LEVEL = new Set([
+  'H1',
+  'H2',
+  'H3',
+  'H4',
+  'H5',
+  'H6',
+  'P',
+  'UL',
+  'OL',
+  'BLOCKQUOTE',
+  'PRE',
+  'HR'
+]);
 
-const isBlank = (line: string) => line.trim() === '';
+/** a block the editor can't write back out, kept exactly as it was authored */
+const LOCKED = 'locked';
 
-/**
- * Whether a blank line between the block built so far and the next line of content is inside the block rather than a
- * boundary. Blank lines separate blocks except where markdown says otherwise - a loose list, a list item with more than
- * one paragraph, and a blockquote all survive them.
- */
-const continues = (body: string[], line: string): boolean => {
-  const first = body.find((l) => !isBlank(l));
-  if (!first) {
-    return true;
-  }
+const EMPTY_BLOCK = '<p><br></p>';
 
-  if (LIST_ITEM.test(first)) {
-    return LIST_ITEM.test(line) || CONTINUATION.test(line);
-  }
+const signatureOf = (elements: Element[]): string =>
+  elements
+    .map((element) => `${element.tagName}>${element.innerHTML}`)
+    .join('|');
 
-  if (QUOTE.test(first)) {
-    return QUOTE.test(line);
-  }
+const escapeHtml = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  return false;
+const retag = (element: Element, tag: string): Element => {
+  const replacement = document.createElement(tag);
+  replacement.append(...element.childNodes);
+  element.replaceWith(replacement);
+  return replacement;
 };
 
 /**
- * Splits markdown into blocks, assigning every line to exactly one block or to the blank run that follows it, so
- * joinBlocks is an exact inverse.
- */
-export const splitBlocks = (source: string): Block[] => {
-  const blocks: Block[] = [];
-  let body: string[] = [];
-  let gap: string[] = [];
-  let fence: string = null;
-
-  const flush = () => {
-    blocks.push({
-      source: body.join('\n'),
-      trailer: gap.length > 0 ? '\n' + gap.join('\n') : ''
-    });
-    body = [];
-    gap = [];
-  };
-
-  for (const line of (source || '').split('\n')) {
-    // a fenced block owns its blank lines, so nothing inside one is a boundary
-    if (fence) {
-      body.push(line);
-      if (FENCE_CLOSE.test(line) && line.trimStart()[0] === fence[0]) {
-        fence = null;
-      }
-      continue;
-    }
-
-    if (isBlank(line)) {
-      // blank lines before any content belong to the first block, otherwise they'd be dropped
-      if (body.length === 0) {
-        body.push(line);
-      } else {
-        gap.push(line);
-      }
-      continue;
-    }
-
-    if (gap.length > 0) {
-      if (continues(body, line)) {
-        body.push(...gap);
-        gap = [];
-      } else {
-        flush();
-      }
-    }
-
-    body.push(line);
-
-    const fenced = FENCE.exec(line);
-    if (fenced) {
-      fence = fenced[1];
-    }
-  }
-
-  // an empty document still gets a block - there has to be somewhere to type
-  if (body.length > 0 || gap.length > 0 || blocks.length === 0) {
-    flush();
-  }
-
-  return blocks;
-};
-
-export const joinBlocks = (blocks: Block[]): string =>
-  blocks.map((block) => block.source + block.trailer).join('\n');
-
-/**
- * What a block looks like, so the block being edited can be typed like the thing it renders to instead of dropping to
- * undifferentiated source the moment the caret lands in it.
- */
-export const blockKind = (source: string): string => {
-  const lines = (source || '').split('\n');
-  const at = lines.findIndex((line) => !isBlank(line));
-  const first = at < 0 ? '' : lines[at];
-
-  const heading = HEADING.exec(first);
-  if (heading) {
-    return 'h' + heading[1].length;
-  }
-
-  // a setext heading is underlined rather than marked, so what it is shows up on the line below
-  const underline = at < 0 ? '' : lines[at + 1] || '';
-  if (first && !LIST_ITEM.test(first) && SETEXT.test(underline)) {
-    return underline.trimStart().startsWith('=') ? 'h1' : 'h2';
-  }
-
-  if (FENCE.test(first) || INDENTED.test(first)) {
-    return 'code';
-  }
-
-  if (QUOTE.test(first)) {
-    return 'quote';
-  }
-
-  if (LIST_ITEM.test(first)) {
-    return 'list';
-  }
-
-  return 'para';
-};
-
-/**
- * Maps an offset in a block's rendered text back to an offset in its markdown by walking the two in step, skipping the
- * source characters rendering consumed and the line breaks it introduced between tags. It's a heuristic - alt text and
- * reference links can push it a character or two - but clicking into a paragraph and landing near where you clicked
- * beats always landing at the end.
- */
-export const sourceOffset = (
-  source: string,
-  text: string,
-  offset: number
-): number => {
-  let at = 0;
-  let seen = 0;
-
-  while (seen < offset && at < source.length) {
-    if (source[at] === text[seen]) {
-      seen++;
-      at++;
-    } else if (text[seen] === '\n' && source[at] !== '\n') {
-      // markup puts a line break between block tags that the markdown never had, e.g. between list items
-      seen++;
-    } else {
-      at++;
-    }
-  }
-
-  return at;
-};
-
-/** whether a point is at or past a rect in reading order */
-const reached = (rect: DOMRect, x: number, y: number): boolean =>
-  y > rect.bottom || (y >= rect.top && x >= rect.left);
-
-/**
- * The offset into an element's text nearest a point. document.caretRangeFromPoint would do this in one call but
- * doesn't reach into a shadow root, and the whole document lives in one - so the element's own text nodes get walked
- * to find the one under the point, then binary searched to find where in it the point falls.
- *
- * Text the layout dropped - the whitespace between tags - has no rects at all, which is what keeps it from being
- * mistaken for a position.
- */
-export const textOffsetAt = (
-  root: HTMLElement,
-  x: number,
-  y: number
-): number => {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const range = document.createRange();
-
-  let seen = 0;
-  let target: Text = null;
-  let base = 0;
-  let behind = 0;
-  let node: Text;
-
-  while ((node = walker.nextNode() as Text)) {
-    range.selectNodeContents(node);
-    const rects = [...range.getClientRects()];
-
-    if (rects.some((rect) => reached(rect, x, y))) {
-      behind = seen + node.length;
-    }
-
-    if (
-      rects.some((rect) => y >= rect.top && y <= rect.bottom && x >= rect.left)
-    ) {
-      target = node;
-      base = seen;
-    }
-
-    seen += node.length;
-  }
-
-  // nothing on the point's line starts to its left, so the last thing entirely behind it is the answer
-  if (!target) {
-    return behind;
-  }
-
-  let low = 0;
-  let high = target.length;
-
-  while (low < high) {
-    const mid = Math.ceil((low + high) / 2);
-    range.setStart(target, mid);
-    range.collapse(true);
-
-    if (reached(range.getBoundingClientRect(), x, y)) {
-      low = mid;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  return base + low;
-};
-
-/**
- * An editor for markdown, rich by default: the document is rendered as you write it, and the block holding the caret
- * shows its markdown so what you edit is always the source of truth. A toggle swaps the whole document to raw markdown
- * and back. Screenshots upload by button, drop or paste.
+ * An editor for markdown that is only ever shown as the article it renders to. Clicking into it puts the caret in the
+ * rendered text and edits it there - no part of the document turns into its source at any point, whatever the caret is
+ * doing. The one way to see markdown is the toggle, which swaps the whole document for its source.
  *
  * What gets stored is markdown, not rich text, so article bodies stay diffable, portable and cheap to chunk on heading
  * boundaries for search. That constraint is what shapes the implementation: the document is modelled as blocks that
- * hold the markdown they were authored with, and only the block being edited is ever rewritten, so a round trip leaves
- * untouched content exactly as it was.
+ * hold the markdown they were authored with, and a block is only written back out from what it renders as once it has
+ * actually been edited. Open an article, change one paragraph, save, and the diff is that paragraph - everything else
+ * comes back byte for byte, including the setext headings, + bullets and hard wrapping that a round trip through an
+ * AST would quietly rewrite.
  *
- * Rendering a block at a time is what makes that possible, and it costs the few markdown constructs that reach across
- * a blank line: a link reference definition renders to nothing on its own, so it shows as an empty block and the
- * paragraph using it shows the literal [text][1]. Everything an article actually uses renders.
+ * Editing itself is the browser's. The whole document is one contenteditable, so selecting across blocks, deleting a
+ * range that spans them, select-all, and undo are all native and behave the way they do everywhere else. What this
+ * class adds around that is the four things the browser gets wrong or doesn't know about: it tidies up the markup the
+ * browser leaves behind (see normalize), it keeps a newline inside a fenced block from splitting it in two, it drives
+ * formatting through execCommand so those edits land in the undo stack too, and it reads the result back to markdown.
  *
  * Rendering happens here rather than on the server. It used to go to the server on the grounds that a preview should
  * run the same renderer and the same sanitizing as the published article, so an author couldn't preview something we'd
@@ -311,6 +140,7 @@ export class MarkdownEditor extends FieldElement {
 
       .toolbar {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 0.25em;
         padding: 0.35em 0.5em;
@@ -340,6 +170,12 @@ export class MarkdownEditor extends FieldElement {
         background: var(--color-selection);
       }
 
+      /* what the caret is sitting in, so the toolbar reads as the state of the text rather than a row of buttons */
+      .toolbar .format.on {
+        background: var(--color-selection);
+        color: var(--color-primary-dark);
+      }
+
       .toolbar .spacer {
         flex-grow: 1;
       }
@@ -350,24 +186,42 @@ export class MarkdownEditor extends FieldElement {
         color: var(--color-link-primary);
       }
 
-      textarea {
+      .linkbar {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+        padding: 0.35em 0.5em;
+        border-bottom: 1px solid var(--color-widget-border);
+        background: var(--color-primary-light);
+        font-size: 0.85em;
+      }
+
+      .linkbar input {
+        flex-grow: 1;
+        min-width: 0;
+        border: 1px solid var(--color-widget-border);
+        border-radius: var(--curvature);
+        padding: 0.2em 0.4em;
+        font-family: inherit;
+        font-size: inherit;
+        color: var(--color-widget-text);
+      }
+
+      .linkbar .link-action {
+        cursor: pointer;
+        color: var(--color-link-primary);
+        white-space: nowrap;
+      }
+
+      textarea.document {
         display: block;
         width: 100%;
         border: none;
         outline: none;
-        padding: 0;
         margin: 0;
         background: transparent;
         color: var(--color-widget-text);
-        font-family: inherit;
-        font-size: inherit;
         font-weight: inherit;
-        line-height: inherit;
-        overflow: hidden;
-        resize: none;
-      }
-
-      textarea.document {
         padding: 0.75em;
         resize: vertical;
         overflow: auto;
@@ -379,126 +233,105 @@ export class MarkdownEditor extends FieldElement {
       .doc {
         padding: 0.75em;
         cursor: text;
-      }
-
-      /* the container already draws the focus ring for everything inside it */
-      .doc:focus {
+        font-size: 0.95em;
+        line-height: 1.5;
         outline: none;
       }
 
-      /* article typography - the rendered block and the textarea that replaces it share it, so the document doesn't
-         jump when the caret moves in or out of a block */
-      .block {
-        font-size: 0.95em;
-        line-height: 1.5;
+      /* article typography - what the author is editing is what the article looks like */
+      .doc > * {
         margin: 0 0 0.6em 0;
-        min-height: 1.2em;
       }
 
-      .block.h1 {
+      .doc > *:last-child {
+        margin-bottom: 0;
+      }
+
+      .doc h1 {
         font-size: 1.5em;
         font-weight: var(--w-semibold);
         line-height: 1.25;
       }
 
-      .block.h2 {
+      .doc h2 {
         font-size: 1.25em;
         font-weight: var(--w-semibold);
         line-height: 1.3;
       }
 
-      .block.h3 {
+      .doc h3 {
         font-size: 1.1em;
         font-weight: var(--w-semibold);
         line-height: 1.35;
       }
 
-      .block.h4,
-      .block.h5,
-      .block.h6 {
+      .doc h4,
+      .doc h5,
+      .doc h6 {
         font-size: 1em;
         font-weight: var(--w-semibold);
       }
 
-      .block.code {
-        font-family: var(--font-mono);
-        font-size: 0.85em;
-        background: var(--color-primary-light);
-        border-radius: var(--curvature);
-        padding: 0.5em 0.75em;
+      .doc ul,
+      .doc ol {
+        padding-left: 1.4em;
       }
 
-      .block.quote {
+      .doc blockquote {
         border-left: 3px solid var(--color-borders);
         padding-left: 0.75em;
         color: var(--color-text-help);
       }
 
-      .rendered h1,
-      .rendered h2,
-      .rendered h3,
-      .rendered h4,
-      .rendered h5,
-      .rendered h6,
-      .rendered p,
-      .rendered ul,
-      .rendered ol,
-      .rendered blockquote,
-      .rendered pre {
-        font-size: inherit;
-        font-weight: inherit;
-        line-height: inherit;
-        margin: 0;
-      }
-
-      .rendered p + p {
-        margin-top: 0.6em;
-      }
-
-      .rendered ul,
-      .rendered ol {
-        padding-left: 1.4em;
-      }
-
-      .rendered blockquote {
-        border: none;
-        padding: 0;
-      }
-
-      .rendered pre {
+      .doc pre {
+        font-family: var(--font-mono);
+        font-size: 0.85em;
+        background: var(--color-primary-light);
+        border-radius: var(--curvature);
+        padding: 0.5em 0.75em;
         white-space: pre-wrap;
       }
 
-      .rendered code {
-        font-family: var(--font-mono);
-        font-size: 0.9em;
-      }
-
-      .rendered.code pre,
-      .rendered.code code {
+      .doc pre code {
         background: transparent;
         font-size: inherit;
       }
 
-      .rendered img {
+      .doc code {
+        font-family: var(--font-mono);
+        font-size: 0.9em;
+      }
+
+      /* Inline rather than block, which is also what markdown calls an image. A block level image would make the
+         browser split the paragraph in two to insert one, leaving the image in a block of its own - so a screenshot
+         dropped mid-sentence would land somewhere other than where the caret was. */
+      .doc img {
         max-width: 100%;
-        display: block;
+        display: inline-block;
+        vertical-align: bottom;
       }
 
-      /* links are for reading, and in an editor a click on one means put the caret here */
-      .rendered a {
+      .doc a {
         color: var(--color-link-primary);
-        pointer-events: none;
       }
 
-      .rendered table {
+      .doc table {
         border-collapse: collapse;
       }
 
-      .rendered th,
-      .rendered td {
+      .doc th,
+      .doc td {
         border: 1px solid var(--color-borders);
         padding: 0.25em 0.5em;
+      }
+
+      /* a block the editor can't write back out - it renders, but it isn't edited here */
+      .doc .locked {
+        cursor: default;
+      }
+
+      .doc .locked.empty {
+        display: none;
       }
 
       .uploading {
@@ -533,56 +366,110 @@ export class MarkdownEditor extends FieldElement {
   @property({ type: String })
   error = '';
 
+  /** which toolbar commands describe what the caret is sitting in */
   @state()
-  blocks: Block[] = [];
+  private active: string[] = [];
 
-  /** index of the block showing its markdown, -1 when the caret is outside the document */
+  /** the link under the caret, so it can be edited without ever showing its markdown. null when there isn't one. */
   @state()
-  active = -1;
+  private linkHref: string = null;
 
-  // where the caret goes once the active block's textarea exists
-  private pendingCaret: number = null;
+  /** the document's blocks, which together are always exactly the value */
+  private blocks: Block[] = [];
 
-  // where the caret was when it last left the document, so the toolbar and uploads write back where the author was
-  // rather than at the end of the article. Picking a file blurs the document - the dialog takes the window - so this
-  // is the ordinary case for a screenshot, not an edge one.
-  private resume: { index: number; caret: number } = null;
+  private runs = new WeakMap<Element, Run>();
+  private trailers = new WeakMap<Element, string>();
 
-  // what the toolbar can wrap the selection in. Everything here is plain markdown, because markdown is what gets
-  // stored and markdown is what the caret is sitting in whichever mode we're in - one implementation covers both.
-  // Buttons are labelled rather than iconned - the shorthand is universal in editors and needs no new sprite entries.
-  // Built per render so the labels pick up the active locale.
-  private get formatting(): Formatting[] {
+  /** whatever followed the last block, so a document that ended with a newline still does */
+  private tail = '';
+
+  /** whether the rendered document still has to be built from the blocks */
+  private stale = true;
+
+  /** where the caret last was inside the document. Picking a file blurs it - the dialog takes the window - so this is
+   * the ordinary case for a screenshot, not an edge one. */
+  private saved: Range = null;
+
+  private anchor: HTMLAnchorElement = null;
+
+  /** whether the edit now happening is replacing the whole document, which decides what's left of it afterwards */
+  private replacing = false;
+
+  private get commands(): Command[] {
     return [
-      { label: 'B', title: msg('Bold'), prefix: '**', suffix: '**' },
-      { label: 'I', title: msg('Italic'), prefix: '_', suffix: '_' },
+      { format: 'bold', label: 'B', title: msg('Bold'), prefix: '**' },
+      { format: 'italic', label: 'I', title: msg('Italic'), prefix: '_' },
       {
-        label: 'H',
-        title: msg('Heading'),
+        format: 'h1',
+        label: 'H1',
+        title: msg('Heading 1'),
+        prefix: '# ',
+        lines: true
+      },
+      {
+        format: 'h2',
+        label: 'H2',
+        title: msg('Heading 2'),
         prefix: '## ',
-        suffix: '',
-        block: true
+        lines: true
       },
       {
-        label: 'List',
-        title: msg('List'),
-        prefix: '* ',
-        suffix: '',
-        block: true
+        format: 'h3',
+        label: 'H3',
+        title: msg('Heading 3'),
+        prefix: '### ',
+        lines: true
       },
-      { label: 'Link', title: msg('Link'), prefix: '[', suffix: '](https://)' },
-      { label: 'Code', title: msg('Code'), prefix: '`', suffix: '`' }
+      {
+        format: 'bullet',
+        label: 'List',
+        title: msg('Bulleted list'),
+        prefix: '* ',
+        lines: true
+      },
+      {
+        format: 'number',
+        label: '1.',
+        title: msg('Numbered list'),
+        prefix: '1. ',
+        lines: true
+      },
+      {
+        format: 'quote',
+        label: 'Quote',
+        title: msg('Quote'),
+        prefix: '> ',
+        lines: true
+      },
+      { format: 'code', label: 'Code', title: msg('Code'), prefix: '`' },
+      {
+        format: 'link',
+        label: 'Link',
+        title: msg('Link'),
+        prefix: '[',
+        suffix: '](https://)'
+      }
     ];
   }
 
   /** the whole document textarea, only present in source mode */
   public get textArea(): HTMLTextAreaElement {
-    return this.shadowRoot.querySelector('textarea.document');
+    return this.shadowRoot?.querySelector('textarea.document');
   }
 
-  /** the textarea for the block being edited, only present in rich mode with a block active */
-  public get activeArea(): HTMLTextAreaElement {
-    return this.shadowRoot.querySelector('textarea.editing');
+  /** the rendered document, only present in rich mode */
+  public get doc(): HTMLElement {
+    return this.shadowRoot?.querySelector('.doc');
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    document.addEventListener('selectionchange', this.handleSelectionChange);
+  }
+
+  public disconnectedCallback(): void {
+    document.removeEventListener('selectionchange', this.handleSelectionChange);
+    super.disconnectedCallback();
   }
 
   protected willUpdate(changes: PropertyValues): void {
@@ -592,317 +479,741 @@ export class MarkdownEditor extends FieldElement {
       return;
     }
 
-    // Rebuild the blocks unless the value is the one they just serialized to - an edit inside a block has already
-    // updated them, and re-splitting on every keystroke would rebuild the textarea the caret is sitting in. Comparing
-    // rather than flagging means a value set from outside is always picked up, including one that arrives while an
-    // edit is in flight. Switching modes always re-reads, which is what keeps the two views in step.
+    // Rebuild the blocks unless the value is the one they just serialized to - an edit has already updated them, and
+    // rebuilding would throw away the document the caret is sitting in. Comparing rather than flagging means a value
+    // set from outside is always picked up, including one that arrives while an edit is in flight. Switching modes
+    // always re-reads, which is what keeps the two views in step.
     if (
       changes.has('sourceMode') ||
       this.blocks.length === 0 ||
       joinBlocks(this.blocks) !== (this.value || '')
     ) {
-      this.reparse();
+      this.blocks = splitBlocks(this.value || '');
+      this.tail = this.blocks[this.blocks.length - 1].trailer;
+      this.stale = true;
     }
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
-    if (this.pendingCaret !== null) {
-      const area = this.activeArea;
-      if (area) {
-        this.place(area, this.pendingCaret);
+    if (this.stale && !this.sourceMode && this.doc) {
+      this.populate();
+      this.stale = false;
+    }
+  }
+
+  // ==========================================================
+  // The rendered document
+  // ==========================================================
+
+  /**
+   * Renders the blocks into the document and files each one under the elements it produced, so that reading the
+   * document back can tell an edited block from one that only got rendered.
+   */
+  private populate(): void {
+    const doc = this.doc;
+    const scratch = document.createElement('div');
+    const parts: string[] = [];
+    const counts: number[] = [];
+
+    for (const block of this.blocks) {
+      const rendered = renderBlock(block.source);
+      scratch.innerHTML = rendered;
+
+      const elements = [...scratch.children];
+
+      if (elements.length === 0) {
+        // A blank block is where an empty article starts, so it has to be a paragraph the caret can go in. A block
+        // that has content but renders to nothing - a link reference definition - is held onto invisibly instead,
+        // since there's nothing to show and dropping it would lose it.
+        parts.push(
+          block.source.trim()
+            ? `<div class="${LOCKED} empty" contenteditable="false"></div>`
+            : EMPTY_BLOCK
+        );
+        counts.push(1);
+      } else if (!elements.every(isSerializable)) {
+        // Content the serializer can't write back out - a table, or whatever a future renderer starts emitting - is
+        // rendered inside one element that can't be edited, so it survives a save exactly as it was authored.
+        parts.push(
+          `<div class="${LOCKED}" contenteditable="false">${rendered}</div>`
+        );
+        counts.push(1);
+      } else {
+        parts.push(rendered);
+        counts.push(elements.length);
       }
-      this.pendingCaret = null;
     }
-  }
 
-  private reparse(): void {
-    this.blocks = splitBlocks(this.value || '');
-    this.active = -1;
-    this.resume = null;
-  }
+    doc.innerHTML = parts.join('');
 
-  private renderBlock(source: string): string {
-    let rendered = renderCache.get(source);
-    if (rendered === undefined) {
-      // Links are for reading, and this is an editor - taking them out of the tab order stops Enter navigating away
-      // from a draft nobody has saved. Remarkable escapes the < in text, so an <a here is always a tag we emitted.
-      rendered = markdown.render(source).replace(/<a\s/g, '<a tabindex="-1" ');
-      renderCache.set(source, rendered);
+    // the renderer separates blocks with newlines, and at the top level those are formatting rather than content -
+    // left there they'd each become a paragraph of their own the first time the document was tidied up
+    for (const node of [...doc.childNodes]) {
+      if (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) {
+        node.remove();
+      }
     }
-    return rendered;
+
+    const children = [...doc.children];
+    let at = 0;
+
+    this.runs = new WeakMap();
+    this.trailers = new WeakMap();
+
+    this.blocks.forEach((block, index) => {
+      const elements = children.slice(at, at + counts[index]);
+      at += counts[index];
+
+      if (elements.length > 0) {
+        this.runs.set(elements[0], {
+          source: block.source,
+          rest: elements.slice(1),
+          signature: signatureOf(elements)
+        });
+        this.trailers.set(elements[elements.length - 1], block.trailer);
+      }
+    });
   }
 
-  private autoSize(area: HTMLTextAreaElement): void {
-    area.style.height = 'auto';
-    area.style.height = `${area.scrollHeight}px`;
+  private isLocked(element: Element): boolean {
+    return element.classList.contains(LOCKED);
   }
 
   /**
-   * Puts the caret in a block, showing its markdown. The caret lands where asked once the textarea exists - it doesn't
-   * exist yet at the point anything asks for it.
+   * Reads the document back to markdown. A block whose elements are still the ones it was rendered into, unchanged,
+   * hands back the markdown it was authored with; only a block that has actually been edited is written out from what
+   * it now renders as.
    */
-  private activate(index: number, caret: number = Infinity): void {
-    if (this.disabled || index < 0 || index >= this.blocks.length) {
-      return;
+  private serialize(): void {
+    const children = [...this.doc.children];
+    const blocks: Block[] = [];
+    let at = 0;
+
+    while (at < children.length) {
+      const first = children[at];
+      const run = this.runs.get(first);
+
+      if (this.isLocked(first)) {
+        blocks.push({
+          source: run ? run.source : '',
+          trailer: this.trailers.get(first) || ''
+        });
+        at += 1;
+        continue;
+      }
+
+      const elements = run ? [first, ...run.rest] : [first];
+      const intact =
+        run &&
+        at + elements.length <= children.length &&
+        elements.every((element, index) => children[at + index] === element) &&
+        signatureOf(elements) === run.signature;
+
+      if (intact) {
+        blocks.push({
+          source: run.source,
+          trailer: this.trailers.get(elements[elements.length - 1]) || ''
+        });
+        at += elements.length;
+        continue;
+      }
+
+      // Edited, so it gets written out from what it renders as - and filed again, so the next keystroke only has to
+      // compare against it rather than serialize the whole block a second time.
+      const source = blockOf(first);
+      this.runs.set(first, {
+        source,
+        rest: [],
+        signature: signatureOf([first])
+      });
+
+      blocks.push({ source, trailer: this.trailers.get(first) || '' });
+      at += 1;
     }
 
-    // already there, so there's no update coming to hang the caret on - move it now, or it would be left armed and
-    // fire on whatever update happened next, which is the author's next keystroke
-    if (index === this.active && this.activeArea) {
-      this.place(this.activeArea, caret);
-      return;
-    }
-
-    this.active = index;
-    this.pendingCaret = caret;
-  }
-
-  private place(area: HTMLTextAreaElement, caret: number): void {
-    const at = Math.min(caret, area.value.length);
-    area.focus();
-    area.setSelectionRange(at, at);
-    this.autoSize(area);
-  }
-
-  /**
-   * The textarea holding the caret and the block it belongs to, opening one where the caret last was if it's outside
-   * the document - the toolbar and uploads both need somewhere to write even when nothing is focused. The index comes
-   * back with it so callers that await never have to read the live one again.
-   */
-  private async editing(): Promise<[HTMLTextAreaElement, number]> {
-    if (this.sourceMode) {
-      return [this.textArea, -1];
-    }
-
-    if (this.active < 0) {
-      const back = this.resume;
-      const known = back && back.index < this.blocks.length;
-
-      this.activate(
-        known ? back.index : this.blocks.length - 1,
-        known ? back.caret : Infinity
-      );
-      await this.updateComplete;
-    }
-
-    return [this.activeArea, this.active];
-  }
-
-  /** writes a textarea's contents back to the value, and in rich mode to the block it belongs to */
-  private commit(area: HTMLTextAreaElement, index: number): void {
-    if (this.sourceMode) {
-      this.value = area.value;
-    } else {
-      this.blocks = this.blocks.map((block, at) =>
-        at === index ? { ...block, source: area.value } : block
-      );
-      this.value = joinBlocks(this.blocks);
-    }
-
-    this.fireEvent('change');
-  }
-
-  private replace(
-    area: HTMLTextAreaElement,
-    index: number,
-    start: number,
-    end: number,
-    replacement: string,
-    caret: number
-  ): void {
-    area.value =
-      area.value.substring(0, start) + replacement + area.value.substring(end);
-
-    this.commit(area, index);
-    this.place(area, caret);
-  }
-
-  private handleInput(evt: any): void {
-    const area = evt.target as HTMLTextAreaElement;
-    if (!this.sourceMode) {
-      this.autoSize(area);
-    }
-    this.commit(area, this.active);
-  }
-
-  /**
-   * Clicking a rendered block puts the caret in its markdown at roughly the character that was clicked. The default
-   * action is suppressed so focus lands where we put it rather than wherever the browser was going to leave it.
-   */
-  private handleBlockDown(evt: MouseEvent, index: number): void {
-    evt.preventDefault();
-
-    const block = evt.currentTarget as HTMLElement;
-    this.activate(
-      index,
-      this.caretFromPoint(block, this.blocks[index]?.source || '', evt)
-    );
-  }
-
-  private handleDocDown(evt: MouseEvent): void {
-    // clicks that landed on a block are its own business
-    if (evt.currentTarget !== evt.target) {
-      return;
-    }
-
-    evt.preventDefault();
-
-    // The margins between blocks belong to the document, not to either block, so a click a few pixels off goes to
-    // whichever block it looks nearest rather than to the end of the article.
-    const blocks = [
-      ...(evt.currentTarget as HTMLElement).querySelectorAll('.block')
-    ];
-
-    let index = this.blocks.length - 1;
-    let caret = Infinity;
-    let nearest = Infinity;
-
-    blocks.forEach((block, at) => {
-      const rect = block.getBoundingClientRect();
-      const distance = Math.max(
-        rect.top - evt.clientY,
-        evt.clientY - rect.bottom,
-        0
-      );
-
-      if (distance < nearest) {
-        nearest = distance;
-        index = at;
-        caret = evt.clientY < rect.top ? 0 : Infinity;
+    // Only the last block can end without a blank line after it - anywhere else that would run the two blocks either
+    // side of the gap together into one.
+    blocks.forEach((block, index) => {
+      if (index < blocks.length - 1 && !block.trailer) {
+        block.trailer = '\n';
       }
     });
 
-    this.activate(index, caret);
+    if (blocks.length > 0) {
+      blocks[blocks.length - 1].trailer = this.tail;
+    }
+
+    this.blocks = blocks;
+    this.value = joinBlocks(blocks);
   }
 
   /**
-   * Tabbing into the document opens the first block, since a form field nobody can reach from the keyboard isn't one.
-   * Tabbing back out of that block lands here again on the way past, which mustn't drop straight back in.
+   * Puts right the markup the browser leaves behind. Editing a contenteditable is the browser's, and what it produces
+   * is close to but not quite the flat list of block elements the document is modelled as: a new line after a heading
+   * arrives as a <div>, making a list nests the list inside the block it started from, and a paste can drop text in
+   * loose at the top level. Each of those is corrected here rather than prevented, so the editing itself stays native.
+   *
+   * Nothing is touched in the ordinary case, which is what keeps typing cheap - `before` is only called if something
+   * actually has to change, and only then does the caret have to be put back.
    */
-  private handleDocFocus(evt: FocusEvent): void {
-    const doc = evt.currentTarget as HTMLElement;
-    const from = evt.relatedTarget as Node;
+  private repair(inputType: string, before: () => void): boolean {
+    const doc = this.doc;
+    let changed = false;
 
-    if (this.active >= 0 || (from && doc.contains(from))) {
-      return;
-    }
-
-    this.activate(0, 0);
-  }
-
-  private caretFromPoint(
-    block: HTMLElement,
-    source: string,
-    evt: MouseEvent
-  ): number {
-    try {
-      // the template's own indentation sits in the block as text nodes the layout drops, so offsets are taken against
-      // the rendered text with that padding off the front
-      const text = block.textContent;
-      const lead = text.length - text.trimStart().length;
-
-      return sourceOffset(
-        source,
-        text.trim(),
-        Math.max(textOffsetAt(block, evt.clientX, evt.clientY) - lead, 0)
-      );
-    } catch (e) {
-      // the end of the block is as good a guess as any if the measuring goes wrong
-      return Infinity;
-    }
-  }
-
-  private handleBlockBlur(evt: FocusEvent, index: number): void {
-    // focus already moved to another block, which will have set itself active
-    if (this.active !== index) {
-      return;
-    }
-
-    this.resume = {
-      index,
-      caret: (evt.target as HTMLTextAreaElement).selectionStart
+    const change = () => {
+      if (!changed) {
+        before();
+        changed = true;
+      }
     };
 
-    // leaving the document re-splits it, so a blank line typed into a paragraph becomes its own block
-    this.active = -1;
-    this.blocks = splitBlocks(this.value || '');
+    for (const node of [...doc.childNodes]) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        change();
+        if (node.textContent.trim()) {
+          const paragraph = document.createElement('p');
+          node.replaceWith(paragraph);
+          paragraph.appendChild(node);
+        } else {
+          node.remove();
+        }
+        continue;
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        change();
+        node.remove();
+        continue;
+      }
+
+      const element = node as Element;
+      if (this.isLocked(element)) {
+        continue;
+      }
+
+      // making a list leaves it nested inside the block it was made from, which is not somewhere a list can live
+      const nested = element.querySelector(':scope > ul, :scope > ol');
+      if (
+        nested &&
+        element.tagName !== 'UL' &&
+        element.tagName !== 'OL' &&
+        element.childNodes.length === 1
+      ) {
+        change();
+        element.replaceWith(nested);
+        continue;
+      }
+
+      if (!TOP_LEVEL.has(element.tagName)) {
+        change();
+
+        if (element.tagName === 'DIV') {
+          // the browser's own wrapper for a new line, which is a paragraph by any other name
+          retag(element, 'p');
+        } else {
+          // Something inline the browser left loose at the top level - an image it decided to put outside the
+          // paragraph, say. It's content, so it gets a paragraph to live in; turning it into one would throw it away.
+          const paragraph = document.createElement('p');
+          element.replaceWith(paragraph);
+          paragraph.appendChild(element);
+        }
+      }
+    }
+
+    // styling the browser applied as markup we don't model - the text is kept, the wrapper isn't
+    for (const wrapper of [...doc.querySelectorAll('span,font')]) {
+      if (wrapper.closest(`.${LOCKED}`)) {
+        continue;
+      }
+      change();
+      wrapper.replaceWith(...wrapper.childNodes);
+    }
+
+    // and the styles it hangs off what it inserts, which markdown has no way to carry and which would otherwise
+    // accumulate on the elements the author edits
+    for (const styled of [...doc.querySelectorAll('[style]')]) {
+      if (styled.closest(`.${LOCKED}`)) {
+        continue;
+      }
+      change();
+      styled.removeAttribute('style');
+    }
+
+    // Whatever the last block standing is, it keeps the tag it had - so emptying an article that began with a heading
+    // leaves an empty heading, and typing over a select-all writes the new text as one. Neither is what the author
+    // asked for: they cleared the article, and what they type next is a paragraph until they say otherwise.
+    const emptied =
+      !doc.textContent.trim() && !doc.querySelector('img,hr,.locked');
+
+    if (
+      doc.children.length === 0 ||
+      ((this.replacing || inputType.startsWith('delete')) && emptied)
+    ) {
+      change();
+      doc.innerHTML = EMPTY_BLOCK;
+    } else if (
+      this.replacing &&
+      doc.children.length === 1 &&
+      doc.children[0].tagName !== 'P' &&
+      !this.isLocked(doc.children[0])
+    ) {
+      change();
+      retag(doc.children[0], 'p');
+    }
+
+    this.replacing = false;
+
+    return changed;
   }
 
-  private handleBlockKey(evt: KeyboardEvent): void {
-    const area = evt.target as HTMLTextAreaElement;
-    const at = area.selectionStart;
-    const collapsed = area.selectionEnd === at;
+  // ==========================================================
+  // The caret
+  // ==========================================================
 
+  private get selection(): Selection {
+    return getSelectionFromRoot(this.doc || this);
+  }
+
+  private get range(): Range {
+    const selection = this.selection;
+    const range =
+      selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+    return range && this.doc && this.doc.contains(range.startContainer)
+      ? range
+      : null;
+  }
+
+  /**
+   * Whether the selection covers the whole document, which is what select-all leaves behind.
+   *
+   * Measured in text rather than by comparing the selection's boundaries against the document's, because the browser
+   * normalizes a select-all down to the text nodes at either end - so its start sits inside the first block rather
+   * than in front of it, and a boundary comparison says it covers nothing. More than one block has to be in it, so
+   * that retyping the whole of a one line heading isn't read as replacing the article.
+   */
+  private coversDocument(): boolean {
+    const range = this.range;
+    if (!range || range.collapsed || this.doc.children.length < 2) {
+      return false;
+    }
+
+    const text = this.doc.textContent;
+    return text.length > 0 && range.toString().length >= text.length;
+  }
+
+  /** the top level block the caret is in */
+  private blockAt(node: Node): Element {
+    let at = node;
+    while (at && at.parentNode !== this.doc) {
+      at = at.parentNode;
+    }
+    return at && at.nodeType === Node.ELEMENT_NODE ? (at as Element) : null;
+  }
+
+  /** where the caret is, as a block and an offset into its text, which survives the markup being rearranged */
+  private caretPath(): Caret {
+    const range = this.range;
+    if (!range) {
+      return null;
+    }
+
+    const block = this.blockAt(range.startContainer);
+    if (!block) {
+      return null;
+    }
+
+    const measure = document.createRange();
+    measure.selectNodeContents(block);
+    measure.setEnd(range.startContainer, range.startOffset);
+
+    return {
+      index: [...this.doc.children].indexOf(block),
+      offset: measure.toString().length
+    };
+  }
+
+  private restoreCaret(caret: Caret): void {
+    const children = [...this.doc.children];
+    if (!caret || children.length === 0) {
+      return;
+    }
+
+    const block = children[Math.min(caret.index, children.length - 1)];
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+
+    let seen = 0;
+    let node: Text;
+    let placed = false;
+
+    while ((node = walker.nextNode() as Text)) {
+      if (seen + node.length >= caret.offset) {
+        range.setStart(node, caret.offset - seen);
+        placed = true;
+        break;
+      }
+      seen += node.length;
+    }
+
+    if (!placed) {
+      range.selectNodeContents(block);
+      range.collapse(false);
+    }
+
+    range.collapse(true);
+    this.select(range);
+  }
+
+  private select(range: Range): void {
+    const selection = this.selection;
+    if (!selection) {
+      return;
+    }
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  /**
+   * Puts the caret in the document if it isn't there already, back where it last was. The toolbar and uploads both
+   * need somewhere to write even when nothing is focused.
+   */
+  private focusDocument(): boolean {
+    const doc = this.doc;
+    if (!doc || this.disabled) {
+      return false;
+    }
+
+    // Read where the caret is before focusing, not after: focusing a contenteditable that doesn't have the caret puts
+    // one at the very top, which would silently make every toolbar command and every upload act on the first block
+    // instead of wherever the author actually was.
+    const live = this.shadowRoot.activeElement === doc ? this.range : null;
+
+    doc.focus();
+
+    if (live) {
+      return true;
+    }
+
+    if (this.saved && doc.contains(this.saved.startContainer)) {
+      this.select(this.saved);
+      return true;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(doc.lastElementChild || doc);
+    range.collapse(false);
+    this.select(range);
+
+    return true;
+  }
+
+  // ==========================================================
+  // Editing
+  // ==========================================================
+
+  /** reads the document back and tells anyone listening, after an edit the browser has already made */
+  private edited(inputType = ''): void {
+    let caret: Caret = null;
+
+    if (this.repair(inputType, () => (caret = this.caretPath()))) {
+      this.restoreCaret(caret);
+    }
+
+    this.serialize();
+    this.fireEvent('change');
+  }
+
+  private handleInput(evt: InputEvent): void {
+    if (this.sourceMode) {
+      this.value = (evt.target as HTMLTextAreaElement).value;
+      this.fireEvent('change');
+      return;
+    }
+
+    this.edited(evt.inputType || '');
+  }
+
+  private handleBeforeInput(evt: InputEvent): void {
+    // Noted before the edit rather than after, because afterwards there's no telling a select-all that was typed over
+    // from an ordinary edit inside the one block that's left.
+    this.replacing = this.coversDocument();
+
+    if (
+      evt.inputType !== 'insertParagraph' &&
+      evt.inputType !== 'insertLineBreak'
+    ) {
+      return;
+    }
+
+    const range = this.range;
+    const block = range && this.blockAt(range.startContainer);
+    if (!block || block.tagName !== 'PRE') {
+      return;
+    }
+
+    // A fenced block is one block however many lines it has, but the browser splits it in two on Enter - and so does
+    // every execCommand that inserts a break. So the newline goes in by hand.
+    evt.preventDefault();
+
+    range.deleteContents();
+    const newline = document.createTextNode('\n');
+    range.insertNode(newline);
+
+    // a newline at the very end of a <pre> isn't rendered, so the caret would have nowhere to sit
+    if (!newline.nextSibling) {
+      newline.parentNode.insertBefore(
+        document.createTextNode('\n'),
+        newline.nextSibling
+      );
+    }
+
+    const after = document.createRange();
+    after.setStartAfter(newline);
+    after.collapse(true);
+    this.select(after);
+
+    this.edited(evt.inputType);
+  }
+
+  private handleKeyDown(evt: KeyboardEvent): void {
     if (evt.key === 'Escape') {
       evt.preventDefault();
-      area.blur();
-      return;
-    }
-
-    // Arrowing off either end of a block moves to the next one, the same way it would if the document were one long
-    // textarea - which is what it looks like. The test is the ends of the text rather than the ends of the first and
-    // last line, because prose is one long line soft wrapped over several rows: treating any row as the last one
-    // would fling the caret out of a paragraph the author was only moving down through.
-    if (evt.key === 'ArrowUp' || evt.key === 'ArrowLeft') {
-      if (at === 0 && collapsed && this.active > 0) {
-        evt.preventDefault();
-        this.activate(this.active - 1);
-      }
-      return;
-    }
-
-    if (evt.key === 'ArrowDown' || evt.key === 'ArrowRight') {
-      if (
-        at === area.value.length &&
-        collapsed &&
-        this.active < this.blocks.length - 1
-      ) {
-        evt.preventDefault();
-        this.activate(this.active + 1, 0);
-      }
-      return;
-    }
-
-    if (evt.key === 'Backspace' && at === 0 && collapsed && this.active > 0) {
-      evt.preventDefault();
-      this.mergeIntoPrevious();
+      this.doc?.blur();
     }
   }
 
-  /** backspacing at the start of a block deletes the break between it and the one above */
-  private mergeIntoPrevious(): void {
-    const index = this.active;
-    const previous = this.blocks[index - 1];
-    const current = this.blocks[index];
-    const caret = previous.source.length;
+  private handleDocBlur(): void {
+    const range = this.range;
+    if (range) {
+      this.saved = range.cloneRange();
+    }
+  }
 
-    const merged: Block = {
-      source: current.source
-        ? `${previous.source}\n${current.source}`
-        : previous.source,
-      trailer: current.trailer
-    };
+  private handleSelectionChange = (): void => {
+    if (this.sourceMode || !this.doc) {
+      return;
+    }
 
-    this.blocks = [
-      ...this.blocks.slice(0, index - 1),
-      merged,
-      ...this.blocks.slice(index + 1)
-    ];
+    const range = this.range;
+    if (!range) {
+      return;
+    }
 
-    this.value = joinBlocks(this.blocks);
+    this.saved = range.cloneRange();
+    this.refreshActive();
+  };
+
+  /** works out what the caret is sitting in so the toolbar can say so */
+  private refreshActive(): void {
+    const range = this.range;
+    const block = range && this.blockAt(range.startContainer);
+
+    const on: string[] = [];
+
+    // a block that isn't edited here has nothing to say about the toolbar, and offering to edit a link inside one
+    // would be offering an edit that goes nowhere
+    if (block && !this.isLocked(block)) {
+      const node =
+        range.startContainer.nodeType === Node.ELEMENT_NODE
+          ? (range.startContainer as Element)
+          : range.startContainer.parentElement;
+
+      // Read off the markup rather than from queryCommandState, which answers for the rendered weight and so calls
+      // every heading bold - which would light the button up on text that carries no emphasis of its own, and invite
+      // a click that writes markup to cancel emphasis that was never there.
+      if (node?.closest('strong,b')) {
+        on.push('bold');
+      }
+      if (node?.closest('em,i')) {
+        on.push('italic');
+      }
+      if (node?.closest('code')) {
+        on.push('code');
+      }
+      if (/^H[1-3]$/.test(block.tagName)) {
+        on.push(block.tagName.toLowerCase());
+      }
+      if (block.tagName === 'UL') {
+        on.push('bullet');
+      }
+      if (block.tagName === 'OL') {
+        on.push('number');
+      }
+      if (block.tagName === 'BLOCKQUOTE' || node?.closest('blockquote')) {
+        on.push('quote');
+      }
+
+      this.anchor = node?.closest('a') as HTMLAnchorElement;
+      if (this.anchor) {
+        on.push('link');
+      }
+    } else {
+      this.anchor = null;
+    }
+
+    if (on.join(',') !== this.active.join(',')) {
+      this.active = on;
+    }
+
+    const href = this.anchor ? this.anchor.getAttribute('href') || '' : null;
+    if (href !== this.linkHref) {
+      this.linkHref = href;
+    }
+  }
+
+  private exec(command: string, value: string = null): void {
+    document.execCommand(command, false, value);
+  }
+
+  private async applyFormat(command: Command): Promise<void> {
+    if (this.sourceMode) {
+      this.applySourceFormat(command);
+      return;
+    }
+
+    if (!this.focusDocument()) {
+      return;
+    }
+
+    // markup rather than inline styles, so what comes out is something markdown can say
+    this.exec('styleWithCSS', 'false');
+
+    const range = this.range;
+    const block = range && this.blockAt(range.startContainer);
+    const on = this.active.includes(command.format);
+
+    switch (command.format) {
+      case 'bold':
+      case 'italic':
+        this.exec(command.format);
+        break;
+
+      case 'code':
+        this.toggleCode(on);
+        break;
+
+      case 'h1':
+      case 'h2':
+      case 'h3':
+        this.exec('formatBlock', on ? 'p' : command.format);
+        break;
+
+      case 'bullet':
+        this.exec('insertUnorderedList');
+        break;
+
+      case 'number':
+        this.exec('insertOrderedList');
+        break;
+
+      case 'quote':
+        // a quote is a wrapper rather than a tag on the block, so coming out of one means saying what the block is
+        this.exec('formatBlock', on ? 'p' : 'blockquote');
+        break;
+
+      case 'link':
+        this.startLink(block);
+        break;
+    }
+
+    this.edited();
+    this.refreshActive();
+
+    if (command.format === 'link') {
+      await this.updateComplete;
+      this.shadowRoot
+        ?.querySelector<HTMLInputElement>('.linkbar input')
+        ?.focus();
+    }
+  }
+
+  private toggleCode(on: boolean): void {
+    const range = this.range;
+    if (!range) {
+      return;
+    }
+
+    if (on) {
+      const node =
+        range.startContainer.nodeType === Node.ELEMENT_NODE
+          ? (range.startContainer as Element)
+          : range.startContainer.parentElement;
+      const code = node?.closest('code');
+      if (code) {
+        code.replaceWith(...code.childNodes);
+      }
+      return;
+    }
+
+    const selected = range.toString();
+    this.exec(
+      'insertHTML',
+      `<code>${escapeHtml(selected || msg('code'))}</code>`
+    );
+  }
+
+  private startLink(block: Element): void {
+    if (this.anchor) {
+      return;
+    }
+
+    const range = this.range;
+    const selected = range ? range.toString() : '';
+
+    if (selected) {
+      this.exec('createLink', 'https://');
+    } else {
+      this.exec(
+        'insertHTML',
+        `<a href="https://">${escapeHtml(msg('link'))}</a>`
+      );
+    }
+
+    // the caret has to be inside the new link for the link bar to find it
+    const anchor = block?.querySelector('a[href="https://"]');
+    if (anchor) {
+      const inside = document.createRange();
+      inside.selectNodeContents(anchor);
+      inside.collapse(false);
+      this.select(inside);
+    }
+  }
+
+  private handleLinkInput(evt: Event): void {
+    const href = (evt.target as HTMLInputElement).value;
+    if (!this.anchor) {
+      return;
+    }
+
+    this.anchor.setAttribute('href', href);
+    this.linkHref = href;
+    this.serialize();
     this.fireEvent('change');
-
-    this.activate(index - 1, caret);
   }
 
-  /**
-   * Wraps the selection - or inserts placeholder text where there is none - putting the caret somewhere useful either
-   * way, since a toolbar that leaves you hunting for the caret is worse than no toolbar.
-   */
-  private async applyFormatting(fmt: Formatting): Promise<void> {
-    const [area, index] = await this.editing();
+  private handleLinkRemove(): void {
+    const anchor = this.anchor;
+    if (!anchor) {
+      return;
+    }
+
+    this.doc.focus();
+    const range = document.createRange();
+    range.selectNodeContents(anchor);
+    this.select(range);
+    this.exec('unlink');
+
+    this.anchor = null;
+    this.linkHref = null;
+    this.edited();
+  }
+
+  /** the same commands in source mode, where there is nothing rendered to act on and markdown is what the caret is in */
+  private applySourceFormat(command: Command): void {
+    const area = this.textArea;
     if (!area) {
       return;
     }
@@ -911,47 +1222,50 @@ export class MarkdownEditor extends FieldElement {
     let start = area.selectionStart;
     const end = area.selectionEnd;
 
-    if (fmt.block) {
-      // block formatting applies from the start of the line the selection begins on, and to every line it covers -
-      // marking only the first would turn a three line selection into one list item and two loose lines
+    if (command.lines) {
+      // block markers apply from the start of the line the selection begins on, and to every line it covers - marking
+      // only the first would turn a three line selection into one list item and two loose lines
       start = start > 0 ? text.lastIndexOf('\n', start - 1) + 1 : 0;
       const marked = text
         .substring(start, end)
         .split('\n')
-        .map((line) => fmt.prefix + line)
+        .map((line) => command.prefix + line)
         .join('\n');
 
-      this.replace(area, index, start, end, marked, start + fmt.prefix.length);
+      area.value = text.substring(0, start) + marked + text.substring(end);
+      this.value = area.value;
+      this.fireEvent('change');
+      area.focus();
+      area.setSelectionRange(
+        start + command.prefix.length,
+        start + command.prefix.length
+      );
       return;
     }
 
     const selected = text.substring(start, end);
-    this.replace(
-      area,
-      index,
-      start,
-      end,
-      fmt.prefix + selected + fmt.suffix,
-      selected
-        ? end + fmt.prefix.length + fmt.suffix.length
-        : start + fmt.prefix.length
-    );
+    const suffix = command.suffix ?? command.prefix;
+    const replacement = command.prefix + selected + suffix;
+
+    area.value = text.substring(0, start) + replacement + text.substring(end);
+    this.value = area.value;
+    this.fireEvent('change');
+
+    const caret = selected
+      ? end + command.prefix.length + suffix.length
+      : start + command.prefix.length;
+
+    area.focus();
+    area.setSelectionRange(caret, caret);
   }
 
-  private handleUploadClick(): void {
-    (
-      this.shadowRoot.querySelector('#upload-input') as HTMLInputElement
-    ).click();
-  }
+  // ==========================================================
+  // Pasting and dropping
+  // ==========================================================
 
-  private handleFileInput(evt: any): void {
-    this.upload([...evt.target.files]);
-    evt.target.value = null;
-  }
-
-  // a div isn't a drop target until something says the drag is welcome, and without this the browser navigates to the
-  // dropped image and takes the unsaved article with it
   private handleDragOver(evt: DragEvent): void {
+    // a div isn't a drop target until something says the drag is welcome, and without this the browser navigates to
+    // the dropped image and takes the unsaved article with it
     evt.preventDefault();
   }
 
@@ -973,7 +1287,69 @@ export class MarkdownEditor extends FieldElement {
     if (files.length > 0) {
       evt.preventDefault();
       this.upload(files);
+      return;
     }
+
+    if (this.sourceMode) {
+      return;
+    }
+
+    const clipboard = evt.clipboardData;
+    const pasted = clipboard?.getData('text/html');
+    const text = clipboard?.getData('text/plain') || '';
+
+    if (!pasted && !text) {
+      return;
+    }
+
+    evt.preventDefault();
+
+    // Markup off the clipboard is put through the same round trip the document itself takes - read to markdown, then
+    // rendered back - so nothing can land in the document that the editor couldn't have produced or couldn't write
+    // out again. Anything it can't express falls back to the plain text, which is what a paste from outside is.
+    const source = pasted ? this.markdownOf(pasted, text) : null;
+
+    this.exec(
+      'insertHTML',
+      source === null
+        ? text
+            .split(/\n{2,}/)
+            .map((part) => `<p>${escapeHtml(part).replace(/\n/g, '<br>')}</p>`)
+            .join('')
+        : /\n\s*\n/.test(source)
+          ? renderBlock(source)
+          : markdown.renderInline(source)
+    );
+
+    this.edited('insertFromPaste');
+  }
+
+  /** the markdown for pasted markup, or null when it isn't anything the document could hold */
+  private markdownOf(pasted: string, text: string): string {
+    // parsed inert, so nothing in it loads or runs on the way past
+    const parsed = new DOMParser().parseFromString(pasted, 'text/html');
+    const blocks = [...parsed.body.children].filter(isSerializable);
+
+    if (blocks.length === 0) {
+      return text ? null : parsed.body.textContent;
+    }
+
+    return blocks.map((block) => blockOf(block)).join('\n\n');
+  }
+
+  // ==========================================================
+  // Screenshots
+  // ==========================================================
+
+  private handleUploadClick(): void {
+    (
+      this.shadowRoot.querySelector('#upload-input') as HTMLInputElement
+    ).click();
+  }
+
+  private handleFileInput(evt: any): void {
+    this.upload([...evt.target.files]);
+    evt.target.value = null;
   }
 
   private async upload(files: File[]): Promise<void> {
@@ -984,19 +1360,25 @@ export class MarkdownEditor extends FieldElement {
     this.error = '';
     this.uploading = true;
 
-    const [area, index] = await this.editing();
-    if (!area) {
-      this.uploading = false;
-      return;
+    // Where the images go, fixed before anything else is awaited. An upload takes seconds and the author is free to
+    // click somewhere else while it runs, so reading the caret when the url comes back would put the image wherever
+    // they happen to have moved to.
+    const source = this.sourceMode;
+    let target: Range = null;
+    let start = 0;
+    let end = 0;
+
+    if (source) {
+      start = this.textArea?.selectionStart ?? 0;
+      end = this.textArea?.selectionEnd ?? 0;
+    } else {
+      if (!this.focusDocument()) {
+        this.uploading = false;
+        return;
+      }
+      target = this.range?.cloneRange();
     }
 
-    // Where the references go, fixed before anything else is awaited. An upload takes seconds and the author is free
-    // to click into another block while it runs, so reading the live block or caret when the url comes back would
-    // write one block's text over another's.
-    let start = area.selectionStart;
-    let end = area.selectionEnd;
-
-    // one at a time, in order, so the markdown ends up in the order they were given to us
     for (const file of files) {
       const data = new FormData();
       data.append('file', file);
@@ -1013,13 +1395,20 @@ export class MarkdownEditor extends FieldElement {
 
         // the name is alt text inside brackets, and clean_name deliberately keeps [ ] ( ) in filenames
         const alt = (response.json.name || '').replace(/[[\]()]/g, '');
-        const reference = `![${alt}](${response.json.url})`;
 
-        this.insertAt(index, start, end, reference);
+        if (source) {
+          const reference = `![${alt}](${response.json.url})`;
+          const document = this.value || '';
+          this.value =
+            document.substring(0, start) + reference + document.substring(end);
+          this.fireEvent('change');
 
-        // the next file goes after this one rather than in front of it
-        start += reference.length;
-        end = start;
+          // the next file goes after this one rather than in front of it
+          start += reference.length;
+          end = start;
+        } else {
+          target = this.insertImage(target, response.json.url, alt);
+        }
       } catch (e) {
         this.error = msg('Unable to upload file.');
         break;
@@ -1027,100 +1416,52 @@ export class MarkdownEditor extends FieldElement {
     }
 
     this.uploading = false;
-    this.settle(index, start);
-  }
 
-  /**
-   * Writes markdown into a block by index - or into the whole document in source mode - rather than into whatever
-   * textarea happens to hold the caret. Uploads resolve long after the caret was read, and where the author asked for
-   * the image is where it belongs.
-   */
-  private insertAt(
-    index: number,
-    start: number,
-    end: number,
-    text: string
-  ): void {
-    if (this.sourceMode) {
-      const document = this.value || '';
-      this.value =
-        document.substring(0, start) + text + document.substring(end);
-    } else {
-      const block = this.blocks[index];
-      if (!block) {
-        return;
-      }
-
-      const source =
-        block.source.substring(0, start) + text + block.source.substring(end);
-
-      this.blocks = this.blocks.map((existing, at) =>
-        at === index ? { ...existing, source } : existing
-      );
-      this.value = joinBlocks(this.blocks);
-    }
-
-    this.fireEvent('change');
-  }
-
-  /**
-   * Closes out a batch of uploads. In rich mode the block goes back to being rendered so the image shows up inline
-   * where it was put, which is the confirmation that the upload worked; in source mode the caret follows the text
-   * that was written, since there's nothing to render.
-   */
-  private async settle(index: number, caret: number): Promise<void> {
-    if (this.sourceMode) {
+    if (source) {
       await this.updateComplete;
-      this.textArea?.setSelectionRange(caret, caret);
-      return;
-    }
-
-    // the author moved on while it ran, so leave them where they are - that block will render when they leave it
-    if (this.active === index) {
-      this.resume = { index, caret };
-      this.active = -1;
-      this.blocks = splitBlocks(this.value || '');
+      this.textArea?.setSelectionRange(start, start);
     }
   }
+
+  /**
+   * Puts an image where the author asked for it and hands back where the next one goes. The insert runs through the
+   * browser so it lands in the undo stack, which means moving the selection there first - and back again afterwards if
+   * the author has moved on in the meantime, since being yanked back mid-sentence is worse than not seeing it land.
+   */
+  private insertImage(target: Range, url: string, alt: string): Range {
+    const doc = this.doc;
+    if (!doc || !target || !doc.contains(target.startContainer)) {
+      return target;
+    }
+
+    const current = this.range?.cloneRange();
+    const moved =
+      current &&
+      (current.startContainer !== target.startContainer ||
+        current.startOffset !== target.startOffset);
+
+    doc.focus();
+    this.select(target);
+    this.exec(
+      'insertHTML',
+      `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`
+    );
+
+    const after = this.range?.cloneRange() || target;
+
+    if (moved && doc.contains(current.startContainer)) {
+      this.select(current);
+    }
+
+    return after;
+  }
+
+  // ==========================================================
+  // Rendering
+  // ==========================================================
 
   public render(): TemplateResult {
     return this.renderField();
-  }
-
-  private renderDocument(): TemplateResult {
-    return html`
-      <div
-        class="doc"
-        style="min-height:${this.minHeight}px"
-        tabindex="${this.disabled ? -1 : 0}"
-        @mousedown=${this.handleDocDown}
-        @focus=${this.handleDocFocus}
-        @dragenter=${this.handleDragOver}
-        @dragover=${this.handleDragOver}
-        @drop=${this.handleDrop}
-        @paste=${this.handlePaste}
-      >
-        ${this.blocks.map((block, index) =>
-          index === this.active
-            ? html`<textarea
-                class="block editing ${blockKind(block.source)}"
-                rows="1"
-                .value=${block.source}
-                ?disabled=${this.disabled}
-                @input=${this.handleInput}
-                @keydown=${this.handleBlockKey}
-                @blur=${(evt: FocusEvent) => this.handleBlockBlur(evt, index)}
-              ></textarea>`
-            : html`<div
-                class="block rendered ${blockKind(block.source)}"
-                @mousedown=${(evt: MouseEvent) =>
-                  this.handleBlockDown(evt, index)}
-              >
-                ${unsafeHTML(this.renderBlock(block.source))}
-              </div>`
-        )}
-      </div>
-    `;
   }
 
   private renderSource(): TemplateResult {
@@ -1144,18 +1485,18 @@ export class MarkdownEditor extends FieldElement {
           class="toolbar"
           @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
         >
-          ${this.formatting.map(
-            (fmt) => html`
+          ${this.commands.map(
+            (command) => html`
               <div
-                class="format ${fmt.label === 'B'
-                  ? 'bold'
-                  : fmt.label === 'I'
-                    ? 'italic'
-                    : ''}"
-                title="${fmt.title}"
-                @click=${() => this.applyFormatting(fmt)}
+                class="format ${command.format} ${this.active.includes(
+                  command.format
+                )
+                  ? 'on'
+                  : ''}"
+                title="${command.title}"
+                @click=${() => this.applyFormat(command)}
               >
-                ${fmt.label}
+                ${command.label}
               </div>
             `
           )}
@@ -1173,7 +1514,36 @@ export class MarkdownEditor extends FieldElement {
             ${this.sourceMode ? msg('Rich text') : msg('Markdown')}
           </div>
         </div>
-        ${this.sourceMode ? this.renderSource() : this.renderDocument()}
+        ${this.linkHref !== null && !this.sourceMode
+          ? html`<div class="linkbar">
+              <input
+                type="text"
+                .value=${this.linkHref}
+                placeholder="https://"
+                @input=${this.handleLinkInput}
+              />
+              <div class="link-action" @click=${this.handleLinkRemove}>
+                ${msg('Remove')}
+              </div>
+            </div>`
+          : null}
+        ${this.sourceMode
+          ? this.renderSource()
+          : html`
+              <div
+                class="doc"
+                style="min-height:${this.minHeight}px"
+                contenteditable=${this.disabled ? 'false' : 'true'}
+                @beforeinput=${this.handleBeforeInput}
+                @input=${this.handleInput}
+                @keydown=${this.handleKeyDown}
+                @blur=${this.handleDocBlur}
+                @dragenter=${this.handleDragOver}
+                @dragover=${this.handleDragOver}
+                @drop=${this.handleDrop}
+                @paste=${this.handlePaste}
+              ></div>
+            `}
         ${this.error ? html`<div class="error">${this.error}</div>` : null}
         <input
           id="upload-input"

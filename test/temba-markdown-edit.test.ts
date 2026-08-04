@@ -1,91 +1,140 @@
 import { fixture, assert, expect } from '@open-wc/testing';
+import { MarkdownEditor } from '../src/form/MarkdownEditor';
 import {
-  blockKind,
+  blockOf,
   joinBlocks,
-  MarkdownEditor,
-  sourceOffset,
+  renderBlock,
   splitBlocks
-} from '../src/form/MarkdownEditor';
+} from '../src/form/MarkdownDocument';
 import {
   assertScreenshot,
   clearMockPosts,
   getClip,
   getComponent,
   mockPOST,
+  mouseClickElement,
   waitForImages
 } from './utils.test';
 
 const TAG = 'temba-markdown-edit';
 const UPLOAD = '/msgmedia/upload/';
 
-const getEditor = async (value = ''): Promise<MarkdownEditor> => {
-  const editor: MarkdownEditor = await fixture(
+const getEditor = async (
+  value = '',
+  minHeight = 0
+): Promise<MarkdownEditor> => {
+  const editor = (await fixture(
     `<${TAG} widget_only endpoint="${UPLOAD}"></${TAG}>`
-  );
+  )) as MarkdownEditor;
+
+  editor.minHeight = minHeight;
   editor.value = value;
   await editor.updateComplete;
   return editor;
 };
 
-/** clicks into a block the way the editor's own mousedown handler would */
-const edit = async (
+const doc = (editor: MarkdownEditor): HTMLElement => editor.doc;
+
+/** the document's top level blocks, which are the rendered article itself */
+const blocks = (editor: MarkdownEditor): HTMLElement[] =>
+  [...editor.doc.children] as HTMLElement[];
+
+const selectionOf = (editor: MarkdownEditor): Selection => {
+  const root = editor.shadowRoot as any;
+  return root.getSelection ? root.getSelection() : document.getSelection();
+};
+
+/** puts the caret in a block at an offset into its text, the way clicking there would */
+const caretIn = async (
   editor: MarkdownEditor,
   index: number,
-  caret: number = Infinity
-): Promise<HTMLTextAreaElement> => {
-  (editor as any).activate(index, caret);
-  await editor.updateComplete;
-  return editor.activeArea;
-};
-
-/** types into whichever textarea is holding the caret */
-const type = async (
-  editor: MarkdownEditor,
-  area: HTMLTextAreaElement,
-  text: string
+  offset: number
 ): Promise<void> => {
-  area.value = text;
-  area.dispatchEvent(new Event('input'));
+  const block = blocks(editor)[index];
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+
+  let seen = 0;
+  let node: Text;
+  let placed = false;
+
+  while ((node = walker.nextNode() as Text)) {
+    if (seen + node.length >= offset) {
+      range.setStart(node, offset - seen);
+      placed = true;
+      break;
+    }
+    seen += node.length;
+  }
+
+  if (!placed) {
+    range.selectNodeContents(block);
+    range.collapse(false);
+  }
+
+  range.collapse(true);
+
+  doc(editor).focus();
+  const selection = selectionOf(editor);
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  // selectionchange is a task of its own, and it's what tells the toolbar and the link bar where the caret went
+  await new Promise((resolve) => setTimeout(resolve, 0));
   await editor.updateComplete;
 };
 
-const rendered = (editor: MarkdownEditor): HTMLElement[] =>
-  [...editor.shadowRoot.querySelectorAll('.block.rendered')] as HTMLElement[];
+/** selects from one place in the document to another, across blocks if asked */
+const selectAcross = async (
+  editor: MarkdownEditor,
+  from: [number, number],
+  to: [number, number]
+): Promise<void> => {
+  await caretIn(editor, from[0], from[1]);
+  const start = selectionOf(editor).getRangeAt(0);
+
+  await caretIn(editor, to[0], to[1]);
+  const end = selectionOf(editor).getRangeAt(0);
+
+  const range = document.createRange();
+  range.setStart(start.startContainer, start.startOffset);
+  range.setEnd(end.startContainer, end.startOffset);
+
+  const selection = selectionOf(editor);
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
+const selectAll = async (editor: MarkdownEditor): Promise<void> => {
+  doc(editor).focus();
+  const range = document.createRange();
+  range.selectNodeContents(doc(editor));
+  const selection = selectionOf(editor);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  await editor.updateComplete;
+};
+
+const toolbar = async (
+  editor: MarkdownEditor,
+  label: string
+): Promise<void> => {
+  const button = [
+    ...editor.shadowRoot.querySelectorAll('.toolbar .format')
+  ].find((ele) => ele.textContent.trim() === label) as HTMLElement;
+
+  button.click();
+
+  // formatting puts the caret back in the document when nothing is focused, so let that settle before looking
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await editor.updateComplete;
+};
 
 const uploadFile = (name = 'shot.png'): File =>
   new File(['shot'], name, { type: 'image/png' });
 
-/** clicks a rendered block a fraction of the way along its text, the way a real pointer would */
-const clickAt = async (
-  editor: MarkdownEditor,
-  index: number,
-  fraction: number
-): Promise<void> => {
-  const block = rendered(editor)[index];
-
-  // the block and its paragraph are full width, so the fraction is taken against the text's own extent
-  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
-  let text: Node;
-  while ((text = walker.nextNode())) {
-    if (text.textContent.trim()) {
-      break;
-    }
-  }
-
-  const range = document.createRange();
-  range.selectNodeContents(text);
-  const rect = range.getBoundingClientRect();
-
-  block.dispatchEvent(
-    new MouseEvent('mousedown', {
-      bubbles: true,
-      cancelable: true,
-      clientX: rect.left + rect.width * fraction,
-      clientY: rect.top + rect.height / 2
-    })
-  );
-  await editor.updateComplete;
-};
+/** everything the author can see in the document */
+const shown = (editor: MarkdownEditor): string => doc(editor).textContent;
 
 describe('splitBlocks', () => {
   const roundTrips = (markdown: string) => {
@@ -118,17 +167,17 @@ describe('splitBlocks', () => {
   it('keeps a loose list whole', () => {
     const blocks = splitBlocks('* one\n\n* two\n\n* three');
     assert.equal(blocks.length, 1);
-    assert.equal(blocks[0].source, '* one\n\n* two\n\n* three');
   });
 
   it('keeps a list item with more than one paragraph whole', () => {
-    const blocks = splitBlocks('1. one\n\n   more about one\n\n2. two');
-    assert.equal(blocks.length, 1);
+    assert.equal(
+      splitBlocks('1. one\n\n   more about one\n\n2. two').length,
+      1
+    );
   });
 
   it('keeps a blockquote whole across blank lines', () => {
-    const blocks = splitBlocks('> one\n\n> two');
-    assert.equal(blocks.length, 1);
+    assert.equal(splitBlocks('> one\n\n> two').length, 1);
   });
 
   it('always has somewhere to type', () => {
@@ -146,64 +195,68 @@ describe('splitBlocks', () => {
     );
     roundTrips('trailing space   \n\nand\ttabs\n');
   });
-
-  it('leaves untouched blocks exactly as they were', () => {
-    // deliberately non-canonical markdown: setext heading, + bullets, __ emphasis, hard wrapped prose
-    const original = [
-      'Title',
-      '=====',
-      '',
-      'Some __prose__ that is',
-      'hard wrapped across lines.',
-      '',
-      '+ first',
-      '+ second',
-      '',
-      'Last paragraph.'
-    ].join('\n');
-
-    const blocks = splitBlocks(original);
-    // rewrite only the final paragraph, the way editing one block does
-    blocks[3] = { ...blocks[3], source: 'Last paragraph, edited.' };
-
-    assert.equal(
-      joinBlocks(blocks),
-      original.replace('Last paragraph.', 'Last paragraph, edited.')
-    );
-  });
 });
 
-describe('blockKind', () => {
-  it('names what a block renders to', () => {
-    assert.equal(blockKind('# Title'), 'h1');
-    assert.equal(blockKind('### Title'), 'h3');
-    assert.equal(blockKind('```\ncode\n```'), 'code');
-    assert.equal(blockKind('    indented'), 'code');
-    assert.equal(blockKind('> quoted'), 'quote');
-    assert.equal(blockKind('* item'), 'list');
-    assert.equal(blockKind('1. item'), 'list');
-    assert.equal(blockKind('just words'), 'para');
-    assert.equal(blockKind(''), 'para');
+describe('blockOf', () => {
+  /** renders markdown and reads the rendered elements straight back */
+  const trip = (source: string): string => {
+    const host = document.createElement('div');
+    host.innerHTML = renderBlock(source);
+    return [...host.children].map(blockOf).join('\n\n');
+  };
+
+  it('writes rendered blocks back as the markdown they came from', () => {
+    // everything an article actually uses comes back as itself, so editing one block doesn't rewrite it
+    for (const source of [
+      '# Heading',
+      '## Heading with **bold**',
+      'A plain paragraph.',
+      'Some **bold** and _em_ and `code` here.',
+      'A [link](https://example.com) inline.',
+      'A [titled](https://example.com "hover") link.',
+      'An ![alt text](/a.png) image.',
+      '* one\n* two',
+      '* one\n\n* two',
+      '1. one\n2. two',
+      '> quoted **text**',
+      '> one\n>\n> two',
+      '```js\nlet x = 1;\n```',
+      '```\nplain\n```',
+      '---',
+      'line one  \nline two',
+      'line one\nline two',
+      'snake_case_word stays'
+    ]) {
+      assert.equal(trip(source), source, `round trip of ${source}`);
+    }
   });
 
-  it('reads a setext heading off the line below it', () => {
-    assert.equal(blockKind('Title\n====='), 'h1');
-    assert.equal(blockKind('Title\n-----'), 'h2');
-    // a list whose second item happens to start with a dash isn't a heading
-    assert.equal(blockKind('- one\n- two'), 'list');
+  it('escapes text that would otherwise become markup', () => {
+    // a paragraph that starts like a list has to still be a paragraph next time it is read
+    for (const [source, expected] of [
+      [
+        'a literal * star and _ underscore',
+        'a literal \\* star and \\_ underscore'
+      ],
+      ['1\\. not a list', '1\\. not a list'],
+      ['\\- not a bullet', '\\- not a bullet'],
+      ['\\# not a heading', '\\# not a heading'],
+      ['text with `back``ticks` inside', 'text with ```back``ticks``` inside']
+    ]) {
+      assert.equal(trip(source), expected);
+    }
   });
-});
 
-describe('sourceOffset', () => {
-  it('maps a rendered offset back through the markers rendering dropped', () => {
-    // "## Heading" renders to "Heading", so the caret after "Head" is 4 in the text and 7 in the source
-    assert.equal(sourceOffset('## Heading', 'Heading', 4), 7);
-    assert.equal(sourceOffset('**bold** text', 'bold text', 4), 6);
-    assert.equal(sourceOffset('plain text', 'plain text', 5), 5);
-  });
-
-  it('stops at the end of the source', () => {
-    assert.equal(sourceOffset('hi', 'hi there', 8), 2);
+  it('does not compound its escaping when written out again', () => {
+    // an escape that markdown doesn't honour would be escaped again on the next save, growing a backslash each time
+    for (const source of [
+      '1\\. not a list',
+      '\\- not a bullet',
+      'a literal \\* star'
+    ]) {
+      assert.equal(trip(trip(source)), trip(source));
+      assert.equal(renderBlock(trip(source)), renderBlock(source));
+    }
   });
 });
 
@@ -221,14 +274,13 @@ describe(TAG, () => {
   it('renders the document rather than showing its source', async () => {
     const editor = await getEditor('# Hello\n\nSome *words*.');
 
-    const blocks = rendered(editor);
-    assert.equal(blocks.length, 2);
-    assert.isOk(blocks[0].querySelector('h1'));
-    assert.equal(blocks[0].querySelector('h1').textContent, 'Hello');
-    assert.isOk(blocks[1].querySelector('em'));
+    const children = blocks(editor);
+    assert.equal(children.length, 2);
+    assert.equal(children[0].tagName, 'H1');
+    assert.equal(children[0].textContent, 'Hello');
+    assert.isOk(children[1].querySelector('em'));
 
-    // nothing is showing markdown until the caret goes somewhere
-    assert.isNotOk(editor.activeArea);
+    // nothing anywhere is showing source
     assert.isNotOk(editor.textArea);
   });
 
@@ -236,264 +288,352 @@ describe(TAG, () => {
     const editor = await getEditor(
       '![a shot](/test-assets/img/sim_image_c.jpg)'
     );
-    const img = rendered(editor)[0].querySelector('img');
-    assert.isOk(img);
+    const img = blocks(editor)[0].querySelector('img');
     assert.equal(img.getAttribute('src'), '/test-assets/img/sim_image_c.jpg');
     assert.equal(img.getAttribute('alt'), 'a shot');
   });
 
   it('escapes markup rather than running it', async () => {
     const editor = await getEditor('<img src=x onerror="alert(1)">');
-    assert.isNotOk(rendered(editor)[0].querySelector('img'));
+    assert.isNotOk(blocks(editor)[0].querySelector('img'));
   });
 
-  it('shows the markdown of the block holding the caret', async () => {
-    const editor = await getEditor('# Hello\n\nSome words.');
+  // ==========================================================
+  // The thing the whole editor is for
+  // ==========================================================
 
-    const area = await edit(editor, 0);
-    assert.equal(area.value, '# Hello');
-    // the block being edited is typed like the thing it renders to
-    assert.include([...area.classList], 'h1');
+  describe('rich editing', () => {
+    const ARTICLE = [
+      '# Getting started',
+      '',
+      'Open the **Flows** tab and pick a [flow](https://example.com) to edit.',
+      '',
+      '* Add a node',
+      '* Connect it up'
+    ].join('\n');
 
-    // the rest of the document stays rendered
-    assert.equal(rendered(editor).length, 1);
-  });
+    it('never shows markdown when the author clicks into it', async () => {
+      const editor = await getEditor(ARTICLE);
+      const before = shown(editor);
 
-  it('clicking a block opens it with the caret at the front of the text', async () => {
-    const editor = await getEditor('# Title\n\nSome longer words here.');
-    await clickAt(editor, 1, 0);
+      for (const block of blocks(editor)) {
+        await mouseClickElement(block);
+        await editor.updateComplete;
 
-    assert.equal(editor.active, 1);
-    // clicked at the left edge, so the caret belongs at the front rather than dumped at the end
-    assert.isBelow(editor.activeArea.selectionStart, 4);
-  });
+        // no part of the document has turned into its source
+        assert.isNotOk(
+          editor.shadowRoot.querySelector('textarea'),
+          'clicking opened a source view'
+        );
 
-  it('clicking part way along a block lands part way along its markdown', async () => {
-    const editor = await getEditor('# Title\n\nSome longer words here.');
-    await clickAt(editor, 1, 0.5);
+        // and what is on screen is still the rendered article, character for character
+        assert.equal(shown(editor), before);
+      }
 
-    const caret = editor.activeArea.selectionStart;
-    assert.isAbove(caret, 4);
-    assert.isBelow(caret, 'Some longer words here.'.length);
-  });
+      // none of the markers that make up the markdown are anywhere on screen
+      for (const marker of ['**', '# ', '](', '* Add']) {
+        assert.notInclude(shown(editor), marker);
+      }
 
-  it('clicking the gap between blocks goes to the nearest one', async () => {
-    const editor = await getEditor('one\n\ntwo\n\nthree\n\nfour');
+      // the caret really is in the document rather than simply absent
+      assert.isAbove(selectionOf(editor).rangeCount, 0);
+    });
 
-    // the margin between blocks belongs to the document, and a click a few pixels off shouldn't jump to the end
-    const doc = editor.shadowRoot.querySelector('.doc') as HTMLElement;
-    const rect = rendered(editor)[1].getBoundingClientRect();
+    it('never shows markdown while typing', async () => {
+      const editor = await getEditor(ARTICLE);
 
-    doc.dispatchEvent(
-      new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true,
-        clientX: rect.left + 2,
-        clientY: rect.bottom + 2
-      })
-    );
-    await editor.updateComplete;
+      await caretIn(editor, 2, 0);
+      await type('First: ');
+      await editor.updateComplete;
 
-    assert.equal(editor.active, 1);
-  });
+      assert.isNotOk(editor.shadowRoot.querySelector('textarea'));
+      assert.notInclude(shown(editor), '**');
+      assert.notInclude(shown(editor), '](');
+      assert.include(editor.value, 'Open the **Flows** tab');
+    });
 
-  it('does not leave a caret armed when the block clicked is already open', async () => {
-    const editor = await getEditor('one\n\ntwo');
-    const doc = editor.shadowRoot.querySelector('.doc') as HTMLElement;
+    it('types into the rendered text', async () => {
+      const editor = await getEditor('# Hello\n\nSome words.');
 
-    await edit(editor, 1, 1);
+      await caretIn(editor, 0, 5);
+      await type(' there');
+      await editor.updateComplete;
 
-    // clicking the empty space under the last block, which is the block already being edited
-    const rect = doc.getBoundingClientRect();
-    doc.dispatchEvent(
-      new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true,
-        clientX: rect.left + 2,
-        clientY: rect.bottom - 2
-      })
-    );
-    await editor.updateComplete;
+      // realtime - the value is current without the caret going anywhere
+      assert.equal(editor.value, '# Hello there\n\nSome words.');
+      assert.equal(blocks(editor)[0].tagName, 'H1');
+    });
 
-    assert.equal(editor.active, 1);
-    // nothing re-renders, so a caret left armed here would fire on the next update instead - the author's next
-    // keystroke, which would send it to the end of the block mid-word
-    assert.isNull((editor as any).pendingCaret);
-  });
+    it('leaves untouched blocks exactly as they were authored', async () => {
+      // deliberately non-canonical markdown: setext heading, + bullets, __ emphasis, hard wrapped prose
+      const original = [
+        'Title',
+        '=====',
+        '',
+        'Some __prose__ that is',
+        'hard wrapped across lines.',
+        '',
+        '+ first',
+        '+ second',
+        '',
+        'Last paragraph.'
+      ].join('\n');
 
-  it('keeps rendered links out of the tab order', async () => {
-    const editor = await getEditor('see the [docs](https://example.com)');
-    const link = rendered(editor)[0].querySelector('a');
+      const editor = await getEditor(original);
+      assert.equal(blocks(editor).length, 4);
 
-    // enter on a focused link would navigate away from a draft nobody has saved
-    assert.equal(link.getAttribute('tabindex'), '-1');
-    assert.equal(link.getAttribute('href'), 'https://example.com');
-  });
+      await caretIn(editor, 3, 'Last paragraph.'.length);
+      await type(' Edited.');
+      await editor.updateComplete;
 
-  it('accepts a drag so the browser does not navigate to the dropped file', async () => {
-    const editor = await getEditor('body');
-    const doc = editor.shadowRoot.querySelector('.doc') as HTMLElement;
+      // only the block that was touched is rewritten - everything else comes back byte for byte
+      assert.equal(
+        editor.value,
+        original.replace('Last paragraph.', 'Last paragraph. Edited.')
+      );
+    });
 
-    const over = new DragEvent('dragover', { bubbles: true, cancelable: true });
-    doc.dispatchEvent(over);
+    it('splits a paragraph on enter', async () => {
+      const editor = await getEditor('one two');
 
-    assert.isTrue(over.defaultPrevented);
-  });
+      await caretIn(editor, 0, 4);
+      await pressKey('Enter', 1);
+      await editor.updateComplete;
 
-  it('re-renders the document as it is written', async () => {
-    const editor = await getEditor('# Hello\n\nSome words.');
+      assert.equal(editor.value, 'one\n\ntwo');
+      assert.equal(blocks(editor).length, 2);
+      assert.deepEqual(
+        blocks(editor).map((block) => block.tagName),
+        ['P', 'P']
+      );
+    });
 
-    const area = await edit(editor, 0);
-    await type(editor, area, '# Hello there');
-
-    // realtime: the value is current without leaving the block
-    assert.equal(editor.value, '# Hello there\n\nSome words.');
-
-    // and the block renders as soon as the caret leaves it
-    area.dispatchEvent(new Event('blur'));
-    await editor.updateComplete;
-    assert.equal(
-      rendered(editor)[0].querySelector('h1').textContent,
-      'Hello there'
-    );
-  });
-
-  it('rebuilds the document when the value is set from outside', async () => {
-    const editor = await getEditor('one');
-    await edit(editor, 0);
-
-    editor.value = '# two\n\nthree';
-    await editor.updateComplete;
-
-    assert.equal(editor.blocks.length, 2);
-    assert.equal(editor.active, -1);
-    assert.equal(rendered(editor)[0].querySelector('h1').textContent, 'two');
-  });
-
-  it('splits a block when a blank line is typed into it', async () => {
-    const editor = await getEditor('one');
-
-    const area = await edit(editor, 0);
-    await type(editor, area, 'one\n\ntwo');
-    area.dispatchEvent(new Event('blur'));
-    await editor.updateComplete;
-
-    assert.equal(editor.value, 'one\n\ntwo');
-    assert.equal(rendered(editor).length, 2);
-  });
-
-  describe('source mode', () => {
-    it('toggles to the raw markdown and back', async () => {
+    it('starts a paragraph when enter is pressed at the end of a heading', async () => {
       const editor = await getEditor('# Hello');
-      assert.isNotOk(editor.textArea);
 
-      editor.sourceMode = true;
+      await caretIn(editor, 0, 5);
+      await pressKey('Enter', 1);
+      await type('body');
       await editor.updateComplete;
 
-      assert.isOk(editor.textArea);
-      assert.equal(editor.textArea.value, '# Hello');
-      assert.equal(rendered(editor).length, 0);
-
-      editor.sourceMode = false;
-      await editor.updateComplete;
-
-      assert.isNotOk(editor.textArea);
-      assert.equal(rendered(editor).length, 1);
+      // the browser leaves a bare <div> here, which is not something the document is made of
+      assert.equal(editor.value, '# Hello\n\nbody');
+      assert.deepEqual(
+        blocks(editor).map((block) => block.tagName),
+        ['H1', 'P']
+      );
     });
 
-    it('carries edits made in the source back to the rendered document', async () => {
-      const editor = await getEditor('# Hello');
-      editor.sourceMode = true;
+    it('merges a block into the one above on backspace', async () => {
+      const editor = await getEditor('one\n\ntwo');
+
+      await caretIn(editor, 1, 0);
+      await pressKey('Backspace', 1);
       await editor.updateComplete;
 
-      await type(editor, editor.textArea, '# Hello\n\nAnd a paragraph.');
-      assert.equal(editor.value, '# Hello\n\nAnd a paragraph.');
-
-      editor.sourceMode = false;
-      await editor.updateComplete;
-
-      const blocks = rendered(editor);
-      assert.equal(blocks.length, 2);
-      assert.equal(blocks[1].textContent.trim(), 'And a paragraph.');
+      assert.equal(editor.value, 'onetwo');
+      assert.equal(blocks(editor).length, 1);
     });
 
-    it('carries edits made in the document back to the source', async () => {
-      const editor = await getEditor('# Hello\n\nwords');
+    it('adds a line to a fenced block rather than splitting it', async () => {
+      const editor = await getEditor('```js\nlet x = 1;\n```');
 
-      const area = await edit(editor, 1);
-      await type(editor, area, 'different words');
-
-      editor.sourceMode = true;
+      await caretIn(editor, 0, 'let x = 1;'.length);
+      await pressKey('Enter', 1);
+      await type('let y = 2;');
       await editor.updateComplete;
 
-      assert.equal(editor.textArea.value, '# Hello\n\ndifferent words');
+      // a fenced block is one block however many lines it has
+      assert.equal(blocks(editor).length, 1);
+      assert.equal(editor.value, '```js\nlet x = 1;\nlet y = 2;\n```');
+    });
+
+    it('deletes a selection that spans blocks', async () => {
+      const editor = await getEditor('alpha\n\nbravo\n\ncharlie');
+
+      await selectAcross(editor, [0, 2], [2, 3]);
+      await pressKey('Backspace', 1);
+      await editor.updateComplete;
+
+      // the two ends join up, which is what selecting across blocks is for
+      assert.equal(editor.value, 'alrlie');
+      assert.equal(blocks(editor).length, 1);
+    });
+
+    it('empties the whole document on select all and delete', async () => {
+      const editor = await getEditor('# Title\n\nbody\n\n* a\n* b');
+
+      await selectAll(editor);
+      await pressKey('Backspace', 1);
+      await editor.updateComplete;
+
+      assert.equal(editor.value, '');
+      assert.equal(blocks(editor).length, 1);
+
+      // an author who has just emptied the article is starting a paragraph, not another heading
+      assert.equal(blocks(editor)[0].tagName, 'P');
+
+      await type('fresh start');
+      await editor.updateComplete;
+      assert.equal(editor.value, 'fresh start');
+    });
+
+    it('replaces the whole document when select all is typed over', async () => {
+      const editor = await getEditor('# Title\n\nbody');
+
+      await selectAll(editor);
+      await type('replaced');
+      await editor.updateComplete;
+
+      assert.equal(editor.value, 'replaced');
+    });
+
+    it('rebuilds the document when the value is set from outside', async () => {
+      const editor = await getEditor('one');
+      await caretIn(editor, 0, 0);
+
+      editor.value = '# two\n\nthree';
+      await editor.updateComplete;
+
+      assert.equal(blocks(editor).length, 2);
+      assert.equal(blocks(editor)[0].tagName, 'H1');
+      assert.equal(blocks(editor)[0].textContent, 'two');
+    });
+
+    it('keeps content it cannot write back out from being edited', async () => {
+      const table = '| a | b |\n| --- | --- |\n| 1 | 2 |';
+      const editor = await getEditor(`intro\n\n${table}\n\nafter`);
+
+      const kept = blocks(editor)[1];
+      assert.isOk(kept.querySelector('table'), 'the table still renders');
+      assert.equal(
+        kept.getAttribute('contenteditable'),
+        'false',
+        'a table is not edited richly'
+      );
+
+      // editing around it leaves it exactly as it was authored
+      await caretIn(editor, 2, 'after'.length);
+      await type('!');
+      await editor.updateComplete;
+
+      assert.equal(editor.value, `intro\n\n${table}\n\nafter!`);
+    });
+
+    it('stays realtime on a long article', async () => {
+      const article: string[] = [];
+      for (let section = 0; section < 150; section++) {
+        article.push(`## Section ${section}`);
+        article.push(
+          `Body for section ${section} with **bold** and a [link](https://example.com/${section}).`
+        );
+      }
+
+      const editor = await getEditor(article.join('\n\n'));
+      assert.equal(blocks(editor).length, 300);
+
+      const target = blocks(editor)[299];
+      const started = performance.now();
+
+      for (let stroke = 0; stroke < 20; stroke++) {
+        target.firstChild.textContent += 'x';
+        doc(editor).dispatchEvent(
+          new InputEvent('input', { inputType: 'insertText' })
+        );
+      }
+
+      const each = (performance.now() - started) / 20;
+
+      // a block that hasn't changed is recognized rather than re-serialized, so this stays flat as articles grow
+      assert.isBelow(
+        each,
+        25,
+        `a keystroke over 300 blocks took ${each.toFixed(2)}ms`
+      );
+      assert.include(editor.value, 'Section 149');
     });
   });
+
+  // ==========================================================
+  // Toolbar
+  // ==========================================================
 
   describe('toolbar', () => {
-    const format = async (editor: MarkdownEditor, label: string) => {
-      const button = [
-        ...editor.shadowRoot.querySelectorAll('.toolbar .format')
-      ].find((ele) => ele.textContent.trim() === label) as HTMLElement;
-      button.click();
-
-      // formatting opens a block to write into when nothing is focused, so let that settle before looking
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      await editor.updateComplete;
-    };
-
-    it('wraps the selection in the block being edited', async () => {
+    it('bolds the selection', async () => {
       const editor = await getEditor('# Title\n\nhello world');
 
-      const area = await edit(editor, 1);
-      area.setSelectionRange(6, 11);
-      await format(editor, 'B');
+      await selectAcross(editor, [1, 6], [1, 11]);
+      await toolbar(editor, 'B');
 
       assert.equal(editor.value, '# Title\n\nhello **world**');
-      assert.equal(area.value, 'hello **world**');
+      // and what is on screen is the bold word, not the markers around it
+      assert.equal(shown(editor), 'Titlehello world');
     });
 
-    it('leaves the caret between the markers when nothing is selected', async () => {
-      const editor = await getEditor('hello');
-
-      await edit(editor, 0, 5);
-      await format(editor, 'I');
-
-      assert.equal(editor.value, 'hello__');
-      assert.equal(editor.activeArea.selectionStart, 6);
-    });
-
-    it('applies block formatting to every line of the selection', async () => {
-      const editor = await getEditor('one\ntwo\nthree');
-
-      const area = await edit(editor, 0);
-      area.setSelectionRange(1, 9); // spans all three lines, starting and ending mid line
-      await format(editor, 'List');
-
-      // marking only the first line would leave one list item and two loose lines
-      assert.equal(editor.value, '* one\n* two\n* three');
-    });
-
-    it('opens a block to write into when nothing is focused', async () => {
-      const editor = await getEditor('# Title\n\nlast');
-      assert.equal(editor.active, -1);
-
-      await format(editor, 'H');
-      await editor.updateComplete;
-
-      // falls through to the end of the document rather than doing nothing
-      assert.equal(editor.value, '# Title\n\n## last');
-    });
-
-    it('still formats in source mode', async () => {
+    it('makes the block a heading and takes it back', async () => {
       const editor = await getEditor('hello world');
-      editor.sourceMode = true;
-      await editor.updateComplete;
 
-      editor.textArea.setSelectionRange(6, 11);
-      await format(editor, 'B');
+      await caretIn(editor, 0, 2);
+      await toolbar(editor, 'H2');
+      assert.equal(editor.value, '## hello world');
+      assert.equal(blocks(editor)[0].tagName, 'H2');
 
-      assert.equal(editor.value, 'hello **world**');
+      await caretIn(editor, 0, 2);
+      await toolbar(editor, 'H2');
+      assert.equal(editor.value, 'hello world');
+      assert.equal(blocks(editor)[0].tagName, 'P');
+    });
+
+    it('makes a list', async () => {
+      const editor = await getEditor('one');
+
+      await caretIn(editor, 0, 1);
+      await toolbar(editor, 'List');
+
+      // the browser nests the list inside the block it was made from, which is not somewhere a list can live
+      assert.equal(blocks(editor)[0].tagName, 'UL');
+      assert.equal(editor.value, '* one');
+    });
+
+    it('makes a quote', async () => {
+      const editor = await getEditor('one');
+
+      await caretIn(editor, 0, 1);
+      await toolbar(editor, 'Quote');
+
+      assert.equal(blocks(editor)[0].tagName, 'BLOCKQUOTE');
+      assert.equal(editor.value, '> one');
+    });
+
+    it('marks the selection as code', async () => {
+      const editor = await getEditor('run npm install now');
+
+      await selectAcross(editor, [0, 4], [0, 15]);
+      await toolbar(editor, 'Code');
+
+      assert.equal(editor.value, 'run `npm install` now');
+      assert.isOk(blocks(editor)[0].querySelector('code'));
+    });
+
+    it('says what the caret is sitting in', async () => {
+      const editor = await getEditor('## Heading\n\nplain');
+
+      await caretIn(editor, 0, 3);
+      const heading = editor.shadowRoot.querySelector('.format.h2');
+      assert.include([...heading.classList], 'on');
+
+      await caretIn(editor, 1, 2);
+      assert.notInclude([...heading.classList], 'on');
+    });
+
+    it('writes into the document when nothing is focused', async () => {
+      const editor = await getEditor('# Title\n\nlast');
+      doc(editor).blur();
+
+      await toolbar(editor, 'H2');
+
+      // falls through to where the caret last was rather than doing nothing
+      assert.equal(editor.value, '# Title\n\n## last');
     });
 
     it('toggles modes', async () => {
@@ -510,160 +650,255 @@ describe(TAG, () => {
     });
   });
 
-  describe('keyboard', () => {
-    const press = async (
+  describe('links', () => {
+    it('offers a link to edit without showing its markdown', async () => {
+      const editor = await getEditor('see the [docs](https://example.com) now');
+
+      await caretIn(editor, 0, 10);
+      await editor.updateComplete;
+
+      const bar = editor.shadowRoot.querySelector('.linkbar input');
+      assert.isOk(bar, 'no link bar for a caret inside a link');
+      assert.equal((bar as HTMLInputElement).value, 'https://example.com');
+
+      // the document still reads as prose
+      assert.equal(shown(editor), 'see the docs now');
+    });
+
+    it('changes where a link points', async () => {
+      const editor = await getEditor('see the [docs](https://example.com) now');
+
+      await caretIn(editor, 0, 10);
+      await editor.updateComplete;
+
+      const bar = editor.shadowRoot.querySelector(
+        '.linkbar input'
+      ) as HTMLInputElement;
+      bar.value = 'https://nyaruka.com';
+      bar.dispatchEvent(new Event('input'));
+      await editor.updateComplete;
+
+      assert.equal(editor.value, 'see the [docs](https://nyaruka.com) now');
+    });
+
+    it('removes a link and keeps its text', async () => {
+      const editor = await getEditor('see the [docs](https://example.com) now');
+
+      await caretIn(editor, 0, 10);
+      await editor.updateComplete;
+
+      (
+        editor.shadowRoot.querySelector('.linkbar .link-action') as HTMLElement
+      ).click();
+      await editor.updateComplete;
+
+      assert.equal(editor.value, 'see the docs now');
+      assert.isNotOk(editor.shadowRoot.querySelector('.linkbar'));
+    });
+
+    it('shows no link bar when the caret is not in a link', async () => {
+      const editor = await getEditor('nothing linked here');
+      await caretIn(editor, 0, 4);
+      await editor.updateComplete;
+
+      assert.isNotOk(editor.shadowRoot.querySelector('.linkbar'));
+    });
+  });
+
+  describe('pasting', () => {
+    const paste = async (
       editor: MarkdownEditor,
-      area: HTMLTextAreaElement,
-      key: string
-    ) => {
-      area.dispatchEvent(
-        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+      data: { html?: string; text?: string }
+    ): Promise<void> => {
+      const transfer = new DataTransfer();
+      if (data.html) {
+        transfer.setData('text/html', data.html);
+      }
+      if (data.text) {
+        transfer.setData('text/plain', data.text);
+      }
+
+      doc(editor).dispatchEvent(
+        new ClipboardEvent('paste', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: transfer
+        })
       );
       await editor.updateComplete;
     };
 
-    it('arrows out of the top of a block into the one above', async () => {
-      const editor = await getEditor('one\n\ntwo');
+    it('keeps the formatting of markup it can express', async () => {
+      const editor = await getEditor('');
+      await caretIn(editor, 0, 0);
 
-      const area = await edit(editor, 1, 0);
-      await press(editor, area, 'ArrowUp');
+      await paste(editor, {
+        html: '<p>some <strong>bold</strong> text</p>',
+        text: 'some bold text'
+      });
 
-      assert.equal(editor.active, 0);
-      assert.equal(editor.activeArea.value, 'one');
+      assert.equal(editor.value, 'some **bold** text');
     });
 
-    it('arrows out of the bottom of a block into the one below', async () => {
-      const editor = await getEditor('one\n\ntwo');
+    it('falls back to plain text for markup it cannot', async () => {
+      const editor = await getEditor('');
+      await caretIn(editor, 0, 0);
 
-      const area = await edit(editor, 0);
-      await press(editor, area, 'ArrowDown');
+      // a paste off the web is a pile of divs and spans, none of which the document can hold
+      await paste(editor, {
+        html: '<div><span style="color:red">styled</span></div>',
+        text: 'styled'
+      });
 
-      assert.equal(editor.active, 1);
-      assert.equal(editor.activeArea.selectionStart, 0);
+      assert.equal(editor.value, 'styled');
+      assert.isNotOk(doc(editor).querySelector('span'));
     });
 
-    it('stays put when there is more of the block to move through', async () => {
-      const editor = await getEditor('one\ntwo\n\nthree');
+    it('does not let pasted markup smuggle in anything that runs', async () => {
+      const editor = await getEditor('');
+      await caretIn(editor, 0, 0);
 
-      const area = await edit(editor, 0, 0);
-      await press(editor, area, 'ArrowDown');
+      await paste(editor, {
+        html: '<p onclick="alert(1)">safe<script>alert(2)</script></p>',
+        text: 'safe'
+      });
 
-      assert.equal(editor.active, 0);
+      assert.isNotOk(doc(editor).querySelector('script'));
+      assert.isNotOk(doc(editor).querySelector('[onclick]'));
+      assert.include(editor.value, 'safe');
     });
 
-    it('backspacing at the start of a block deletes the break above it', async () => {
-      const editor = await getEditor('one\n\ntwo');
+    it('takes plain text as the text it is', async () => {
+      const editor = await getEditor('');
+      await caretIn(editor, 0, 0);
 
-      const area = await edit(editor, 1, 0);
-      await press(editor, area, 'Backspace');
+      await paste(editor, { text: 'one\n\ntwo' });
 
-      assert.equal(editor.value, 'one\ntwo');
-      assert.equal(editor.active, 0);
-      assert.equal(editor.activeArea.selectionStart, 3);
+      assert.equal(editor.value, 'one\n\ntwo');
     });
+  });
 
-    it('tabbing into the document opens the first block', async () => {
-      const editor = await getEditor('one\n\ntwo');
-      const doc = editor.shadowRoot.querySelector('.doc') as HTMLElement;
+  describe('source mode', () => {
+    it('toggles to the raw markdown and back', async () => {
+      const editor = await getEditor('# Hello');
+      assert.isNotOk(editor.textArea);
 
-      doc.focus();
+      editor.sourceMode = true;
       await editor.updateComplete;
 
-      assert.equal(editor.active, 0);
-      assert.equal(editor.activeArea.selectionStart, 0);
-    });
+      assert.isOk(editor.textArea);
+      assert.equal(editor.textArea.value, '# Hello');
+      assert.isNotOk(editor.doc);
 
-    it('does not drop back in when tabbing out of the first block', async () => {
-      const editor = await getEditor('one\n\ntwo');
-      const doc = editor.shadowRoot.querySelector('.doc') as HTMLElement;
-
-      // shift-tab blurs the block and focuses the document on the way past, both in the one turn
-      const area = await edit(editor, 0);
-      area.dispatchEvent(new Event('blur'));
-      doc.dispatchEvent(new FocusEvent('focus', { relatedTarget: area }));
+      editor.sourceMode = false;
       await editor.updateComplete;
 
-      assert.equal(editor.active, -1);
+      assert.isNotOk(editor.textArea);
+      assert.equal(blocks(editor).length, 1);
     });
 
-    it('stays put moving down through a block that wraps over several rows', async () => {
-      // prose is one long line the textarea wraps, so leaving on "no newline after the caret" would fling the caret
-      // out of a paragraph the author was only moving down through
-      const editor = await getEditor(
-        'a paragraph long enough to wrap\n\nthe next one'
-      );
-
-      const area = await edit(editor, 0, 4);
-      await press(editor, area, 'ArrowDown');
-
-      assert.equal(editor.active, 0);
-    });
-
-    it('escape puts the caret back outside the document', async () => {
-      const editor = await getEditor('one');
-
-      const area = await edit(editor, 0);
-      await press(editor, area, 'Escape');
+    it('carries edits made in the source back to the rendered document', async () => {
+      const editor = await getEditor('# Hello');
+      editor.sourceMode = true;
       await editor.updateComplete;
 
-      assert.equal(editor.active, -1);
+      editor.textArea.value = '# Hello\n\nAnd a paragraph.';
+      editor.textArea.dispatchEvent(new Event('input'));
+      await editor.updateComplete;
+
+      editor.sourceMode = false;
+      await editor.updateComplete;
+
+      assert.equal(blocks(editor).length, 2);
+      assert.equal(blocks(editor)[1].textContent, 'And a paragraph.');
+    });
+
+    it('carries edits made in the document back to the source', async () => {
+      const editor = await getEditor('# Hello\n\nwords');
+
+      await caretIn(editor, 1, 5);
+      await type(' here');
+      await editor.updateComplete;
+
+      editor.sourceMode = true;
+      await editor.updateComplete;
+
+      assert.equal(editor.textArea.value, '# Hello\n\nwords here');
+    });
+
+    it('still formats in source mode, where markdown is what the caret is in', async () => {
+      const editor = await getEditor('hello world');
+      editor.sourceMode = true;
+      await editor.updateComplete;
+
+      editor.textArea.setSelectionRange(6, 11);
+      await toolbar(editor, 'B');
+
+      assert.equal(editor.value, 'hello **world**');
+    });
+
+    it('applies block formatting to every line of the selection in source mode', async () => {
+      const editor = await getEditor('one\ntwo\nthree');
+      editor.sourceMode = true;
+      await editor.updateComplete;
+
+      editor.textArea.setSelectionRange(1, 9);
+      await toolbar(editor, 'List');
+
+      // marking only the first line would leave one list item and two loose lines
+      assert.equal(editor.value, '* one\n* two\n* three');
     });
   });
 
   describe('uploads', () => {
-    it('inserts a reference at the caret and renders it inline', async () => {
+    const ok = () =>
       mockPOST(/msgmedia\/upload/, {
         url: '/test-assets/img/sim_image_c.jpg',
-        name: 'shot.jpg'
+        name: 'shot.png'
       });
 
+    it('inserts an image at the caret and shows it straight away', async () => {
+      ok();
       const editor = await getEditor('before after');
-      await edit(editor, 0, 7);
+      await caretIn(editor, 0, 7);
 
       await (editor as any).upload([uploadFile()]);
       await editor.updateComplete;
 
       assert.equal(
         editor.value,
-        'before ![shot.jpg](/test-assets/img/sim_image_c.jpg)after'
+        'before ![shot.png](/test-assets/img/sim_image_c.jpg)after'
       );
 
-      // the block renders once the batch is done, so the image shows up where it was put
-      assert.isOk(rendered(editor)[0].querySelector('img'));
+      // it is in the document as an image, not as the markdown for one
+      assert.isOk(blocks(editor)[0].querySelector('img'));
+      assert.notInclude(shown(editor), '![');
     });
 
     it('stacks files up in the order they were given', async () => {
-      mockPOST(/msgmedia\/upload/, {
-        url: '/test-assets/img/sim_image_c.jpg',
-        name: 'shot.png'
-      });
-
+      ok();
       const editor = await getEditor('');
-      await edit(editor, 0, 0);
+      await caretIn(editor, 0, 0);
 
       await (editor as any).upload([uploadFile(), uploadFile()]);
+      await editor.updateComplete;
 
       assert.equal(
         editor.value,
         '![shot.png](/test-assets/img/sim_image_c.jpg)![shot.png](/test-assets/img/sim_image_c.jpg)'
       );
-      // the insertion point moved past each reference, so the second went after the first rather than in front of it
-      assert.equal((editor as any).resume.caret, editor.value.length);
+      assert.equal(blocks(editor)[0].querySelectorAll('img').length, 2);
       assert.isFalse(editor.uploading);
     });
 
-    it('writes to the block the caret was in, not wherever it ended up', async () => {
-      mockPOST(/msgmedia\/upload/, {
-        url: '/test-assets/img/sim_image_c.jpg',
-        name: 'shot.png'
-      });
-
+    it('writes to where the caret was, not wherever it ended up', async () => {
+      ok();
       const editor = await getEditor('alpha\n\nbravo');
-      await edit(editor, 0, 5);
+      await caretIn(editor, 0, 5);
 
       // an upload takes seconds and the author is free to click elsewhere while it runs
       const pending = (editor as any).upload([uploadFile()]);
-      (editor as any).activate(1, 0);
+      await caretIn(editor, 1, 5);
       await pending;
       await editor.updateComplete;
 
@@ -671,23 +906,17 @@ describe(TAG, () => {
         editor.value,
         'alpha![shot.png](/test-assets/img/sim_image_c.jpg)\n\nbravo'
       );
-      // and they're left where they went rather than yanked back
-      assert.equal(editor.active, 1);
     });
 
     it('goes back to where the caret was when the file dialog blurred the document', async () => {
-      mockPOST(/msgmedia\/upload/, {
-        url: '/test-assets/img/sim_image_c.jpg',
-        name: 'shot.png'
-      });
-
+      ok();
       const editor = await getEditor('alpha\n\nbravo');
 
-      // picking a file takes the window, which blurs the block being edited
-      const area = await edit(editor, 0, 5);
-      area.dispatchEvent(new FocusEvent('blur'));
+      // picking a file takes the window, which blurs the document
+      await caretIn(editor, 0, 5);
+      doc(editor).dispatchEvent(new FocusEvent('blur'));
+      doc(editor).blur();
       await editor.updateComplete;
-      assert.equal(editor.active, -1);
 
       await (editor as any).upload([uploadFile()]);
       await editor.updateComplete;
@@ -704,13 +933,14 @@ describe(TAG, () => {
       mockPOST(/msgmedia\/upload/, { name: 'shot.png' });
 
       const editor = await getEditor('body');
-      await edit(editor, 0);
+      await caretIn(editor, 0, 4);
 
       await (editor as any).upload([uploadFile()]);
       await editor.updateComplete;
 
       assert.equal(editor.value, 'body');
       assert.equal(editor.error, 'Unable to upload file.');
+      assert.isNotOk(doc(editor).querySelector('img'));
     });
 
     it('strips the delimiters out of alt text', async () => {
@@ -721,7 +951,7 @@ describe(TAG, () => {
       });
 
       const editor = await getEditor('');
-      await edit(editor, 0, 0);
+      await caretIn(editor, 0, 0);
 
       await (editor as any).upload([uploadFile()]);
       await editor.updateComplete;
@@ -733,11 +963,7 @@ describe(TAG, () => {
     });
 
     it('inserts into the source in source mode', async () => {
-      mockPOST(/msgmedia\/upload/, {
-        url: '/test-assets/img/sim_image_c.jpg',
-        name: 'shot.png'
-      });
-
+      ok();
       const editor = await getEditor('body');
       editor.sourceMode = true;
       await editor.updateComplete;
@@ -750,6 +976,17 @@ describe(TAG, () => {
         editor.value,
         'body![shot.png](/test-assets/img/sim_image_c.jpg)'
       );
+    });
+
+    it('accepts a drag so the browser does not navigate to the dropped file', async () => {
+      const editor = await getEditor('body');
+      const over = new DragEvent('dragover', {
+        bubbles: true,
+        cancelable: true
+      });
+      doc(editor).dispatchEvent(over);
+
+      assert.isTrue(over.defaultPrevented);
     });
   });
 
@@ -767,7 +1004,7 @@ describe(TAG, () => {
 
     // the rendered document sizes itself to its content, so the screenshots only need a floor for source mode
     const getArticle = async (minHeight = 0): Promise<MarkdownEditor> => {
-      const editor: MarkdownEditor = (await getComponent(
+      const editor = (await getComponent(
         TAG,
         { widget_only: true },
         '',
@@ -783,14 +1020,34 @@ describe(TAG, () => {
 
     it('renders the document', async () => {
       const editor = await getArticle();
-      expect(rendered(editor).length).to.equal(4);
+      expect(blocks(editor).length).to.equal(4);
       await assertScreenshot('markdown-editor/document', getClip(editor));
     });
 
-    it('shows the markdown of the block being edited', async () => {
+    it('shows the toolbar following the caret while editing', async () => {
       const editor = await getArticle();
-      await edit(editor, 0);
+
+      // the caret in the heading - the toolbar says what it is sitting in, and the article stays an article
+      await caretIn(editor, 0, 7);
+      await editor.updateComplete;
+
       await assertScreenshot('markdown-editor/editing', getClip(editor));
+    });
+
+    it('shows the link bar for a caret inside a link', async () => {
+      const editor = await getArticle();
+
+      // inside "docs", which is the link's own text
+      const at = blocks(editor)[1].textContent.indexOf('docs') + 2;
+      await caretIn(editor, 1, at);
+      await editor.updateComplete;
+
+      assert.isOk(
+        editor.shadowRoot.querySelector('.linkbar'),
+        'the caret is not in the link'
+      );
+
+      await assertScreenshot('markdown-editor/link', getClip(editor));
     });
 
     it('shows the whole document as markdown', async () => {
