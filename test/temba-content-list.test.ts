@@ -246,6 +246,44 @@ describe('temba-content-list', () => {
     expect(state.closest('.table-scroll')).to.equal(null);
   });
 
+  it('takes the empty message from the empty-message attribute', async () => {
+    // hosts set this in markup, so the hyphenated attribute has to map to
+    // the property — subclasses defaulting it in their constructors used to
+    // hide the fact that it didn't
+    const list = (await getList({
+      'empty-message': 'No widgets'
+    })) as ContentList;
+    list.columns = [{ key: 'name' }];
+    (list as any).items = [];
+    (list as any).loading = false;
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    expect(list.emptyMessage).to.equal('No widgets');
+    const state = list.shadowRoot!.querySelector('.list-state') as HTMLElement;
+    expect(state.textContent!.trim()).to.equal('No widgets');
+  });
+
+  it('lets the empty-message attribute beat a subclass constructor default', async () => {
+    // the subclasses each assign an emptyMessage in their constructor, which
+    // runs before the parser applies attributes — hosts pass a translated
+    // string in markup and it has to win
+    const list = (await getComponent(
+      'temba-msg-list',
+      { 'empty-message': 'Aucun message' },
+      '',
+      700
+    )) as MsgList;
+    (list as any).items = [];
+    (list as any).loading = false;
+    (list as any).requestUpdate();
+    await list.updateComplete;
+
+    expect(list.emptyMessage).to.equal('Aucun message');
+    const state = list.shadowRoot!.querySelector('.list-state') as HTMLElement;
+    expect(state.textContent!.trim()).to.equal('Aucun message');
+  });
+
   it('suppresses the horizontal scroll when there are no rows', async () => {
     const list = (await getList()) as ContentList;
     list.columns = [{ key: 'name' }];

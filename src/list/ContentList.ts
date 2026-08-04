@@ -1422,7 +1422,7 @@ export class ContentList<T = any> extends RapidElement {
   subtitle = '';
 
   /** Message shown when the list is empty. */
-  @property({ type: String })
+  @property({ type: String, attribute: 'empty-message' })
   emptyMessage = 'Nothing to show';
 
   /** Bump to force a refetch — useful after a bulk action so the host
