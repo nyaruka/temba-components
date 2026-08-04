@@ -11,6 +11,10 @@ import { ContentList, ContentListColumn } from './ContentList';
  * lands where its rail says it will. */
 export const INDENT = 20;
 
+/** How long a branch takes to fold open or shut. The removal of a
+ * folded branch's rows waits on this, so the fold is seen to finish. */
+export const FOLD_MS = 200;
+
 /** An article annotated for display. The endpoint hands back the tree
  * already flattened into display order, and everything below is
  * derived from that order rather than from the parent links. */
@@ -269,6 +273,50 @@ export class ArticleList extends ContentList<ArticleRow> {
         position: absolute;
         z-index: 10;
       }
+
+      /* Folding a branch open or shut: each cell clips its content
+         while its height plays, and the row's height follows - the
+         cells carry no vertical padding, so the row really does
+         start and end at nothing. The rails bleed outside the row,
+         so they're clipped only while the fold is in flight. */
+      tr.row.entering .cell-inner {
+        animation: fold-open ${FOLD_MS}ms ease;
+        overflow: hidden;
+      }
+
+      tr.row.leaving .cell-inner {
+        animation: fold-shut ${FOLD_MS}ms ease forwards;
+        overflow: hidden;
+      }
+
+      @keyframes fold-open {
+        from {
+          max-height: 0;
+          opacity: 0;
+        }
+        to {
+          max-height: 38px;
+          opacity: 1;
+        }
+      }
+
+      @keyframes fold-shut {
+        from {
+          max-height: 38px;
+          opacity: 1;
+        }
+        to {
+          max-height: 0;
+          opacity: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        tr.row.entering .cell-inner,
+        tr.row.leaving .cell-inner {
+          animation: none;
+        }
+      }
     `;
   }
 
@@ -296,6 +344,16 @@ export class ArticleList extends ContentList<ArticleRow> {
 
   @state()
   private collapsed: Set<string> = new Set();
+
+  /** The rows of a branch mid-fold: entering plays them open, leaving
+   * plays them shut before they go. */
+  @state()
+  private entering: Set<string> = new Set();
+
+  @state()
+  private leaving: Set<string> = new Set();
+
+  private foldTimeout: number = null;
 
   @state()
   private dragUuid = '';
@@ -376,6 +434,7 @@ export class ArticleList extends ContentList<ArticleRow> {
 
   public disconnectedCallback(): void {
     this.endDrag();
+    window.clearTimeout(this.foldTimeout);
     super.disconnectedCallback();
   }
 
@@ -388,6 +447,11 @@ export class ArticleList extends ContentList<ArticleRow> {
       [...this.collapsed].filter((uuid) => present.has(uuid))
     );
 
+    // fresh data is the tree as it stands, so any fold in flight is over
+    window.clearTimeout(this.foldTimeout);
+    this.entering = new Set();
+    this.leaving = new Set();
+
     return visibleRows(this.tree, this.collapsed);
   }
 
@@ -395,6 +459,16 @@ export class ArticleList extends ContentList<ArticleRow> {
    * host from the row-click event, in a dialog over the list. */
   protected getRowHref(): string | null {
     return null;
+  }
+
+  protected getRowClass(item: ArticleRow): string {
+    if (this.entering.has(item.uuid)) {
+      return 'entering';
+    }
+    if (this.leaving.has(item.uuid)) {
+      return 'leaving';
+    }
+    return '';
   }
 
   protected isRowClickable(): boolean {
@@ -427,15 +501,51 @@ export class ArticleList extends ContentList<ArticleRow> {
     // folding a branch isn't opening the article
     event.stopPropagation();
 
+    // a fold started mid-fold takes over from the one in flight
+    window.clearTimeout(this.foldTimeout);
+
     const collapsed = new Set(this.collapsed);
-    if (collapsed.has(row.uuid)) {
+    const opening = collapsed.has(row.uuid);
+    if (opening) {
       collapsed.delete(row.uuid);
     } else {
       collapsed.add(row.uuid);
     }
 
     this.collapsed = collapsed;
-    this.items = visibleRows(this.tree, collapsed);
+
+    const after = visibleRows(this.tree, collapsed);
+
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      this.entering = new Set();
+      this.leaving = new Set();
+      this.items = after;
+      return;
+    }
+
+    // the rows only one side of the fold shows are the ones that play it
+    const other = new Set((opening ? this.items : after).map((r) => r.uuid));
+    const folding = new Set(
+      (opening ? after : this.items)
+        .filter((r) => !other.has(r.uuid))
+        .map((r) => r.uuid)
+    );
+
+    if (opening) {
+      this.entering = folding;
+      this.leaving = new Set();
+      this.items = after;
+    } else {
+      // a closing branch stays in the list while it folds shut, and leaves when the fold lands
+      this.entering = new Set();
+      this.leaving = folding;
+    }
+
+    this.foldTimeout = window.setTimeout(() => {
+      this.entering = new Set();
+      this.leaving = new Set();
+      this.items = visibleRows(this.tree, this.collapsed);
+    }, FOLD_MS);
   }
 
   // ==========================================================

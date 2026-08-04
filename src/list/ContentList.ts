@@ -2162,6 +2162,12 @@ export class ContentList<T = any> extends RapidElement {
     return !!this.getRowHref(item);
   }
 
+  /** Extra classes a subclass wants on a row — e.g. to animate rows
+   * arriving in or leaving the list. */
+  protected getRowClass(_item: T): string {
+    return '';
+  }
+
   /** Update the uncommitted input value as the user types. The
    * fetch is deferred until the user submits (Enter / search-icon
    * click) so we don't pound the server on every keystroke. */
@@ -3768,9 +3774,9 @@ export class ContentList<T = any> extends RapidElement {
     const selected = this.selectedIds.has(id);
     return html`
       <tr
-        class="row ${selected ? 'selected' : ''} ${this.isRowClickable(item)
-          ? 'clickable'
-          : ''}"
+        class="row ${this.getRowClass(item)} ${selected
+          ? 'selected'
+          : ''} ${this.isRowClickable(item) ? 'clickable' : ''}"
         @click=${(e: MouseEvent) => this.handleRowClick(item, e)}
       >
         ${this.hasCheckboxes

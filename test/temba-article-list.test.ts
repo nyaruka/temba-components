@@ -1,5 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
-import { SinonStub } from 'sinon';
+import { SinonStub, stub } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
 import {
   annotateTree,
@@ -290,6 +290,8 @@ describe(TAG, () => {
   });
 
   it('folds a branch away when its chevron is clicked', async () => {
+    // the test browser forces prefers-reduced-motion, so this is also the reduced motion path: the fold's result
+    // with none of its travel
     const list = await getList();
 
     const chevron = list.shadowRoot.querySelector('.disclosure') as HTMLElement;
@@ -302,6 +304,7 @@ describe(TAG, () => {
       'Nodes',
       'Rules'
     ]);
+    expect(list.shadowRoot.querySelector('tr.row.leaving')).to.not.exist;
 
     // folding a branch isn't opening the article
     expect(getSortPosts()).to.be.empty;
@@ -310,6 +313,56 @@ describe(TAG, () => {
     await list.updateComplete;
 
     expect(getTitles(list)).to.have.length(6);
+    expect(list.shadowRoot.querySelector('tr.row.entering')).to.not.exist;
+  });
+
+  it('plays the fold for a viewer who is fine with motion', async () => {
+    const list = await getList();
+
+    // the test browser forces reduced motion, so motion has to be asked for
+    const media = stub(window, 'matchMedia').returns({
+      matches: false
+    } as MediaQueryList);
+
+    try {
+      const chevron = list.shadowRoot.querySelector(
+        '.disclosure'
+      ) as HTMLElement;
+      chevron.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await list.updateComplete;
+
+      // the branch folds shut in place before it leaves the list
+      expect(
+        getRows(list)
+          .filter((row) => row.classList.contains('leaving'))
+          .map((row) => row.querySelector('.title').textContent.trim())
+      ).to.deep.equal(['Installing', 'Configuring']);
+      expect(getTitles(list)).to.have.length(6);
+
+      await waitForCondition(() => getTitles(list).length === 4);
+
+      chevron.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await list.updateComplete;
+
+      // the rows are back straight away, playing the fold open
+      expect(getTitles(list)).to.have.length(6);
+      expect(
+        getRows(list).filter((row) => row.classList.contains('entering'))
+      ).to.have.length(2);
+
+      // and once the fold lands they are ordinary rows again
+      await waitForCondition(
+        () => !list.shadowRoot.querySelector('tr.row.entering')
+      );
+    } finally {
+      media.restore();
+    }
+
+    // the fold itself is css, guarded for viewers who asked for less motion
+    const styles = ArticleList.styles.cssText;
+    expect(styles).to.contain('fold-open');
+    expect(styles).to.contain('fold-shut');
+    expect(styles).to.contain('prefers-reduced-motion');
   });
 
   it('asks the host to open an article rather than navigating to one', async () => {
