@@ -1,6 +1,7 @@
 import { fixture, expect, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { Button } from '../src/display/Button';
+import { Dialog } from '../src/layout/Dialog';
 import { Modax } from '../src/layout/Modax';
 import { CustomEventType } from '../src/interfaces';
 import { assertScreenshot, getClip, mockGET, mockPOST } from './utils.test';
@@ -172,6 +173,35 @@ describe('temba-modax', () => {
     await clickPrimary(modax);
     await clock.runAllAsync();
     await hideTest;
+  });
+
+  it('sizes the dialog it renders', async () => {
+    const modax: Modax = await fixture(
+      getModaxHTML('/test-assets/modax/form.html')
+    );
+
+    const dialog = () =>
+      modax.shadowRoot.querySelector('temba-dialog') as Dialog;
+    const dialogWidth = () =>
+      (dialog().shadowRoot.querySelector('.dialog-container') as HTMLElement)
+        .style.width;
+
+    await open(modax);
+
+    // the dialog's own default until it's asked for something else
+    expect(dialog().size).to.equal('medium');
+    expect(dialogWidth()).to.equal(Dialog.widths.medium);
+
+    modax.size = 'large';
+    await modax.updateComplete;
+    await dialog().updateComplete;
+    expect(dialogWidth()).to.equal(Dialog.widths.large);
+
+    // an explicit width wins over the named size
+    modax.width = 'min(60rem, 92vw)';
+    await modax.updateComplete;
+    await dialog().updateComplete;
+    expect(dialogWidth()).to.equal('min(60rem, 92vw)');
   });
 
   it('applies header colors from response headers', async () => {

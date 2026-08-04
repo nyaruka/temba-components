@@ -108,6 +108,16 @@ export class Modax extends RapidElement {
   @property({ type: String })
   endpoint: string;
 
+  /** One of the dialog's named sizes - small, medium, large or xlarge.
+   * Passed straight through, so the default is the dialog's own. */
+  @property({ type: String })
+  size = 'medium';
+
+  /** An explicit width for the dialog, as any css length. Takes
+   * precedence over `size` for a form that doesn't fit a named one. */
+  @property({ type: String })
+  width: string = null;
+
   @property({ type: Boolean, reflect: true })
   open = false;
 
@@ -479,6 +489,8 @@ export class Modax extends RapidElement {
       <temba-dialog
         .header=${this.header}
         .buttons=${this.buttons}
+        .size=${this.size}
+        .width=${this.width}
         ?open=${this.open}
         ?loading=${this.fetching && this.originX == null}
         ?submitting=${this.submitting}
