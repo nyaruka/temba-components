@@ -198,6 +198,41 @@ describe('temba-textinput', () => {
     expect(widget.value).to.equal('Updated by attribute change');
   });
 
+  it('renders suffix content inside the chrome at the right edge', async () => {
+    const input: TextInput = await createInput(
+      `<temba-textinput value="hello world">
+        <div slot="suffix" style="padding: 2px 6px">On</div>
+      </temba-textinput>`
+    );
+
+    // the content lands in the input's own suffix slot
+    const suffix = input.querySelector('[slot="suffix"]') as HTMLElement;
+    const slot = suffix.assignedSlot as HTMLSlotElement;
+    expect(slot.name).to.equal('suffix');
+    expect(slot.getRootNode()).to.equal(input.shadowRoot);
+
+    const container = input.shadowRoot.querySelector(
+      '.input-container'
+    ) as HTMLElement;
+    const widget = input.shadowRoot.querySelector('.textinput') as HTMLElement;
+
+    const chrome = container.getBoundingClientRect();
+    const pill = suffix.getBoundingClientRect();
+    const text = widget.getBoundingClientRect();
+
+    // inside the chrome at its right edge, vertically centered
+    expect(pill.right).to.be.at.most(chrome.right);
+    expect(chrome.right - pill.right).to.be.at.most(12);
+    expect(
+      Math.abs(pill.top - chrome.top - (chrome.bottom - pill.bottom))
+    ).to.be.at.most(2);
+
+    // beside the text rather than over it
+    expect(text.right).to.be.at.most(pill.left);
+
+    await assertScreenshot('textinput/input-suffix', getClip(input));
+  });
+
   it('initializes autogrow with content', async () => {
     const longText =
       'This is a very long text that should span multiple lines and cause the autogrow functionality to kick in and expand the textarea to accommodate all the content during initialization.';

@@ -171,6 +171,18 @@ export class TextInput extends FieldElement {
       .type-icon {
         color: #e3e3e3;
       }
+
+      /* trailing content the page slots into the chrome - a unit, a state pill - sits centered at the right edge,
+         beside the text rather than over it since the input flexes down to make room */
+      slot[name='suffix'] {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      slot[name='suffix']::slotted(*) {
+        margin-right: 0.5em;
+      }
     `;
   }
 
@@ -524,6 +536,7 @@ export class TextInput extends FieldElement {
         <slot name="prefix"></slot>
 
         ${input} ${clear}
+        <slot name="suffix"></slot>
         <slot name="type" class="type-icon"
           >${this.type === InputType.Number
             ? html`<temba-icon name="number"></temba-icon>`
