@@ -1,6 +1,6 @@
 import { TemplateResult, css, html } from 'lit';
 import { msg } from '@lit/localize';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { FieldElement } from './FieldElement';
 import { Icon } from '../Icons';
@@ -135,7 +135,9 @@ export class MarkdownEditor extends FieldElement {
   @property({ type: Boolean })
   previewing = false;
 
-  @property({ type: String })
+  // internal state rather than a property: it holds server rendered HTML which render() passes to unsafeHTML, and an
+  // attribute would let anything that can set one put unsanitized markup on the page
+  @state()
   preview = '';
 
   @property({ type: Boolean })
@@ -221,14 +223,16 @@ export class MarkdownEditor extends FieldElement {
     const end = area.selectionEnd;
 
     if (fmt.block) {
-      // block formatting applies from the start of the line the selection begins on
-      start = text.lastIndexOf('\n', start - 1) + 1;
-      this.insert(
-        start,
-        end,
-        fmt.prefix + text.substring(start, end),
-        start + fmt.prefix.length
-      );
+      // block formatting applies from the start of the line the selection begins on, and to every line it covers -
+      // marking only the first would turn a three line selection into one list item and two loose lines
+      start = start > 0 ? text.lastIndexOf('\n', start - 1) + 1 : 0;
+      const marked = text
+        .substring(start, end)
+        .split('\n')
+        .map((line) => fmt.prefix + line)
+        .join('\n');
+
+      this.insert(start, end, marked, start + fmt.prefix.length);
       return;
     }
 
@@ -312,18 +316,22 @@ export class MarkdownEditor extends FieldElement {
 
       postFormData(this.endpoint, data)
         .then((response) => {
-          if (response.json.error) {
-            this.error = response.json.error;
+          // a session that expired mid-upload redirects to a login page, which resolves as a success with nothing we
+          // can use - so the url has to be there before we write a reference to it
+          if (response.json.error || !response.json.url) {
+            this.error = response.json.error || msg('Unable to upload file.');
             this.uploading = false;
             return;
           }
 
           const area = this.textArea;
           const caret = area.selectionStart;
+          // the name is alt text inside brackets, and clean_name deliberately keeps [ ] ( ) in filenames
+          const alt = (response.json.name || '').replace(/[[\]()]/g, '');
           this.insert(
             caret,
             area.selectionEnd,
-            `![${response.json.name}](${response.json.url})`,
+            `![${alt}](${response.json.url})`,
             caret
           );
           next(remaining.slice(1));

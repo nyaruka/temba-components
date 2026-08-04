@@ -74,6 +74,22 @@ describe('temba-markdown-edit', () => {
     assert.equal(editor.value, 'one\n## two');
   });
 
+  it('applies block formatting to every line of the selection', async () => {
+    const editor = await getEditor('one\ntwo\nthree');
+    await select(editor, 1, 9); // spans all three lines, starting and ending mid line
+
+    (editor as any).applyFormatting({
+      label: 'List',
+      title: 'List',
+      prefix: '* ',
+      suffix: '',
+      block: true
+    });
+
+    // marking only the first line would leave one list item and two loose lines
+    assert.equal(editor.value, '* one\n* two\n* three');
+  });
+
   it('inserts uploaded images as markdown at the caret', async () => {
     const editor = await getEditor('before after');
     await select(editor, 7, 7);
