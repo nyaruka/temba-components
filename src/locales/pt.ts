@@ -29,10 +29,9 @@
 's3d249bb480032121': `List`,
 's3cf89cb47fdde7e9': `Link`,
 's3643189d1abbb7f4': `Code`,
-'s86d389e5eee88425': `Unable to render preview.`,
 's78beeb359125557c': `Unable to upload file.`,
 's12e9c9d9d9b94cf1': `Screenshot`,
-'s64ef2a6c2dd1d3d1': `Edit`,
-'s417b90913e05bc17': `Preview`,
+'s14dd223d4668bf5e': `Rich text`,
+'seb779a76fa43446c': `Markdown`,
     };
   
