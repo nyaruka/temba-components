@@ -216,6 +216,7 @@ describe('blockOf', () => {
       'A [link](https://example.com) inline.',
       'A [titled](https://example.com "hover") link.',
       'An ![alt text](/a.png) image.',
+      'An ![alt](/a.png#size=small&layout=inline) image.',
       '* one\n* two',
       '* one\n\n* two',
       '1. one\n2. two',
@@ -848,6 +849,126 @@ describe(TAG, () => {
     });
   });
 
+  describe('images', () => {
+    const IMAGE = '/test-assets/img/sim_image_c.jpg';
+
+    const clickImage = async (editor: MarkdownEditor): Promise<void> => {
+      const img = doc(editor).querySelector('img');
+      img.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, composed: true })
+      );
+      await editor.updateComplete;
+    };
+
+    const pickOption = async (
+      editor: MarkdownEditor,
+      label: string
+    ): Promise<void> => {
+      const option = [
+        ...editor.shadowRoot.querySelectorAll('.imagebar .option')
+      ].find((ele) => ele.textContent.trim() === label) as HTMLElement;
+      option.click();
+      await editor.updateComplete;
+    };
+
+    it('renders the size and layout the fragment asks for', async () => {
+      const editor = await getEditor(
+        `![shot](${IMAGE}#size=medium&layout=inline)`
+      );
+
+      const img = doc(editor).querySelector('img');
+      assert.include([...img.classList], 'size-medium');
+      assert.include([...img.classList], 'layout-inline');
+
+      // the fragment rides along on the src rather than being stripped out of it
+      assert.equal(
+        img.getAttribute('src'),
+        `${IMAGE}#size=medium&layout=inline`
+      );
+      assert.equal(getComputedStyle(img).maxWidth, '400px');
+    });
+
+    it('renders an image without a fragment the way it always has', async () => {
+      const editor = await getEditor(`![shot](${IMAGE})`);
+
+      const img = doc(editor).querySelector('img');
+      assert.equal(img.getAttribute('class'), null);
+    });
+
+    it('offers sizes and layouts when an image is clicked', async () => {
+      const editor = await getEditor(`![shot](${IMAGE})`);
+      assert.isNotOk(editor.shadowRoot.querySelector('.imagebar'));
+
+      await clickImage(editor);
+
+      const bar = editor.shadowRoot.querySelector('.imagebar');
+      assert.isOk(bar, 'no image bar for a clicked image');
+      assert.deepEqual(
+        [...bar.querySelectorAll('.option')].map((ele) =>
+          ele.textContent.trim()
+        ),
+        ['Original', 'Small', 'Medium', 'Large', 'Block', 'Inline']
+      );
+    });
+
+    it('writes the choices into the fragment and renders them live', async () => {
+      const editor = await getEditor(`![shot](${IMAGE})`);
+      await clickImage(editor);
+
+      await pickOption(editor, 'Small');
+      assert.equal(editor.value, `![shot](${IMAGE}#size=small)`);
+
+      const img = doc(editor).querySelector('img');
+      assert.include([...img.classList], 'size-small');
+      assert.equal(getComputedStyle(img).maxWidth, '200px');
+
+      await pickOption(editor, 'Inline');
+      assert.equal(editor.value, `![shot](${IMAGE}#size=small&layout=inline)`);
+      assert.include([...img.classList], 'layout-inline');
+      assert.equal(getComputedStyle(img).display, 'inline-block');
+    });
+
+    it('edits only the block the image is in', async () => {
+      // deliberately non-canonical markdown that an AST round trip would rewrite
+      const other = 'Title\n=====';
+      const editor = await getEditor(`${other}\n\n![shot](${IMAGE})`);
+
+      await clickImage(editor);
+      await pickOption(editor, 'Large');
+
+      assert.equal(editor.value, `${other}\n\n![shot](${IMAGE}#size=large)`);
+    });
+
+    it('takes an image back to a bare url', async () => {
+      const editor = await getEditor(
+        `![shot](${IMAGE}#size=medium&layout=inline)`
+      );
+      await clickImage(editor);
+
+      await pickOption(editor, 'Original');
+      assert.equal(editor.value, `![shot](${IMAGE}#layout=inline)`);
+
+      await pickOption(editor, 'Block');
+      assert.equal(editor.value, `![shot](${IMAGE})`);
+
+      const img = doc(editor).querySelector('img');
+      assert.equal(img.getAttribute('class'), null);
+    });
+
+    it('puts the options away on a click anywhere else', async () => {
+      const editor = await getEditor(`![shot](${IMAGE})\n\nsome words`);
+      await clickImage(editor);
+      assert.isOk(editor.shadowRoot.querySelector('.imagebar'));
+
+      blocks(editor)[1].dispatchEvent(
+        new MouseEvent('click', { bubbles: true, composed: true })
+      );
+      await editor.updateComplete;
+
+      assert.isNotOk(editor.shadowRoot.querySelector('.imagebar'));
+    });
+  });
+
   describe('pasting', () => {
     const paste = async (
       editor: MarkdownEditor,
@@ -1191,6 +1312,24 @@ describe(TAG, () => {
       );
 
       await assertScreenshot('markdown-editor/link', getClip(editor));
+    });
+
+    it('shows the image bar for a clicked image', async () => {
+      const editor = await getArticle();
+
+      doc(editor)
+        .querySelector('img')
+        .dispatchEvent(
+          new MouseEvent('click', { bubbles: true, composed: true })
+        );
+      await editor.updateComplete;
+
+      assert.isOk(
+        editor.shadowRoot.querySelector('.imagebar'),
+        'no image bar for the clicked image'
+      );
+
+      await assertScreenshot('markdown-editor/image', getClip(editor));
     });
 
     it('shows the whole document as markdown', async () => {

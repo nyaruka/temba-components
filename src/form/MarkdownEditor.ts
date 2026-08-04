@@ -94,6 +94,78 @@ const retag = (element: Element, tag: string): Element => {
   return replacement;
 };
 
+// An image's size and layout live in its url fragment - ![alt](url#size=small&layout=inline) - which is the one part
+// of a markdown image reference with room for them. The url itself is untouched: a fragment means nothing to the
+// server the image comes from, and a reference without one renders the way it always has.
+
+/** the sizes an image can be capped to, which is everything a fragment is allowed to ask for */
+const IMAGE_SIZES = new Set(['small', 'medium', 'large']);
+
+/** what an image's fragment asks for, with anything it can't ask for read as the default */
+const imageOptions = (src: string): { size: string; layout: string } => {
+  const at = src.indexOf('#');
+  const params = new URLSearchParams(at === -1 ? '' : src.substring(at + 1));
+  const size = params.get('size') || '';
+  const layout = params.get('layout') || '';
+
+  return {
+    size: IMAGE_SIZES.has(size) ? size : '',
+    layout: layout === 'inline' || layout === 'block' ? layout : ''
+  };
+};
+
+/** writes size and layout back into the fragment, dropping defaults so an untouched image stays a bare url */
+const withImageOptions = (
+  src: string,
+  size: string,
+  layout: string
+): string => {
+  const at = src.indexOf('#');
+  const base = at === -1 ? src : src.substring(0, at);
+  const params = new URLSearchParams(at === -1 ? '' : src.substring(at + 1));
+  params.delete('size');
+  params.delete('layout');
+
+  const parts: string[] = [];
+  if (size) {
+    parts.push(`size=${size}`);
+  }
+  if (layout) {
+    parts.push(`layout=${layout}`);
+  }
+
+  const rest = params.toString();
+  if (rest) {
+    parts.push(rest);
+  }
+
+  return parts.length > 0 ? `${base}#${parts.join('&')}` : base;
+};
+
+/** applies what an image's fragment asks for as the classes the document styles render, touching nothing else */
+const decorateImage = (img: HTMLImageElement): void => {
+  const { size, layout } = imageOptions(img.getAttribute('src') || '');
+
+  const classes = [...img.classList].filter(
+    (name) => !name.startsWith('size-') && !name.startsWith('layout-')
+  );
+  if (size) {
+    classes.push(`size-${size}`);
+  }
+  if (layout) {
+    classes.push(`layout-${layout}`);
+  }
+
+  const value = classes.join(' ');
+  if ((img.getAttribute('class') || '') !== value) {
+    if (value) {
+      img.setAttribute('class', value);
+    } else {
+      img.removeAttribute('class');
+    }
+  }
+};
+
 /**
  * An editor for markdown that is only ever shown as the article it renders to. Clicking into it puts the caret in the
  * rendered text and edits it there - no part of the document turns into its source at any point, whatever the caret is
@@ -263,6 +335,43 @@ export class MarkdownEditor extends FieldElement {
         white-space: nowrap;
       }
 
+      .imagebar {
+        display: flex;
+        align-items: center;
+        gap: 0.25em;
+        padding: 0.35em 0.5em;
+        border-bottom: 1px solid var(--color-widget-border);
+        background: var(--color-primary-light);
+        font-size: 0.85em;
+      }
+
+      .imagebar .dimension {
+        color: var(--color-text-help);
+      }
+
+      .imagebar .option {
+        cursor: pointer;
+        padding: 0.15em 0.4em;
+        border-radius: var(--curvature);
+        color: var(--color-text-dark);
+      }
+
+      .imagebar .option:hover {
+        background: var(--color-selection);
+      }
+
+      .imagebar .option.on {
+        background: var(--color-selection);
+        color: var(--color-primary-dark);
+      }
+
+      .imagebar .divider {
+        width: 1px;
+        align-self: stretch;
+        background: var(--color-widget-border);
+        margin: 0 0.35em;
+      }
+
       textarea.document {
         display: block;
         width: 100%;
@@ -361,6 +470,37 @@ export class MarkdownEditor extends FieldElement {
         vertical-align: bottom;
       }
 
+      /* What the image's own fragment asks for. One value caps both axes, so it's the long side of any aspect
+         ratio that lands on it. */
+      .doc img.size-small {
+        max-width: 200px;
+        max-height: 200px;
+        width: auto;
+        height: auto;
+      }
+
+      .doc img.size-medium {
+        max-width: 400px;
+        max-height: 400px;
+        width: auto;
+        height: auto;
+      }
+
+      .doc img.size-large {
+        max-width: 640px;
+        max-height: 640px;
+        width: auto;
+        height: auto;
+      }
+
+      .doc img.layout-block {
+        display: block;
+      }
+
+      .doc img.layout-inline {
+        display: inline-block;
+      }
+
       .doc a {
         color: var(--color-link-primary);
       }
@@ -428,6 +568,10 @@ export class MarkdownEditor extends FieldElement {
   /** the link under the caret, so it can be edited without ever showing its markdown. null when there isn't one. */
   @state()
   private linkHref: string = null;
+
+  /** the image the author clicked, whose size and layout the image bar edits. null when none is picked. */
+  @state()
+  private image: HTMLImageElement = null;
 
   /** the document's blocks, which together are always exactly the value */
   private blocks: Block[] = [];
@@ -609,6 +753,12 @@ export class MarkdownEditor extends FieldElement {
       if (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) {
         node.remove();
       }
+    }
+
+    // Sizing classes go on before the blocks are filed, so a decorated image is part of what its block rendered as
+    // rather than an edit to it.
+    for (const img of [...doc.querySelectorAll('img')]) {
+      decorateImage(img as HTMLImageElement);
     }
 
     const children = [...doc.children];
@@ -1046,7 +1196,19 @@ export class MarkdownEditor extends FieldElement {
    * a window of its own so the draft stays where it is.
    */
   private handleDocClick(evt: MouseEvent): void {
-    const anchor = (evt.target as Element).closest?.('a');
+    const target = evt.target as Element;
+
+    // a click on an image is the way its size and layout get edited - anywhere else puts the options away. An image
+    // in a locked block stays as authored, so there is nothing to offer it.
+    const image =
+      target instanceof HTMLImageElement && !target.closest(`.${LOCKED}`)
+        ? target
+        : null;
+    if (image !== this.image) {
+      this.image = image;
+    }
+
+    const anchor = target.closest?.('a');
     if (!anchor) {
       return;
     }
@@ -1068,6 +1230,11 @@ export class MarkdownEditor extends FieldElement {
   private handleSelectionChange = (): void => {
     if (this.sourceMode || !this.doc) {
       return;
+    }
+
+    // the image the bar was editing can be rebuilt out from under it - by an undo, or a value set from outside
+    if (this.image && !this.image.isConnected) {
+      this.image = null;
     }
 
     const range = this.range;
@@ -1282,6 +1449,28 @@ export class MarkdownEditor extends FieldElement {
     this.anchor = null;
     this.linkHref = null;
     this.edited();
+  }
+
+  /** writes a size or layout choice into the clicked image's fragment, which is the edit the image bar makes */
+  private applyImageOption(key: 'size' | 'layout', value: string): void {
+    const img = this.image;
+    if (!img) {
+      return;
+    }
+
+    const current = imageOptions(img.getAttribute('src') || '');
+    const size = key === 'size' ? value : current.size;
+    const layout = key === 'layout' ? value : current.layout;
+
+    img.setAttribute(
+      'src',
+      withImageOptions(img.getAttribute('src') || '', size, layout)
+    );
+    decorateImage(img);
+
+    // the image's block no longer matches what it rendered as, which is exactly what being edited means
+    this.edited();
+    this.requestUpdate();
   }
 
   /** the same commands in source mode, where there is nothing rendered to act on and markdown is what the caret is in */
@@ -1543,6 +1732,55 @@ export class MarkdownEditor extends FieldElement {
     return this.fill ? '' : `min-height:${this.minHeight}px`;
   }
 
+  /** the options for the clicked image, offered the way the link bar offers a link - without ever showing markdown */
+  private renderImageBar(): TemplateResult {
+    const current = imageOptions(this.image.getAttribute('src') || '');
+
+    const sizes = [
+      { value: '', label: msg('Original') },
+      { value: 'small', label: msg('Small') },
+      { value: 'medium', label: msg('Medium') },
+      { value: 'large', label: msg('Large') }
+    ];
+
+    const layouts = [
+      { value: '', label: msg('Block') },
+      { value: 'inline', label: msg('Inline') }
+    ];
+
+    const option = (
+      key: 'size' | 'layout',
+      value: string,
+      label: string
+    ) => html`
+      <div
+        class="option ${key} ${(key === 'size'
+          ? current.size
+          : current.layout === 'inline'
+            ? 'inline'
+            : '') === value
+          ? 'on'
+          : ''}"
+        @click=${() => this.applyImageOption(key, value)}
+      >
+        ${label}
+      </div>
+    `;
+
+    return html`
+      <div
+        class="imagebar"
+        @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
+      >
+        <div class="dimension">${msg('Size')}</div>
+        ${sizes.map((size) => option('size', size.value, size.label))}
+        <div class="divider"></div>
+        <div class="dimension">${msg('Layout')}</div>
+        ${layouts.map((layout) => option('layout', layout.value, layout.label))}
+      </div>
+    `;
+  }
+
   private renderSource(): TemplateResult {
     return html`
       <textarea
@@ -1606,6 +1844,9 @@ export class MarkdownEditor extends FieldElement {
                   ${msg('Remove')}
                 </div>
               </div>`
+            : null}
+          ${this.image?.isConnected && !this.sourceMode
+            ? this.renderImageBar()
             : null}
         </div>
         ${this.sourceMode

@@ -9,7 +9,15 @@
     /* eslint-disable @typescript-eslint/no-explicit-any */
 
     export const templates = {
-      's73b4d70c02f4b4e0': `No options`,
+      's06f6c6f99db6b552': `Original`,
+'s2b2ae20d26f78ac2': `Bloco`,
+'s2e4818861000b13f': `Disposição`,
+'s3d2cc8d952adebec': `Pequeno`,
+'s78789724e789221c': `Tamanho`,
+'sac6bdc71f750ac96': `Médio`,
+'sc8736ef79380e634': `Grande`,
+'sf34696c526e810b4': `Em linha`,
+'s73b4d70c02f4b4e0': `No options`,
 'scf1453991c986b25': `Tab to complete, enter to select`,
 'sbc913d7dc0f33877': `to add`,
 's7722a91d3a512442': str`Last seen ${0}`,
