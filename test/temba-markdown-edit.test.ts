@@ -247,6 +247,23 @@ describe('blockOf', () => {
     }
   });
 
+  it('keeps emphasis that touches a word renderable', () => {
+    // an underscore doesn't open or close emphasis against a word character, so writing italics out that way would
+    // silently unitalicize them the next time the markdown was rendered
+    for (const source of [
+      'word*star*word',
+      'an *em*phasis inside',
+      '*lead*word'
+    ]) {
+      const out = trip(source);
+      assert.equal(out, source, `round trip of ${source}`);
+
+      const host = document.createElement('div');
+      host.innerHTML = renderBlock(out);
+      assert.isOk(host.querySelector('em'), `italic lost in ${out}`);
+    }
+  });
+
   it('does not compound its escaping when written out again', () => {
     // an escape that markdown doesn't honour would be escaped again on the next save, growing a backslash each time
     for (const source of [
@@ -391,6 +408,21 @@ describe(TAG, () => {
         editor.value,
         original.replace('Last paragraph.', 'Last paragraph. Edited.')
       );
+    });
+
+    it('keeps italic that touches a word when its block is edited', async () => {
+      const editor = await getEditor('an *em*phasis inside');
+
+      await caretIn(editor, 0, 0);
+      await type('X');
+      await editor.updateComplete;
+
+      assert.equal(editor.value, 'Xan *em*phasis inside');
+
+      // and what was written out still renders as italic rather than as literal markers
+      const host = document.createElement('div');
+      host.innerHTML = renderBlock(editor.value);
+      assert.isOk(host.querySelector('em'), `italic lost: ${editor.value}`);
     });
 
     it('splits a paragraph on enter', async () => {

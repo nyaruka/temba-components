@@ -235,14 +235,44 @@ const codeSpan = (text: string): string => {
 const destination = (url: string): string =>
   /[\s()]/.test(url) ? `<${url}>` : url;
 
+/** the text character rendered immediately beside an inline element, looking past whatever markup it nests in */
+const charBeside = (element: Element, after: boolean): string => {
+  let at: Node = element;
+  while (at && !BLOCKS.has((at as Element).tagName)) {
+    const sibling = after ? at.nextSibling : at.previousSibling;
+    if (sibling) {
+      const text = sibling.textContent || '';
+      return after ? text.charAt(0) : text.charAt(text.length - 1);
+    }
+    at = at.parentNode;
+  }
+  return '';
+};
+
 /**
  * Wraps a run in emphasis markers. Markers have to sit against the text rather than against the whitespace around it,
  * or the renderer shows them literally, so any padding is left outside.
+ *
+ * An underscore doesn't open or close emphasis against a word character - word_like_this reads as snake_case, not
+ * italics - so emphasis that touches one on either side is written with the * that still parses there. Everywhere
+ * else _ is kept, so an author's _em_ comes back as it was written.
  */
 const emphasize = (element: Element, marker: string): string => {
   const inner = inlineOf(element);
   const [, lead, core, tail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(inner);
-  return core ? `${lead}${marker}${core}${marker}${tail}` : inner;
+  if (!core) {
+    return inner;
+  }
+
+  if (
+    marker === '_' &&
+    ((!lead && isWord(charBeside(element, false))) ||
+      (!tail && isWord(charBeside(element, true))))
+  ) {
+    marker = '*';
+  }
+
+  return `${lead}${marker}${core}${marker}${tail}`;
 };
 
 const inlineOf = (node: Node): string => {
