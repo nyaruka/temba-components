@@ -204,6 +204,43 @@ describe('temba-modax', () => {
     expect(dialogWidth()).to.equal('min(60rem, 92vw)');
   });
 
+  it('renders page level gutter content in the dialog footer', async () => {
+    const modax: Modax = await fixture(`
+      <temba-modax header="Hello Modax" endpoint="/test-assets/modax/form.html">
+        <div>Open Me</div>
+        <div slot="gutter" id="extra">Extra controls</div>
+      </temba-modax>
+    `);
+
+    await open(modax);
+
+    // the page's content lands in the modax's own gutter slot
+    const extra = modax.querySelector('#extra') as HTMLElement;
+    const forwarded = extra.assignedSlot as HTMLSlotElement;
+    expect(forwarded.name).to.equal('gutter');
+    expect(forwarded.getRootNode()).to.equal(modax.shadowRoot);
+
+    // which is passed through to the dialog's gutter, in the footer next to the buttons
+    const dialog = modax.shadowRoot.querySelector('temba-dialog') as Dialog;
+    const passthrough = forwarded.closest('[slot="gutter"]') as HTMLElement;
+    expect(passthrough.assignedSlot).to.equal(
+      dialog.shadowRoot.querySelector('slot[name="gutter"]')
+    );
+
+    // and it really is on screen inside the footer, to the left of the buttons
+    const footer = dialog.shadowRoot.querySelector(
+      '.dialog-footer'
+    ) as HTMLElement;
+    const rect = extra.getBoundingClientRect();
+    const footerRect = footer.getBoundingClientRect();
+    const button = footer.querySelector('temba-button').getBoundingClientRect();
+
+    expect(rect.width).to.be.greaterThan(0);
+    expect(rect.top).to.be.at.least(footerRect.top);
+    expect(rect.bottom).to.be.at.most(footerRect.bottom);
+    expect(rect.right).to.be.at.most(button.left);
+  });
+
   it('applies header colors from response headers', async () => {
     mockGET(/\/test-assets\/modax\/hello\.html/, '<div>Colored Header</div>', {
       'X-Temba-Header-Bg': '#8e5ea7',

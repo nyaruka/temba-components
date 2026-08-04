@@ -101,6 +101,13 @@ export class Modax extends RapidElement {
         flex-direction: row;
         margin-left: 0.6em;
       }
+
+      /* the piece of the dialog's footer we pass through to the page, sharing the row with the wizard steps */
+      .gutter {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
     `;
   }
 
@@ -511,8 +518,9 @@ export class Modax extends RapidElement {
           ${this.body}
         </div>
         <div class="scripts"></div>
-        <div slot="gutter">
+        <div slot="gutter" class="gutter">
           <div class="wizard-steps">${wizardStepBalls}</div>
+          <slot name="gutter"></slot>
         </div>
       </temba-dialog>
       <div class="slot-wrapper" @click=${this.handleSlotClicked}>
