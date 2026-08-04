@@ -255,6 +255,11 @@ export class ArticleList extends ContentList<ArticleRow> {
         opacity: 0.4;
       }
 
+      /* a control rather than text, so it centers on the row instead of sitting on the text baseline */
+      .publish {
+        vertical-align: middle;
+      }
+
       /* where the dragged row would land, indented to the level it
          would land at */
       .drop-marker {
@@ -278,6 +283,12 @@ export class ArticleList extends ContentList<ArticleRow> {
    * reject. */
   @property({ type: Number, attribute: 'max-depth' })
   maxDepth = 3;
+
+  /** Endpoint a row's publish switch posts `{uuid, status}` to. Like
+   * the sort endpoint, the switch is only offered when this is set, so
+   * a viewer without the permission simply doesn't get one. */
+  @property({ type: String, attribute: 'publish-endpoint' })
+  publishEndpoint = '';
 
   /** The whole tree, including the rows a collapsed branch hides. */
   @state()
@@ -322,18 +333,42 @@ export class ArticleList extends ContentList<ArticleRow> {
       columns.push({ key: 'drag', label: '', width: '28px' });
     }
 
-    columns.push(
-      { key: 'title', label: 'Article', minWidth: '200px', grow: true },
-      { key: 'status', label: 'Status', width: '100px' },
-      { key: 'modified_on', label: 'Updated', width: '130px', align: 'right' }
-    );
+    columns.push({
+      key: 'title',
+      label: 'Article',
+      minWidth: '200px',
+      grow: true
+    });
+
+    // The switch says what the status is as well as changing it, so a reader of a row shouldn't have to take in both
+    // it and a pill saying the same thing. Without the permission to publish there's no switch, and then the pill is
+    // the only thing left that can say.
+    if (!this.publishEndpoint) {
+      columns.push({ key: 'status', label: 'Status', width: '100px' });
+    }
+
+    columns.push({
+      key: 'modified_on',
+      label: 'Updated',
+      width: '130px',
+      align: 'right'
+    });
+
+    if (this.publishEndpoint) {
+      columns.push({
+        key: 'publish',
+        label: 'Published',
+        width: '96px',
+        align: 'right'
+      });
+    }
 
     return columns;
   }
 
   protected willUpdate(changes: PropertyValues): void {
     // rebuilt before the base class runs so its width bookkeeping sees the columns this render will use
-    if (changes.has('sortEndpoint')) {
+    if (changes.has('sortEndpoint') || changes.has('publishEndpoint')) {
       this.columns = this.buildColumns();
     }
     super.willUpdate(changes);
@@ -364,6 +399,28 @@ export class ArticleList extends ContentList<ArticleRow> {
 
   protected isRowClickable(): boolean {
     return true;
+  }
+
+  /**
+   * Puts an article in or out of the agents' reach. Shown straight away and then reconciled against the server's
+   * tree either way, the same as a reorder - it's the authority on what the status is, and a rejected change has to
+   * snap back rather than leave the row lying about it.
+   */
+  private handlePublishChanged(row: ArticleRow, event: Event): void {
+    // the switch is a control on the row rather than part of it, so using one isn't opening the article
+    event.stopPropagation();
+
+    const status = (event.target as any).checked ? 'published' : 'draft';
+
+    this.items = this.items.map((item) =>
+      item.uuid === row.uuid ? { ...item, status } : item
+    );
+
+    postJSON(this.publishEndpoint, { uuid: row.uuid, status })
+      .catch((error) => {
+        console.warn('Failed to change article status', error);
+      })
+      .finally(() => this.refresh());
   }
 
   private toggleCollapsed(row: ArticleRow, event: Event): void {
@@ -593,6 +650,15 @@ export class ArticleList extends ContentList<ArticleRow> {
               display="timedate"
             ></temba-date>`
           : '';
+      case 'publish':
+        return html`<temba-toggle
+          class="publish"
+          label="Published"
+          hide_label
+          ?checked=${item.status === 'published'}
+          @click=${(event: MouseEvent) => event.stopPropagation()}
+          @change=${(event: Event) => this.handlePublishChanged(item, event)}
+        ></temba-toggle>`;
       default:
         return super.renderCell(item, column);
     }

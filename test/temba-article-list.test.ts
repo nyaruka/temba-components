@@ -26,6 +26,7 @@ const TAG = 'temba-article-list';
 
 const ENDPOINT = '/api/internal/articles.json';
 const SORT_URL = '/article/sort/';
+const PUBLISH_URL = '/article/publish/';
 
 // getting-started
 //   installing (draft)
@@ -122,18 +123,23 @@ const getTitles = (list: ArticleList): string[] =>
 // the fetch stub's call history spans the whole run, so each test tracks
 // a baseline and only looks at its own posts
 let postBaseline = 0;
+let publishBaseline = 0;
 
-const allSortPosts = (): any[] =>
+const allPostsTo = (url: string): any[] =>
   (window.fetch as SinonStub)
     .getCalls()
     .filter(
       (call) =>
-        String(call.args[0]).includes(SORT_URL) &&
-        call.args[1]?.method === 'POST'
+        String(call.args[0]).includes(url) && call.args[1]?.method === 'POST'
     )
     .map((call) => JSON.parse(call.args[1].body));
 
+const allSortPosts = (): any[] => allPostsTo(SORT_URL);
+
 const getSortPosts = (): any[] => allSortPosts().slice(postBaseline);
+
+const getPublishPosts = (): any[] =>
+  allPostsTo(PUBLISH_URL).slice(publishBaseline);
 
 /** Drags a row by its handle to a point, in the same way a user would. */
 const dragRow = async (
@@ -164,7 +170,9 @@ describe(TAG, () => {
     clearMockPosts();
     mockGET(/\/api\/internal\/articles\.json/, { results: ARTICLES });
     mockPOST(/\/article\/sort\//, { status: 'ok' });
+    mockPOST(/\/article\/publish\//, { status: 'ok' });
     postBaseline = allSortPosts().length;
+    publishBaseline = allPostsTo(PUBLISH_URL).length;
   });
 
   it('can be created with article columns', async () => {
@@ -172,7 +180,7 @@ describe(TAG, () => {
 
     assert.instanceOf(list, ArticleList);
 
-    // the drag column is only offered when there's somewhere to post to
+    // the drag and publish columns are only offered when there's somewhere to post them to
     expect(list.columns.map((column) => column.key)).to.deep.equal([
       'drag',
       'title',
@@ -194,6 +202,34 @@ describe(TAG, () => {
       'modified_on'
     ]);
     expect(list.shadowRoot.querySelector('.drag-handle')).to.not.exist;
+  });
+
+  it('ends a row with a publish switch when permitted', async () => {
+    const list = await getList({ 'publish-endpoint': PUBLISH_URL });
+
+    // the switch says what the status is as well as setting it, so the pill that only said it steps aside
+    expect(list.columns.map((column) => column.key)).to.deep.equal([
+      'drag',
+      'title',
+      'modified_on',
+      'publish'
+    ]);
+    expect(list.shadowRoot.querySelector('.status-pill')).to.not.exist;
+
+    const switches = Array.from(
+      list.shadowRoot.querySelectorAll('temba-toggle')
+    ) as any[];
+    expect(switches).to.have.length(6);
+
+    // each says whether its own article is published
+    expect(switches.map((toggle) => toggle.checked)).to.deep.equal([
+      true,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]);
   });
 
   it('nests rows by depth with rails and disclosure chevrons', async () => {
@@ -302,6 +338,42 @@ describe(TAG, () => {
       .be.true;
   });
 
+  it('publishes an article from its row without opening it', async () => {
+    const list = await getList({ 'publish-endpoint': PUBLISH_URL });
+
+    const clicked: string[] = [];
+    list.addEventListener(CustomEventType.RowClick, (event: any) =>
+      clicked.push(event.detail.item.uuid)
+    );
+
+    // Installing is the draft, so its switch is the one to turn on
+    const toggle = list.shadowRoot.querySelectorAll('temba-toggle')[1] as any;
+    toggle.click();
+    await list.updateComplete;
+
+    expect(getPublishPosts()).to.deep.equal([
+      { uuid: 'installing', status: 'published' }
+    ]);
+
+    // shown straight away rather than waiting for the tree to come back
+    expect((list as any).items[1].status).to.equal('published');
+
+    // and using the switch isn't opening the article it belongs to
+    expect(clicked).to.be.empty;
+
+    // turning one off says so the same way
+    const published = list.shadowRoot.querySelectorAll(
+      'temba-toggle'
+    )[0] as any;
+    published.click();
+    await list.updateComplete;
+
+    expect(getPublishPosts()[1]).to.deep.equal({
+      uuid: 'getting-started',
+      status: 'draft'
+    });
+  });
+
   it('reorders siblings by dragging', async () => {
     const list = await getList();
     const rows = getRows(list);
@@ -351,7 +423,7 @@ describe(TAG, () => {
   it('renders the article tree (screenshot)', async () => {
     // the modified dates need a store to know the workspace's locale
     await loadStore();
-    const list = await getList();
+    const list = await getList({ 'publish-endpoint': PUBLISH_URL });
     await assertScreenshot('article-list/list', getClip(list));
   });
 });
