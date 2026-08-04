@@ -44,6 +44,39 @@
 <trans-unit id="s6dbbe2646b239ca5">
   <source>Closed</source>
 </trans-unit>
+<trans-unit id="sf7c0eba7c822e3d6">
+  <source>Bold</source>
+</trans-unit>
+<trans-unit id="s523eb9043213ff0d">
+  <source>Italic</source>
+</trans-unit>
+<trans-unit id="s2f2044f2431a32d5">
+  <source>Heading</source>
+</trans-unit>
+<trans-unit id="s3d249bb480032121">
+  <source>List</source>
+</trans-unit>
+<trans-unit id="s3cf89cb47fdde7e9">
+  <source>Link</source>
+</trans-unit>
+<trans-unit id="s3643189d1abbb7f4">
+  <source>Code</source>
+</trans-unit>
+<trans-unit id="s86d389e5eee88425">
+  <source>Unable to render preview.</source>
+</trans-unit>
+<trans-unit id="s78beeb359125557c">
+  <source>Unable to upload file.</source>
+</trans-unit>
+<trans-unit id="s12e9c9d9d9b94cf1">
+  <source>Screenshot</source>
+</trans-unit>
+<trans-unit id="s64ef2a6c2dd1d3d1">
+  <source>Edit</source>
+</trans-unit>
+<trans-unit id="s417b90913e05bc17">
+  <source>Preview</source>
+</trans-unit>
 </body>
 </file>
 </xliff>

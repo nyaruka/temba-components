@@ -23,5 +23,16 @@
 's638236250662c6b3': `Have sent a message in the last`,
 's4788ee206c4570c7': `Have not started this flow in the last 90 days`,
 'sea4f08110bb8f15d': `Remove`,
+'sf7c0eba7c822e3d6': `Bold`,
+'s523eb9043213ff0d': `Italic`,
+'s2f2044f2431a32d5': `Heading`,
+'s3d249bb480032121': `List`,
+'s3cf89cb47fdde7e9': `Link`,
+'s3643189d1abbb7f4': `Code`,
+'s86d389e5eee88425': `Unable to render preview.`,
+'s78beeb359125557c': `Unable to upload file.`,
+'s12e9c9d9d9b94cf1': `Screenshot`,
+'s64ef2a6c2dd1d3d1': `Edit`,
+'s417b90913e05bc17': `Preview`,
     };
   
