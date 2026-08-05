@@ -176,6 +176,342 @@ export const isSerializable = (element: Element): boolean =>
     (node) => BLOCKS.has(node.tagName) || INLINES.has(node.tagName)
   );
 
+// ==========================================================
+// Importing foreign markup
+// ==========================================================
+
+// What other apps put on the clipboard is nothing like what our own renderer emits - divs for paragraphs, styled
+// spans for emphasis, wrappers around everything - so pasted markup is first rebuilt into the clean shapes the
+// serializer knows, and only what survives the rebuild reaches the document.
+
+/** elements that aren't content at all, dropped along with everything in them */
+const DROPPED = new Set([
+  'HEAD',
+  'META',
+  'LINK',
+  'TITLE',
+  'STYLE',
+  'SCRIPT',
+  'NOSCRIPT',
+  'TEMPLATE',
+  'IFRAME',
+  'OBJECT',
+  'EMBED',
+  'SVG',
+  'CANVAS',
+  'VIDEO',
+  'AUDIO',
+  'BUTTON',
+  'INPUT',
+  'SELECT',
+  'TEXTAREA'
+]);
+
+/** the tags read as blocks when they arrive at the top level of a paste */
+const FOREIGN_BLOCKS = new Set([
+  'H1',
+  'H2',
+  'H3',
+  'H4',
+  'H5',
+  'H6',
+  'P',
+  'UL',
+  'OL',
+  'BLOCKQUOTE',
+  'PRE',
+  'HR',
+  'TABLE',
+  'DIV',
+  'SECTION',
+  'ARTICLE',
+  'MAIN',
+  'HEADER',
+  'FOOTER',
+  'ASIDE',
+  'NAV',
+  'FIGURE',
+  'FIGCAPTION',
+  'DL',
+  'DT',
+  'DD',
+  'FORM',
+  'FIELDSET'
+]);
+
+/**
+ * Whether a pasted node holds block content. The tag alone isn't enough: apps wrap whole documents in inline
+ * elements - a copy from a Google Doc arrives inside a <b> - and those have to be read as the containers they are,
+ * not as emphasis around a run of text.
+ */
+const isForeignBlock = (node: Node): boolean => {
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return false;
+  }
+  const element = node as Element;
+  return (
+    FOREIGN_BLOCKS.has(element.tagName) ||
+    !!element.querySelector('p,h1,h2,h3,h4,h5,h6,ul,ol,blockquote,pre,hr,table')
+  );
+};
+
+/** whether any of the nodes amount to something worth keeping - text that isn't blank, or an image */
+const hasContent = (nodes: Node[]): boolean =>
+  nodes.some(
+    (node) =>
+      (node.textContent || '').trim() ||
+      (node as Element).tagName === 'IMG' ||
+      ((node as Element).querySelector &&
+        (node as Element).querySelector('img'))
+  );
+
+/**
+ * Rebuilds a pasted node as the inline content it means. Semantic tags are kept as their canonical forms, and the
+ * styling other apps write instead of tags - a span carrying font-weight, a div of italics - is read back as the
+ * emphasis it stands for. Anything else contributes its contents and nothing else.
+ */
+const foreignInline = (node: Node): Node[] => {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent ? [document.createTextNode(node.textContent)] : [];
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return [];
+  }
+
+  const element = node as Element;
+  const tag = element.tagName;
+
+  if (DROPPED.has(tag)) {
+    return [];
+  }
+
+  if (tag === 'BR') {
+    return [document.createElement('br')];
+  }
+
+  if (tag === 'IMG') {
+    // a data: url is the image itself rather than a reference to one, far too big to live in an article body
+    const src = element.getAttribute('src') || '';
+    if (!src || src.startsWith('data:')) {
+      return [];
+    }
+    const img = document.createElement('img');
+    img.setAttribute('src', src);
+    img.setAttribute('alt', element.getAttribute('alt') || '');
+    return [img];
+  }
+
+  if (tag === 'CODE' || tag === 'KBD' || tag === 'SAMP' || tag === 'TT') {
+    const code = document.createElement('code');
+    code.textContent = element.textContent;
+    return element.textContent ? [code] : [];
+  }
+
+  const style = element.getAttribute('style') || '';
+  const wraps: string[] = [];
+
+  // what the element means, whether it says so as a tag or as styling. A <b> that styles itself back to normal
+  // weight - the wrapper a Google Docs copy arrives in - means nothing at all.
+  if (
+    ((tag === 'STRONG' || tag === 'B') &&
+      !/font-weight:\s*(normal|[1-4]00)/i.test(style)) ||
+    /font-weight:\s*(bold|bolder|[6-9]00)/i.test(style)
+  ) {
+    wraps.push('strong');
+  }
+  if (tag === 'EM' || tag === 'I' || /font-style:\s*italic/i.test(style)) {
+    wraps.push('em');
+  }
+  if (
+    tag === 'DEL' ||
+    tag === 'S' ||
+    tag === 'STRIKE' ||
+    /line-through/i.test(style)
+  ) {
+    wraps.push('del');
+  }
+
+  let out = [...element.childNodes].flatMap(foreignInline);
+
+  if (tag === 'A') {
+    const href = element.getAttribute('href') || '';
+    if (href && !/^javascript:/i.test(href) && hasContent(out)) {
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', href);
+      const title = element.getAttribute('title');
+      if (title) {
+        anchor.setAttribute('title', title);
+      }
+      anchor.append(...out);
+      out = [anchor];
+    }
+  }
+
+  if (hasContent(out)) {
+    for (const wrap of wraps.reverse()) {
+      const wrapper = document.createElement(wrap);
+      wrapper.append(...out);
+      out = [wrapper];
+    }
+  }
+
+  return out;
+};
+
+const foreignList = (list: Element): Element[] => {
+  const clean = document.createElement(list.tagName.toLowerCase());
+  const start = list.getAttribute('start');
+  if (list.tagName === 'OL' && start) {
+    clean.setAttribute('start', start);
+  }
+
+  for (const item of [...list.children]) {
+    if (item.tagName !== 'LI') {
+      continue;
+    }
+
+    // an item's own text stays loose in the item - wrapping it in a paragraph would read back as a loose list -
+    // while a nested list or a genuine paragraph stays the block it is
+    const li = document.createElement('li');
+    for (const child of [...item.childNodes]) {
+      const tag = (child as Element).tagName;
+      if (tag === 'UL' || tag === 'OL') {
+        li.append(...foreignList(child as Element));
+      } else if (isForeignBlock(child)) {
+        li.append(...gatherForeign([child]));
+      } else {
+        li.append(...foreignInline(child));
+      }
+    }
+
+    if (li.childNodes.length > 0) {
+      clean.appendChild(li);
+    }
+  }
+
+  return clean.children.length > 0 ? [clean] : [];
+};
+
+const foreignTable = (table: Element): Element[] => {
+  const rows = [...table.querySelectorAll('tr')];
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const clean = document.createElement('table');
+  const thead = document.createElement('thead');
+  const tbody = document.createElement('tbody');
+
+  rows.forEach((row, index) => {
+    const tr = document.createElement('tr');
+    for (const cell of [...row.children]) {
+      if (cell.tagName !== 'TD' && cell.tagName !== 'TH') {
+        continue;
+      }
+      const out = document.createElement(index === 0 ? 'th' : 'td');
+      out.append(...[...cell.childNodes].flatMap(foreignInline));
+      tr.appendChild(out);
+    }
+    if (tr.children.length > 0) {
+      (index === 0 ? thead : tbody).appendChild(tr);
+    }
+  });
+
+  if (thead.children.length === 0) {
+    return [];
+  }
+
+  clean.appendChild(thead);
+  if (tbody.children.length > 0) {
+    clean.appendChild(tbody);
+  }
+  return [clean];
+};
+
+/** rebuilds one pasted block-level element as the clean blocks it means */
+const foreignBlock = (element: Element): Element[] => {
+  const tag = element.tagName;
+
+  if (/^H[1-6]$/.test(tag)) {
+    const heading = document.createElement(tag.toLowerCase());
+    heading.append(...[...element.childNodes].flatMap(foreignInline));
+    return hasContent([heading]) ? [heading] : [];
+  }
+
+  if (tag === 'P') {
+    const paragraph = document.createElement('p');
+    paragraph.append(...[...element.childNodes].flatMap(foreignInline));
+    return hasContent([paragraph]) ? [paragraph] : [];
+  }
+
+  if (tag === 'HR') {
+    return [document.createElement('hr')];
+  }
+
+  if (tag === 'PRE') {
+    if (!element.textContent.trim()) {
+      return [];
+    }
+    const pre = document.createElement('pre');
+    const code = document.createElement('code');
+    code.textContent = element.textContent;
+    pre.appendChild(code);
+    return [pre];
+  }
+
+  if (tag === 'UL' || tag === 'OL') {
+    return foreignList(element);
+  }
+
+  if (tag === 'TABLE') {
+    return foreignTable(element);
+  }
+
+  if (tag === 'BLOCKQUOTE') {
+    const quote = document.createElement('blockquote');
+    quote.append(...gatherForeign([...element.childNodes]));
+    return quote.children.length > 0 ? [quote] : [];
+  }
+
+  // anything else is a wrapper - its blocks matter, it doesn't
+  return gatherForeign([...element.childNodes]);
+};
+
+/** turns pasted nodes into a flat run of clean blocks, wrapping the loose inline runs between them in paragraphs */
+const gatherForeign = (nodes: Node[]): Element[] => {
+  const blocks: Element[] = [];
+  let inline: Node[] = [];
+
+  const flush = () => {
+    if (hasContent(inline)) {
+      const paragraph = document.createElement('p');
+      paragraph.append(...inline);
+      blocks.push(paragraph);
+    }
+    inline = [];
+  };
+
+  for (const node of nodes) {
+    if (isForeignBlock(node)) {
+      flush();
+      blocks.push(...foreignBlock(node as Element));
+    } else {
+      inline.push(...foreignInline(node));
+    }
+  }
+
+  flush();
+  return blocks;
+};
+
+/**
+ * Rebuilds parsed clipboard markup - ours or another app's - into the clean block elements the serializer can read
+ * back to markdown. What can't be expressed contributes its text; what isn't content at all is dropped.
+ */
+export const importBlocks = (root: Element): Element[] =>
+  gatherForeign([...root.childNodes]);
+
 const isWord = (char: string) => /[A-Za-z0-9]/.test(char || '');
 
 /**

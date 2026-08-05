@@ -9,6 +9,7 @@ import { postFormData } from '../utils';
 import {
   Block,
   blockOf,
+  importBlocks,
   isSerializable,
   joinBlocks,
   renderBlock,
@@ -1779,9 +1780,10 @@ export class MarkdownEditor extends FieldElement {
 
     evt.preventDefault();
 
-    // Markup off the clipboard is put through the same round trip the document itself takes - read to markdown, then
-    // rendered back - so nothing can land in the document that the editor couldn't have produced or couldn't write
-    // out again. Anything it can't express falls back to the plain text, which is what a paste from outside is.
+    // Markup off the clipboard - ours or another app's - is rebuilt into the shapes the serializer knows and put
+    // through the same round trip the document itself takes: read to markdown, then rendered back. So nothing can
+    // land in the document that the editor couldn't have produced or couldn't write out again, and what the rebuild
+    // can't express falls back to the plain text.
     const source = pasted ? this.markdownOf(pasted, text) : null;
 
     this.exec(
@@ -1791,25 +1793,32 @@ export class MarkdownEditor extends FieldElement {
             .split(/\n{2,}/)
             .map((part) => `<p>${escapeHtml(part).replace(/\n/g, '<br>')}</p>`)
             .join('')
-        : /\n\s*\n/.test(source)
-          ? renderBlock(source)
-          : markdown.renderInline(source)
+        : source.inline
+          ? markdown.renderInline(source.markdown)
+          : renderBlock(source.markdown)
     );
 
     this.edited('insertFromPaste');
   }
 
   /** the markdown for pasted markup, or null when it isn't anything the document could hold */
-  private markdownOf(pasted: string, text: string): string {
+  private markdownOf(
+    pasted: string,
+    text: string
+  ): { markdown: string; inline: boolean } {
     // parsed inert, so nothing in it loads or runs on the way past
     const parsed = new DOMParser().parseFromString(pasted, 'text/html');
-    const blocks = [...parsed.body.children].filter(isSerializable);
+    const blocks = importBlocks(parsed.body);
 
     if (blocks.length === 0) {
-      return text ? null : parsed.body.textContent;
+      return text ? null : { markdown: parsed.body.textContent, inline: true };
     }
 
-    return blocks.map((block) => blockOf(block)).join('\n\n');
+    return {
+      markdown: blocks.map((block) => blockOf(block)).join('\n\n'),
+      // a single plain paragraph drops into the text at the caret; anything more is blocks of its own
+      inline: blocks.length === 1 && blocks[0].tagName === 'P'
+    };
   }
 
   // ==========================================================
