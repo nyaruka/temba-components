@@ -26,7 +26,8 @@ type Format =
   | 'bullet'
   | 'number'
   | 'quote'
-  | 'link';
+  | 'link'
+  | 'columns';
 
 interface Command {
   format: Format;
@@ -71,7 +72,8 @@ const TOP_LEVEL = new Set([
   'OL',
   'BLOCKQUOTE',
   'PRE',
-  'HR'
+  'HR',
+  'TABLE'
 ]);
 
 /** a block the editor can't write back out, kept exactly as it was authored */
@@ -101,9 +103,8 @@ const retag = (element: Element, tag: string): Element => {
 /** the sizes an image can be capped to, which is everything a fragment is allowed to ask for */
 const IMAGE_SIZES = new Set(['small', 'medium', 'large']);
 
-/** how an image can sit in its paragraph - left and right float it, making the paragraph a row with the image as
- * one cell and its text as the other */
-const IMAGE_LAYOUTS = new Set(['block', 'inline', 'left', 'right']);
+/** how an image can sit in its text - as a block of its own or inline with what's around it */
+const IMAGE_LAYOUTS = new Set(['block', 'inline']);
 
 /** what an image's fragment asks for, with anything it can't ask for read as the default */
 const imageOptions = (src: string): { size: string; layout: string } => {
@@ -505,24 +506,6 @@ export class MarkdownEditor extends FieldElement {
         display: inline-block;
       }
 
-      /* A floated image makes its paragraph a row - the image is one cell and the paragraph's text fills the other
-         side. flow-root makes the paragraph contain the float, so the row ends where the taller of the two ends and
-         the next block starts on a fresh line instead of sliding up beside the image. */
-      .doc p:has(img.layout-left),
-      .doc p:has(img.layout-right) {
-        display: flow-root;
-      }
-
-      .doc img.layout-left {
-        float: left;
-        margin: 0 1em 0.35em 0;
-      }
-
-      .doc img.layout-right {
-        float: right;
-        margin: 0 0 0.35em 1em;
-      }
-
       .doc a {
         color: var(--color-link-primary);
       }
@@ -535,6 +518,29 @@ export class MarkdownEditor extends FieldElement {
       .doc td {
         border: 1px solid var(--color-borders);
         padding: 0.25em 0.5em;
+      }
+
+      /* A table whose header says nothing is layout rather than data - the two cell row the Columns button inserts,
+         for putting a screenshot beside the text that explains it. The header is hidden instead of shown blank, the
+         chrome goes away, and the cells become columns sharing the width evenly. A table with a real header keeps
+         the bordered look of data. */
+      .doc table:not(:has(th:not(:empty))) {
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      .doc table:not(:has(th:not(:empty))) thead {
+        display: none;
+      }
+
+      .doc table:not(:has(th:not(:empty))) td {
+        border: none;
+        padding: 0 0.75em 0 0;
+        vertical-align: top;
+      }
+
+      .doc table:not(:has(th:not(:empty))) td:last-child {
+        padding-right: 0;
       }
 
       /* a block the editor can't write back out - it renders, but it isn't edited here */
@@ -669,6 +675,12 @@ export class MarkdownEditor extends FieldElement {
         title: msg('Link'),
         prefix: '[',
         suffix: '](https://)'
+      },
+      {
+        format: 'columns',
+        label: 'Columns',
+        title: msg('Side by side columns'),
+        prefix: ''
       }
     ];
   }
@@ -920,12 +932,16 @@ export class MarkdownEditor extends FieldElement {
         continue;
       }
 
-      // making a list leaves it nested inside the block it was made from, which is not somewhere a list can live
-      const nested = element.querySelector(':scope > ul, :scope > ol');
+      // making a list leaves it nested inside the block it was made from, which is not somewhere a list can live -
+      // and an inserted table can land inside a paragraph the same way
+      const nested = element.querySelector(
+        ':scope > ul, :scope > ol, :scope > table'
+      );
       if (
         nested &&
         element.tagName !== 'UL' &&
         element.tagName !== 'OL' &&
+        element.tagName !== 'TABLE' &&
         element.childNodes.length === 1
       ) {
         change();
@@ -959,9 +975,14 @@ export class MarkdownEditor extends FieldElement {
     }
 
     // and the styles it hangs off what it inserts, which markdown has no way to carry and which would otherwise
-    // accumulate on the elements the author edits
+    // accumulate on the elements the author edits. A cell's style stays - its alignment lives there, put there by
+    // the renderer, and the ruler row is read back from it.
     for (const styled of [...doc.querySelectorAll('[style]')]) {
-      if (styled.closest(`.${LOCKED}`)) {
+      if (
+        styled.closest(`.${LOCKED}`) ||
+        styled.tagName === 'TH' ||
+        styled.tagName === 'TD'
+      ) {
         continue;
       }
       change();
@@ -972,7 +993,7 @@ export class MarkdownEditor extends FieldElement {
     // leaves an empty heading, and typing over a select-all writes the new text as one. Neither is what the author
     // asked for: they cleared the article, and what they type next is a paragraph until they say otherwise.
     const emptied =
-      !doc.textContent.trim() && !doc.querySelector('img,hr,.locked');
+      !doc.textContent.trim() && !doc.querySelector('img,hr,table,.locked');
 
     if (
       doc.children.length === 0 ||
@@ -1176,6 +1197,13 @@ export class MarkdownEditor extends FieldElement {
     }
 
     const range = this.range;
+
+    // a cell is one line of inline content - there is no block inside it for a newline to split
+    if (this.cellAt(range)) {
+      evt.preventDefault();
+      return;
+    }
+
     const block = range && this.blockAt(range.startContainer);
     if (!block || block.tagName !== 'PRE') {
       return;
@@ -1209,7 +1237,46 @@ export class MarkdownEditor extends FieldElement {
     if (evt.key === 'Escape') {
       evt.preventDefault();
       this.doc?.blur();
+      return;
     }
+
+    // inside a table, Tab is how the caret gets from one cell to the next
+    if (evt.key === 'Tab') {
+      const cell = this.cellAt(this.range);
+      if (!cell) {
+        return;
+      }
+
+      evt.preventDefault();
+
+      // only the cells that are visible - a layout table's blank header is hidden, and tabbing into it would put
+      // the caret somewhere the author can't see
+      const cells = [
+        ...cell.closest('table').querySelectorAll('th, td')
+      ].filter((candidate) => (candidate as HTMLElement).offsetWidth > 0);
+
+      const next = cells[cells.indexOf(cell) + (evt.shiftKey ? -1 : 1)];
+      if (next) {
+        const inside = document.createRange();
+        inside.selectNodeContents(next);
+        inside.collapse(false);
+        this.select(inside);
+      }
+    }
+  }
+
+  /** the table cell the caret is sitting in, or null when it isn't in one */
+  private cellAt(range: Range): Element {
+    const node = range?.startContainer;
+    if (!node) {
+      return null;
+    }
+    const element =
+      node.nodeType === Node.ELEMENT_NODE
+        ? (node as Element)
+        : node.parentElement;
+    const cell = element?.closest('td, th');
+    return cell && this.doc?.contains(cell) ? cell : null;
   }
 
   /**
@@ -1379,6 +1446,10 @@ export class MarkdownEditor extends FieldElement {
       case 'link':
         this.startLink(block);
         break;
+
+      case 'columns':
+        this.insertColumns();
+        break;
     }
 
     this.edited();
@@ -1495,6 +1566,37 @@ export class MarkdownEditor extends FieldElement {
     this.requestUpdate();
   }
 
+  /**
+   * Inserts a two column row - a markdown table with nothing in its header, which the styles show as side by side
+   * cells rather than data. A screenshot goes in one cell and the text explaining it in the other.
+   */
+  private insertColumns(): void {
+    this.exec(
+      'insertHTML',
+      '<table><thead><tr><th></th><th></th></tr></thead>' +
+        '<tbody><tr><td><br></td><td><br></td></tr></tbody></table>'
+    );
+
+    // the insert leaves the caret after the table, and the author is about to fill the first cell
+    const range = this.range;
+    let block = range ? this.blockAt(range.startContainer) : null;
+    if (
+      block &&
+      block.tagName !== 'TABLE' &&
+      block.previousElementSibling?.tagName === 'TABLE'
+    ) {
+      block = block.previousElementSibling;
+    }
+
+    const cell = block?.tagName === 'TABLE' ? block.querySelector('td') : null;
+    if (cell) {
+      const inside = document.createRange();
+      inside.selectNodeContents(cell);
+      inside.collapse(true);
+      this.select(inside);
+    }
+  }
+
   /** the same commands in source mode, where there is nothing rendered to act on and markdown is what the caret is in */
   private applySourceFormat(command: Command): void {
     const area = this.textArea;
@@ -1505,6 +1607,37 @@ export class MarkdownEditor extends FieldElement {
     const text = area.value;
     let start = area.selectionStart;
     const end = area.selectionEnd;
+
+    if (command.format === 'columns') {
+      // a table is a block, so it starts on its own line with a blank line either side
+      const table = '|  |  |\n| --- | --- |\n|  |  |';
+      const before = text.substring(0, start);
+      const after = text.substring(end);
+      const lead = !before.trim()
+        ? ''
+        : before.endsWith('\n\n')
+          ? ''
+          : before.endsWith('\n')
+            ? '\n'
+            : '\n\n';
+      const tail = !after.trim()
+        ? ''
+        : after.startsWith('\n\n')
+          ? ''
+          : after.startsWith('\n')
+            ? '\n'
+            : '\n\n';
+
+      area.value = before + lead + table + tail + after;
+      this.value = area.value;
+      this.fireEvent('change');
+
+      // the caret goes into the first cell of the body row
+      const caret = start + lead.length + table.lastIndexOf('\n') + 3;
+      area.focus();
+      area.setSelectionRange(caret, caret);
+      return;
+    }
 
     if (command.lines) {
       // block markers apply from the start of the line the selection begins on, and to every line it covers - marking
@@ -1767,9 +1900,7 @@ export class MarkdownEditor extends FieldElement {
 
     const layouts = [
       { value: '', label: msg('Block') },
-      { value: 'inline', label: msg('Inline') },
-      { value: 'left', label: msg('Left') },
-      { value: 'right', label: msg('Right') }
+      { value: 'inline', label: msg('Inline') }
     ];
 
     // block is the default, so an image that asks for it explicitly lights the same option as one that doesn't ask

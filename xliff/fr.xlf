@@ -124,11 +124,8 @@
   <source>Layout</source>
   <target>Disposition</target>
 </trans-unit>
-<trans-unit id="sa5c371b4bb75e590">
-  <source>Left</source>
-</trans-unit>
-<trans-unit id="s366991b9c9287765">
-  <source>Right</source>
+<trans-unit id="s7411fe5ea8b707ad">
+  <source>Side by side columns</source>
 </trans-unit>
 </body>
 </file>

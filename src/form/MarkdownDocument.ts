@@ -131,9 +131,9 @@ export const renderBlock = (source: string): string => {
   return rendered;
 };
 
-// The rendered shapes the editor knows how to turn back into markdown. Anything outside this set - a table, or some
-// construct a future renderer starts emitting - becomes an island the author can't edit richly, so content the editor
-// can't express is never rewritten by it. See isSerializable.
+// The rendered shapes the editor knows how to turn back into markdown. Anything outside this set - some construct a
+// future renderer starts emitting - becomes an island the author can't edit richly, so content the editor can't
+// express is never rewritten by it. See isSerializable.
 const BLOCKS = new Set([
   'H1',
   'H2',
@@ -147,7 +147,13 @@ const BLOCKS = new Set([
   'LI',
   'BLOCKQUOTE',
   'PRE',
-  'HR'
+  'HR',
+  'TABLE',
+  'THEAD',
+  'TBODY',
+  'TR',
+  'TH',
+  'TD'
 ]);
 
 const INLINES = new Set([
@@ -395,6 +401,47 @@ const listOf = (list: Element): string => {
     .join(loose ? '\n\n' : '\n');
 };
 
+/** a cell is one line of inline content, with the pipes that would end it early escaped */
+const cellOf = (cell: Element): string =>
+  tidy(inlineOf(cell))
+    .replace(/\s*\n\s*/g, ' ')
+    .replace(/\|/g, '\\|');
+
+/** the alignment a cell was rendered with, which is where the renderer records what the ruler row asked for */
+const alignOf = (cell: Element): string => {
+  const match = /text-align:\s*(left|center|right)/.exec(
+    cell.getAttribute('style') || ''
+  );
+  return match ? match[1] : '';
+};
+
+const tableOf = (table: Element): string => {
+  const rows = [...table.querySelectorAll('tr')];
+  if (rows.length === 0) {
+    return '';
+  }
+
+  const line = (row: Element) =>
+    `| ${[...row.children].map(cellOf).join(' | ')} |`;
+
+  const ruler = [...rows[0].children].map((cell) => {
+    const align = alignOf(cell);
+    return align === 'center'
+      ? ':---:'
+      : align === 'right'
+        ? '---:'
+        : align === 'left'
+          ? ':---'
+          : '---';
+  });
+
+  return [
+    line(rows[0]),
+    `| ${ruler.join(' | ')} |`,
+    ...rows.slice(1).map(line)
+  ].join('\n');
+};
+
 const preOf = (element: Element): string => {
   const code = element.querySelector('code') || element;
   const language = /\blanguage-(\S+)/.exec(code.getAttribute('class') || '');
@@ -429,6 +476,10 @@ export const blockOf = (element: Element): string => {
 
   if (tag === 'UL' || tag === 'OL') {
     return listOf(element);
+  }
+
+  if (tag === 'TABLE') {
+    return tableOf(element);
   }
 
   if (tag === 'BLOCKQUOTE') {
