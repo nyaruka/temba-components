@@ -522,11 +522,12 @@ export class MarkdownEditor extends FieldElement {
 
       /* A table whose header says nothing is layout rather than data - the two cell row the Columns button inserts,
          for putting a screenshot beside the text that explains it. The header is hidden instead of shown blank, the
-         chrome goes away, and the cells become columns sharing the width evenly. A table with a real header keeps
-         the bordered look of data. */
+         data-table chrome goes away, and each cell hugs what's in it: a cell holding a screenshot is the
+         screenshot's width, and the text takes the rest - auto table layout never squeezes a column below its
+         content. A table with a real header keeps the bordered look of data. */
       .doc table:not(:has(th:not(:empty))) {
-        width: 100%;
-        table-layout: fixed;
+        max-width: 100%;
+        table-layout: auto;
       }
 
       .doc table:not(:has(th:not(:empty))) thead {
@@ -535,12 +536,17 @@ export class MarkdownEditor extends FieldElement {
 
       .doc table:not(:has(th:not(:empty))) td {
         border: none;
-        padding: 0 0.75em 0 0;
+        padding: 0.35em 0.5em;
         vertical-align: top;
+        /* an empty cell still has to be something the author can click into */
+        min-width: 2em;
       }
 
-      .doc table:not(:has(th:not(:empty))) td:last-child {
-        padding-right: 0;
+      /* Guidelines while the row is editable, so the author can see the cells they're filling. They're editor
+         chrome rather than part of the article - the served rendering draws no borders on a layout row - so they
+         come and go with the editing itself. */
+      .doc[contenteditable='true'] table:not(:has(th:not(:empty))) td {
+        border: 1px dashed var(--color-borders);
       }
 
       /* a block the editor can't write back out - it renders, but it isn't edited here */
