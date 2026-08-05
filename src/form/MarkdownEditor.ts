@@ -658,7 +658,10 @@ export class MarkdownEditor extends FieldElement {
         border-radius: var(--curvature);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         font-size: 0.85em;
-        /* never wider than the article - in a truly narrow editor the controls wrap instead */
+        /* Sized to its content rather than to the room right of its anchor - being placed near the right edge
+           must never squeeze it into wrapping; the clamp shifts the whole thing left instead. Only an editor
+           genuinely narrower than the controls makes them wrap. */
+        width: max-content;
         max-width: calc(100% - 8px);
         flex-wrap: wrap;
       }
@@ -1349,7 +1352,10 @@ export class MarkdownEditor extends FieldElement {
       this.stale = false;
     }
 
+    // once now, and once next frame - the icons inside a popover are components of their own that fill in just
+    // after this update, and a popover only overflows once they've taken their width
     this.clampPopovers();
+    requestAnimationFrame(() => this.clampPopovers());
   }
 
   /**
@@ -1367,7 +1373,6 @@ export class MarkdownEditor extends FieldElement {
     for (const popover of [
       ...layer.querySelectorAll('.popover')
     ] as HTMLElement[]) {
-      popover.style.marginLeft = '';
       const rect = popover.getBoundingClientRect();
 
       let shift = 0;
@@ -1378,7 +1383,8 @@ export class MarkdownEditor extends FieldElement {
         shift = bounds.left + 4 - rect.left;
       }
       if (shift !== 0) {
-        popover.style.marginLeft = `${shift}px`;
+        // rewrite left itself - the render just re-anchored it, so this is always a fresh measurement
+        popover.style.left = `${rect.left - bounds.left + shift}px`;
       }
     }
   }
