@@ -1656,6 +1656,19 @@ export class MarkdownEditor extends FieldElement {
       styled.removeAttribute('style');
     }
 
+    // Markdown has no nested tables, so a table that lands inside a cell - by the toolbar or a paste - moves out
+    // to stand after the table it landed in. Doing it here means the editor never shows a nesting that a save
+    // would have flattened anyway.
+    let nested: Element;
+    while ((nested = doc.querySelector('td table, th table'))) {
+      if (nested.closest(`.${LOCKED}`)) {
+        break;
+      }
+      change();
+      const host = nested.parentElement.closest('td, th').closest('table');
+      host.after(nested);
+    }
+
     // A table that arrived whole - pasted, or dropped in by the Columns button - still carries its stylesheet as
     // header text and its cell breaks as literal text, the same as one freshly rendered from markdown.
     for (const cell of [...doc.querySelectorAll('td, th')]) {
