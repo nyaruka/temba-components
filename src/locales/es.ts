@@ -46,6 +46,7 @@
 's180090175fe1115d': `Less padding`,
 's8ed1cc564f1dc4f7': `Normal padding`,
 'saae778d2f46ba3a5': `More padding`,
+'sd6ef5031fb7d3991': `No color`,
 's7dd0d53a22ca1b62': `New color`,
 's3d76bcad229cc1bf': `Adjust this color everywhere it is used`,
 'saa8f64ba8b9a3042': `Remove this color everywhere it is used`,

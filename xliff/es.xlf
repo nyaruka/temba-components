@@ -142,6 +142,9 @@
 <trans-unit id="sf6e9d280a30dcf25">
   <source>Border drawn from the background color</source>
 </trans-unit>
+<trans-unit id="sd6ef5031fb7d3991">
+  <source>No color</source>
+</trans-unit>
 </body>
 </file>
 </xliff>

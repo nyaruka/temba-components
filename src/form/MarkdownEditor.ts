@@ -742,6 +742,19 @@ export class MarkdownEditor extends FieldElement {
         outline-offset: 1px;
       }
 
+      /* the no-color choice - blank with a slash, always first, and never the org's to edit or remove */
+      .popover .swatch.none {
+        background:
+          linear-gradient(
+            to top right,
+            transparent calc(50% - 1px),
+            #e05252 calc(50% - 1px),
+            #e05252 calc(50% + 1px),
+            transparent calc(50% + 1px)
+          ),
+          var(--color-widget-bg);
+      }
+
       /* The column's padding, one segmented control: the grid at its default density with a minus and plus either
          side of it, joined so the signs read as steps around the middle rather than three unrelated buttons. */
       .popover .pad-group {
@@ -3114,6 +3127,11 @@ export class MarkdownEditor extends FieldElement {
           }
         }}
       >
+        <div
+          class="swatch none ${selected ? '' : 'on'}"
+          title=${msg('No color')}
+          @click=${() => this.applyColumnBackground(index, '')}
+        ></div>
         ${palette.map(
           ([key, hex]) => html`
             <div
