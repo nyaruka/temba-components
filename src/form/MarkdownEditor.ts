@@ -653,9 +653,11 @@ export class MarkdownEditor extends FieldElement {
       /* the column popover's padding choices */
       .popover .pad {
         cursor: pointer;
-        padding: 2px 8px;
+        display: flex;
+        align-items: center;
+        padding: 3px 5px;
         border-radius: var(--curvature);
-        white-space: nowrap;
+        color: var(--color-text-dark);
       }
 
       .popover .pad:hover {
@@ -844,7 +846,7 @@ export class MarkdownEditor extends FieldElement {
 
       .doc table:not(:has(th:not(:empty))) td {
         border: none;
-        padding: 0.75em 0.9em;
+        padding: 16px;
         vertical-align: top;
         /* an empty cell still has to be something the author can click into */
         min-width: 2em;
@@ -2581,11 +2583,11 @@ export class MarkdownEditor extends FieldElement {
 
     const colors = ['', '#f1f5f9', '#eef2ff', '#ecfdf5', '#fffbeb', '#fef2f2'];
 
+    // three densities: the default in the middle, one step tighter and one step airier either side of it
     const paddings = [
-      { value: '', label: msg('Normal') },
-      { value: '4px', label: msg('Compact') },
-      { value: '16px', label: msg('Relaxed') },
-      { value: '28px', label: msg('Spacious') }
+      { value: '4px', icon: Icon.padding_compact, title: msg('Compact') },
+      { value: '', icon: Icon.padding_normal, title: msg('Normal') },
+      { value: '28px', icon: Icon.padding_spacious, title: msg('Spacious') }
     ];
 
     return html`
@@ -2627,9 +2629,10 @@ export class MarkdownEditor extends FieldElement {
               class="pad ${(current.padding || '') === padding.value
                 ? 'on'
                 : ''}"
+              title=${padding.title}
               @click=${() => this.applyColumnPadding(index, padding.value)}
             >
-              ${padding.label}
+              <temba-icon name=${padding.icon} size="1.1"></temba-icon>
             </div>
           `
         )}

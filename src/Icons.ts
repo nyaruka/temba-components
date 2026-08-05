@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use bun run svg to update
-export const SVG_FINGERPRINT = '132907abcfa6a4611ba27470e2c5c2c0';
+export const SVG_FINGERPRINT = '0b2d988f6dec7f9aa17178f8ee7f718f';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -131,6 +131,10 @@ export enum Icon {
   org_suspended = 'slash-circle-01',
   org_verified = 'check-verified-02',
   overview = 'pie-chart-01',
+  /** a column's cell padding, offered as a density on either side of the default */
+  padding_compact = 'minimize-01',
+  padding_normal = 'distribute-spacing-vertical',
+  padding_spacious = 'expand-01',
   privacy = 'shield-02',
   prometheus = 'prometheus',
   progress_spinner = 'refresh-cw-04',
