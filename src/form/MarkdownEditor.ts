@@ -729,12 +729,32 @@ export class MarkdownEditor extends FieldElement {
 
       /* the column popover's color choices */
       .popover .swatch {
+        position: relative;
         width: 18px;
         height: 18px;
         border-radius: 4px;
         border: 1px solid var(--color-widget-border);
         cursor: pointer;
         box-sizing: border-box;
+      }
+
+      /* a second click on a color opens its editor right under the swatch - the picker, and the delete that goes
+         with it */
+      .popover .color-edit {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        gap: 0.3em;
+        padding: 0.25em 0.3em;
+        background: var(--color-widget-bg);
+        border: 1px solid var(--color-widget-border);
+        border-radius: var(--curvature);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        cursor: default;
       }
 
       .popover .swatch.on {
@@ -1090,6 +1110,10 @@ export class MarkdownEditor extends FieldElement {
   /** the org's palette, index to hex - what the backgrounds articles embed resolve against */
   @state()
   private colors: Record<string, string> = {};
+
+  /** the palette entry whose editor is open under its swatch, opened by clicking its color a second time */
+  @state()
+  private editingColor: string = null;
 
   /** the column edge the pointer is hovering, ready to be dragged */
   private resizeHover: { table: Element; index: number } = null;
@@ -1922,6 +1946,7 @@ export class MarkdownEditor extends FieldElement {
         : null;
     if (column !== this.column) {
       this.column = column;
+      this.editingColor = null;
     }
 
     const anchor = target.closest?.('a');
@@ -2339,9 +2364,27 @@ export class MarkdownEditor extends FieldElement {
     if (!table) {
       return;
     }
+    this.editingColor = null;
     this.setColumnStyle(table, index, { background: key || null });
     this.edited();
     this.requestUpdate();
+  }
+
+  /** A second click on the color a column already wears opens that color's editor, tucked under its swatch. The
+   * native picker is asked to open straight away, so the second click is the whole gesture. */
+  private async toggleColorEditor(key: string): Promise<void> {
+    this.editingColor = this.editingColor === key ? null : key;
+    if (this.editingColor) {
+      await this.updateComplete;
+      const input = this.shadowRoot?.querySelector(
+        '.color-edit input[type="color"]'
+      ) as HTMLInputElement;
+      try {
+        input?.showPicker?.();
+      } catch (e) {
+        // without a picker to summon, the panel under the swatch is still there to click
+      }
+    }
   }
 
   private applyColumnPadding(index: number, padding: string): void {
@@ -3139,8 +3182,47 @@ export class MarkdownEditor extends FieldElement {
               style="background:${hex}"
               title=${hex}
               @click=${() =>
-                this.applyColumnBackground(index, selected === key ? '' : key)}
-            ></div>
+                selected === key
+                  ? this.toggleColorEditor(key)
+                  : this.applyColumnBackground(index, key)}
+            >
+              ${this.editingColor === key
+                ? html`
+                    <div
+                      class="color-edit"
+                      @click=${(evt: Event) => evt.stopPropagation()}
+                    >
+                      <input
+                        type="color"
+                        .value=${hex}
+                        title=${msg('Adjust this color everywhere it is used')}
+                        @input=${(evt: Event) =>
+                          this.previewColor(
+                            key,
+                            (evt.target as HTMLInputElement).value
+                          )}
+                        @change=${(evt: Event) =>
+                          this.saveColors({
+                            ...this.colors,
+                            [key]: (evt.target as HTMLInputElement).value
+                          })}
+                      />
+                      <div
+                        class="pad"
+                        title=${msg('Remove this color everywhere it is used')}
+                        @click=${() => {
+                          const next = { ...this.colors };
+                          delete next[key];
+                          this.editingColor = null;
+                          this.saveColors(next);
+                        }}
+                      >
+                        <temba-icon name=${Icon.delete} size="1.1"></temba-icon>
+                      </div>
+                    </div>
+                  `
+                : null}
+            </div>
           `
         )}
         <label class="pad add-color" title=${msg('New color')}>
@@ -3156,37 +3238,6 @@ export class MarkdownEditor extends FieldElement {
               this.addColor(index, (evt.target as HTMLInputElement).value)}
           />
         </label>
-        ${selected
-          ? html`
-              <div class="divider"></div>
-              <input
-                type="color"
-                .value=${this.colors[selected]}
-                title=${msg('Adjust this color everywhere it is used')}
-                @input=${(evt: Event) =>
-                  this.previewColor(
-                    selected,
-                    (evt.target as HTMLInputElement).value
-                  )}
-                @change=${(evt: Event) =>
-                  this.saveColors({
-                    ...this.colors,
-                    [selected]: (evt.target as HTMLInputElement).value
-                  })}
-              />
-              <div
-                class="pad"
-                title=${msg('Remove this color everywhere it is used')}
-                @click=${() => {
-                  const next = { ...this.colors };
-                  delete next[selected];
-                  this.saveColors(next);
-                }}
-              >
-                <temba-icon name=${Icon.delete} size="1.1"></temba-icon>
-              </div>
-            `
-          : null}
         <div class="divider"></div>
         <div class="pad-group">
           ${paddings.map(
