@@ -634,7 +634,7 @@ export class MarkdownEditor extends FieldElement {
 
       /* a command with nothing it could do where the caret is - inside a cell, tables can't beget tables */
       .toolbar .format.disabled {
-        opacity: 0.3;
+        opacity: 0.12;
         cursor: default;
       }
 
@@ -1936,6 +1936,44 @@ export class MarkdownEditor extends FieldElement {
     }
 
     const block = range && this.blockAt(range.startContainer);
+
+    // A heading is a line, not a mode: Enter at its end starts an ordinary paragraph below it, and Enter at its
+    // start pushes an ordinary paragraph in above - the browser's own split would clone the heading both ways,
+    // leaving formatting the author never asked for on the new line.
+    if (
+      block &&
+      /^H[1-6]$/.test(block.tagName) &&
+      range.collapsed &&
+      evt.inputType === 'insertParagraph'
+    ) {
+      const measure = document.createRange();
+      measure.selectNodeContents(block);
+      measure.setEnd(range.startContainer, range.startOffset);
+      const before = measure.toString().length;
+      const total = block.textContent.length;
+
+      if (before === 0 || before === total) {
+        evt.preventDefault();
+
+        const paragraph = document.createElement('p');
+        paragraph.innerHTML = '<br>';
+
+        if (before === 0 && total > 0) {
+          // the heading keeps its text; the new empty line above it is a paragraph
+          block.before(paragraph);
+        } else {
+          block.after(paragraph);
+          const inside = document.createRange();
+          inside.selectNodeContents(paragraph);
+          inside.collapse(true);
+          this.select(inside);
+        }
+
+        this.edited(evt.inputType);
+        return;
+      }
+    }
+
     if (!block || block.tagName !== 'PRE') {
       return;
     }
