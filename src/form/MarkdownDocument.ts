@@ -927,9 +927,19 @@ export const blockOf = (element: Element): string => {
   }
 
   if (tag === 'BLOCKQUOTE') {
-    const inner = [...element.children]
-      .map((child) => blockOf(child))
-      .join('\n\n');
+    // The renderer's quotes hold paragraphs, but a quote the browser just made holds its text loose - text nodes
+    // and inline markup directly in the quote. Reading only element children there would keep the markup and drop
+    // the text around it, so anything loose means the quote is one run of inline content.
+    const loose = [...element.childNodes].some(
+      (node) =>
+        (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) ||
+        (node.nodeType === Node.ELEMENT_NODE &&
+          !BLOCKS.has((node as Element).tagName))
+    );
+
+    const inner = loose
+      ? ''
+      : [...element.children].map((child) => blockOf(child)).join('\n\n');
 
     return (inner || tidy(escapeLeading(inlineOf(element))))
       .split('\n')
