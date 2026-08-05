@@ -109,9 +109,6 @@
 <trans-unit id="s7411fe5ea8b707ad">
   <source>Side by side columns</source>
 </trans-unit>
-<trans-unit id="s669b18c6d2d9c95b">
-  <source>None</source>
-</trans-unit>
 <trans-unit id="s4616fdc48b092f86">
   <source>Divider</source>
 </trans-unit>
@@ -138,6 +135,9 @@
 </trans-unit>
 <trans-unit id="saa8f64ba8b9a3042">
   <source>Remove this color everywhere it is used</source>
+</trans-unit>
+<trans-unit id="s06c4d89f9e3480b3">
+  <source>Remove styling</source>
 </trans-unit>
 </body>
 </file>

@@ -2190,14 +2190,46 @@ export class MarkdownEditor extends FieldElement {
     }
   }
 
-  /** authors a new palette color at the lowest free index and paints the column with it */
-  private addColor(index: number, hex: string): void {
-    let slot = 1;
-    while (this.colors[slot]) {
-      slot++;
+  /** the slot a new color is being picked into, taken on the first movement of the picker so the block shows the
+   * choice as it's made. null when no pick is in flight. */
+  private addingSlot: number = null;
+
+  /** paints the block live as a new color is picked, before the pick is committed */
+  private previewNewColor(index: number, hex: string): void {
+    if (this.addingSlot === null) {
+      let slot = 1;
+      while (this.colors[slot]) {
+        slot++;
+      }
+      this.addingSlot = slot;
+
+      // the column takes the new index straight away, so every movement of the picker shows on the block
+      const table = this.column?.closest('table');
+      if (table) {
+        this.setColumnStyle(table, index, { background: String(slot) });
+        this.edited();
+      }
     }
+    this.previewColor(String(this.addingSlot), hex);
+  }
+
+  /** commits the picked color to the org's palette at the slot the preview took */
+  private addColor(index: number, hex: string): void {
+    let slot = this.addingSlot;
+    if (slot === null) {
+      // the picker never moved, so no preview claimed a slot - claim one and paint the column now
+      slot = 1;
+      while (this.colors[slot]) {
+        slot++;
+      }
+      const table = this.column?.closest('table');
+      if (table) {
+        this.setColumnStyle(table, index, { background: String(slot) });
+        this.edited();
+      }
+    }
+    this.addingSlot = null;
     this.saveColors({ ...this.colors, [slot]: hex });
-    this.applyColumnBackground(index, String(slot));
   }
 
   private applyColumnBackground(index: number, key: string): void {
@@ -2373,11 +2405,41 @@ export class MarkdownEditor extends FieldElement {
       `<table><thead><tr><th></th></tr></thead>` +
         `<tbody><tr><td>${lines.join('<br>') || '<br>'}</td></tr></tbody></table>`
     );
-    this.enterInsertedTable(false);
+    const table = this.enterInsertedTable(false);
+
+    // styling is what the wrap is for, so it starts on the palette's first color rather than on nothing
+    const first = Object.keys(this.colors).sort((a, b) => +a - +b)[0];
+    if (table && first) {
+      this.setColumnStyle(table, 0, { background: first });
+    }
   }
 
-  /** puts the caret in the first cell of the table an insert just left it after */
-  private enterInsertedTable(atStart: boolean): void {
+  /** dissolves a single column row back into ordinary text - no colors, no padding, just the words again */
+  private clearCallout(): void {
+    const table = this.column?.closest('table');
+    if (!table || table.querySelectorAll(':scope > thead th').length !== 1) {
+      return;
+    }
+
+    const cell = table.querySelector('td');
+    const paragraph = document.createElement('p');
+    paragraph.append(...(cell ? [...cell.childNodes] : []));
+    if (paragraph.childNodes.length === 0) {
+      paragraph.innerHTML = '<br>';
+    }
+    table.replaceWith(paragraph);
+    this.column = null;
+
+    const inside = document.createRange();
+    inside.selectNodeContents(paragraph);
+    inside.collapse(false);
+    this.select(inside);
+
+    this.edited();
+  }
+
+  /** puts the caret in the first cell of the table an insert just left it after, and hands the table back */
+  private enterInsertedTable(atStart: boolean): Element {
     const range = this.range;
     let block = range ? this.blockAt(range.startContainer) : null;
     if (
@@ -2388,13 +2450,15 @@ export class MarkdownEditor extends FieldElement {
       block = block.previousElementSibling;
     }
 
-    const cell = block?.tagName === 'TABLE' ? block.querySelector('td') : null;
+    const table = block?.tagName === 'TABLE' ? block : null;
+    const cell = table ? table.querySelector('td') : null;
     if (cell) {
       const inside = document.createRange();
       inside.selectNodeContents(cell);
       inside.collapse(atStart);
       this.select(inside);
     }
+    return table;
   }
 
   /** drops a whole block into the source at the caret - on its own line, with a blank line either side */
@@ -2858,19 +2922,14 @@ export class MarkdownEditor extends FieldElement {
           }
         }}
       >
-        <div
-          class="swatch ${selected ? '' : 'on'}"
-          style="background:var(--color-widget-bg)"
-          title=${msg('None')}
-          @click=${() => this.applyColumnBackground(index, '')}
-        ></div>
         ${palette.map(
           ([key, hex]) => html`
             <div
               class="swatch ${selected === key ? 'on' : ''}"
               style="background:${hex}"
               title=${hex}
-              @click=${() => this.applyColumnBackground(index, key)}
+              @click=${() =>
+                this.applyColumnBackground(index, selected === key ? '' : key)}
             ></div>
           `
         )}
@@ -2878,6 +2937,11 @@ export class MarkdownEditor extends FieldElement {
           <temba-icon name=${Icon.add} size="1.1"></temba-icon>
           <input
             type="color"
+            @input=${(evt: Event) =>
+              this.previewNewColor(
+                index,
+                (evt.target as HTMLInputElement).value
+              )}
             @change=${(evt: Event) =>
               this.addColor(index, (evt.target as HTMLInputElement).value)}
           />
@@ -2929,6 +2993,18 @@ export class MarkdownEditor extends FieldElement {
             `
           )}
         </div>
+        ${table.querySelectorAll(':scope > thead th').length === 1
+          ? html`
+              <div class="divider"></div>
+              <div
+                class="pad"
+                title=${msg('Remove styling')}
+                @click=${() => this.clearCallout()}
+              >
+                <temba-icon name=${Icon.clear_style} size="1.1"></temba-icon>
+              </div>
+            `
+          : null}
       </div>
     `;
   }

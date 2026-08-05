@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use bun run svg to update
-export const SVG_FINGERPRINT = 'e3371de35f47af8fe6201b344ebadf04';
+export const SVG_FINGERPRINT = '8a68e7ca06cc6e01266a41f9308665c2';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -31,6 +31,7 @@ export enum Icon {
   divider = 'divider',
   minus = 'minus',
   palette = 'palette',
+  clear_style = 'type-strikethrough-01',
   attachment_document = 'file-06',
   attachment_image = 'image-01',
   attachment_location = 'marker-pin-01',
