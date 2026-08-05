@@ -125,6 +125,12 @@
   <source>Layout</source>
   <target>Disposición</target>
 </trans-unit>
+<trans-unit id="sa5c371b4bb75e590">
+  <source>Left</source>
+</trans-unit>
+<trans-unit id="s366991b9c9287765">
+  <source>Right</source>
+</trans-unit>
 </body>
 </file>
 </xliff>

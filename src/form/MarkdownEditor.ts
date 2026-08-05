@@ -101,6 +101,10 @@ const retag = (element: Element, tag: string): Element => {
 /** the sizes an image can be capped to, which is everything a fragment is allowed to ask for */
 const IMAGE_SIZES = new Set(['small', 'medium', 'large']);
 
+/** how an image can sit in its paragraph - left and right float it, making the paragraph a row with the image as
+ * one cell and its text as the other */
+const IMAGE_LAYOUTS = new Set(['block', 'inline', 'left', 'right']);
+
 /** what an image's fragment asks for, with anything it can't ask for read as the default */
 const imageOptions = (src: string): { size: string; layout: string } => {
   const at = src.indexOf('#');
@@ -110,7 +114,7 @@ const imageOptions = (src: string): { size: string; layout: string } => {
 
   return {
     size: IMAGE_SIZES.has(size) ? size : '',
-    layout: layout === 'inline' || layout === 'block' ? layout : ''
+    layout: IMAGE_LAYOUTS.has(layout) ? layout : ''
   };
 };
 
@@ -499,6 +503,24 @@ export class MarkdownEditor extends FieldElement {
 
       .doc img.layout-inline {
         display: inline-block;
+      }
+
+      /* A floated image makes its paragraph a row - the image is one cell and the paragraph's text fills the other
+         side. flow-root makes the paragraph contain the float, so the row ends where the taller of the two ends and
+         the next block starts on a fresh line instead of sliding up beside the image. */
+      .doc p:has(img.layout-left),
+      .doc p:has(img.layout-right) {
+        display: flow-root;
+      }
+
+      .doc img.layout-left {
+        float: left;
+        margin: 0 1em 0.35em 0;
+      }
+
+      .doc img.layout-right {
+        float: right;
+        margin: 0 0 0.35em 1em;
       }
 
       .doc a {
@@ -1745,8 +1767,13 @@ export class MarkdownEditor extends FieldElement {
 
     const layouts = [
       { value: '', label: msg('Block') },
-      { value: 'inline', label: msg('Inline') }
+      { value: 'inline', label: msg('Inline') },
+      { value: 'left', label: msg('Left') },
+      { value: 'right', label: msg('Right') }
     ];
+
+    // block is the default, so an image that asks for it explicitly lights the same option as one that doesn't ask
+    const layout = current.layout === 'block' ? '' : current.layout;
 
     const option = (
       key: 'size' | 'layout',
@@ -1754,11 +1781,8 @@ export class MarkdownEditor extends FieldElement {
       label: string
     ) => html`
       <div
-        class="option ${key} ${(key === 'size'
-          ? current.size
-          : current.layout === 'inline'
-            ? 'inline'
-            : '') === value
+        class="option ${key} ${(key === 'size' ? current.size : layout) ===
+        value
           ? 'on'
           : ''}"
         @click=${() => this.applyImageOption(key, value)}

@@ -44,6 +44,8 @@
 's0bb51791194b4414': `code`,
 'sbf4b9bad694f4809': `link`,
 's78beeb359125557c': `Unable to upload file.`,
+'sa5c371b4bb75e590': `Left`,
+'s366991b9c9287765': `Right`,
 's12e9c9d9d9b94cf1': `Screenshot`,
 's14dd223d4668bf5e': `Rich text`,
 'seb779a76fa43446c': `Markdown`,
