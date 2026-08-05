@@ -2176,6 +2176,20 @@ export class MarkdownEditor extends FieldElement {
       this.anchor = null;
     }
 
+    // the cell the caret or a selected image is sitting in, and the table that owns it
+    const cell =
+      (range && this.cellAt(range)) || this.image?.closest('td, th') || null;
+    const host = cell ? cell.closest('table') : null;
+
+    // inside a columns row the Columns command is a toggle - lit, and ready to stack the columns back up
+    if (
+      host &&
+      isLayoutTable(host) &&
+      host.querySelectorAll(':scope > thead th').length > 1
+    ) {
+      on.push('columns');
+    }
+
     if (on.join(',') !== this.active.join(',')) {
       this.active = on;
     }
@@ -2187,10 +2201,7 @@ export class MarkdownEditor extends FieldElement {
 
     // markdown has no tables inside tables, so inside a cell - the caret there, or an image there selected -
     // the commands that make one have nothing they could make
-    const inCell = !!(
-      (range && this.cellAt(range)) ||
-      this.image?.closest('td, th')
-    );
+    const inCell = !!cell;
     if (inCell !== this.inCell) {
       this.inCell = inCell;
     }
@@ -2251,7 +2262,11 @@ export class MarkdownEditor extends FieldElement {
         break;
 
       case 'columns':
-        this.insertColumns();
+        if (this.active.includes('columns')) {
+          this.unwrapColumns();
+        } else {
+          this.insertColumns();
+        }
         break;
 
       case 'callout':
@@ -2711,6 +2726,74 @@ export class MarkdownEditor extends FieldElement {
     if (table && first) {
       this.setColumnStyle(table, 0, { background: first });
     }
+  }
+
+  /**
+   * Dissolves a columns row into a vertical stack, column by column. A styled column keeps its styling by becoming
+   * a single column block of its own - only its width falls away, since a stacked block takes the full width - and
+   * an unstyled one returns to ordinary paragraphs.
+   */
+  private unwrapColumns(): void {
+    const cell =
+      this.cellAt(this.range) || this.image?.closest('td, th') || null;
+    const table = cell ? cell.closest('table') : null;
+    if (!table || !isLayoutTable(table)) {
+      return;
+    }
+
+    const heads = [...table.querySelectorAll(':scope > thead th')];
+    const rows = [...table.querySelectorAll(':scope > tbody > tr')];
+    const blocks: Element[] = [];
+
+    heads.forEach((th, index) => {
+      const style = columnStyle(th.getAttribute('data-style') || '') || {};
+      delete style.width;
+      const cells = rows.map((row) => row.children[index]).filter((c) => !!c);
+
+      if (columnStyleText(style)) {
+        const single = document.createElement('table');
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        const head = document.createElement('th');
+        head.setAttribute('data-style', columnStyleText(style));
+        headRow.appendChild(head);
+        thead.appendChild(headRow);
+        single.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        for (const from of cells) {
+          const row = document.createElement('tr');
+          const td = document.createElement('td');
+          td.append(...from.childNodes);
+          row.appendChild(td);
+          tbody.appendChild(row);
+        }
+        single.appendChild(tbody);
+        blocks.push(single);
+      } else {
+        for (const from of cells) {
+          const paragraph = document.createElement('p');
+          paragraph.append(...from.childNodes);
+          if (paragraph.childNodes.length > 0) {
+            blocks.push(paragraph);
+          }
+        }
+      }
+    });
+
+    if (blocks.length === 0) {
+      const paragraph = document.createElement('p');
+      paragraph.innerHTML = '<br>';
+      blocks.push(paragraph);
+    }
+
+    table.replaceWith(...blocks);
+    this.column = null;
+
+    const inside = document.createRange();
+    inside.selectNodeContents(blocks[0]);
+    inside.collapse(true);
+    this.select(inside);
   }
 
   /** dissolves a single column row back into ordinary text - no colors, no padding, just the words again */
@@ -3438,7 +3521,9 @@ export class MarkdownEditor extends FieldElement {
               const disabled =
                 this.inCell &&
                 !this.sourceMode &&
-                (command.format === 'columns' || command.format === 'callout');
+                (command.format === 'callout' ||
+                  (command.format === 'columns' &&
+                    !this.active.includes('columns')));
               return html`
                 <div
                   class="format ${command.format} ${this.active.includes(
