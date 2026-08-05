@@ -28,7 +28,7 @@ import {
   snapToGrid
 } from './utils';
 import { getLanguageName } from '../languages';
-import { ACTION_CONFIG, NODE_CONFIG } from './config';
+import { ACTION_CONFIG, NODE_CONFIG, isEditableAction } from './config';
 import { PRIMARY_LANGUAGE_OPTION_VALUE } from './EditorToolbar';
 import {
   buildTranslationBundles,
@@ -3180,11 +3180,8 @@ export class Editor extends RapidElement {
   private editForceBase = false;
 
   private handleActionEditRequested(event: CustomEvent): void {
-    // Some action types are retained purely so old definitions still render;
-    // their config declares no form, so they aren't editable — opening the
-    // dialog for one would just show an empty form
     const requested = event.detail.action;
-    if (requested && !ACTION_CONFIG[requested.type]?.form) {
+    if (!isEditableAction(requested)) {
       return;
     }
 
@@ -3945,7 +3942,8 @@ export class Editor extends RapidElement {
 
     if (issue.action_uuid) {
       const action = node.actions?.find((a) => a.uuid === issue.action_uuid);
-      if (action) {
+      // non-editable actions are focused on the canvas but have no dialog
+      if (isEditableAction(action)) {
         this.editingAction = action;
         this.editingNode = node;
         this.editingNodeUI = this.definition._ui.nodes[issue.node_uuid];
@@ -4201,6 +4199,12 @@ export class Editor extends RapidElement {
     } else {
       // Scroll to the node on canvas
       this.focusNode(result.nodeUuid);
+    }
+
+    // Non-editable actions stay searchable, but there's no dialog to open
+    // for them — the focus above is all we do
+    if (result.action && !isEditableAction(result.action)) {
+      return;
     }
 
     // Open editor after a short delay so scroll can start

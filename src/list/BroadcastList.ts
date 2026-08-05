@@ -572,9 +572,7 @@ export class BroadcastList extends ContentList<Broadcast> {
   }
 
   /** The message cell — body text with attachment thumbnails right
-   * after it and the template pill pushed to the trailing edge. A
-   * broadcast with no text (a template send) leads with that pill
-   * instead. */
+   * after it and the template pill pushed to the trailing edge. */
   private renderMessage(item: Broadcast): TemplateResult {
     const text = item.text || '';
     return html`
