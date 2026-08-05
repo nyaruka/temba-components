@@ -109,24 +109,14 @@
   <source>Large</source>
   <target>Grande</target>
 </trans-unit>
-<trans-unit id="s2b2ae20d26f78ac2">
-  <source>Block</source>
-  <target>Bloque</target>
-</trans-unit>
-<trans-unit id="sf34696c526e810b4">
-  <source>Inline</source>
-  <target>En línea</target>
-</trans-unit>
-<trans-unit id="s78789724e789221c">
-  <source>Size</source>
-  <target>Tamaño</target>
-</trans-unit>
-<trans-unit id="s2e4818861000b13f">
-  <source>Layout</source>
-  <target>Disposición</target>
-</trans-unit>
 <trans-unit id="s7411fe5ea8b707ad">
   <source>Side by side columns</source>
+</trans-unit>
+<trans-unit id="s669b18c6d2d9c95b">
+  <source>None</source>
+</trans-unit>
+<trans-unit id="s1995a948733ac7bd">
+  <source>Custom color</source>
 </trans-unit>
 </body>
 </file>

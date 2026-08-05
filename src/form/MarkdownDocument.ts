@@ -153,7 +153,9 @@ const BLOCKS = new Set([
   'TBODY',
   'TR',
   'TH',
-  'TD'
+  'TD',
+  'COLGROUP',
+  'COL'
 ]);
 
 const INLINES = new Set([
@@ -266,6 +268,50 @@ const hasContent = (nodes: Node[]): boolean =>
   );
 
 /**
+ * The emphasis a pasted element means, whether it says so as a tag or as the styling another app writes instead. A
+ * <b> that styles itself back to normal weight - the wrapper a Google Docs copy arrives in - means nothing at all.
+ */
+const foreignEmphasis = (element: Element): string[] => {
+  const tag = element.tagName;
+  const style = element.getAttribute('style') || '';
+  const wraps: string[] = [];
+
+  if (
+    ((tag === 'STRONG' || tag === 'B') &&
+      !/font-weight:\s*(normal|[1-4]00)/i.test(style)) ||
+    /font-weight:\s*(bold|bolder|[6-9]00)/i.test(style)
+  ) {
+    wraps.push('strong');
+  }
+  if (tag === 'EM' || tag === 'I' || /font-style:\s*italic/i.test(style)) {
+    wraps.push('em');
+  }
+  if (
+    tag === 'DEL' ||
+    tag === 'S' ||
+    tag === 'STRIKE' ||
+    /line-through/i.test(style)
+  ) {
+    wraps.push('del');
+  }
+
+  return wraps;
+};
+
+/** wraps rebuilt content in the emphasis its source element carried on itself */
+const wrapForeign = (nodes: Node[], element: Element): Node[] => {
+  let out = nodes;
+  if (hasContent(out)) {
+    for (const wrap of foreignEmphasis(element).reverse()) {
+      const wrapper = document.createElement(wrap);
+      wrapper.append(...out);
+      out = [wrapper];
+    }
+  }
+  return out;
+};
+
+/**
  * Rebuilds a pasted node as the inline content it means. Semantic tags are kept as their canonical forms, and the
  * styling other apps write instead of tags - a span carrying font-weight, a div of italics - is read back as the
  * emphasis it stands for. Anything else contributes its contents and nothing else.
@@ -308,30 +354,6 @@ const foreignInline = (node: Node): Node[] => {
     return element.textContent ? [code] : [];
   }
 
-  const style = element.getAttribute('style') || '';
-  const wraps: string[] = [];
-
-  // what the element means, whether it says so as a tag or as styling. A <b> that styles itself back to normal
-  // weight - the wrapper a Google Docs copy arrives in - means nothing at all.
-  if (
-    ((tag === 'STRONG' || tag === 'B') &&
-      !/font-weight:\s*(normal|[1-4]00)/i.test(style)) ||
-    /font-weight:\s*(bold|bolder|[6-9]00)/i.test(style)
-  ) {
-    wraps.push('strong');
-  }
-  if (tag === 'EM' || tag === 'I' || /font-style:\s*italic/i.test(style)) {
-    wraps.push('em');
-  }
-  if (
-    tag === 'DEL' ||
-    tag === 'S' ||
-    tag === 'STRIKE' ||
-    /line-through/i.test(style)
-  ) {
-    wraps.push('del');
-  }
-
   let out = [...element.childNodes].flatMap(foreignInline);
 
   if (tag === 'A') {
@@ -348,15 +370,7 @@ const foreignInline = (node: Node): Node[] => {
     }
   }
 
-  if (hasContent(out)) {
-    for (const wrap of wraps.reverse()) {
-      const wrapper = document.createElement(wrap);
-      wrapper.append(...out);
-      out = [wrapper];
-    }
-  }
-
-  return out;
+  return wrapForeign(out, element);
 };
 
 const foreignList = (list: Element): Element[] => {
@@ -410,7 +424,20 @@ const foreignTable = (table: Element): Element[] => {
         continue;
       }
       const out = document.createElement(index === 0 ? 'th' : 'td');
-      out.append(...[...cell.childNodes].flatMap(foreignInline));
+
+      // a header cell's column stylesheet travels with the copy, whether it was already tucked into the attribute
+      // or is still sitting in the cell as text
+      const carried =
+        index === 0
+          ? cell.getAttribute('data-style') || cell.textContent.trim()
+          : '';
+      const style = carried ? columnStyle(carried) : null;
+
+      if (style && columnStyleText(style)) {
+        out.setAttribute('data-style', columnStyleText(style));
+      } else if (!style || index > 0) {
+        out.append(...[...cell.childNodes].flatMap(foreignInline));
+      }
       tr.appendChild(out);
     }
     if (tr.children.length > 0) {
@@ -435,13 +462,18 @@ const foreignBlock = (element: Element): Element[] => {
 
   if (/^H[1-6]$/.test(tag)) {
     const heading = document.createElement(tag.toLowerCase());
-    heading.append(...[...element.childNodes].flatMap(foreignInline));
+    heading.append(
+      ...wrapForeign([...element.childNodes].flatMap(foreignInline), element)
+    );
     return hasContent([heading]) ? [heading] : [];
   }
 
   if (tag === 'P') {
+    // emphasis some apps hang on the paragraph itself - a wholly italic line, say - belongs to its text
     const paragraph = document.createElement('p');
-    paragraph.append(...[...element.childNodes].flatMap(foreignInline));
+    paragraph.append(
+      ...wrapForeign([...element.childNodes].flatMap(foreignInline), element)
+    );
     return hasContent([paragraph]) ? [paragraph] : [];
   }
 
@@ -737,6 +769,55 @@ const listOf = (list: Element): string => {
     .join(loose ? '\n\n' : '\n');
 };
 
+/**
+ * The column styling a layout table's hidden header cells can carry - a tiny stylesheet only we read, riding in the
+ * markdown itself so it survives every copy. Only width and background are understood, and only in forms we would
+ * write; a header whose text says anything else is an ordinary header, shown as text.
+ */
+export interface ColumnStyle {
+  width?: string;
+  background?: string;
+}
+
+/** reads a header cell's stylesheet, or null when its text isn't one */
+export const columnStyle = (text: string): ColumnStyle | null => {
+  const out: ColumnStyle = {};
+
+  for (const piece of text.split(';')) {
+    const declaration = piece.trim();
+    if (!declaration) {
+      continue;
+    }
+
+    const match = /^(width|background)\s*:\s*(\S+)$/i.exec(declaration);
+    if (!match) {
+      return null;
+    }
+
+    const key = match[1].toLowerCase() as keyof ColumnStyle;
+    const value = match[2].toLowerCase();
+    if (key === 'width' && !/^\d+(px|%)$/.test(value)) {
+      return null;
+    }
+    if (key === 'background' && !/^#[0-9a-f]{3,8}$/.test(value)) {
+      return null;
+    }
+
+    out[key] = value;
+  }
+
+  return out;
+};
+
+/** writes a column's styling back as the declarations columnStyle reads */
+export const columnStyleText = (style: ColumnStyle): string =>
+  [
+    style.width && `width: ${style.width}`,
+    style.background && `background: ${style.background}`
+  ]
+    .filter(Boolean)
+    .join('; ');
+
 /** A cell is one line of inline content: the pipes that would end it early are escaped, and its line breaks ride
  * as the literal <br> a table cell can carry - a real newline would end the whole row. */
 const cellOf = (cell: Element): string =>
@@ -744,6 +825,10 @@ const cellOf = (cell: Element): string =>
     .replace(/ {2}\n\s*/g, '<br>')
     .replace(/\s*\n\s*/g, ' ')
     .replace(/\|/g, '\\|');
+
+/** a header cell's markdown is its column stylesheet when it carries one, its text otherwise */
+const headerOf = (cell: Element): string =>
+  cell.getAttribute('data-style') || cellOf(cell);
 
 /** the alignment a cell was rendered with, which is where the renderer records what the ruler row asked for */
 const alignOf = (cell: Element): string => {
@@ -774,7 +859,7 @@ const tableOf = (table: Element): string => {
   });
 
   return [
-    line(rows[0]),
+    `| ${[...rows[0].children].map(headerOf).join(' | ')} |`,
     `| ${ruler.join(' | ')} |`,
     ...rows.slice(1).map(line)
   ].join('\n');

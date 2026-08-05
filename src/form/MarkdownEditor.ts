@@ -9,6 +9,9 @@ import { postFormData } from '../utils';
 import {
   Block,
   blockOf,
+  ColumnStyle,
+  columnStyle,
+  columnStyleText,
   importBlocks,
   isSerializable,
   joinBlocks,
@@ -156,7 +159,7 @@ const CELL_BREAK = /<br\s*\/?>/i;
  * arrive as text; a cell is one line of markdown and this is the only way it can carry a break. Inside cells and
  * nowhere else - everywhere else text that looks like a tag stays text.
  */
-const revealBreaks = (cell: Element): void => {
+const revealBreaks = (cell: Element): boolean => {
   const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
   const texts: Text[] = [];
   let node: Text;
@@ -178,6 +181,98 @@ const revealBreaks = (cell: Element): void => {
     });
     text.replaceWith(fragment);
   }
+
+  return texts.length > 0;
+};
+
+/** a layout table is one whose header says nothing - what the Columns button makes, and what the styles hide */
+const isLayoutTable = (table: Element): boolean => {
+  const head = [...table.querySelectorAll(':scope > thead th')];
+  return head.length > 0 && head.every((th) => !th.textContent.trim());
+};
+
+/**
+ * Applies a layout table's column stylesheet. Each header cell's stylesheet arrives as its text when freshly
+ * rendered and is moved into a data-style attribute - leaving the header genuinely empty, which is what marks the
+ * table as layout in the styles - and the styling itself is realized as a colgroup, where width and background
+ * belong to a whole column rather than any one cell. Idempotent: serialization reads the attributes back out, and
+ * a second pass rebuilds exactly what the first did.
+ */
+const decorateTable = (table: Element): boolean => {
+  const head = [...table.querySelectorAll(':scope > thead th')];
+  if (head.length === 0) {
+    return false;
+  }
+
+  // any header cell whose text isn't a stylesheet makes this a data table, with nothing to apply
+  const styles: ColumnStyle[] = [];
+  for (const th of head) {
+    const parsed = columnStyle(
+      th.textContent.trim() || th.getAttribute('data-style') || ''
+    );
+    if (!parsed) {
+      return false;
+    }
+    styles.push(parsed);
+  }
+
+  let changed = false;
+
+  head.forEach((th, index) => {
+    const value = columnStyleText(styles[index]);
+    if (th.textContent) {
+      th.textContent = '';
+      changed = true;
+    }
+    if ((th.getAttribute('data-style') || '') !== value) {
+      if (value) {
+        th.setAttribute('data-style', value);
+      } else {
+        th.removeAttribute('data-style');
+      }
+      changed = true;
+    }
+  });
+
+  const markup = styles.some((style) => style.width || style.background)
+    ? `<colgroup>${styles
+        .map((style) => {
+          const parts = [
+            style.width && `width: ${style.width}`,
+            style.background && `background: ${style.background}`
+          ].filter(Boolean);
+          return parts.length > 0
+            ? `<col style="${parts.join('; ')}">`
+            : '<col>';
+        })
+        .join('')}</colgroup>`
+    : '';
+
+  const existing = table.querySelector(':scope > colgroup');
+  if ((existing ? existing.outerHTML : '') !== markup) {
+    if (existing) {
+      existing.remove();
+    }
+    if (markup) {
+      table.insertAdjacentHTML('afterbegin', markup);
+    }
+    changed = true;
+  }
+
+  // a sized column only holds its size in a fixed layout, where the unsized columns share what's left
+  const layout = styles.some((style) => style.width)
+    ? 'table-layout: fixed; width: 100%'
+    : '';
+  if ((table.getAttribute('style') || '') !== layout) {
+    if (layout) {
+      table.setAttribute('style', layout);
+    } else {
+      table.removeAttribute('style');
+    }
+    changed = true;
+  }
+
+  return changed;
 };
 
 /** applies what an image's fragment asks for as the classes the document styles render, touching nothing else */
@@ -346,18 +441,30 @@ export class MarkdownEditor extends FieldElement {
         color: var(--color-link-primary);
       }
 
-      .linkbar {
+      /* the overlays live on the container, floated over the document beside whatever they edit */
+      .container {
+        position: relative;
+      }
+
+      /* A small floating editor pinned just above what it acts on - a link's text, a column's cells. Sits above
+         the sticky chrome so it never slides underneath it. */
+      .popover {
+        position: absolute;
+        z-index: 3;
+        transform: translateY(-100%);
         display: flex;
         align-items: center;
-        gap: 0.5em;
-        padding: 0.35em 0.5em;
-        border-bottom: 1px solid var(--color-widget-border);
-        background: var(--color-primary-light);
+        gap: 0.4em;
+        padding: 0.3em 0.4em;
+        background: var(--color-widget-bg);
+        border: 1px solid var(--color-widget-border);
+        border-radius: var(--curvature);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         font-size: 0.85em;
       }
 
-      .linkbar input {
-        flex-grow: 1;
+      .popover input[type='text'] {
+        width: 16em;
         min-width: 0;
         border: 1px solid var(--color-widget-border);
         border-radius: var(--curvature);
@@ -367,47 +474,71 @@ export class MarkdownEditor extends FieldElement {
         color: var(--color-widget-text);
       }
 
-      .linkbar .link-action {
+      .popover .popover-action {
         cursor: pointer;
         color: var(--color-link-primary);
         white-space: nowrap;
       }
 
-      .imagebar {
+      /* the selection treatment around a clicked image, drawn over it rather than on it */
+      .image-ring {
+        position: absolute;
+        z-index: 2;
+        border: 2px solid var(--color-focus);
+        border-radius: 3px;
+        pointer-events: none;
+      }
+
+      /* the image's size controls, floated just inside its top edge */
+      .image-actions {
+        position: absolute;
+        z-index: 3;
         display: flex;
-        align-items: center;
-        gap: 0.25em;
-        padding: 0.35em 0.5em;
-        border-bottom: 1px solid var(--color-widget-border);
-        background: var(--color-primary-light);
-        font-size: 0.85em;
+        gap: 4px;
       }
 
-      .imagebar .dimension {
-        color: var(--color-text-help);
-      }
-
-      .imagebar .option {
+      .image-actions .chip {
         cursor: pointer;
-        padding: 0.15em 0.4em;
-        border-radius: var(--curvature);
-        color: var(--color-text-dark);
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        font-size: 11px;
+        line-height: 1.5;
+        white-space: nowrap;
       }
 
-      .imagebar .option:hover {
-        background: var(--color-selection);
+      .image-actions .chip:hover {
+        background: rgba(0, 0, 0, 0.75);
       }
 
-      .imagebar .option.on {
-        background: var(--color-selection);
-        color: var(--color-primary-dark);
+      .image-actions .chip.on {
+        background: var(--color-primary-dark, #1a5a8a);
       }
 
-      .imagebar .divider {
-        width: 1px;
-        align-self: stretch;
-        background: var(--color-widget-border);
-        margin: 0 0.35em;
+      /* the column popover's color choices */
+      .popover .swatch {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        border: 1px solid var(--color-widget-border);
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+
+      .popover .swatch.on {
+        outline: 2px solid var(--color-focus);
+        outline-offset: 1px;
+      }
+
+      .popover input[type='color'] {
+        width: 24px;
+        height: 22px;
+        padding: 0;
+        border: 1px solid var(--color-widget-border);
+        border-radius: 4px;
+        background: none;
+        cursor: pointer;
       }
 
       textarea.document {
@@ -636,9 +767,24 @@ export class MarkdownEditor extends FieldElement {
   @state()
   private linkHref: string = null;
 
-  /** the image the author clicked, whose size and layout the image bar edits. null when none is picked. */
+  /** the image the author clicked, ringed and offered its size controls. null when none is picked. */
   @state()
   private image: HTMLImageElement = null;
+
+  /** the layout column the author clicked, as the cell they clicked in. null when none is picked. */
+  @state()
+  private column: HTMLTableCellElement = null;
+
+  /** the column edge the pointer is hovering, ready to be dragged */
+  private resizeHover: { table: Element; index: number } = null;
+
+  /** a column resize in flight */
+  private resizing: {
+    table: Element;
+    index: number;
+    startX: number;
+    startWidth: number;
+  } = null;
 
   /** the document's blocks, which together are always exactly the value */
   private blocks: Block[] = [];
@@ -737,12 +883,26 @@ export class MarkdownEditor extends FieldElement {
   public connectedCallback(): void {
     super.connectedCallback();
     document.addEventListener('selectionchange', this.handleSelectionChange);
+    // the overlays are pinned to rendered content, so anything that moves it has to move them too
+    window.addEventListener('scroll', this.handleViewportChange, true);
+    window.addEventListener('resize', this.handleViewportChange);
   }
 
   public disconnectedCallback(): void {
     document.removeEventListener('selectionchange', this.handleSelectionChange);
+    window.removeEventListener('scroll', this.handleViewportChange, true);
+    window.removeEventListener('resize', this.handleViewportChange);
+    document.removeEventListener('mousemove', this.handleResizeMove);
+    document.removeEventListener('mouseup', this.handleResizeEnd);
+    this.resizing = null;
     super.disconnectedCallback();
   }
+
+  private handleViewportChange = (): void => {
+    if (this.image || this.column || this.linkHref !== null) {
+      this.requestUpdate();
+    }
+  };
 
   protected willUpdate(changes: PropertyValues): void {
     super.willUpdate(changes);
@@ -829,12 +989,15 @@ export class MarkdownEditor extends FieldElement {
     }
 
     // Sizing classes go on before the blocks are filed, so a decorated image is part of what its block rendered as
-    // rather than an edit to it - and cell breaks are revealed here for the same reason.
+    // rather than an edit to it - and cell breaks and column stylesheets are realized here for the same reason.
     for (const img of [...doc.querySelectorAll('img')]) {
       decorateImage(img as HTMLImageElement);
     }
     for (const cell of [...doc.querySelectorAll('td, th')]) {
       revealBreaks(cell);
+    }
+    for (const table of [...doc.querySelectorAll('table')]) {
+      decorateTable(table);
     }
 
     const children = [...doc.children];
@@ -1017,18 +1180,33 @@ export class MarkdownEditor extends FieldElement {
     }
 
     // and the styles it hangs off what it inserts, which markdown has no way to carry and which would otherwise
-    // accumulate on the elements the author edits. A cell's style stays - its alignment lives there, put there by
-    // the renderer, and the ruler row is read back from it.
+    // accumulate on the elements the author edits. Table styles stay: a cell's alignment lives there, put there by
+    // the renderer, and a layout table's column styling is realized as styles we wrote ourselves.
     for (const styled of [...doc.querySelectorAll('[style]')]) {
       if (
         styled.closest(`.${LOCKED}`) ||
         styled.tagName === 'TH' ||
-        styled.tagName === 'TD'
+        styled.tagName === 'TD' ||
+        styled.tagName === 'TABLE' ||
+        styled.tagName === 'COL'
       ) {
         continue;
       }
       change();
       styled.removeAttribute('style');
+    }
+
+    // A table that arrived whole - pasted, or dropped in by the Columns button - still carries its stylesheet as
+    // header text and its cell breaks as literal text, the same as one freshly rendered from markdown.
+    for (const cell of [...doc.querySelectorAll('td, th')]) {
+      if (!cell.closest(`.${LOCKED}`) && revealBreaks(cell)) {
+        change();
+      }
+    }
+    for (const table of [...doc.querySelectorAll('table')]) {
+      if (!table.closest(`.${LOCKED}`) && decorateTable(table)) {
+        change();
+      }
     }
 
     // Whatever the last block standing is, it keeps the tag it had - so emptying an article that began with a heading
@@ -1346,14 +1524,27 @@ export class MarkdownEditor extends FieldElement {
   private handleDocClick(evt: MouseEvent): void {
     const target = evt.target as Element;
 
-    // a click on an image is the way its size and layout get edited - anywhere else puts the options away. An image
-    // in a locked block stays as authored, so there is nothing to offer it.
+    // a click on an image is the way its size gets edited - anywhere else puts the controls away. An image in a
+    // locked block stays as authored, so there is nothing to offer it.
     const image =
       target instanceof HTMLImageElement && !target.closest(`.${LOCKED}`)
         ? target
         : null;
     if (image !== this.image) {
       this.image = image;
+    }
+
+    // a click in a layout column offers that column's styling - unless it was the image the click was for
+    const cell = image
+      ? null
+      : (target.closest?.('td') as HTMLTableCellElement);
+    const table = cell ? cell.closest('table') : null;
+    const column =
+      table && isLayoutTable(table) && !cell.closest(`.${LOCKED}`)
+        ? cell
+        : null;
+    if (column !== this.column) {
+      this.column = column;
     }
 
     const anchor = target.closest?.('a');
@@ -1380,9 +1571,12 @@ export class MarkdownEditor extends FieldElement {
       return;
     }
 
-    // the image the bar was editing can be rebuilt out from under it - by an undo, or a value set from outside
+    // what the overlays were editing can be rebuilt out from under them - by an undo, or a value set from outside
     if (this.image && !this.image.isConnected) {
       this.image = null;
+    }
+    if (this.column && !this.column.isConnected) {
+      this.column = null;
     }
 
     const range = this.range;
@@ -1517,7 +1711,7 @@ export class MarkdownEditor extends FieldElement {
     if (command.format === 'link') {
       await this.updateComplete;
       this.shadowRoot
-        ?.querySelector<HTMLInputElement>('.linkbar input')
+        ?.querySelector<HTMLInputElement>('.popover input[type="text"]')
         ?.focus();
     }
   }
@@ -1603,20 +1797,19 @@ export class MarkdownEditor extends FieldElement {
     this.edited();
   }
 
-  /** writes a size or layout choice into the clicked image's fragment, which is the edit the image bar makes */
-  private applyImageOption(key: 'size' | 'layout', value: string): void {
+  /** writes a size choice into the clicked image's fragment, which is the edit the overlay controls make. A layout
+   * already in the fragment rides along untouched - columns are how layout is asked for now, but an image that asked
+   * the old way keeps what it asked for. */
+  private applyImageSize(size: string): void {
     const img = this.image;
     if (!img) {
       return;
     }
 
     const current = imageOptions(img.getAttribute('src') || '');
-    const size = key === 'size' ? value : current.size;
-    const layout = key === 'layout' ? value : current.layout;
-
     img.setAttribute(
       'src',
-      withImageOptions(img.getAttribute('src') || '', size, layout)
+      withImageOptions(img.getAttribute('src') || '', size, current.layout)
     );
     decorateImage(img);
 
@@ -1624,6 +1817,136 @@ export class MarkdownEditor extends FieldElement {
     this.edited();
     this.requestUpdate();
   }
+
+  // ==========================================================
+  // Columns
+  // ==========================================================
+
+  /** merges a patch into one column's stylesheet and re-applies the table */
+  private setColumnStyle(
+    table: Element,
+    index: number,
+    patch: { width?: string | null; background?: string | null }
+  ): void {
+    const th = [...table.querySelectorAll(':scope > thead th')][index];
+    if (!th) {
+      return;
+    }
+
+    const merged: ColumnStyle = {
+      ...(columnStyle(th.getAttribute('data-style') || '') || {})
+    };
+    if (patch.width !== undefined) {
+      if (patch.width) {
+        merged.width = patch.width;
+      } else {
+        delete merged.width;
+      }
+    }
+    if (patch.background !== undefined) {
+      if (patch.background) {
+        merged.background = patch.background;
+      } else {
+        delete merged.background;
+      }
+    }
+
+    const value = columnStyleText(merged);
+    if (value) {
+      th.setAttribute('data-style', value);
+    } else {
+      th.removeAttribute('data-style');
+    }
+
+    decorateTable(table);
+  }
+
+  private applyColumnBackground(index: number, color: string): void {
+    const table = this.column?.closest('table');
+    if (!table) {
+      return;
+    }
+    this.setColumnStyle(table, index, { background: color || null });
+    this.edited();
+    this.requestUpdate();
+  }
+
+  /** tracks the pointer for a grabbable column edge, offering the resize cursor over one */
+  private handleDocMouseMove(evt: MouseEvent): void {
+    if (this.resizing || this.sourceMode || !this.doc) {
+      return;
+    }
+
+    this.resizeHover = null;
+    let cursor = '';
+
+    const target = evt.target as Element;
+    const table = target.closest?.('table');
+    if (table && isLayoutTable(table) && !target.closest(`.${LOCKED}`)) {
+      const row = table.querySelector(':scope > tbody > tr');
+      const cells = row ? [...row.children] : [];
+      // every edge between cells is grabbable; the last column takes what's left, so its edge sizes nothing
+      for (let index = 0; index < cells.length - 1; index++) {
+        const box = cells[index].getBoundingClientRect();
+        if (Math.abs(evt.clientX - box.right) <= 4) {
+          this.resizeHover = { table, index };
+          cursor = 'col-resize';
+          break;
+        }
+      }
+    }
+
+    if (this.doc.style.cursor !== cursor) {
+      this.doc.style.cursor = cursor;
+    }
+  }
+
+  /** starts a column drag when the pointer is on a grabbable edge, instead of placing the caret there */
+  private handleDocMouseDown(evt: MouseEvent): void {
+    if (!this.resizeHover) {
+      return;
+    }
+
+    const { table, index } = this.resizeHover;
+    const row = table.querySelector(':scope > tbody > tr');
+    const cell = row ? row.children[index] : null;
+    if (!cell) {
+      return;
+    }
+
+    evt.preventDefault();
+    this.resizing = {
+      table,
+      index,
+      startX: evt.clientX,
+      startWidth: cell.getBoundingClientRect().width
+    };
+    document.addEventListener('mousemove', this.handleResizeMove);
+    document.addEventListener('mouseup', this.handleResizeEnd);
+  }
+
+  private handleResizeMove = (evt: MouseEvent): void => {
+    const drag = this.resizing;
+    if (!drag) {
+      return;
+    }
+    const width = Math.max(
+      48,
+      Math.round(drag.startWidth + evt.clientX - drag.startX)
+    );
+    this.setColumnStyle(drag.table, drag.index, { width: `${width}px` });
+    // any open overlay rides the cells it points at
+    this.requestUpdate();
+  };
+
+  private handleResizeEnd = (): void => {
+    document.removeEventListener('mousemove', this.handleResizeMove);
+    document.removeEventListener('mouseup', this.handleResizeEnd);
+    if (this.resizing) {
+      this.resizing = null;
+      this.edited();
+    }
+  };
 
   /**
    * Inserts a two column row - a markdown table with nothing in its header, which the styles show as side by side
@@ -1954,10 +2277,32 @@ export class MarkdownEditor extends FieldElement {
     return this.fill ? '' : `min-height:${this.minHeight}px`;
   }
 
-  /** the options for the clicked image, offered the way the link bar offers a link - without ever showing markdown */
-  private renderImageBar(): TemplateResult {
-    const current = imageOptions(this.image.getAttribute('src') || '');
+  /** where an element sits relative to the container, which is what the overlays position against */
+  private overlayRect(
+    target: Element
+  ): { left: number; top: number; width: number; height: number } | null {
+    const container = this.shadowRoot?.querySelector('.container');
+    if (!container || !target || !target.isConnected) {
+      return null;
+    }
+    const outer = container.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
+    return {
+      left: rect.left - outer.left,
+      top: rect.top - outer.top,
+      width: rect.width,
+      height: rect.height
+    };
+  }
 
+  /** the clicked image's selection ring, and its size controls floated just inside its top edge */
+  private renderImageOverlay(): TemplateResult {
+    const rect = this.image ? this.overlayRect(this.image) : null;
+    if (!rect) {
+      return null;
+    }
+
+    const current = imageOptions(this.image.getAttribute('src') || '').size;
     const sizes = [
       { value: '', label: msg('Original') },
       { value: 'small', label: msg('Small') },
@@ -1965,42 +2310,125 @@ export class MarkdownEditor extends FieldElement {
       { value: 'large', label: msg('Large') }
     ];
 
-    const layouts = [
-      { value: '', label: msg('Block') },
-      { value: 'inline', label: msg('Inline') }
-    ];
-
-    // block is the default, so an image that asks for it explicitly lights the same option as one that doesn't ask
-    const layout = current.layout === 'block' ? '' : current.layout;
-
-    const option = (
-      key: 'size' | 'layout',
-      value: string,
-      label: string
-    ) => html`
+    return html`
       <div
-        class="option ${key} ${(key === 'size' ? current.size : layout) ===
-        value
-          ? 'on'
-          : ''}"
-        @click=${() => this.applyImageOption(key, value)}
+        class="image-ring"
+        style="left:${rect.left - 2}px;top:${rect.top -
+        2}px;width:${rect.width}px;height:${rect.height}px"
+      ></div>
+      <div
+        class="image-actions"
+        style="left:${rect.left + 6}px;top:${rect.top + 6}px"
+        @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
       >
-        ${label}
+        ${sizes.map(
+          (size) => html`
+            <div
+              class="chip ${current === size.value ? 'on' : ''}"
+              @click=${() => this.applyImageSize(size.value)}
+            >
+              ${size.label}
+            </div>
+          `
+        )}
       </div>
     `;
+  }
+
+  /** the link under the caret, edited just above its text - without ever showing its markdown */
+  private renderLinkPopover(): TemplateResult {
+    const rect =
+      this.linkHref !== null && this.anchor
+        ? this.overlayRect(this.anchor)
+        : null;
+    if (!rect) {
+      return null;
+    }
 
     return html`
       <div
-        class="imagebar"
-        @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
+        class="popover"
+        style="left:${rect.left}px;top:${rect.top - 6}px"
+        @mousedown=${(evt: MouseEvent) => {
+          if ((evt.target as Element).tagName !== 'INPUT') {
+            evt.preventDefault();
+          }
+        }}
       >
-        <div class="dimension">${msg('Size')}</div>
-        ${sizes.map((size) => option('size', size.value, size.label))}
-        <div class="divider"></div>
-        <div class="dimension">${msg('Layout')}</div>
-        ${layouts.map((layout) => option('layout', layout.value, layout.label))}
+        <input
+          type="text"
+          .value=${this.linkHref}
+          placeholder="https://"
+          @input=${this.handleLinkInput}
+        />
+        <div class="popover-action" @click=${this.handleLinkRemove}>
+          ${msg('Remove')}
+        </div>
       </div>
     `;
+  }
+
+  /** the clicked column's background choices, floated just above its table */
+  private renderColumnPopover(): TemplateResult {
+    const table = this.column ? this.column.closest('table') : null;
+    if (!table || this.image) {
+      return null;
+    }
+
+    const rect = this.overlayRect(this.column);
+    const tableRect = this.overlayRect(table);
+    if (!rect || !tableRect) {
+      return null;
+    }
+
+    const index = [...this.column.parentElement.children].indexOf(this.column);
+    const th = [...table.querySelectorAll(':scope > thead th')][index];
+    const current =
+      (th && columnStyle(th.getAttribute('data-style') || '')) || {};
+
+    const colors = ['', '#f1f5f9', '#eef2ff', '#ecfdf5', '#fffbeb', '#fef2f2'];
+
+    return html`
+      <div
+        class="popover"
+        style="left:${rect.left}px;top:${tableRect.top - 6}px"
+        @mousedown=${(evt: MouseEvent) => {
+          if ((evt.target as Element).tagName !== 'INPUT') {
+            evt.preventDefault();
+          }
+        }}
+      >
+        ${colors.map(
+          (color) => html`
+            <div
+              class="swatch ${(current.background || '') === color ? 'on' : ''}"
+              style="background:${color || 'var(--color-widget-bg)'}"
+              title=${color || msg('None')}
+              @click=${() => this.applyColumnBackground(index, color)}
+            ></div>
+          `
+        )}
+        <input
+          type="color"
+          .value=${current.background && current.background.length === 7
+            ? current.background
+            : '#ffffff'}
+          title=${msg('Custom color')}
+          @input=${(evt: Event) =>
+            this.applyColumnBackground(
+              index,
+              (evt.target as HTMLInputElement).value
+            )}
+        />
+      </div>
+    `;
+  }
+
+  private renderOverlays(): TemplateResult {
+    if (this.sourceMode) {
+      return null;
+    }
+    return html`${this.renderImageOverlay()}${this.renderLinkPopover()}${this.renderColumnPopover()}`;
   }
 
   private renderSource(): TemplateResult {
@@ -2054,22 +2482,6 @@ export class MarkdownEditor extends FieldElement {
               ${this.sourceMode ? msg('Rich text') : msg('Markdown')}
             </div>
           </div>
-          ${this.linkHref !== null && !this.sourceMode
-            ? html`<div class="linkbar">
-                <input
-                  type="text"
-                  .value=${this.linkHref}
-                  placeholder="https://"
-                  @input=${this.handleLinkInput}
-                />
-                <div class="link-action" @click=${this.handleLinkRemove}>
-                  ${msg('Remove')}
-                </div>
-              </div>`
-            : null}
-          ${this.image?.isConnected && !this.sourceMode
-            ? this.renderImageBar()
-            : null}
         </div>
         ${this.sourceMode
           ? this.renderSource()
@@ -2082,6 +2494,8 @@ export class MarkdownEditor extends FieldElement {
                 @input=${this.handleInput}
                 @click=${this.handleDocClick}
                 @keydown=${this.handleKeyDown}
+                @mousemove=${this.handleDocMouseMove}
+                @mousedown=${this.handleDocMouseDown}
                 @blur=${this.handleDocBlur}
                 @dragenter=${this.handleDragOver}
                 @dragover=${this.handleDragOver}
@@ -2089,6 +2503,7 @@ export class MarkdownEditor extends FieldElement {
                 @paste=${this.handlePaste}
               ></div>
             `}
+        ${this.renderOverlays()}
         ${this.error ? html`<div class="error">${this.error}</div>` : null}
         <input
           id="upload-input"

@@ -10,13 +10,9 @@
 
     export const templates = {
       's06f6c6f99db6b552': `Originale`,
-'s2b2ae20d26f78ac2': `Bloc`,
-'s2e4818861000b13f': `Disposition`,
 's3d2cc8d952adebec': `Petite`,
-'s78789724e789221c': `Taille`,
 'sac6bdc71f750ac96': `Moyenne`,
 'sc8736ef79380e634': `Grande`,
-'sf34696c526e810b4': `En ligne`,
 's73b4d70c02f4b4e0': `No options`,
 'scf1453991c986b25': `Tab to complete, enter to select`,
 'sbc913d7dc0f33877': `to add`,
@@ -45,6 +41,8 @@
 's0bb51791194b4414': `code`,
 'sbf4b9bad694f4809': `link`,
 's78beeb359125557c': `Unable to upload file.`,
+'s669b18c6d2d9c95b': `None`,
+'s1995a948733ac7bd': `Custom color`,
 's12e9c9d9d9b94cf1': `Screenshot`,
 's14dd223d4668bf5e': `Rich text`,
 'seb779a76fa43446c': `Markdown`,
