@@ -413,6 +413,31 @@ const foreignTable = (table: Element): Element[] => {
     return [];
   }
 
+  // A layout table - a header that says nothing, or that only carries its column stylesheet - never travels as a
+  // table: only its contents arrive, each cell a paragraph of its own. Styling belongs where it was authored.
+  const heads = [...table.querySelectorAll('th')];
+  if (
+    heads.length > 0 &&
+    heads.every(
+      (th) => !th.textContent.trim() || columnStyle(th.textContent.trim())
+    )
+  ) {
+    const blocks: Element[] = [];
+    for (const row of rows) {
+      for (const cell of [...row.children]) {
+        if (cell.tagName !== 'TD') {
+          continue;
+        }
+        const paragraph = document.createElement('p');
+        paragraph.append(...[...cell.childNodes].flatMap(foreignInline));
+        if (hasContent([paragraph])) {
+          blocks.push(paragraph);
+        }
+      }
+    }
+    return blocks;
+  }
+
   const clean = document.createElement('table');
   const thead = document.createElement('thead');
   const tbody = document.createElement('tbody');
@@ -424,20 +449,7 @@ const foreignTable = (table: Element): Element[] => {
         continue;
       }
       const out = document.createElement(index === 0 ? 'th' : 'td');
-
-      // a header cell's column stylesheet travels with the copy, whether it was already tucked into the attribute
-      // or is still sitting in the cell as text
-      const carried =
-        index === 0
-          ? cell.getAttribute('data-style') || cell.textContent.trim()
-          : '';
-      const style = carried ? columnStyle(carried) : null;
-
-      if (style && columnStyleText(style)) {
-        out.setAttribute('data-style', columnStyleText(style));
-      } else if (!style || index > 0) {
-        out.append(...[...cell.childNodes].flatMap(foreignInline));
-      }
+      out.append(...[...cell.childNodes].flatMap(foreignInline));
       tr.appendChild(out);
     }
     if (tr.children.length > 0) {

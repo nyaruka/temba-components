@@ -405,6 +405,35 @@ const decorateTable = (
   return changed;
 };
 
+/**
+ * Dissolves the layout tables in a copied fragment into their contents, each cell a paragraph of its own. Layout
+ * never travels on the clipboard - only the words and images do; styling belongs where it was authored. A table
+ * with real header text is data and copies as the table it is. Returns whether anything had to be dissolved.
+ */
+const flattenLayoutTables = (root: Element): boolean => {
+  let changed = false;
+
+  for (const table of [...root.querySelectorAll('table')]) {
+    // a partial copy can clip the header away entirely - headless is layout too, since data tables keep theirs
+    if ([...table.querySelectorAll('th')].some((th) => th.textContent.trim())) {
+      continue;
+    }
+
+    const parts: Element[] = [];
+    for (const cell of [...table.querySelectorAll('td')]) {
+      const paragraph = document.createElement('p');
+      paragraph.append(...cell.childNodes);
+      if (paragraph.childNodes.length > 0) {
+        parts.push(paragraph);
+      }
+    }
+    table.replaceWith(...parts);
+    changed = true;
+  }
+
+  return changed;
+};
+
 /** applies what an image's fragment asks for as the classes the document styles render, touching nothing else */
 const decorateImage = (img: HTMLImageElement): void => {
   const { size, layout } = imageOptions(img.getAttribute('src') || '');
@@ -2573,6 +2602,48 @@ export class MarkdownEditor extends FieldElement {
   // Pasting and dropping
   // ==========================================================
 
+  /**
+   * Copies the selection with any layout tables dissolved into their contents - layout never travels on the
+   * clipboard. Returns whether it took the copy over; a selection with no layout in it copies natively.
+   */
+  private handleCopy(evt: ClipboardEvent): boolean {
+    const range = this.range;
+    if (!range || range.collapsed || this.sourceMode) {
+      return false;
+    }
+
+    const scratch = document.createElement('div');
+    scratch.appendChild(range.cloneContents());
+    if (!flattenLayoutTables(scratch)) {
+      return false;
+    }
+
+    evt.preventDefault();
+    evt.clipboardData.setData('text/html', scratch.innerHTML);
+
+    // the plain text flavor keeps the lines the breaks and blocks drew
+    for (const br of [...scratch.querySelectorAll('br')]) {
+      br.replaceWith('\n');
+    }
+    evt.clipboardData.setData(
+      'text/plain',
+      [...scratch.childNodes]
+        .map((node) => node.textContent)
+        .filter((text) => text.trim())
+        .join('\n\n')
+    );
+
+    return true;
+  }
+
+  /** a cut is the same copy, with the browser's own delete kept since the copy was taken over */
+  private handleCut(evt: ClipboardEvent): void {
+    if (this.handleCopy(evt)) {
+      this.exec('delete');
+      this.edited();
+    }
+  }
+
   private handleDragOver(evt: DragEvent): void {
     // a div isn't a drop target until something says the drag is welcome, and without this the browser navigates to
     // the dropped image and takes the unsaved article with it
@@ -3087,6 +3158,8 @@ export class MarkdownEditor extends FieldElement {
                 @mousemove=${this.handleDocMouseMove}
                 @mousedown=${this.handleDocMouseDown}
                 @blur=${this.handleDocBlur}
+                @copy=${this.handleCopy}
+                @cut=${this.handleCut}
                 @dragenter=${this.handleDragOver}
                 @dragover=${this.handleDragOver}
                 @drop=${this.handleDrop}
