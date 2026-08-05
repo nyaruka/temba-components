@@ -828,10 +828,15 @@ export class MarkdownEditor extends FieldElement {
         cursor: pointer;
       }
 
-      /* authoring a new palette color: a plus that opens the picker straight away, its input riding invisibly
-         under the label so the click is the label's */
+      /* Authoring a new palette color: a swatch-shaped white square with a centered plus, sitting in the row like
+         the color it's about to become. Its input rides invisibly under the label so the click is the label's. */
       .popover .add-color {
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        color: var(--color-text-dark);
       }
 
       .popover .add-color input[type='color'] {
@@ -3225,8 +3230,8 @@ export class MarkdownEditor extends FieldElement {
             </div>
           `
         )}
-        <label class="pad add-color" title=${msg('New color')}>
-          <temba-icon name=${Icon.add} size="1.1"></temba-icon>
+        <label class="swatch add-color" title=${msg('New color')}>
+          <temba-icon name=${Icon.add} size="0.9"></temba-icon>
           <input
             type="color"
             @input=${(evt: Event) =>
