@@ -738,14 +738,14 @@ export class MarkdownEditor extends FieldElement {
         box-sizing: border-box;
       }
 
-      /* The second click's picker anchors here: an invisible input tucked just under the swatch, so the native
-         picker opens right below it with no chrome of ours in between. */
+      /* The second click's picker anchors here: an invisible input laid exactly over the swatch - a real-sized
+         box, which is what the browser will anchor the native picker to - with clicks passing through to the
+         swatch itself. */
       .popover .swatch input.picker {
         position: absolute;
-        top: calc(100% + 4px);
-        left: 50%;
-        width: 1px;
-        height: 1px;
+        inset: 0;
+        width: 100%;
+        height: 100%;
         padding: 0;
         border: none;
         opacity: 0;
