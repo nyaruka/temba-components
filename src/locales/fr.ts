@@ -38,6 +38,7 @@
 's3643189d1abbb7f4': `Code`,
 's3cf89cb47fdde7e9': `Link`,
 's7411fe5ea8b707ad': `Side by side columns`,
+'sa959476877a85349': `Style text`,
 's4616fdc48b092f86': `Divider`,
 's0bb51791194b4414': `code`,
 'sbf4b9bad694f4809': `link`,

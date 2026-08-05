@@ -30,6 +30,7 @@ export enum Icon {
   columns = 'columns-02',
   divider = 'divider',
   minus = 'minus',
+  palette = 'palette',
   attachment_document = 'file-06',
   attachment_image = 'image-01',
   attachment_location = 'marker-pin-01',

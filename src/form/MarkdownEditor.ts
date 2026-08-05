@@ -39,6 +39,7 @@ type Format =
   | 'quote'
   | 'link'
   | 'columns'
+  | 'callout'
   | 'hr';
 
 interface Command {
@@ -880,6 +881,14 @@ export class MarkdownEditor extends FieldElement {
         min-width: 2em;
       }
 
+      /* A link over a column's own color keeps that color rather than the article-wide link blue, which can
+         vanish into a tint - the underline is what says it's a link there. The color: in the cell's style is only
+         ever the one derived from its column's fill. */
+      .doc td[style*='color:'] a {
+        color: inherit;
+        text-decoration: underline;
+      }
+
       /* Guidelines while the row is editable, so the author can see the cells they're filling. They're editor
          chrome rather than part of the article - the served rendering draws no borders on a layout row - so they
          come and go with the editing itself. */
@@ -1062,6 +1071,13 @@ export class MarkdownEditor extends FieldElement {
         label: 'Columns',
         title: msg('Side by side columns'),
         icon: Icon.columns,
+        prefix: ''
+      },
+      {
+        format: 'callout',
+        label: 'Style',
+        title: msg('Style text'),
+        icon: Icon.palette,
         prefix: ''
       },
       {
@@ -1921,6 +1937,10 @@ export class MarkdownEditor extends FieldElement {
         this.insertColumns();
         break;
 
+      case 'callout':
+        this.insertCallout();
+        break;
+
       case 'hr':
         this.exec('insertHorizontalRule');
         break;
@@ -2198,8 +2218,67 @@ export class MarkdownEditor extends FieldElement {
       '<table><thead><tr><th></th><th></th></tr></thead>' +
         '<tbody><tr><td><br></td><td><br></td></tr></tbody></table>'
     );
+    this.enterInsertedTable(true);
+  }
 
-    // the insert leaves the caret after the table, and the author is about to fill the first cell
+  /**
+   * Wraps the selection in a single column row, which is what makes its styling configurable - the background,
+   * padding and width the column popover offers. A cell holds one run of inline content, so selected blocks
+   * flatten into it with their boundaries kept as line breaks.
+   */
+  private insertCallout(): void {
+    if (!this.focusDocument()) {
+      return;
+    }
+    const range = this.range;
+    if (!range) {
+      return;
+    }
+
+    const scratch = document.createElement('div');
+    scratch.appendChild(range.cloneContents());
+
+    const lines: string[] = [];
+    let inline = '';
+    const flush = () => {
+      if (inline.trim()) {
+        lines.push(inline);
+      }
+      inline = '';
+    };
+
+    for (const node of [...scratch.childNodes]) {
+      const element = node as Element;
+      if (
+        node.nodeType === Node.ELEMENT_NODE &&
+        TOP_LEVEL.has(element.tagName)
+      ) {
+        flush();
+        if (element.tagName === 'UL' || element.tagName === 'OL') {
+          for (const item of [...element.children]) {
+            lines.push(item.innerHTML);
+          }
+        } else if (element.tagName !== 'HR') {
+          lines.push(element.innerHTML);
+        }
+      } else if (node.nodeType === Node.TEXT_NODE) {
+        inline += escapeHtml(node.textContent);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        inline += element.outerHTML;
+      }
+    }
+    flush();
+
+    this.exec(
+      'insertHTML',
+      `<table><thead><tr><th></th></tr></thead>` +
+        `<tbody><tr><td>${lines.join('<br>') || '<br>'}</td></tr></tbody></table>`
+    );
+    this.enterInsertedTable(false);
+  }
+
+  /** puts the caret in the first cell of the table an insert just left it after */
+  private enterInsertedTable(atStart: boolean): void {
     const range = this.range;
     let block = range ? this.blockAt(range.startContainer) : null;
     if (
@@ -2214,7 +2293,7 @@ export class MarkdownEditor extends FieldElement {
     if (cell) {
       const inside = document.createRange();
       inside.selectNodeContents(cell);
-      inside.collapse(true);
+      inside.collapse(atStart);
       this.select(inside);
     }
   }
@@ -2270,6 +2349,18 @@ export class MarkdownEditor extends FieldElement {
       // the caret goes into the first cell of the body row
       const table = '|  |  |\n| --- | --- |\n|  |  |';
       this.insertSourceBlock(table, table.lastIndexOf('\n') + 3);
+      return;
+    }
+
+    if (command.format === 'callout') {
+      // the selection becomes the cell of a single column row, its lines carried as the breaks a cell can hold
+      const cell = text
+        .substring(start, end)
+        .trim()
+        .replace(/\|/g, '\\|')
+        .replace(/\n+/g, '<br>');
+      const block = `|  |\n| --- |\n| ${cell} |`;
+      this.insertSourceBlock(block, block.length - (cell ? 2 : 1));
       return;
     }
 
