@@ -3570,39 +3570,42 @@ export class MarkdownEditor extends FieldElement {
             class="toolbar"
             @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
           >
-            ${this.commands.map((command) => {
-              const disabled =
-                this.inCell &&
-                !this.sourceMode &&
-                (command.format === 'callout' ||
-                  (command.format === 'columns' &&
-                    !this.active.includes('columns') &&
-                    !this.inCallout));
-              return html`
-                <div
-                  class="format ${command.format} ${this.active.includes(
-                    command.format
-                  )
-                    ? 'on'
-                    : ''} ${disabled ? 'disabled' : ''}"
-                  title="${command.title}"
-                  @click=${() => !disabled && this.applyFormat(command)}
-                >
-                  ${command.icon
-                    ? html`<temba-icon
-                        name=${command.icon}
-                        size="1.1"
-                      ></temba-icon>`
-                    : command.label}
-                </div>
-              `;
-            })}
-            <temba-icon
-              name="${Icon.image}"
-              title="${msg('Image')}"
-              class="${this.uploading ? 'uploading' : ''}"
-              @click=${this.handleUploadClick}
-            ></temba-icon>
+            ${this.sourceMode
+              ? null
+              : html`
+                  ${this.commands.map((command) => {
+                    const disabled =
+                      this.inCell &&
+                      (command.format === 'callout' ||
+                        (command.format === 'columns' &&
+                          !this.active.includes('columns') &&
+                          !this.inCallout));
+                    return html`
+                      <div
+                        class="format ${command.format} ${this.active.includes(
+                          command.format
+                        )
+                          ? 'on'
+                          : ''} ${disabled ? 'disabled' : ''}"
+                        title="${command.title}"
+                        @click=${() => !disabled && this.applyFormat(command)}
+                      >
+                        ${command.icon
+                          ? html`<temba-icon
+                              name=${command.icon}
+                              size="1.1"
+                            ></temba-icon>`
+                          : command.label}
+                      </div>
+                    `;
+                  })}
+                  <temba-icon
+                    name="${Icon.image}"
+                    title="${msg('Image')}"
+                    class="${this.uploading ? 'uploading' : ''}"
+                    @click=${this.handleUploadClick}
+                  ></temba-icon>
+                `}
             <div class="spacer"></div>
             <div
               class="toggle"
