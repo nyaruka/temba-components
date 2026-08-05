@@ -2168,6 +2168,12 @@ export class ContentList<T = any> extends RapidElement {
     return '';
   }
 
+  /** Extra inline style a subclass wants on a row — e.g. custom
+   * properties timing that row's part of a shared animation. */
+  protected getRowStyle(_item: T): string {
+    return '';
+  }
+
   /** Update the uncommitted input value as the user types. The
    * fetch is deferred until the user submits (Enter / search-icon
    * click) so we don't pound the server on every keystroke. */
@@ -3777,6 +3783,7 @@ export class ContentList<T = any> extends RapidElement {
         class="row ${this.getRowClass(item)} ${selected
           ? 'selected'
           : ''} ${this.isRowClickable(item) ? 'clickable' : ''}"
+        style=${this.getRowStyle(item)}
         @click=${(e: MouseEvent) => this.handleRowClick(item, e)}
       >
         ${this.hasCheckboxes

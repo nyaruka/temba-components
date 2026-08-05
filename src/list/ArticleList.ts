@@ -274,18 +274,30 @@ export class ArticleList extends ContentList<ArticleRow> {
         z-index: 10;
       }
 
-      /* Folding a branch open or shut: each cell clips its content
-         while its height plays, and the row's height follows - the
-         cells carry no vertical padding, so the row really does
-         start and end at nothing. The rails bleed outside the row,
-         so they're clipped only while the fold is in flight. */
+      /* Folding a branch open or shut. The branch has to move as one
+         block - as if a single container around it were collapsing and
+         its clip edge swept up through the rows - but the rows are
+         table rows with no such container to animate. So each row
+         plays its own slice of the fold instead: the block's height
+         collapses bottom row first (and grows back top row first), one
+         row per slice, which is exactly the order a container's clip
+         edge would cross them. getRowStyle deals each row its delay
+         and duration; the timing is linear because the slices tile the
+         fold end to end - an eased slice would read as a stutter.
+
+         Each cell clips its content while its height plays, and the
+         row's height follows - the cells carry no vertical padding, so
+         the row really does start and end at nothing. The rails bleed
+         outside the row, so they're clipped only while the fold is in
+         flight. */
       tr.row.entering .cell-inner {
-        animation: fold-open ${FOLD_MS}ms ease;
+        animation: fold-open var(--fold-duration) linear var(--fold-delay)
+          backwards;
         overflow: hidden;
       }
 
       tr.row.leaving .cell-inner {
-        animation: fold-shut ${FOLD_MS}ms ease forwards;
+        animation: fold-shut var(--fold-duration) linear var(--fold-delay) both;
         overflow: hidden;
       }
 
@@ -352,6 +364,11 @@ export class ArticleList extends ContentList<ArticleRow> {
 
   @state()
   private leaving: Set<string> = new Set();
+
+  /** Each mid-fold row's position within the folding block, top first.
+   * The fold plays one row per slice of FOLD_MS - see the styles - and
+   * this is what deals each row its slice. */
+  private foldIndex: Map<string, number> = new Map();
 
   private foldTimeout: number = null;
 
@@ -451,6 +468,7 @@ export class ArticleList extends ContentList<ArticleRow> {
     window.clearTimeout(this.foldTimeout);
     this.entering = new Set();
     this.leaving = new Set();
+    this.foldIndex = new Map();
 
     return visibleRows(this.tree, this.collapsed);
   }
@@ -469,6 +487,23 @@ export class ArticleList extends ContentList<ArticleRow> {
       return 'leaving';
     }
     return '';
+  }
+
+  /** A mid-fold row's slice of the fold: FOLD_MS divided evenly over
+   * the block, played top-down opening and bottom-up closing, so the
+   * block's edge sweeps through the rows the way a single collapsing
+   * container's clip edge would. */
+  protected getRowStyle(item: ArticleRow): string {
+    const index = this.foldIndex.get(item.uuid);
+    if (index === undefined) {
+      return '';
+    }
+
+    const slice = FOLD_MS / this.foldIndex.size;
+    const place = this.entering.has(item.uuid)
+      ? index
+      : this.foldIndex.size - 1 - index;
+    return `--fold-delay: ${place * slice}ms; --fold-duration: ${slice}ms`;
   }
 
   protected isRowClickable(): boolean {
@@ -519,31 +554,34 @@ export class ArticleList extends ContentList<ArticleRow> {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       this.entering = new Set();
       this.leaving = new Set();
+      this.foldIndex = new Map();
       this.items = after;
       return;
     }
 
-    // the rows only one side of the fold shows are the ones that play it
+    // the rows only one side of the fold shows are the ones that play
+    // it, in display order so each knows its place in the block
     const other = new Set((opening ? this.items : after).map((r) => r.uuid));
-    const folding = new Set(
-      (opening ? after : this.items)
-        .filter((r) => !other.has(r.uuid))
-        .map((r) => r.uuid)
+    const folding = (opening ? after : this.items).filter(
+      (r) => !other.has(r.uuid)
     );
 
+    this.foldIndex = new Map(folding.map((r, index) => [r.uuid, index]));
+
     if (opening) {
-      this.entering = folding;
+      this.entering = new Set(this.foldIndex.keys());
       this.leaving = new Set();
       this.items = after;
     } else {
       // a closing branch stays in the list while it folds shut, and leaves when the fold lands
       this.entering = new Set();
-      this.leaving = folding;
+      this.leaving = new Set(this.foldIndex.keys());
     }
 
     this.foldTimeout = window.setTimeout(() => {
       this.entering = new Set();
       this.leaving = new Set();
+      this.foldIndex = new Map();
       this.items = visibleRows(this.tree, this.collapsed);
     }, FOLD_MS);
   }

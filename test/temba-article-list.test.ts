@@ -332,23 +332,36 @@ describe(TAG, () => {
       await list.updateComplete;
 
       // the branch folds shut in place before it leaves the list
+      const leaving = getRows(list).filter((row) =>
+        row.classList.contains('leaving')
+      );
       expect(
-        getRows(list)
-          .filter((row) => row.classList.contains('leaving'))
-          .map((row) => row.querySelector('.title').textContent.trim())
+        leaving.map((row) => row.querySelector('.title').textContent.trim())
       ).to.deep.equal(['Installing', 'Configuring']);
       expect(getTitles(list)).to.have.length(6);
+
+      // the block folds shut as a unit - each row plays its own slice
+      // of the fold, bottom row first, like a container clipping shut
+      expect(leaving.map((row) => row.getAttribute('style'))).to.deep.equal([
+        '--fold-delay: 100ms; --fold-duration: 100ms',
+        '--fold-delay: 0ms; --fold-duration: 100ms'
+      ]);
 
       await waitForCondition(() => getTitles(list).length === 4);
 
       chevron.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await list.updateComplete;
 
-      // the rows are back straight away, playing the fold open
-      expect(getTitles(list)).to.have.length(6);
-      expect(
-        getRows(list).filter((row) => row.classList.contains('entering'))
-      ).to.have.length(2);
+      // the rows are back straight away, playing the fold open top
+      // row first - the same sweep as closing, run in reverse
+      const entering = getRows(list).filter((row) =>
+        row.classList.contains('entering')
+      );
+      expect(entering).to.have.length(2);
+      expect(entering.map((row) => row.getAttribute('style'))).to.deep.equal([
+        '--fold-delay: 0ms; --fold-duration: 100ms',
+        '--fold-delay: 100ms; --fold-duration: 100ms'
+      ]);
 
       // and once the fold lands they are ordinary rows again
       await waitForCondition(
