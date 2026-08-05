@@ -2368,31 +2368,12 @@ export class MarkdownEditor extends FieldElement {
     }
   };
 
-  /**
-   * Inserts a two column row - a markdown table with nothing in its header, which the styles show as side by side
-   * cells rather than data. A screenshot goes in one cell and the text explaining it in the other.
-   */
-  private insertColumns(): void {
-    this.exec(
-      'insertHTML',
-      '<table><thead><tr><th></th><th></th></tr></thead>' +
-        '<tbody><tr><td><br></td><td><br></td></tr></tbody></table>'
-    );
-    this.enterInsertedTable(true);
-  }
-
-  /**
-   * Wraps the selection in a single column row, which is what makes its styling configurable - the background,
-   * padding and width the column popover offers. A cell holds one run of inline content, so selected blocks
-   * flatten into it with their boundaries kept as line breaks.
-   */
-  private insertCallout(): void {
-    if (!this.focusDocument()) {
-      return;
-    }
+  /** The selection flattened to lines of inline markup - what a cell can hold. Selected blocks contribute their
+   * contents with the boundaries kept as line breaks; list items become lines of their own. */
+  private selectionLines(): string[] {
     const range = this.range;
-    if (!range) {
-      return;
+    if (!range || range.collapsed) {
+      return [];
     }
 
     const scratch = document.createElement('div');
@@ -2429,6 +2410,39 @@ export class MarkdownEditor extends FieldElement {
     }
     flush();
 
+    return lines;
+  }
+
+  /**
+   * Inserts a two column row - a markdown table with nothing in its header, which the styles show as side by side
+   * cells rather than data. A highlighted selection moves into the first column, leaving the caret in the second
+   * ready for the words that go beside it.
+   */
+  private insertColumns(): void {
+    if (!this.focusDocument()) {
+      return;
+    }
+
+    const lines = this.selectionLines();
+    this.exec(
+      'insertHTML',
+      '<table><thead><tr><th></th><th></th></tr></thead>' +
+        `<tbody><tr><td>${lines.join('<br>') || '<br>'}</td><td><br></td></tr></tbody></table>`
+    );
+    this.enterInsertedTable(true, lines.length > 0 ? 1 : 0);
+  }
+
+  /**
+   * Wraps the selection in a single column row, which is what makes its styling configurable - the background,
+   * padding and width the column popover offers. A cell holds one run of inline content, so selected blocks
+   * flatten into it with their boundaries kept as line breaks.
+   */
+  private insertCallout(): void {
+    if (!this.focusDocument()) {
+      return;
+    }
+
+    const lines = this.selectionLines();
     this.exec(
       'insertHTML',
       `<table><thead><tr><th></th></tr></thead>` +
@@ -2467,8 +2481,8 @@ export class MarkdownEditor extends FieldElement {
     this.edited();
   }
 
-  /** puts the caret in the first cell of the table an insert just left it after, and hands the table back */
-  private enterInsertedTable(atStart: boolean): Element {
+  /** puts the caret in a cell of the table an insert just left it after, and hands the table back */
+  private enterInsertedTable(atStart: boolean, at = 0): Element {
     const range = this.range;
     let block = range ? this.blockAt(range.startContainer) : null;
     if (
@@ -2480,7 +2494,7 @@ export class MarkdownEditor extends FieldElement {
     }
 
     const table = block?.tagName === 'TABLE' ? block : null;
-    const cell = table ? table.querySelector('td') : null;
+    const cell = table ? table.querySelectorAll('td')[at] : null;
     if (cell) {
       const inside = document.createRange();
       inside.selectNodeContents(cell);
