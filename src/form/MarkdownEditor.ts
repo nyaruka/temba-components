@@ -832,6 +832,21 @@ export class MarkdownEditor extends FieldElement {
         color: var(--color-link-primary);
       }
 
+      /* a divider is a breath in the article, not the browser's ruled-off box: a hairline that fades out at its
+         ends, with room around it */
+      .doc hr {
+        border: none;
+        height: 1px;
+        margin: 1.6em 0;
+        background: linear-gradient(
+          to right,
+          transparent,
+          var(--color-borders) 18%,
+          var(--color-borders) 82%,
+          transparent
+        );
+      }
+
       .doc table {
         border-collapse: collapse;
       }
