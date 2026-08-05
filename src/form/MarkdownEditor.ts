@@ -2790,10 +2790,20 @@ export class MarkdownEditor extends FieldElement {
     const rows = [...table.querySelectorAll(':scope > tbody > tr')];
     const blocks: Element[] = [];
 
+    // a cell of nothing but whitespace has nothing worth a line of its own in the stack
+    const holds = (from: Element) =>
+      !!from.textContent.trim() || !!from.querySelector('img, hr');
+
     heads.forEach((th, index) => {
       const style = columnStyle(th.getAttribute('data-style') || '') || {};
       delete style.width;
-      const cells = rows.map((row) => row.children[index]).filter((c) => !!c);
+      const cells = rows
+        .map((row) => row.children[index])
+        .filter((c) => !!c && holds(c));
+
+      if (cells.length === 0) {
+        return;
+      }
 
       if (columnStyleText(style)) {
         const single = document.createElement('table');
@@ -2819,9 +2829,7 @@ export class MarkdownEditor extends FieldElement {
         for (const from of cells) {
           const paragraph = document.createElement('p');
           paragraph.append(...from.childNodes);
-          if (paragraph.childNodes.length > 0) {
-            blocks.push(paragraph);
-          }
+          blocks.push(paragraph);
         }
       }
     });
