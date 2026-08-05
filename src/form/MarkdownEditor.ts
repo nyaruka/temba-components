@@ -660,6 +660,15 @@ export class MarkdownEditor extends FieldElement {
         white-space: nowrap;
       }
 
+      /* The column whose styling is being edited, traced in dashed blue over the gray guidelines - just that
+         column, so in a two column row the other column keeps its gray. */
+      .column-ring {
+        position: absolute;
+        border: 1px dashed var(--color-focus);
+        box-sizing: border-box;
+        pointer-events: none;
+      }
+
       /* the selection treatment around a clicked image, drawn over it rather than on it */
       .image-ring {
         position: absolute;
@@ -3028,7 +3037,39 @@ export class MarkdownEditor extends FieldElement {
       { value: '28px', icon: Icon.add, title: msg('More padding') }
     ];
 
+    // the column under edit, traced in blue - every cell at this index and only this index, so one column of a
+    // wider row lights up alone
+    let ring: { left: number; top: number; right: number; bottom: number } =
+      null;
+    for (const row of [...table.querySelectorAll(':scope > tbody > tr')]) {
+      const cell = row.children[index];
+      const box = cell ? this.overlayRect(cell) : null;
+      if (!box) {
+        continue;
+      }
+      ring = ring
+        ? {
+            left: Math.min(ring.left, box.left),
+            top: Math.min(ring.top, box.top),
+            right: Math.max(ring.right, box.left + box.width),
+            bottom: Math.max(ring.bottom, box.top + box.height)
+          }
+        : {
+            left: box.left,
+            top: box.top,
+            right: box.left + box.width,
+            bottom: box.top + box.height
+          };
+    }
+
     return html`
+      ${ring
+        ? html`<div
+            class="column-ring"
+            style="left:${ring.left}px;top:${ring.top}px;width:${ring.right -
+            ring.left}px;height:${ring.bottom - ring.top}px"
+          ></div>`
+        : null}
       <div
         class="popover ${tableRect.top < 44 ? 'below' : ''}"
         style="left:${rect.left}px;top:${tableRect.top < 44
