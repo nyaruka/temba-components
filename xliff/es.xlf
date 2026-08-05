@@ -112,9 +112,6 @@
 <trans-unit id="s669b18c6d2d9c95b">
   <source>None</source>
 </trans-unit>
-<trans-unit id="s1995a948733ac7bd">
-  <source>Custom color</source>
-</trans-unit>
 <trans-unit id="s4616fdc48b092f86">
   <source>Divider</source>
 </trans-unit>
@@ -132,6 +129,15 @@
 </trans-unit>
 <trans-unit id="sa959476877a85349">
   <source>Style text</source>
+</trans-unit>
+<trans-unit id="s7dd0d53a22ca1b62">
+  <source>New color</source>
+</trans-unit>
+<trans-unit id="s3d76bcad229cc1bf">
+  <source>Adjust this color everywhere it is used</source>
+</trans-unit>
+<trans-unit id="saa8f64ba8b9a3042">
+  <source>Remove this color everywhere it is used</source>
 </trans-unit>
 </body>
 </file>

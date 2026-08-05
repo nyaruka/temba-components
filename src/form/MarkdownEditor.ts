@@ -12,7 +12,7 @@ import {
   tokenCss
 } from '../excellent/token-styles';
 import { markdown } from '../markdown';
-import { postFormData } from '../utils';
+import { getUrl, postFormData, postJSON } from '../utils';
 import {
   Block,
   blockOf,
@@ -286,10 +286,14 @@ const highlightCode = (pre: Element): boolean => {
  * Applies a layout table's column stylesheet. Each header cell's stylesheet arrives as its text when freshly
  * rendered and is moved into a data-style attribute - leaving the header genuinely empty, which is what marks the
  * table as layout in the styles - and the styling itself is realized as a colgroup, where width and background
- * belong to a whole column rather than any one cell. Idempotent: serialization reads the attributes back out, and
- * a second pass rebuilds exactly what the first did.
+ * belong to a whole column rather than any one cell. A background is an index into the org's palette, resolved
+ * here; an index the palette no longer answers for paints nothing. Idempotent: serialization reads the attributes
+ * back out, and a second pass over the same palette rebuilds exactly what the first did.
  */
-const decorateTable = (table: Element): boolean => {
+const decorateTable = (
+  table: Element,
+  colors: Record<string, string>
+): boolean => {
   const head = [...table.querySelectorAll(':scope > thead th')];
   if (head.length === 0) {
     return false;
@@ -306,6 +310,10 @@ const decorateTable = (table: Element): boolean => {
     }
     styles.push(parsed);
   }
+
+  const fills = styles.map((style) =>
+    style.background ? colors[style.background] || '' : ''
+  );
 
   let changed = false;
 
@@ -325,19 +333,20 @@ const decorateTable = (table: Element): boolean => {
     }
   });
 
-  const markup = styles.some((style) => style.width || style.background)
-    ? `<colgroup>${styles
-        .map((style) => {
-          const parts = [
-            style.width && `width: ${style.width}`,
-            style.background && `background: ${style.background}`
-          ].filter(Boolean);
-          return parts.length > 0
-            ? `<col style="${parts.join('; ')}">`
-            : '<col>';
-        })
-        .join('')}</colgroup>`
-    : '';
+  const markup =
+    styles.some((style) => style.width) || fills.some(Boolean)
+      ? `<colgroup>${styles
+          .map((style, index) => {
+            const parts = [
+              style.width && `width: ${style.width}`,
+              fills[index] && `background: ${fills[index]}`
+            ].filter(Boolean);
+            return parts.length > 0
+              ? `<col style="${parts.join('; ')}">`
+              : '<col>';
+          })
+          .join('')}</colgroup>`
+      : '';
 
   const existing = table.querySelector(':scope > colgroup');
   if ((existing ? existing.outerHTML : '') !== markup) {
@@ -377,7 +386,7 @@ const decorateTable = (table: Element): boolean => {
       const value = [
         align && `text-align: ${align[1].toLowerCase()}`,
         style.padding && `padding: ${style.padding}`,
-        style.background && `color: ${textOn(style.background)}`
+        fills[index] && `color: ${textOn(fills[index])}`
       ]
         .filter(Boolean)
         .join('; ');
@@ -667,10 +676,15 @@ export class MarkdownEditor extends FieldElement {
         display: flex;
         align-items: center;
         padding: 3px 6px;
+        border-radius: var(--curvature);
         color: var(--color-text-dark);
       }
 
-      .popover .pad + .pad {
+      .popover .pad-group .pad {
+        border-radius: 0;
+      }
+
+      .popover .pad-group .pad + .pad {
         border-left: 1px solid var(--color-widget-border);
       }
 
@@ -697,6 +711,22 @@ export class MarkdownEditor extends FieldElement {
         border: 1px solid var(--color-widget-border);
         border-radius: 4px;
         background: none;
+        cursor: pointer;
+      }
+
+      /* authoring a new palette color: a plus that opens the picker straight away, its input riding invisibly
+         under the label so the click is the label's */
+      .popover .add-color {
+        position: relative;
+      }
+
+      .popover .add-color input[type='color'] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        opacity: 0;
         cursor: pointer;
       }
 
@@ -921,6 +951,11 @@ export class MarkdownEditor extends FieldElement {
   @property({ type: String })
   endpoint: string;
 
+  /** Where the org's shared color palette lives - GET {colors: {index: hex}}, POST the same shape back. Articles
+   * embed the index, so recoloring an entry here restyles its every use across every article. */
+  @property({ type: String, attribute: 'colors-endpoint' })
+  colorsEndpoint = '';
+
   @property({ type: String })
   accept = 'image/gif,image/jpeg,image/png,image/webp';
 
@@ -957,6 +992,10 @@ export class MarkdownEditor extends FieldElement {
   /** the layout column the author clicked, as the cell they clicked in. null when none is picked. */
   @state()
   private column: HTMLTableCellElement = null;
+
+  /** the org's palette, index to hex - what the backgrounds articles embed resolve against */
+  @state()
+  private colors: Record<string, string> = {};
 
   /** the column edge the pointer is hovering, ready to be dragged */
   private resizeHover: { table: Element; index: number } = null;
@@ -1127,6 +1166,10 @@ export class MarkdownEditor extends FieldElement {
   protected willUpdate(changes: PropertyValues): void {
     super.willUpdate(changes);
 
+    if (changes.has('colorsEndpoint') && this.colorsEndpoint) {
+      this.fetchColors();
+    }
+
     if (!changes.has('value') && !changes.has('sourceMode')) {
       return;
     }
@@ -1217,7 +1260,7 @@ export class MarkdownEditor extends FieldElement {
       revealBreaks(cell);
     }
     for (const table of [...doc.querySelectorAll('table')]) {
-      decorateTable(table);
+      decorateTable(table, this.colors);
     }
     for (const pre of [...doc.querySelectorAll('pre')]) {
       if (!pre.closest(`.${LOCKED}`)) {
@@ -1430,7 +1473,7 @@ export class MarkdownEditor extends FieldElement {
       }
     }
     for (const table of [...doc.querySelectorAll('table')]) {
-      if (!table.closest(`.${LOCKED}`) && decorateTable(table)) {
+      if (!table.closest(`.${LOCKED}`) && decorateTable(table, this.colors)) {
         change();
       }
     }
@@ -2098,15 +2141,71 @@ export class MarkdownEditor extends FieldElement {
       th.removeAttribute('data-style');
     }
 
-    decorateTable(table);
+    decorateTable(table, this.colors);
   }
 
-  private applyColumnBackground(index: number, color: string): void {
+  // The org's palette. Articles embed an index; the palette says what each index currently looks like. That's what
+  // keeps color use consistent across articles: recoloring an entry restyles its every use at once, and removing
+  // one leaves its references meaning nothing until an entry exists at that index again.
+
+  private async fetchColors(): Promise<void> {
+    try {
+      const response = await getUrl(this.colorsEndpoint);
+      this.colors = response.json?.colors || {};
+    } catch (error) {
+      console.warn('Failed to fetch colors', error);
+    }
+    this.redecorate();
+  }
+
+  /** re-resolves every table against the palette as it now stands - a visual change only, the markdown's indexes
+   * stay exactly where they were */
+  private redecorate(): void {
+    const doc = this.doc;
+    if (!doc) {
+      return;
+    }
+    for (const table of [...doc.querySelectorAll('table')]) {
+      if (!table.closest(`.${LOCKED}`)) {
+        decorateTable(table, this.colors);
+      }
+    }
+    this.requestUpdate();
+  }
+
+  /** shows a recolor while the picker drags, before it's committed to the org */
+  private previewColor(key: string, hex: string): void {
+    this.colors = { ...this.colors, [key]: hex };
+    this.redecorate();
+  }
+
+  /** the palette as the org now wants it - shown immediately, saved behind */
+  private saveColors(next: Record<string, string>): void {
+    this.colors = next;
+    this.redecorate();
+    if (this.colorsEndpoint) {
+      postJSON(this.colorsEndpoint, { colors: next }).catch((error) => {
+        console.warn('Failed to save colors', error);
+      });
+    }
+  }
+
+  /** authors a new palette color at the lowest free index and paints the column with it */
+  private addColor(index: number, hex: string): void {
+    let slot = 1;
+    while (this.colors[slot]) {
+      slot++;
+    }
+    this.saveColors({ ...this.colors, [slot]: hex });
+    this.applyColumnBackground(index, String(slot));
+  }
+
+  private applyColumnBackground(index: number, key: string): void {
     const table = this.column?.closest('table');
     if (!table) {
       return;
     }
-    this.setColumnStyle(table, index, { background: color || null });
+    this.setColumnStyle(table, index, { background: key || null });
     this.edited();
     this.requestUpdate();
   }
@@ -2734,7 +2833,12 @@ export class MarkdownEditor extends FieldElement {
     const current =
       (th && columnStyle(th.getAttribute('data-style') || '')) || {};
 
-    const colors = ['', '#f1f5f9', '#eef2ff', '#ecfdf5', '#fffbeb', '#fef2f2'];
+    // the org's palette, in index order - what everyone else's articles use too, which is the point
+    const palette = Object.entries(this.colors).sort((a, b) => +a[0] - +b[0]);
+    const selected =
+      current.background && this.colors[current.background]
+        ? current.background
+        : '';
 
     // three densities as one control: the default in the middle, stepped tighter or airier by the minus and plus
     // flanking it - a group, so the signs read as "less padding" and "more padding" around the grid
@@ -2754,28 +2858,61 @@ export class MarkdownEditor extends FieldElement {
           }
         }}
       >
-        ${colors.map(
-          (color) => html`
+        <div
+          class="swatch ${selected ? '' : 'on'}"
+          style="background:var(--color-widget-bg)"
+          title=${msg('None')}
+          @click=${() => this.applyColumnBackground(index, '')}
+        ></div>
+        ${palette.map(
+          ([key, hex]) => html`
             <div
-              class="swatch ${(current.background || '') === color ? 'on' : ''}"
-              style="background:${color || 'var(--color-widget-bg)'}"
-              title=${color || msg('None')}
-              @click=${() => this.applyColumnBackground(index, color)}
+              class="swatch ${selected === key ? 'on' : ''}"
+              style="background:${hex}"
+              title=${hex}
+              @click=${() => this.applyColumnBackground(index, key)}
             ></div>
           `
         )}
-        <input
-          type="color"
-          .value=${current.background && current.background.length === 7
-            ? current.background
-            : '#ffffff'}
-          title=${msg('Custom color')}
-          @input=${(evt: Event) =>
-            this.applyColumnBackground(
-              index,
-              (evt.target as HTMLInputElement).value
-            )}
-        />
+        <label class="pad add-color" title=${msg('New color')}>
+          <temba-icon name=${Icon.add} size="1.1"></temba-icon>
+          <input
+            type="color"
+            @change=${(evt: Event) =>
+              this.addColor(index, (evt.target as HTMLInputElement).value)}
+          />
+        </label>
+        ${selected
+          ? html`
+              <div class="divider"></div>
+              <input
+                type="color"
+                .value=${this.colors[selected]}
+                title=${msg('Adjust this color everywhere it is used')}
+                @input=${(evt: Event) =>
+                  this.previewColor(
+                    selected,
+                    (evt.target as HTMLInputElement).value
+                  )}
+                @change=${(evt: Event) =>
+                  this.saveColors({
+                    ...this.colors,
+                    [selected]: (evt.target as HTMLInputElement).value
+                  })}
+              />
+              <div
+                class="pad"
+                title=${msg('Remove this color everywhere it is used')}
+                @click=${() => {
+                  const next = { ...this.colors };
+                  delete next[selected];
+                  this.saveColors(next);
+                }}
+              >
+                <temba-icon name=${Icon.delete} size="1.1"></temba-icon>
+              </div>
+            `
+          : null}
         <div class="divider"></div>
         <div class="pad-group">
           ${paddings.map(

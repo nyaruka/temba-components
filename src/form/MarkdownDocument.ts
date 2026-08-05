@@ -771,8 +771,12 @@ const listOf = (list: Element): string => {
 
 /**
  * The column styling a layout table's hidden header cells can carry - a tiny stylesheet only we read, riding in the
- * markdown itself so it survives every copy. Only width and background are understood, and only in forms we would
- * write; a header whose text says anything else is an ordinary header, shown as text.
+ * markdown itself so it survives every copy. Only width, background and padding are understood, and only in forms we
+ * would write; a header whose text says anything else is an ordinary header, shown as text.
+ *
+ * A background is an index into the org's shared palette rather than a color: the article embeds the choice, the
+ * palette says what the choice currently looks like. Recoloring a palette entry restyles its every use at once, and
+ * removing one leaves its references meaning nothing until an entry exists at that index again.
  */
 export interface ColumnStyle {
   width?: string;
@@ -800,7 +804,7 @@ export const columnStyle = (text: string): ColumnStyle | null => {
     if (key === 'width' && !/^\d+(px|%)$/.test(value)) {
       return null;
     }
-    if (key === 'background' && !/^#[0-9a-f]{3,8}$/.test(value)) {
+    if (key === 'background' && !/^\d+$/.test(value)) {
       return null;
     }
     if (key === 'padding' && !/^\d+px$/.test(value)) {
