@@ -627,6 +627,11 @@ export class MarkdownEditor extends FieldElement {
         position: absolute;
         z-index: 3;
         transform: translateY(-100%);
+      }
+
+      /* a block at the very top of the article has no room above it, so its popover sits below instead */
+      .popover.below {
+        transform: none;
         display: flex;
         align-items: center;
         gap: 0.4em;
@@ -2967,8 +2972,10 @@ export class MarkdownEditor extends FieldElement {
 
     return html`
       <div
-        class="popover"
-        style="left:${rect.left}px;top:${rect.top - 6}px"
+        class="popover ${rect.top < 44 ? 'below' : ''}"
+        style="left:${rect.left}px;top:${rect.top < 44
+          ? rect.top + rect.height + 6
+          : rect.top - 6}px"
         @mousedown=${(evt: MouseEvent) => {
           if ((evt.target as Element).tagName !== 'INPUT') {
             evt.preventDefault();
@@ -3023,8 +3030,10 @@ export class MarkdownEditor extends FieldElement {
 
     return html`
       <div
-        class="popover"
-        style="left:${rect.left}px;top:${tableRect.top - 6}px"
+        class="popover ${tableRect.top < 44 ? 'below' : ''}"
+        style="left:${rect.left}px;top:${tableRect.top < 44
+          ? tableRect.top + tableRect.height + 6
+          : tableRect.top - 6}px"
         @mousedown=${(evt: MouseEvent) => {
           if ((evt.target as Element).tagName !== 'INPUT') {
             evt.preventDefault();
