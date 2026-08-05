@@ -60,12 +60,6 @@
 <trans-unit id="s78beeb359125557c">
   <source>Unable to upload file.</source>
 </trans-unit>
-<trans-unit id="s14dd223d4668bf5e">
-  <source>Rich text</source>
-</trans-unit>
-<trans-unit id="seb779a76fa43446c">
-  <source>Markdown</source>
-</trans-unit>
 <trans-unit id="sbc5f2f81604bb81a">
   <source>Heading 1</source>
 </trans-unit>
@@ -130,9 +124,6 @@
 <trans-unit id="s7dd0d53a22ca1b62">
   <source>New color</source>
 </trans-unit>
-<trans-unit id="s3d76bcad229cc1bf">
-  <source>Adjust this color everywhere it is used</source>
-</trans-unit>
 <trans-unit id="saa8f64ba8b9a3042">
   <source>Remove this color everywhere it is used</source>
 </trans-unit>
@@ -144,6 +135,9 @@
 </trans-unit>
 <trans-unit id="sd6ef5031fb7d3991">
   <source>No color</source>
+</trans-unit>
+<trans-unit id="sab266951af1dc761">
+  <source>Markdown source</source>
 </trans-unit>
 </body>
 </file>

@@ -646,12 +646,6 @@ export class MarkdownEditor extends FieldElement {
         flex-grow: 1;
       }
 
-      .toolbar .toggle {
-        cursor: pointer;
-        font-size: 0.85em;
-        color: var(--color-link-primary);
-      }
-
       /* A small floating editor pinned just above what it acts on - a link's text, a column's cells. It lives in
          the document's own coordinate space, so it scrolls with the article - and under the chrome - like any
          other part of it. */
@@ -3608,10 +3602,11 @@ export class MarkdownEditor extends FieldElement {
                 `}
             <div class="spacer"></div>
             <div
-              class="toggle"
+              class="format ${this.sourceMode ? 'on' : ''}"
+              title="${msg('Markdown source')}"
               @click=${() => (this.sourceMode = !this.sourceMode)}
             >
-              ${this.sourceMode ? msg('Rich text') : msg('Markdown')}
+              <temba-icon name=${Icon.markdown} size="1.1"></temba-icon>
             </div>
           </div>
         </div>

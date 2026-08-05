@@ -47,13 +47,11 @@
 's8ed1cc564f1dc4f7': `Normal padding`,
 'saae778d2f46ba3a5': `More padding`,
 'sd6ef5031fb7d3991': `No color`,
-'s3d76bcad229cc1bf': `Adjust this color everywhere it is used`,
 'saa8f64ba8b9a3042': `Remove this color everywhere it is used`,
 's7dd0d53a22ca1b62': `New color`,
 'sf6e9d280a30dcf25': `Border drawn from the background color`,
 's06c4d89f9e3480b3': `Remove styling`,
 's3d93f9ea0c5a13fa': `Image`,
-'s14dd223d4668bf5e': `Rich text`,
-'seb779a76fa43446c': `Markdown`,
+'sab266951af1dc761': `Markdown source`,
     };
   
