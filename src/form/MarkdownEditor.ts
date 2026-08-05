@@ -1151,6 +1151,10 @@ export class MarkdownEditor extends FieldElement {
   @state()
   private inCell = false;
 
+  /** whether that cell is a single column block, where the Columns command grows a second column instead */
+  @state()
+  private inCallout = false;
+
   /** the link under the caret, so it can be edited without ever showing its markdown. null when there isn't one. */
   @state()
   private linkHref: string = null;
@@ -2205,6 +2209,15 @@ export class MarkdownEditor extends FieldElement {
     if (inCell !== this.inCell) {
       this.inCell = inCell;
     }
+
+    const inCallout = !!(
+      host &&
+      isLayoutTable(host) &&
+      host.querySelectorAll(':scope > thead th').length === 1
+    );
+    if (inCallout !== this.inCallout) {
+      this.inCallout = inCallout;
+    }
   }
 
   private exec(command: string, value: string = null): void {
@@ -2264,6 +2277,8 @@ export class MarkdownEditor extends FieldElement {
       case 'columns':
         if (this.active.includes('columns')) {
           this.unwrapColumns();
+        } else if (this.inCallout) {
+          this.addColumn();
         } else {
           this.insertColumns();
         }
@@ -2725,6 +2740,36 @@ export class MarkdownEditor extends FieldElement {
     const first = Object.keys(this.colors).sort((a, b) => +a - +b)[0];
     if (table && first) {
       this.setColumnStyle(table, 0, { background: first });
+    }
+  }
+
+  /** grows a single column block into columns by adding an empty second column beside it, caret waiting inside */
+  private addColumn(): void {
+    const cell =
+      this.cellAt(this.range) || this.image?.closest('td, th') || null;
+    const table = cell ? cell.closest('table') : null;
+    if (!table || !isLayoutTable(table)) {
+      return;
+    }
+
+    table
+      .querySelector(':scope > thead tr')
+      ?.appendChild(document.createElement('th'));
+
+    let target: Element = null;
+    for (const row of [...table.querySelectorAll(':scope > tbody > tr')]) {
+      const td = document.createElement('td');
+      td.innerHTML = '<br>';
+      row.appendChild(td);
+      target = target || td;
+    }
+    decorateTable(table, this.colors);
+
+    if (target) {
+      const inside = document.createRange();
+      inside.selectNodeContents(target);
+      inside.collapse(true);
+      this.select(inside);
     }
   }
 
@@ -3523,7 +3568,8 @@ export class MarkdownEditor extends FieldElement {
                 !this.sourceMode &&
                 (command.format === 'callout' ||
                   (command.format === 'columns' &&
-                    !this.active.includes('columns')));
+                    !this.active.includes('columns') &&
+                    !this.inCallout));
               return html`
                 <div
                   class="format ${command.format} ${this.active.includes(
