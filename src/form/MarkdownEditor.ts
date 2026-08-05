@@ -1839,6 +1839,14 @@ export class MarkdownEditor extends FieldElement {
       this.image = image;
     }
 
+    // the click is also a real selection, so everything that acts on selected text - columns taking it with them,
+    // the palette wrap, typing over it - acts on the image the same way
+    if (image) {
+      const range = document.createRange();
+      range.selectNode(image);
+      this.select(range);
+    }
+
     // a click in a layout column offers that column's styling - unless it was the image the click was for
     const cell = image
       ? null
