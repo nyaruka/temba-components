@@ -43,8 +43,10 @@ type Format =
 
 interface Command {
   format: Format;
+  /** shown when there's no icon - the headings, whose levels an icon can't say */
   label: string;
   title: string;
+  icon?: Icon;
   /** the markers the same command writes in source mode, where there's nothing rendered to act on */
   prefix: string;
   suffix?: string;
@@ -521,7 +523,7 @@ export class MarkdownEditor extends FieldElement {
         border-bottom: 1px solid var(--color-widget-border);
       }
 
-      .toolbar temba-icon,
+      .toolbar > temba-icon,
       .toolbar .format {
         cursor: pointer;
         padding: 0.15em 0.4em;
@@ -531,15 +533,14 @@ export class MarkdownEditor extends FieldElement {
         line-height: 1.4;
       }
 
-      .toolbar .format.bold {
-        font-weight: 700;
+      /* icon buttons and the text ones (the headings) share a height, so the row reads as one control */
+      .toolbar .format {
+        display: flex;
+        align-items: center;
+        min-height: 1.5em;
       }
 
-      .toolbar .format.italic {
-        font-style: italic;
-      }
-
-      .toolbar temba-icon:hover,
+      .toolbar > temba-icon:hover,
       .toolbar .format:hover {
         background: var(--color-selection);
       }
@@ -650,14 +651,26 @@ export class MarkdownEditor extends FieldElement {
         outline-offset: 1px;
       }
 
-      /* the column popover's padding choices */
+      /* The column's padding, one segmented control: the grid at its default density with a minus and plus either
+         side of it, joined so the signs read as steps around the middle rather than three unrelated buttons. */
+      .popover .pad-group {
+        display: flex;
+        align-items: stretch;
+        border: 1px solid var(--color-widget-border);
+        border-radius: var(--curvature);
+        overflow: hidden;
+      }
+
       .popover .pad {
         cursor: pointer;
         display: flex;
         align-items: center;
-        padding: 3px 5px;
-        border-radius: var(--curvature);
+        padding: 3px 6px;
         color: var(--color-text-dark);
+      }
+
+      .popover .pad + .pad {
+        border-left: 1px solid var(--color-widget-border);
       }
 
       .popover .pad:hover {
@@ -955,8 +968,20 @@ export class MarkdownEditor extends FieldElement {
 
   private get commands(): Command[] {
     return [
-      { format: 'bold', label: 'B', title: msg('Bold'), prefix: '**' },
-      { format: 'italic', label: 'I', title: msg('Italic'), prefix: '_' },
+      {
+        format: 'bold',
+        label: 'B',
+        title: msg('Bold'),
+        icon: Icon.bold,
+        prefix: '**'
+      },
+      {
+        format: 'italic',
+        label: 'I',
+        title: msg('Italic'),
+        icon: Icon.italic,
+        prefix: '_'
+      },
       {
         format: 'h1',
         label: 'H1',
@@ -982,6 +1007,7 @@ export class MarkdownEditor extends FieldElement {
         format: 'bullet',
         label: 'List',
         title: msg('Bulleted list'),
+        icon: Icon.list,
         prefix: '* ',
         lines: true
       },
@@ -996,14 +1022,22 @@ export class MarkdownEditor extends FieldElement {
         format: 'quote',
         label: 'Quote',
         title: msg('Quote'),
+        icon: Icon.quote,
         prefix: '> ',
         lines: true
       },
-      { format: 'code', label: 'Code', title: msg('Code'), prefix: '`' },
+      {
+        format: 'code',
+        label: 'Code',
+        title: msg('Code'),
+        icon: Icon.code,
+        prefix: '`'
+      },
       {
         format: 'link',
         label: 'Link',
         title: msg('Link'),
+        icon: Icon.hyperlink,
         prefix: '[',
         suffix: '](https://)'
       },
@@ -1011,12 +1045,14 @@ export class MarkdownEditor extends FieldElement {
         format: 'columns',
         label: 'Columns',
         title: msg('Side by side columns'),
+        icon: Icon.columns,
         prefix: ''
       },
       {
         format: 'hr',
         label: '—',
         title: msg('Divider'),
+        icon: Icon.divider,
         prefix: ''
       }
     ];
@@ -2583,11 +2619,12 @@ export class MarkdownEditor extends FieldElement {
 
     const colors = ['', '#f1f5f9', '#eef2ff', '#ecfdf5', '#fffbeb', '#fef2f2'];
 
-    // three densities: the default in the middle, one step tighter and one step airier either side of it
+    // three densities as one control: the default in the middle, stepped tighter or airier by the minus and plus
+    // flanking it - a group, so the signs read as "less padding" and "more padding" around the grid
     const paddings = [
-      { value: '4px', icon: Icon.padding_compact, title: msg('Compact') },
-      { value: '', icon: Icon.padding_normal, title: msg('Normal') },
-      { value: '28px', icon: Icon.padding_spacious, title: msg('Spacious') }
+      { value: '4px', icon: Icon.minus, title: msg('Less padding') },
+      { value: '', icon: Icon.padding, title: msg('Normal padding') },
+      { value: '28px', icon: Icon.add, title: msg('More padding') }
     ];
 
     return html`
@@ -2623,19 +2660,21 @@ export class MarkdownEditor extends FieldElement {
             )}
         />
         <div class="divider"></div>
-        ${paddings.map(
-          (padding) => html`
-            <div
-              class="pad ${(current.padding || '') === padding.value
-                ? 'on'
-                : ''}"
-              title=${padding.title}
-              @click=${() => this.applyColumnPadding(index, padding.value)}
-            >
-              <temba-icon name=${padding.icon} size="1.1"></temba-icon>
-            </div>
-          `
-        )}
+        <div class="pad-group">
+          ${paddings.map(
+            (padding) => html`
+              <div
+                class="pad ${(current.padding || '') === padding.value
+                  ? 'on'
+                  : ''}"
+                title=${padding.title}
+                @click=${() => this.applyColumnPadding(index, padding.value)}
+              >
+                <temba-icon name=${padding.icon} size="1.1"></temba-icon>
+              </div>
+            `
+          )}
+        </div>
       </div>
     `;
   }
@@ -2680,13 +2719,18 @@ export class MarkdownEditor extends FieldElement {
                   title="${command.title}"
                   @click=${() => this.applyFormat(command)}
                 >
-                  ${command.label}
+                  ${command.icon
+                    ? html`<temba-icon
+                        name=${command.icon}
+                        size="1.1"
+                      ></temba-icon>`
+                    : command.label}
                 </div>
               `
             )}
             <temba-icon
-              name="${Icon.attachment}"
-              title="${msg('Screenshot')}"
+              name="${Icon.image}"
+              title="${msg('Image')}"
               class="${this.uploading ? 'uploading' : ''}"
               @click=${this.handleUploadClick}
             ></temba-icon>
