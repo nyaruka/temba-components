@@ -286,10 +286,43 @@ export class ArticleList extends ContentList<ArticleRow> {
          fold end to end - an eased slice would read as a stutter.
 
          Each cell clips its content while its height plays, and the
-         row's height follows - the cells carry no vertical padding, so
-         the row really does start and end at nothing. The rails bleed
-         outside the row, so they're clipped only while the fold is in
-         flight. */
+         row's height has to follow for the rows below to ride up with
+         the fold rather than jump when it lands. Two things on the
+         cells would otherwise hold that height: the base list's fixed
+         38px cell height - a floor, in table layout - is lifted while
+         the row is mid-fold, and the row divider, a cell border that
+         keeps its pixel even over no content at all, plays the same
+         slice down to zero width. The cells carry no vertical padding,
+         so with those gone the row really does start and end at
+         nothing. The rails bleed outside the row, so they're clipped
+         only while the fold is in flight. */
+      tr.row.entering td,
+      tr.row.leaving td {
+        height: 0;
+      }
+
+      tr.row.entering td {
+        animation: divider-open var(--fold-duration) linear var(--fold-delay)
+          backwards;
+      }
+
+      tr.row.leaving td {
+        animation: divider-shut var(--fold-duration) linear var(--fold-delay)
+          both;
+      }
+
+      @keyframes divider-open {
+        from {
+          border-bottom-width: 0;
+        }
+      }
+
+      @keyframes divider-shut {
+        to {
+          border-bottom-width: 0;
+        }
+      }
+
       tr.row.entering .cell-inner {
         animation: fold-open var(--fold-duration) linear var(--fold-delay)
           backwards;
@@ -324,6 +357,8 @@ export class ArticleList extends ContentList<ArticleRow> {
       }
 
       @media (prefers-reduced-motion: reduce) {
+        tr.row.entering td,
+        tr.row.leaving td,
         tr.row.entering .cell-inner,
         tr.row.leaving .cell-inner {
           animation: none;
