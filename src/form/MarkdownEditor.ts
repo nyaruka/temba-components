@@ -269,16 +269,17 @@ const textOn = (background: string): string => {
     : hslToHex(h, Math.min(s, 0.45), 0.95);
 };
 
-/** the border a column can ask for, drawn from its own fill the same way its text is - a middle shade of the hue,
- * or a plain neutral when there's no fill to draw from */
+/** The border a column can ask for, drawn from its own fill the same way its text is - the same hue, stepped a
+ * fixed distance from the fill's own lightness so it reads against any fill: gently darker over a light one,
+ * clearly lighter over a dark one. A plain neutral when there's no fill to draw from. */
 const borderOn = (background: string): string => {
   if (!background) {
     return '#d0d5dd';
   }
   const { h, s, l } = hexToHsl(background);
   return l > 0.55
-    ? hslToHex(h, Math.min(s, 0.5), 0.6)
-    : hslToHex(h, Math.min(s, 0.4), 0.75);
+    ? hslToHex(h, Math.min(s, 0.5), Math.max(l - 0.16, 0.1))
+    : hslToHex(h, Math.min(s, 0.5), Math.min(l + 0.28, 0.85));
 };
 
 /** paints a code block with the expression highlighting, rebuilt from its text alone - so it can run again after
