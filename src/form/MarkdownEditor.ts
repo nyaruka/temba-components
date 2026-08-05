@@ -837,6 +837,8 @@ export class MarkdownEditor extends FieldElement {
         justify-content: center;
         background: #fff;
         color: var(--color-text-dark);
+        /* it's a label, and the field styles give every label a bottom margin that would float it off center */
+        margin: 0;
       }
 
       .popover .add-color input[type='color'] {
