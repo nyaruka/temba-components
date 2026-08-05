@@ -738,23 +738,18 @@ export class MarkdownEditor extends FieldElement {
         box-sizing: border-box;
       }
 
-      /* a second click on a color opens its editor right under the swatch - the picker, and the delete that goes
-         with it */
-      .popover .color-edit {
+      /* The second click's picker anchors here: an invisible input tucked just under the swatch, so the native
+         picker opens right below it with no chrome of ours in between. */
+      .popover .swatch input.picker {
         position: absolute;
-        top: calc(100% + 8px);
+        top: calc(100% + 4px);
         left: 50%;
-        transform: translateX(-50%);
-        z-index: 4;
-        display: flex;
-        align-items: center;
-        gap: 0.3em;
-        padding: 0.25em 0.3em;
-        background: var(--color-widget-bg);
-        border: 1px solid var(--color-widget-border);
-        border-radius: var(--curvature);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        cursor: default;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        border: none;
+        opacity: 0;
+        pointer-events: none;
       }
 
       .popover .swatch.on {
@@ -2402,19 +2397,19 @@ export class MarkdownEditor extends FieldElement {
     this.requestUpdate();
   }
 
-  /** A second click on the color a column already wears opens that color's editor, tucked under its swatch. The
-   * native picker is asked to open straight away, so the second click is the whole gesture. */
+  /** A second click on the color a column already wears opens the native picker itself, anchored just under the
+   * swatch - the click is the whole gesture, with no chrome of ours in between. */
   private async toggleColorEditor(key: string): Promise<void> {
     this.editingColor = this.editingColor === key ? null : key;
     if (this.editingColor) {
       await this.updateComplete;
       const input = this.shadowRoot?.querySelector(
-        '.color-edit input[type="color"]'
+        '.swatch input.picker'
       ) as HTMLInputElement;
       try {
-        input?.showPicker?.();
+        input?.showPicker ? input.showPicker() : input?.click();
       } catch (e) {
-        // without a picker to summon, the panel under the swatch is still there to click
+        input?.click();
       }
     }
   }
@@ -3222,26 +3217,23 @@ export class MarkdownEditor extends FieldElement {
             >
               ${this.editingColor === key
                 ? html`
-                    <div
-                      class="color-edit"
-                      @click=${(evt: Event) => evt.stopPropagation()}
-                    >
-                      <input
-                        type="color"
-                        .value=${hex}
-                        title=${msg('Adjust this color everywhere it is used')}
-                        @input=${(evt: Event) =>
-                          this.previewColor(
-                            key,
-                            (evt.target as HTMLInputElement).value
-                          )}
-                        @change=${(evt: Event) =>
-                          this.saveColors({
-                            ...this.colors,
-                            [key]: (evt.target as HTMLInputElement).value
-                          })}
-                      />
-                    </div>
+                    <input
+                      class="picker"
+                      type="color"
+                      .value=${hex}
+                      @input=${(evt: Event) =>
+                        this.previewColor(
+                          key,
+                          (evt.target as HTMLInputElement).value
+                        )}
+                      @change=${(evt: Event) => {
+                        this.editingColor = null;
+                        this.saveColors({
+                          ...this.colors,
+                          [key]: (evt.target as HTMLInputElement).value
+                        });
+                      }}
+                    />
                   `
                 : null}
             </div>
