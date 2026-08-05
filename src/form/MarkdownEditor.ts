@@ -627,11 +627,6 @@ export class MarkdownEditor extends FieldElement {
         position: absolute;
         z-index: 3;
         transform: translateY(-100%);
-      }
-
-      /* a block at the very top of the article has no room above it, so its popover sits below instead */
-      .popover.below {
-        transform: none;
         display: flex;
         align-items: center;
         gap: 0.4em;
@@ -641,6 +636,11 @@ export class MarkdownEditor extends FieldElement {
         border-radius: var(--curvature);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         font-size: 0.85em;
+      }
+
+      /* a block at the very top of the article has no room above it, so its popover sits below instead */
+      .popover.below {
+        transform: none;
       }
 
       .popover input[type='text'] {
