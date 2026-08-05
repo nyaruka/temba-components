@@ -632,6 +632,16 @@ export class MarkdownEditor extends FieldElement {
         color: var(--color-primary-dark);
       }
 
+      /* a command with nothing it could do where the caret is - inside a cell, tables can't beget tables */
+      .toolbar .format.disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+
+      .toolbar .format.disabled:hover {
+        background: none;
+      }
+
       .toolbar .spacer {
         flex-grow: 1;
       }
@@ -1136,6 +1146,10 @@ export class MarkdownEditor extends FieldElement {
   /** which toolbar commands describe what the caret is sitting in */
   @state()
   private active: string[] = [];
+
+  /** whether the caret (or a selected image) is inside a table cell, where a new table can't go */
+  @state()
+  private inCell = false;
 
   /** the link under the caret, so it can be edited without ever showing its markdown. null when there isn't one. */
   @state()
@@ -2131,6 +2145,16 @@ export class MarkdownEditor extends FieldElement {
     const href = this.anchor ? this.anchor.getAttribute('href') || '' : null;
     if (href !== this.linkHref) {
       this.linkHref = href;
+    }
+
+    // markdown has no tables inside tables, so inside a cell - the caret there, or an image there selected -
+    // the commands that make one have nothing they could make
+    const inCell = !!(
+      (range && this.cellAt(range)) ||
+      this.image?.closest('td, th')
+    );
+    if (inCell !== this.inCell) {
+      this.inCell = inCell;
     }
   }
 
@@ -3372,16 +3396,20 @@ export class MarkdownEditor extends FieldElement {
             class="toolbar"
             @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
           >
-            ${this.commands.map(
-              (command) => html`
+            ${this.commands.map((command) => {
+              const disabled =
+                this.inCell &&
+                !this.sourceMode &&
+                (command.format === 'columns' || command.format === 'callout');
+              return html`
                 <div
                   class="format ${command.format} ${this.active.includes(
                     command.format
                   )
                     ? 'on'
-                    : ''}"
+                    : ''} ${disabled ? 'disabled' : ''}"
                   title="${command.title}"
-                  @click=${() => this.applyFormat(command)}
+                  @click=${() => !disabled && this.applyFormat(command)}
                 >
                   ${command.icon
                     ? html`<temba-icon
@@ -3390,8 +3418,8 @@ export class MarkdownEditor extends FieldElement {
                       ></temba-icon>`
                     : command.label}
                 </div>
-              `
-            )}
+              `;
+            })}
             <temba-icon
               name="${Icon.image}"
               title="${msg('Image')}"
