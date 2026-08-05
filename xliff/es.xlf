@@ -139,6 +139,9 @@
 <trans-unit id="s06c4d89f9e3480b3">
   <source>Remove styling</source>
 </trans-unit>
+<trans-unit id="sf6e9d280a30dcf25">
+  <source>Border drawn from the background color</source>
+</trans-unit>
 </body>
 </file>
 </xliff>

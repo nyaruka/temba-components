@@ -202,13 +202,8 @@ const isLayoutTable = (table: Element): boolean => {
   return head.length > 0 && head.every((th) => !th.textContent.trim());
 };
 
-/**
- * A readable text color drawn from a cell's own background: a deep shade of the same hue over a light fill, a pale
- * one over a dark fill. Derived rather than stored, so the markdown carries only the one color the author chose -
- * and the server derives the same answer from it.
- */
-const textOn = (background: string): string => {
-  let hex = background.replace('#', '');
+const hexToHsl = (color: string): { h: number; s: number; l: number } => {
+  let hex = color.replace('#', '');
   if (hex.length === 3 || hex.length === 4) {
     hex = [...hex.substring(0, 3)].map((c) => c + c).join('');
   }
@@ -234,13 +229,13 @@ const textOn = (background: string): string => {
     h = (h * 60 + 360) % 360;
   }
 
-  const dark = l > 0.55;
-  const outS = Math.min(s, dark ? 0.55 : 0.45);
-  const outL = dark ? 0.27 : 0.95;
+  return { h, s, l };
+};
 
-  const c = (1 - Math.abs(2 * outL - 1)) * outS;
+const hslToHex = (h: number, s: number, l: number): string => {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = outL - c / 2;
+  const m = l - c / 2;
   const [rr, gg, bb] =
     h < 60
       ? [c, x, 0]
@@ -260,6 +255,30 @@ const textOn = (background: string): string => {
       .padStart(2, '0');
 
   return `#${channel(rr)}${channel(gg)}${channel(bb)}`;
+};
+
+/**
+ * A readable text color drawn from a cell's own background: a deep shade of the same hue over a light fill, a pale
+ * one over a dark fill. Derived rather than stored, so the markdown carries only the one color the author chose -
+ * and the server derives the same answer from it.
+ */
+const textOn = (background: string): string => {
+  const { h, s, l } = hexToHsl(background);
+  return l > 0.55
+    ? hslToHex(h, Math.min(s, 0.55), 0.27)
+    : hslToHex(h, Math.min(s, 0.45), 0.95);
+};
+
+/** the border a column can ask for, drawn from its own fill the same way its text is - a middle shade of the hue,
+ * or a plain neutral when there's no fill to draw from */
+const borderOn = (background: string): string => {
+  if (!background) {
+    return '#d0d5dd';
+  }
+  const { h, s, l } = hexToHsl(background);
+  return l > 0.55
+    ? hslToHex(h, Math.min(s, 0.5), 0.6)
+    : hslToHex(h, Math.min(s, 0.4), 0.75);
 };
 
 /** paints a code block with the expression highlighting, rebuilt from its text alone - so it can run again after
@@ -386,7 +405,8 @@ const decorateTable = (
       const value = [
         align && `text-align: ${align[1].toLowerCase()}`,
         style.padding && `padding: ${style.padding}`,
-        fills[index] && `color: ${textOn(fills[index])}`
+        fills[index] && `color: ${textOn(fills[index])}`,
+        style.border && `border: 1px solid ${borderOn(fills[index])}`
       ]
         .filter(Boolean)
         .join('; ');
@@ -2180,6 +2200,7 @@ export class MarkdownEditor extends FieldElement {
       width?: string | null;
       background?: string | null;
       padding?: string | null;
+      border?: string | null;
     }
   ): void {
     const th = [...table.querySelectorAll(':scope > thead th')][index];
@@ -2190,7 +2211,7 @@ export class MarkdownEditor extends FieldElement {
     const merged: ColumnStyle = {
       ...(columnStyle(th.getAttribute('data-style') || '') || {})
     };
-    for (const key of ['width', 'background', 'padding'] as const) {
+    for (const key of ['width', 'background', 'padding', 'border'] as const) {
       if (patch[key] !== undefined) {
         if (patch[key]) {
           merged[key] = patch[key];
@@ -2314,6 +2335,16 @@ export class MarkdownEditor extends FieldElement {
       return;
     }
     this.setColumnStyle(table, index, { padding: padding || null });
+    this.edited();
+    this.requestUpdate();
+  }
+
+  private toggleColumnBorder(index: number, on: boolean): void {
+    const table = this.column?.closest('table');
+    if (!table) {
+      return;
+    }
+    this.setColumnStyle(table, index, { border: on ? 'solid' : null });
     this.edited();
     this.requestUpdate();
   }
@@ -3151,6 +3182,14 @@ export class MarkdownEditor extends FieldElement {
               </div>
             `
           )}
+        </div>
+        <div class="divider"></div>
+        <div
+          class="pad ${current.border ? 'on' : ''}"
+          title=${msg('Border drawn from the background color')}
+          @click=${() => this.toggleColumnBorder(index, !current.border)}
+        >
+          <temba-icon name=${Icon.border} size="1.1"></temba-icon>
         </div>
         ${table.querySelectorAll(':scope > thead th').length === 1
           ? html`

@@ -794,6 +794,7 @@ export interface ColumnStyle {
   width?: string;
   background?: string;
   padding?: string;
+  border?: string;
 }
 
 /** reads a header cell's stylesheet, or null when its text isn't one */
@@ -806,7 +807,9 @@ export const columnStyle = (text: string): ColumnStyle | null => {
       continue;
     }
 
-    const match = /^(width|background|padding)\s*:\s*(\S+)$/i.exec(declaration);
+    const match = /^(width|background|padding|border)\s*:\s*(\S+)$/i.exec(
+      declaration
+    );
     if (!match) {
       return null;
     }
@@ -822,6 +825,9 @@ export const columnStyle = (text: string): ColumnStyle | null => {
     if (key === 'padding' && !/^\d+px$/.test(value)) {
       return null;
     }
+    if (key === 'border' && value !== 'solid') {
+      return null;
+    }
 
     out[key] = value;
   }
@@ -834,7 +840,8 @@ export const columnStyleText = (style: ColumnStyle): string =>
   [
     style.width && `width: ${style.width}`,
     style.background && `background: ${style.background}`,
-    style.padding && `padding: ${style.padding}`
+    style.padding && `padding: ${style.padding}`,
+    style.border && `border: ${style.border}`
   ]
     .filter(Boolean)
     .join('; ');
