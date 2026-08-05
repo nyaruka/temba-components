@@ -2228,14 +2228,17 @@ export class ContentList<T = any> extends RapidElement {
     if (path.some((n: any) => n?.classList?.contains?.('check-cell'))) {
       return;
     }
+    const rowHref = this.getRowHref(item);
+    const href = rowHref && this.isSafeHref(rowHref) ? rowHref : null;
+    // Meta/ctrl-click opens a new tab, matching ordinary links. Skip
+    // RowClick entirely — host pages navigate on it unconditionally,
+    // which would also swap out the current page.
+    if (href && (event.metaKey || event.ctrlKey)) {
+      window.open(href, '_blank');
+      return;
+    }
     this.fireCustomEvent(CustomEventType.RowClick, { item });
-    const href = this.getRowHref(item);
-    if (href && this.isSafeHref(href)) {
-      // Meta/ctrl-click opens a new tab, matching ordinary links.
-      if (event.metaKey || event.ctrlKey) {
-        window.open(href, '_blank');
-        return;
-      }
+    if (href) {
       // Fire Redirected rather than assigning window.location so the
       // host SPA frame swaps content in place instead of doing a full
       // page reload — the frame listens for this event on document and

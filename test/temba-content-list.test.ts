@@ -326,7 +326,7 @@ describe('temba-content-list', () => {
     expect(redirectUrl).to.equal('/contact/read/u-1/');
   });
 
-  it('opens a new tab on meta-click without firing temba-redirected', async () => {
+  it('opens a new tab on meta-click without firing temba-redirected or temba-row-click', async () => {
     const list = (await getList({
       endpoint: '/test-assets/content-list/items.json'
     })) as ContentList;
@@ -338,6 +338,13 @@ describe('temba-content-list', () => {
     let redirected = false;
     list.addEventListener(CustomEventType.Redirected, () => {
       redirected = true;
+    });
+
+    // Host pages navigate on RowClick unconditionally, so firing it on
+    // a meta-click would swap out the current page alongside the new tab.
+    let rowClicked = false;
+    list.addEventListener(CustomEventType.RowClick, () => {
+      rowClicked = true;
     });
 
     const openStub = stub(window, 'open');
@@ -355,6 +362,7 @@ describe('temba-content-list', () => {
       expect(openStub.calledOnceWithExactly('/contact/read/u-1/', '_blank')).to
         .be.true;
       expect(redirected).to.be.false;
+      expect(rowClicked).to.be.false;
     } finally {
       openStub.restore();
     }
