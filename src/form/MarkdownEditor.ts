@@ -524,7 +524,7 @@ export class MarkdownEditor extends FieldElement {
         min-height: 0;
       }
 
-      :host([fill]) .doc,
+      :host([fill]) .doc-frame,
       :host([fill]) textarea.document {
         flex: 1 1 auto;
         min-height: 0;
@@ -534,6 +534,26 @@ export class MarkdownEditor extends FieldElement {
       /* the editor is the size of what holds it, so there's no slack for a drag handle to take up */
       :host([fill]) textarea.document {
         resize: none;
+      }
+
+      /* The frame around the document is where the overlays live: they're positioned in the document's own
+         coordinate space, so when the document scrolls inside the frame they ride the content natively - and
+         scroll off screen with it - rather than being chased by listeners. Its own stacking context keeps every
+         overlay underneath the sticky chrome as it passes. */
+      .doc-frame {
+        position: relative;
+        z-index: 0;
+      }
+
+      .overlays {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .overlays .popover,
+      .overlays .image-actions {
+        pointer-events: auto;
       }
 
       /* The controls stay put while the article scrolls under them - an article is usually taller than whatever is
@@ -600,13 +620,9 @@ export class MarkdownEditor extends FieldElement {
         color: var(--color-link-primary);
       }
 
-      /* the overlays live on the container, floated over the document beside whatever they edit */
-      .container {
-        position: relative;
-      }
-
-      /* A small floating editor pinned just above what it acts on - a link's text, a column's cells. Sits above
-         the sticky chrome so it never slides underneath it. */
+      /* A small floating editor pinned just above what it acts on - a link's text, a column's cells. It lives in
+         the document's own coordinate space, so it scrolls with the article - and under the chrome - like any
+         other part of it. */
       .popover {
         position: absolute;
         z-index: 3;
@@ -1171,14 +1187,13 @@ export class MarkdownEditor extends FieldElement {
   public connectedCallback(): void {
     super.connectedCallback();
     document.addEventListener('selectionchange', this.handleSelectionChange);
-    // the overlays are pinned to rendered content, so anything that moves it has to move them too
-    window.addEventListener('scroll', this.handleViewportChange, true);
+    // The overlays live in the document's own coordinate space, so scrolling needs no help - but a window resize
+    // reflows the article under them.
     window.addEventListener('resize', this.handleViewportChange);
   }
 
   public disconnectedCallback(): void {
     document.removeEventListener('selectionchange', this.handleSelectionChange);
-    window.removeEventListener('scroll', this.handleViewportChange, true);
     window.removeEventListener('resize', this.handleViewportChange);
     document.removeEventListener('mousemove', this.handleResizeMove);
     document.removeEventListener('mouseup', this.handleResizeEnd);
@@ -2881,15 +2896,16 @@ export class MarkdownEditor extends FieldElement {
     return this.fill ? '' : `min-height:${this.minHeight}px`;
   }
 
-  /** where an element sits relative to the container, which is what the overlays position against */
+  /** Where an element sits relative to the overlay layer, which is what the overlays position against. The layer
+   * scrolls with the document, so these coordinates hold at any scroll position. */
   private overlayRect(
     target: Element
   ): { left: number; top: number; width: number; height: number } | null {
-    const container = this.shadowRoot?.querySelector('.container');
-    if (!container || !target || !target.isConnected) {
+    const layer = this.shadowRoot?.querySelector('.overlays');
+    if (!layer || !target || !target.isConnected) {
       return null;
     }
-    const outer = container.getBoundingClientRect();
+    const outer = layer.getBoundingClientRect();
     const rect = target.getBoundingClientRect();
     return {
       left: rect.left - outer.left,
@@ -3169,26 +3185,28 @@ export class MarkdownEditor extends FieldElement {
         ${this.sourceMode
           ? this.renderSource()
           : html`
-              <div
-                class="doc"
-                style=${this.documentStyle}
-                contenteditable=${this.disabled ? 'false' : 'true'}
-                @beforeinput=${this.handleBeforeInput}
-                @input=${this.handleInput}
-                @click=${this.handleDocClick}
-                @keydown=${this.handleKeyDown}
-                @mousemove=${this.handleDocMouseMove}
-                @mousedown=${this.handleDocMouseDown}
-                @blur=${this.handleDocBlur}
-                @copy=${this.handleCopy}
-                @cut=${this.handleCut}
-                @dragenter=${this.handleDragOver}
-                @dragover=${this.handleDragOver}
-                @drop=${this.handleDrop}
-                @paste=${this.handlePaste}
-              ></div>
+              <div class="doc-frame">
+                <div
+                  class="doc"
+                  style=${this.documentStyle}
+                  contenteditable=${this.disabled ? 'false' : 'true'}
+                  @beforeinput=${this.handleBeforeInput}
+                  @input=${this.handleInput}
+                  @click=${this.handleDocClick}
+                  @keydown=${this.handleKeyDown}
+                  @mousemove=${this.handleDocMouseMove}
+                  @mousedown=${this.handleDocMouseDown}
+                  @blur=${this.handleDocBlur}
+                  @copy=${this.handleCopy}
+                  @cut=${this.handleCut}
+                  @dragenter=${this.handleDragOver}
+                  @dragover=${this.handleDragOver}
+                  @drop=${this.handleDrop}
+                  @paste=${this.handlePaste}
+                ></div>
+                <div class="overlays">${this.renderOverlays()}</div>
+              </div>
             `}
-        ${this.renderOverlays()}
         ${this.error ? html`<div class="error">${this.error}</div>` : null}
         <input
           id="upload-input"
