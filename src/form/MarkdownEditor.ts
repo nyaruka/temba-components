@@ -658,6 +658,9 @@ export class MarkdownEditor extends FieldElement {
         border-radius: var(--curvature);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         font-size: 0.85em;
+        /* never wider than the article - in a truly narrow editor the controls wrap instead */
+        max-width: calc(100% - 8px);
+        flex-wrap: wrap;
       }
 
       /* a block at the very top of the article has no room above it, so its popover sits below instead */
@@ -1344,6 +1347,39 @@ export class MarkdownEditor extends FieldElement {
     if (this.stale && !this.sourceMode && this.doc) {
       this.populate();
       this.stale = false;
+    }
+
+    this.clampPopovers();
+  }
+
+  /**
+   * Pulls any popover that would poke past the article's edges back inside them. Widths aren't known until the
+   * popover is rendered, so this runs after every render - before paint - and nudges with a margin, which the
+   * template's own positioning never touches.
+   */
+  private clampPopovers(): void {
+    const layer = this.shadowRoot?.querySelector('.overlays');
+    if (!layer) {
+      return;
+    }
+
+    const bounds = layer.getBoundingClientRect();
+    for (const popover of [
+      ...layer.querySelectorAll('.popover')
+    ] as HTMLElement[]) {
+      popover.style.marginLeft = '';
+      const rect = popover.getBoundingClientRect();
+
+      let shift = 0;
+      if (rect.right > bounds.right - 4) {
+        shift = bounds.right - 4 - rect.right;
+      }
+      if (rect.left + shift < bounds.left + 4) {
+        shift = bounds.left + 4 - rect.left;
+      }
+      if (shift !== 0) {
+        popover.style.marginLeft = `${shift}px`;
+      }
     }
   }
 
