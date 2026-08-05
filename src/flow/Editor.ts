@@ -3180,8 +3180,16 @@ export class Editor extends RapidElement {
   private editForceBase = false;
 
   private handleActionEditRequested(event: CustomEvent): void {
+    // Some action types are retained purely so old definitions still render;
+    // their config declares no form, so they aren't editable — opening the
+    // dialog for one would just show an empty form
+    const requested = event.detail.action;
+    if (requested && !ACTION_CONFIG[requested.type]?.form) {
+      return;
+    }
+
     // For action editing, we set the action and find the corresponding node
-    this.editingAction = event.detail.action;
+    this.editingAction = requested;
     this.editForceBase = !!event.detail.forceBase;
     this.dialogOrigin =
       event.detail.originX != null

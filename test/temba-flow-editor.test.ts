@@ -16,6 +16,7 @@ import {
 } from '../src/live/SocketService';
 import { Store } from '../src/store/Store';
 import { setRealtimeContext } from '../src/live/Realtime';
+import { CustomEventType } from '../src/interfaces';
 
 class EditorSocketProvider implements SocketProvider {
   subscriptions: {
@@ -799,6 +800,65 @@ describe('Editor', () => {
       // Check that the properties exist (they are private but we can verify they exist)
       expect(editor).to.have.property('definition');
       expect(editor).to.have.property('canvasSize');
+    });
+  });
+
+  describe('action edit requests', () => {
+    const requestEdit = async (editor: Editor, action: any) => {
+      editor.dispatchEvent(
+        new CustomEvent(CustomEventType.ActionEditRequested, {
+          detail: { action, nodeUuid: 'node-1' },
+          bubbles: true,
+          composed: true
+        })
+      );
+      await editor.updateComplete;
+    };
+
+    const getEditor = async (action: any): Promise<Editor> => {
+      const editor: Editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+      (editor as any).definition = {
+        nodes: [{ uuid: 'node-1', actions: [action], exits: [] }],
+        _ui: {
+          nodes: {
+            'node-1': {
+              type: 'execute_actions',
+              position: { left: 50, top: 50 }
+            }
+          }
+        }
+      };
+      await editor.updateComplete;
+      return editor;
+    };
+
+    it('opens the editor for an action config with a form', async () => {
+      const action = {
+        uuid: 'action-1',
+        type: 'set_contact_name',
+        name: 'Alice'
+      };
+      editor = await getEditor(action);
+      await requestEdit(editor, action);
+
+      expect((editor as any).editingAction).to.equal(action);
+    });
+
+    it('ignores actions whose config has no form', async () => {
+      // request_optin is kept only so old definitions still render
+      const action = {
+        uuid: 'action-1',
+        type: 'request_optin',
+        optin: { uuid: 'optin-1', name: 'U-Report' }
+      };
+      editor = await getEditor(action);
+      await requestEdit(editor, action);
+
+      expect((editor as any).editingAction).to.be.null;
     });
   });
 
