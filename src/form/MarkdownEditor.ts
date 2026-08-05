@@ -958,6 +958,7 @@ export class MarkdownEditor extends FieldElement {
     index: number;
     startX: number;
     startWidth: number;
+    tableWidth: number;
   } = null;
 
   /** the document's blocks, which together are always exactly the value */
@@ -2148,7 +2149,8 @@ export class MarkdownEditor extends FieldElement {
       table,
       index,
       startX: evt.clientX,
-      startWidth: cell.getBoundingClientRect().width
+      startWidth: cell.getBoundingClientRect().width,
+      tableWidth: table.getBoundingClientRect().width
     };
     document.addEventListener('mousemove', this.handleResizeMove);
     document.addEventListener('mouseup', this.handleResizeEnd);
@@ -2156,14 +2158,23 @@ export class MarkdownEditor extends FieldElement {
 
   private handleResizeMove = (evt: MouseEvent): void => {
     const drag = this.resizing;
-    if (!drag) {
+    if (!drag || drag.tableWidth <= 0) {
       return;
     }
-    const width = Math.max(
-      48,
-      Math.round(drag.startWidth + evt.clientX - drag.startX)
+
+    // the width is kept as a share of the table rather than pixels, so the row splits the same way wherever the
+    // article is read - the editor, a dialog, a phone
+    const width = Math.min(
+      95,
+      Math.max(
+        5,
+        Math.round(
+          ((drag.startWidth + evt.clientX - drag.startX) / drag.tableWidth) *
+            100
+        )
+      )
     );
-    this.setColumnStyle(drag.table, drag.index, { width: `${width}px` });
+    this.setColumnStyle(drag.table, drag.index, { width: `${width}%` });
     // any open overlay rides the cells it points at
     this.requestUpdate();
   };
