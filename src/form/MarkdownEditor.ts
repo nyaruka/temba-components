@@ -762,6 +762,31 @@ export class MarkdownEditor extends FieldElement {
         outline-offset: 1px;
       }
 
+      /* The right-most color is the only one that can be removed - the palette shrinks from its end the way it
+         grew. Selecting it draws the selection border around the swatch and its trash together. */
+      .popover .swatch-cluster {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        border-radius: 5px;
+        outline: 2px solid var(--color-focus);
+        outline-offset: 1px;
+      }
+
+      .popover .swatch-trash {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        color: var(--color-text-dark);
+      }
+
+      .popover .swatch-trash:hover {
+        color: var(--color-error, #c33);
+      }
+
       /* the no-color choice - blank with a slash, always first, and never the org's to edit or remove */
       .popover .swatch.none {
         background:
@@ -3182,10 +3207,12 @@ export class MarkdownEditor extends FieldElement {
           title=${msg('No color')}
           @click=${() => this.applyColumnBackground(index, '')}
         ></div>
-        ${palette.map(
-          ([key, hex]) => html`
+        ${palette.map(([key, hex], at) => {
+          const swatch = html`
             <div
-              class="swatch ${selected === key ? 'on' : ''}"
+              class="swatch ${selected === key && at < palette.length - 1
+                ? 'on'
+                : ''}"
               style="background:${hex}"
               title=${hex}
               @click=${() =>
@@ -3214,24 +3241,34 @@ export class MarkdownEditor extends FieldElement {
                             [key]: (evt.target as HTMLInputElement).value
                           })}
                       />
-                      <div
-                        class="pad"
-                        title=${msg('Remove this color everywhere it is used')}
-                        @click=${() => {
-                          const next = { ...this.colors };
-                          delete next[key];
-                          this.editingColor = null;
-                          this.saveColors(next);
-                        }}
-                      >
-                        <temba-icon name=${Icon.delete} size="1.1"></temba-icon>
-                      </div>
                     </div>
                   `
                 : null}
             </div>
-          `
-        )}
+          `;
+
+          // only the right-most color can be removed - the palette shrinks from its end the way it grew, so no
+          // index in the middle is ever orphaned by accident
+          return selected === key && at === palette.length - 1
+            ? html`
+                <div class="swatch-cluster">
+                  ${swatch}
+                  <div
+                    class="swatch-trash"
+                    title=${msg('Remove this color everywhere it is used')}
+                    @click=${() => {
+                      const next = { ...this.colors };
+                      delete next[key];
+                      this.editingColor = null;
+                      this.saveColors(next);
+                    }}
+                  >
+                    <temba-icon name=${Icon.delete} size="0.9"></temba-icon>
+                  </div>
+                </div>
+              `
+            : swatch;
+        })}
         <label class="swatch add-color" title=${msg('New color')}>
           <temba-icon name=${Icon.add} size="0.9"></temba-icon>
           <input
