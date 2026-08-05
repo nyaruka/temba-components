@@ -147,6 +147,38 @@ const withImageOptions = (
   return parts.length > 0 ? `${base}#${parts.join('&')}` : base;
 };
 
+/** the one piece of markup a cell honors - a newline would end its row, so a break in a cell rides as literal <br> */
+const CELL_BREAK = /<br\s*\/?>/i;
+
+/**
+ * Turns the literal <br>s in a cell's text into the line breaks they mean. The renderer escapes raw HTML, so they
+ * arrive as text; a cell is one line of markdown and this is the only way it can carry a break. Inside cells and
+ * nowhere else - everywhere else text that looks like a tag stays text.
+ */
+const revealBreaks = (cell: Element): void => {
+  const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+  const texts: Text[] = [];
+  let node: Text;
+  while ((node = walker.nextNode() as Text)) {
+    if (CELL_BREAK.test(node.textContent)) {
+      texts.push(node);
+    }
+  }
+
+  for (const text of texts) {
+    const fragment = document.createDocumentFragment();
+    text.textContent.split(CELL_BREAK).forEach((part, index) => {
+      if (index > 0) {
+        fragment.appendChild(document.createElement('br'));
+      }
+      if (part) {
+        fragment.appendChild(document.createTextNode(part));
+      }
+    });
+    text.replaceWith(fragment);
+  }
+};
+
 /** applies what an image's fragment asks for as the classes the document styles render, touching nothing else */
 const decorateImage = (img: HTMLImageElement): void => {
   const { size, layout } = imageOptions(img.getAttribute('src') || '');
@@ -796,9 +828,12 @@ export class MarkdownEditor extends FieldElement {
     }
 
     // Sizing classes go on before the blocks are filed, so a decorated image is part of what its block rendered as
-    // rather than an edit to it.
+    // rather than an edit to it - and cell breaks are revealed here for the same reason.
     for (const img of [...doc.querySelectorAll('img')]) {
       decorateImage(img as HTMLImageElement);
+    }
+    for (const cell of [...doc.querySelectorAll('td, th')]) {
+      revealBreaks(cell);
     }
 
     const children = [...doc.children];
@@ -1204,9 +1239,26 @@ export class MarkdownEditor extends FieldElement {
 
     const range = this.range;
 
-    // a cell is one line of inline content - there is no block inside it for a newline to split
+    // A cell has no blocks for Enter to split, but it can still break lines - the break goes in by hand, as the
+    // <br> its markdown will carry.
     if (this.cellAt(range)) {
       evt.preventDefault();
+
+      range.deleteContents();
+      const br = document.createElement('br');
+      range.insertNode(br);
+
+      // a break at the very end of a cell isn't rendered, so the caret would have nowhere to sit
+      if (!br.nextSibling) {
+        br.parentNode.appendChild(document.createElement('br'));
+      }
+
+      const after = document.createRange();
+      after.setStartAfter(br);
+      after.collapse(true);
+      this.select(after);
+
+      this.edited(evt.inputType);
       return;
     }
 

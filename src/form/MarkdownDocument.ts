@@ -401,9 +401,11 @@ const listOf = (list: Element): string => {
     .join(loose ? '\n\n' : '\n');
 };
 
-/** a cell is one line of inline content, with the pipes that would end it early escaped */
+/** A cell is one line of inline content: the pipes that would end it early are escaped, and its line breaks ride
+ * as the literal <br> a table cell can carry - a real newline would end the whole row. */
 const cellOf = (cell: Element): string =>
   tidy(inlineOf(cell))
+    .replace(/ {2}\n\s*/g, '<br>')
     .replace(/\s*\n\s*/g, ' ')
     .replace(/\|/g, '\\|');
 
