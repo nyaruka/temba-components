@@ -4,6 +4,13 @@ import { property, state } from 'lit/decorators.js';
 import { FieldElement } from './FieldElement';
 import { Icon } from '../Icons';
 import { getSelectionFromRoot } from '../excellent/caret-utils';
+import { sessionParser } from '../excellent/helpers';
+import { tokenize } from '../excellent/tokenizer';
+import {
+  EXPRESSION_TOKENS,
+  getTokenClass,
+  tokenCss
+} from '../excellent/token-styles';
 import { markdown } from '../markdown';
 import { postFormData } from '../utils';
 import {
@@ -31,7 +38,8 @@ type Format =
   | 'number'
   | 'quote'
   | 'link'
-  | 'columns';
+  | 'columns'
+  | 'hr';
 
 interface Command {
   format: Format;
@@ -192,6 +200,86 @@ const isLayoutTable = (table: Element): boolean => {
 };
 
 /**
+ * A readable text color drawn from a cell's own background: a deep shade of the same hue over a light fill, a pale
+ * one over a dark fill. Derived rather than stored, so the markdown carries only the one color the author chose -
+ * and the server derives the same answer from it.
+ */
+const textOn = (background: string): string => {
+  let hex = background.replace('#', '');
+  if (hex.length === 3 || hex.length === 4) {
+    hex = [...hex.substring(0, 3)].map((c) => c + c).join('');
+  }
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  let h = 0;
+  let s = 0;
+  if (d > 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    if (max === r) {
+      h = ((g - b) / d) % 6;
+    } else if (max === g) {
+      h = (b - r) / d + 2;
+    } else {
+      h = (r - g) / d + 4;
+    }
+    h = (h * 60 + 360) % 360;
+  }
+
+  const dark = l > 0.55;
+  const outS = Math.min(s, dark ? 0.55 : 0.45);
+  const outL = dark ? 0.27 : 0.95;
+
+  const c = (1 - Math.abs(2 * outL - 1)) * outS;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = outL - c / 2;
+  const [rr, gg, bb] =
+    h < 60
+      ? [c, x, 0]
+      : h < 120
+        ? [x, c, 0]
+        : h < 180
+          ? [0, c, x]
+          : h < 240
+            ? [0, x, c]
+            : h < 300
+              ? [x, 0, c]
+              : [c, 0, x];
+
+  const channel = (value: number) =>
+    Math.round((value + m) * 255)
+      .toString(16)
+      .padStart(2, '0');
+
+  return `#${channel(rr)}${channel(gg)}${channel(bb)}`;
+};
+
+/** paints a code block with the expression highlighting, rebuilt from its text alone - so it can run again after
+ * any edit and settle on the same markup */
+const highlightCode = (pre: Element): boolean => {
+  const code = pre.querySelector('code') || pre;
+  const markup = tokenize(code.textContent, sessionParser)
+    .map((token) => {
+      const mono = EXPRESSION_TOKENS.has(token.type) ? ' tok-mono' : '';
+      return `<span class="${getTokenClass(token)}${mono}">${escapeHtml(
+        token.text
+      )}</span>`;
+    })
+    .join('');
+
+  if (code.innerHTML === markup) {
+    return false;
+  }
+  code.innerHTML = markup;
+  return true;
+};
+
+/**
  * Applies a layout table's column stylesheet. Each header cell's stylesheet arrives as its text when freshly
  * rendered and is moved into a data-style attribute - leaving the header genuinely empty, which is what marks the
  * table as layout in the styles - and the styling itself is realized as a colgroup, where width and background
@@ -272,6 +360,36 @@ const decorateTable = (table: Element): boolean => {
     changed = true;
   }
 
+  // What belongs to the cells themselves: padding, and text drawn from the column's own color - a colgroup can
+  // paint a background but can't reach the text over it. Any alignment the renderer put on a cell stays.
+  for (const row of [...table.querySelectorAll(':scope > tbody > tr')]) {
+    [...row.children].forEach((td, index) => {
+      const style = styles[index];
+      if (!style) {
+        return;
+      }
+
+      const current = td.getAttribute('style') || '';
+      const align = /text-align:\s*(left|center|right)/i.exec(current);
+      const value = [
+        align && `text-align: ${align[1].toLowerCase()}`,
+        style.padding && `padding: ${style.padding}`,
+        style.background && `color: ${textOn(style.background)}`
+      ]
+        .filter(Boolean)
+        .join('; ');
+
+      if (current !== value) {
+        if (value) {
+          td.setAttribute('style', value);
+        } else {
+          td.removeAttribute('style');
+        }
+        changed = true;
+      }
+    });
+  }
+
   return changed;
 };
 
@@ -328,6 +446,7 @@ export class MarkdownEditor extends FieldElement {
   static get styles() {
     return css`
       ${super.styles}
+      ${tokenCss}
 
       .container {
         background: var(--color-widget-bg);
@@ -531,6 +650,30 @@ export class MarkdownEditor extends FieldElement {
         outline-offset: 1px;
       }
 
+      /* the column popover's padding choices */
+      .popover .pad {
+        cursor: pointer;
+        padding: 2px 8px;
+        border-radius: var(--curvature);
+        white-space: nowrap;
+      }
+
+      .popover .pad:hover {
+        background: var(--color-selection);
+      }
+
+      .popover .pad.on {
+        background: var(--color-selection);
+        color: var(--color-primary-dark);
+      }
+
+      .popover .divider {
+        width: 1px;
+        align-self: stretch;
+        background: var(--color-widget-border);
+        margin: 0 0.2em;
+      }
+
       .popover input[type='color'] {
         width: 24px;
         height: 22px;
@@ -614,7 +757,7 @@ export class MarkdownEditor extends FieldElement {
       .doc pre {
         font-family: var(--font-mono);
         font-size: 0.85em;
-        background: var(--color-primary-light);
+        background: var(--color-code-bg, #f5f6f8);
         border-radius: var(--curvature);
         padding: 0.5em 0.75em;
         white-space: pre-wrap;
@@ -686,10 +829,11 @@ export class MarkdownEditor extends FieldElement {
 
       /* A table whose header says nothing is layout rather than data - the two cell row the Columns button inserts,
          for putting a screenshot beside the text that explains it. The header is hidden instead of shown blank, the
-         data-table chrome goes away, and each cell hugs what's in it: a cell holding a screenshot is the
-         screenshot's width, and the text takes the rest - auto table layout never squeezes a column below its
-         content. A table with a real header keeps the bordered look of data. */
+         data-table chrome goes away, and the row always spans the full width - the columns share it, sized by
+         their content until the author drags them to taste. A table with a real header keeps the bordered look
+         of data. */
       .doc table:not(:has(th:not(:empty))) {
+        width: 100%;
         max-width: 100%;
         table-layout: auto;
       }
@@ -700,7 +844,7 @@ export class MarkdownEditor extends FieldElement {
 
       .doc table:not(:has(th:not(:empty))) td {
         border: none;
-        padding: 0.35em 0.5em;
+        padding: 0.75em 0.9em;
         vertical-align: top;
         /* an empty cell still has to be something the author can click into */
         min-width: 2em;
@@ -866,6 +1010,12 @@ export class MarkdownEditor extends FieldElement {
         label: 'Columns',
         title: msg('Side by side columns'),
         prefix: ''
+      },
+      {
+        format: 'hr',
+        label: '—',
+        title: msg('Divider'),
+        prefix: ''
       }
     ];
   }
@@ -998,6 +1148,11 @@ export class MarkdownEditor extends FieldElement {
     }
     for (const table of [...doc.querySelectorAll('table')]) {
       decorateTable(table);
+    }
+    for (const pre of [...doc.querySelectorAll('pre')]) {
+      if (!pre.closest(`.${LOCKED}`)) {
+        highlightCode(pre);
+      }
     }
 
     const children = [...doc.children];
@@ -1170,9 +1325,10 @@ export class MarkdownEditor extends FieldElement {
       }
     }
 
-    // styling the browser applied as markup we don't model - the text is kept, the wrapper isn't
+    // Styling the browser applied as markup we don't model - the text is kept, the wrapper isn't. The spans inside
+    // a code block are ours: the highlighting, rebuilt below from the text they hold.
     for (const wrapper of [...doc.querySelectorAll('span,font')]) {
-      if (wrapper.closest(`.${LOCKED}`)) {
+      if (wrapper.closest(`.${LOCKED}`) || wrapper.closest('pre')) {
         continue;
       }
       change();
@@ -1205,6 +1361,13 @@ export class MarkdownEditor extends FieldElement {
     }
     for (const table of [...doc.querySelectorAll('table')]) {
       if (!table.closest(`.${LOCKED}`) && decorateTable(table)) {
+        change();
+      }
+    }
+
+    // the highlighting keeps up with the code as it's typed - rebuilt from the text, the caret put back by offset
+    for (const pre of [...doc.querySelectorAll('pre')]) {
+      if (!pre.closest(`.${LOCKED}`) && highlightCode(pre)) {
         change();
       }
     }
@@ -1703,6 +1866,10 @@ export class MarkdownEditor extends FieldElement {
       case 'columns':
         this.insertColumns();
         break;
+
+      case 'hr':
+        this.exec('insertHorizontalRule');
+        break;
     }
 
     this.edited();
@@ -1826,7 +1993,11 @@ export class MarkdownEditor extends FieldElement {
   private setColumnStyle(
     table: Element,
     index: number,
-    patch: { width?: string | null; background?: string | null }
+    patch: {
+      width?: string | null;
+      background?: string | null;
+      padding?: string | null;
+    }
   ): void {
     const th = [...table.querySelectorAll(':scope > thead th')][index];
     if (!th) {
@@ -1836,18 +2007,13 @@ export class MarkdownEditor extends FieldElement {
     const merged: ColumnStyle = {
       ...(columnStyle(th.getAttribute('data-style') || '') || {})
     };
-    if (patch.width !== undefined) {
-      if (patch.width) {
-        merged.width = patch.width;
-      } else {
-        delete merged.width;
-      }
-    }
-    if (patch.background !== undefined) {
-      if (patch.background) {
-        merged.background = patch.background;
-      } else {
-        delete merged.background;
+    for (const key of ['width', 'background', 'padding'] as const) {
+      if (patch[key] !== undefined) {
+        if (patch[key]) {
+          merged[key] = patch[key];
+        } else {
+          delete merged[key];
+        }
       }
     }
 
@@ -1867,6 +2033,16 @@ export class MarkdownEditor extends FieldElement {
       return;
     }
     this.setColumnStyle(table, index, { background: color || null });
+    this.edited();
+    this.requestUpdate();
+  }
+
+  private applyColumnPadding(index: number, padding: string): void {
+    const table = this.column?.closest('table');
+    if (!table) {
+      return;
+    }
+    this.setColumnStyle(table, index, { padding: padding || null });
     this.edited();
     this.requestUpdate();
   }
@@ -1979,6 +2155,42 @@ export class MarkdownEditor extends FieldElement {
     }
   }
 
+  /** drops a whole block into the source at the caret - on its own line, with a blank line either side */
+  private insertSourceBlock(block: string, caretAt: number): void {
+    const area = this.textArea;
+    if (!area) {
+      return;
+    }
+
+    const text = area.value;
+    const start = area.selectionStart;
+    const before = text.substring(0, start);
+    const after = text.substring(area.selectionEnd);
+
+    const lead = !before.trim()
+      ? ''
+      : before.endsWith('\n\n')
+        ? ''
+        : before.endsWith('\n')
+          ? '\n'
+          : '\n\n';
+    const tail = !after.trim()
+      ? ''
+      : after.startsWith('\n\n')
+        ? ''
+        : after.startsWith('\n')
+          ? '\n'
+          : '\n\n';
+
+    area.value = before + lead + block + tail + after;
+    this.value = area.value;
+    this.fireEvent('change');
+
+    const caret = start + lead.length + caretAt;
+    area.focus();
+    area.setSelectionRange(caret, caret);
+  }
+
   /** the same commands in source mode, where there is nothing rendered to act on and markdown is what the caret is in */
   private applySourceFormat(command: Command): void {
     const area = this.textArea;
@@ -1991,33 +2203,14 @@ export class MarkdownEditor extends FieldElement {
     const end = area.selectionEnd;
 
     if (command.format === 'columns') {
-      // a table is a block, so it starts on its own line with a blank line either side
-      const table = '|  |  |\n| --- | --- |\n|  |  |';
-      const before = text.substring(0, start);
-      const after = text.substring(end);
-      const lead = !before.trim()
-        ? ''
-        : before.endsWith('\n\n')
-          ? ''
-          : before.endsWith('\n')
-            ? '\n'
-            : '\n\n';
-      const tail = !after.trim()
-        ? ''
-        : after.startsWith('\n\n')
-          ? ''
-          : after.startsWith('\n')
-            ? '\n'
-            : '\n\n';
-
-      area.value = before + lead + table + tail + after;
-      this.value = area.value;
-      this.fireEvent('change');
-
       // the caret goes into the first cell of the body row
-      const caret = start + lead.length + table.lastIndexOf('\n') + 3;
-      area.focus();
-      area.setSelectionRange(caret, caret);
+      const table = '|  |  |\n| --- | --- |\n|  |  |';
+      this.insertSourceBlock(table, table.lastIndexOf('\n') + 3);
+      return;
+    }
+
+    if (command.format === 'hr') {
+      this.insertSourceBlock('---', 3);
       return;
     }
 
@@ -2388,6 +2581,13 @@ export class MarkdownEditor extends FieldElement {
 
     const colors = ['', '#f1f5f9', '#eef2ff', '#ecfdf5', '#fffbeb', '#fef2f2'];
 
+    const paddings = [
+      { value: '', label: msg('Normal') },
+      { value: '4px', label: msg('Compact') },
+      { value: '16px', label: msg('Relaxed') },
+      { value: '28px', label: msg('Spacious') }
+    ];
+
     return html`
       <div
         class="popover"
@@ -2420,6 +2620,19 @@ export class MarkdownEditor extends FieldElement {
               (evt.target as HTMLInputElement).value
             )}
         />
+        <div class="divider"></div>
+        ${paddings.map(
+          (padding) => html`
+            <div
+              class="pad ${(current.padding || '') === padding.value
+                ? 'on'
+                : ''}"
+              @click=${() => this.applyColumnPadding(index, padding.value)}
+            >
+              ${padding.label}
+            </div>
+          `
+        )}
       </div>
     `;
   }

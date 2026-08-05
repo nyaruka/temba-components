@@ -777,6 +777,7 @@ const listOf = (list: Element): string => {
 export interface ColumnStyle {
   width?: string;
   background?: string;
+  padding?: string;
 }
 
 /** reads a header cell's stylesheet, or null when its text isn't one */
@@ -789,7 +790,7 @@ export const columnStyle = (text: string): ColumnStyle | null => {
       continue;
     }
 
-    const match = /^(width|background)\s*:\s*(\S+)$/i.exec(declaration);
+    const match = /^(width|background|padding)\s*:\s*(\S+)$/i.exec(declaration);
     if (!match) {
       return null;
     }
@@ -800,6 +801,9 @@ export const columnStyle = (text: string): ColumnStyle | null => {
       return null;
     }
     if (key === 'background' && !/^#[0-9a-f]{3,8}$/.test(value)) {
+      return null;
+    }
+    if (key === 'padding' && !/^\d+px$/.test(value)) {
       return null;
     }
 
@@ -813,7 +817,8 @@ export const columnStyle = (text: string): ColumnStyle | null => {
 export const columnStyleText = (style: ColumnStyle): string =>
   [
     style.width && `width: ${style.width}`,
-    style.background && `background: ${style.background}`
+    style.background && `background: ${style.background}`,
+    style.padding && `padding: ${style.padding}`
   ]
     .filter(Boolean)
     .join('; ');

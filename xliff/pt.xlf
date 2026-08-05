@@ -117,6 +117,21 @@
 <trans-unit id="s1995a948733ac7bd">
   <source>Custom color</source>
 </trans-unit>
+<trans-unit id="s4616fdc48b092f86">
+  <source>Divider</source>
+</trans-unit>
+<trans-unit id="s9ff3121d30f88d52">
+  <source>Normal</source>
+</trans-unit>
+<trans-unit id="s7c87dc5c593f3de6">
+  <source>Compact</source>
+</trans-unit>
+<trans-unit id="s933140f91a4b253c">
+  <source>Relaxed</source>
+</trans-unit>
+<trans-unit id="s0231804042f30d6a">
+  <source>Spacious</source>
+</trans-unit>
 </body>
 </file>
 </xliff>
