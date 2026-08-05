@@ -738,18 +738,27 @@ export class MarkdownEditor extends FieldElement {
         box-sizing: border-box;
       }
 
-      /* The second click's picker anchors here: an invisible input laid exactly over the swatch - a real-sized
-         box, which is what the browser will anchor the native picker to - with clicks passing through to the
-         swatch itself. */
-      .popover .swatch input.picker {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
+      /* A palette swatch is the color input itself, wearing swatch clothes - the browser paints its value and
+         anchors the native picker to it, so the picker can only ever open where the swatch is. */
+      .popover input.swatch {
+        appearance: none;
+        -webkit-appearance: none;
         padding: 0;
+        background: none;
+      }
+
+      .popover input.swatch::-webkit-color-swatch-wrapper {
+        padding: 0;
+      }
+
+      .popover input.swatch::-webkit-color-swatch {
         border: none;
-        opacity: 0;
-        pointer-events: none;
+        border-radius: 3px;
+      }
+
+      .popover input.swatch::-moz-color-swatch {
+        border: none;
+        border-radius: 3px;
       }
 
       .popover .swatch.on {
@@ -1137,10 +1146,6 @@ export class MarkdownEditor extends FieldElement {
   /** the org's palette, index to hex - what the backgrounds articles embed resolve against */
   @state()
   private colors: Record<string, string> = {};
-
-  /** the palette entry whose editor is open under its swatch, opened by clicking its color a second time */
-  @state()
-  private editingColor: string = null;
 
   /** the column edge the pointer is hovering, ready to be dragged */
   private resizeHover: { table: Element; index: number } = null;
@@ -1973,7 +1978,6 @@ export class MarkdownEditor extends FieldElement {
         : null;
     if (column !== this.column) {
       this.column = column;
-      this.editingColor = null;
     }
 
     const anchor = target.closest?.('a');
@@ -2391,27 +2395,9 @@ export class MarkdownEditor extends FieldElement {
     if (!table) {
       return;
     }
-    this.editingColor = null;
     this.setColumnStyle(table, index, { background: key || null });
     this.edited();
     this.requestUpdate();
-  }
-
-  /** A second click on the color a column already wears opens the native picker itself, anchored just under the
-   * swatch - the click is the whole gesture, with no chrome of ours in between. */
-  private async toggleColorEditor(key: string): Promise<void> {
-    this.editingColor = this.editingColor === key ? null : key;
-    if (this.editingColor) {
-      await this.updateComplete;
-      const input = this.shadowRoot?.querySelector(
-        '.swatch input.picker'
-      ) as HTMLInputElement;
-      try {
-        input?.showPicker ? input.showPicker() : input?.click();
-      } catch (e) {
-        input?.click();
-      }
-    }
   }
 
   private applyColumnPadding(index: number, padding: string): void {
@@ -3204,39 +3190,28 @@ export class MarkdownEditor extends FieldElement {
         ></div>
         ${palette.map(([key, hex], at) => {
           const swatch = html`
-            <div
+            <input
+              type="color"
               class="swatch ${selected === key && at < palette.length - 1
                 ? 'on'
                 : ''}"
-              style="background:${hex}"
+              .value=${hex}
               title=${hex}
-              @click=${() =>
-                selected === key
-                  ? this.toggleColorEditor(key)
-                  : this.applyColumnBackground(index, key)}
-            >
-              ${this.editingColor === key
-                ? html`
-                    <input
-                      class="picker"
-                      type="color"
-                      .value=${hex}
-                      @input=${(evt: Event) =>
-                        this.previewColor(
-                          key,
-                          (evt.target as HTMLInputElement).value
-                        )}
-                      @change=${(evt: Event) => {
-                        this.editingColor = null;
-                        this.saveColors({
-                          ...this.colors,
-                          [key]: (evt.target as HTMLInputElement).value
-                        });
-                      }}
-                    />
-                  `
-                : null}
-            </div>
+              @click=${(evt: Event) => {
+                // the first click chooses the color; only a click on the color already worn opens its picker
+                if (selected !== key) {
+                  evt.preventDefault();
+                  this.applyColumnBackground(index, key);
+                }
+              }}
+              @input=${(evt: Event) =>
+                this.previewColor(key, (evt.target as HTMLInputElement).value)}
+              @change=${(evt: Event) =>
+                this.saveColors({
+                  ...this.colors,
+                  [key]: (evt.target as HTMLInputElement).value
+                })}
+            />
           `;
 
           // only the right-most color can be removed - the palette shrinks from its end the way it grew, so no
@@ -3251,7 +3226,6 @@ export class MarkdownEditor extends FieldElement {
                     @click=${() => {
                       const next = { ...this.colors };
                       delete next[key];
-                      this.editingColor = null;
                       this.saveColors(next);
                     }}
                   >
