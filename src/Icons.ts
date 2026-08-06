@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use bun run svg to update
-export const SVG_FINGERPRINT = '132907abcfa6a4611ba27470e2c5c2c0';
+export const SVG_FINGERPRINT = '712144e39c5c9f5cd03bf49eb79710fd';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -20,6 +20,20 @@ export enum Icon {
   arrow_right = 'chevron-right',
   attachment = 'paperclip',
   attachment_audio = 'volume-min',
+  /** the markdown editor's toolbar */
+  bold = 'bold-01',
+  italic = 'italic-01',
+  code = 'code-02',
+  quote = 'left-indent-01',
+  list = 'dotpoints-01',
+  hyperlink = 'link-04',
+  columns = 'columns-02',
+  divider = 'divider',
+  minus = 'minus',
+  palette = 'palette',
+  clear_style = 'type-strikethrough-01',
+  border = 'grid-dots-outer',
+  markdown = 'code-browser',
   attachment_document = 'file-06',
   attachment_image = 'image-01',
   attachment_location = 'marker-pin-01',
@@ -131,6 +145,9 @@ export enum Icon {
   org_suspended = 'slash-circle-01',
   org_verified = 'check-verified-02',
   overview = 'pie-chart-01',
+  /** a column's cell padding - the grid at its default density, stepped tighter or airier by the minus and plus
+   * flanking it */
+  padding = 'grid-03',
   privacy = 'shield-02',
   prometheus = 'prometheus',
   progress_spinner = 'refresh-cw-04',

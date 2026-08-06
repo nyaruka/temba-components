@@ -1422,7 +1422,7 @@ export class ContentList<T = any> extends RapidElement {
   subtitle = '';
 
   /** Message shown when the list is empty. */
-  @property({ type: String })
+  @property({ type: String, attribute: 'empty-message' })
   emptyMessage = 'Nothing to show';
 
   /** Bump to force a refetch — useful after a bulk action so the host
@@ -2151,6 +2151,27 @@ export class ContentList<T = any> extends RapidElement {
    * a URL to navigate, or null to leave the click as event-only. */
   protected getRowHref(_item: T): string | null {
     return null;
+  }
+
+  /** Whether a row reads as clickable — the pointer cursor that says
+   * the click leads somewhere. A row with an href always does;
+   * override for a list whose rows are opened by the host off
+   * `temba-row-click` rather than by navigating, so it keeps the
+   * affordance without a URL to link to. */
+  protected isRowClickable(item: T): boolean {
+    return !!this.getRowHref(item);
+  }
+
+  /** Extra classes a subclass wants on a row — e.g. to animate rows
+   * arriving in or leaving the list. */
+  protected getRowClass(_item: T): string {
+    return '';
+  }
+
+  /** Extra inline style a subclass wants on a row — e.g. custom
+   * properties timing that row's part of a shared animation. */
+  protected getRowStyle(_item: T): string {
+    return '';
   }
 
   /** Update the uncommitted input value as the user types. The
@@ -3760,10 +3781,12 @@ export class ContentList<T = any> extends RapidElement {
   private renderRow(item: T): TemplateResult {
     const id = this.rowId(item);
     const selected = this.selectedIds.has(id);
-    const href = this.getRowHref(item);
     return html`
       <tr
-        class="row ${selected ? 'selected' : ''} ${href ? 'clickable' : ''}"
+        class="row ${this.getRowClass(item)} ${selected
+          ? 'selected'
+          : ''} ${this.isRowClickable(item) ? 'clickable' : ''}"
+        style=${this.getRowStyle(item)}
         @click=${(e: MouseEvent) => this.handleRowClick(item, e)}
       >
         ${this.hasCheckboxes

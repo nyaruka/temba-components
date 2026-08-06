@@ -29,9 +29,11 @@ export class Modax extends RapidElement {
         display: none;
       }
 
+      /* No display of its own - a div is block anyway, and declaring it here only made it impossible for a body to
+         lay itself out (a form that fills the dialog and scrolls a pane inside it, say): these styles are adopted,
+         so they land after the <style> the body brings with it and win every tie. */
       .modax-body {
         padding: 20px;
-        display: block;
         position: relative;
         background: var(--body-bg);
       }
@@ -99,6 +101,13 @@ export class Modax extends RapidElement {
         flex-direction: row;
         margin-left: 0.6em;
       }
+
+      /* the piece of the dialog's footer we pass through to the page, sharing the row with the wizard steps */
+      .gutter {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
     `;
   }
 
@@ -107,6 +116,16 @@ export class Modax extends RapidElement {
 
   @property({ type: String })
   endpoint: string;
+
+  /** One of the dialog's named sizes - small, medium, large or xlarge.
+   * Passed straight through, so the default is the dialog's own. */
+  @property({ type: String })
+  size = 'medium';
+
+  /** An explicit width for the dialog, as any css length. Takes
+   * precedence over `size` for a form that doesn't fit a named one. */
+  @property({ type: String })
+  width: string = null;
 
   @property({ type: Boolean, reflect: true })
   open = false;
@@ -479,6 +498,8 @@ export class Modax extends RapidElement {
       <temba-dialog
         .header=${this.header}
         .buttons=${this.buttons}
+        .size=${this.size}
+        .width=${this.width}
         ?open=${this.open}
         ?loading=${this.fetching && this.originX == null}
         ?submitting=${this.submitting}
@@ -497,8 +518,9 @@ export class Modax extends RapidElement {
           ${this.body}
         </div>
         <div class="scripts"></div>
-        <div slot="gutter">
+        <div slot="gutter" class="gutter">
           <div class="wizard-steps">${wizardStepBalls}</div>
+          <slot name="gutter"></slot>
         </div>
       </temba-dialog>
       <div class="slot-wrapper" @click=${this.handleSlotClicked}>
