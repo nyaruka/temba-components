@@ -2047,9 +2047,9 @@ export class MarkdownEditor extends FieldElement {
   }
 
   /**
-   * A click on a link is the author reaching for the text, so it places the caret and never navigates - following the
-   * link would take the unsaved article with it. Holding cmd (or ctrl) is asking to see where it goes, which opens in
-   * a window of its own so the draft stays where it is.
+   * A click on a link is the author reaching for the text, so it places the caret and never navigates - modifiers
+   * included, since a modified click is muscle memory from reading pages and following it would still pull focus
+   * from the draft. Where a link goes is read and edited in the link bar the caret summons.
    */
   private handleDocClick(evt: MouseEvent): void {
     const target = evt.target as Element;
@@ -2085,15 +2085,8 @@ export class MarkdownEditor extends FieldElement {
       this.column = column;
     }
 
-    const anchor = target.closest?.('a');
-    if (!anchor) {
-      return;
-    }
-
-    evt.preventDefault();
-
-    if (evt.metaKey || evt.ctrlKey) {
-      window.open(anchor.href, '_blank', 'noopener');
+    if (target.closest?.('a')) {
+      evt.preventDefault();
     }
   }
 

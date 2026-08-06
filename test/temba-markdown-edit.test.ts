@@ -821,7 +821,7 @@ describe(TAG, () => {
       assert.isTrue(click.defaultPrevented);
     });
 
-    it('opens the link in a window of its own on cmd or ctrl click', async () => {
+    it('never follows the link, even on a modified click', async () => {
       const editor = await getEditor('see the [docs](https://example.com) now');
       const anchor = blocks(editor)[0].querySelector('a');
       const opened = stub(window, 'open');
@@ -839,9 +839,7 @@ describe(TAG, () => {
           anchor.dispatchEvent(click);
 
           assert.isTrue(click.defaultPrevented);
-          assert.isTrue(
-            opened.calledOnceWith('https://example.com/', '_blank', 'noopener')
-          );
+          assert.isTrue(opened.notCalled, 'a modified click opened a window');
         }
       } finally {
         opened.restore();
