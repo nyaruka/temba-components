@@ -116,13 +116,14 @@ const selectAll = async (editor: MarkdownEditor): Promise<void> => {
   await editor.updateComplete;
 };
 
+/** clicks a toolbar command, which wears the format it applies rather than a label the eye could read */
 const toolbar = async (
   editor: MarkdownEditor,
-  label: string
+  format: string
 ): Promise<void> => {
-  const button = [
-    ...editor.shadowRoot.querySelectorAll('.toolbar .format')
-  ].find((ele) => ele.textContent.trim() === label) as HTMLElement;
+  const button = editor.shadowRoot.querySelector(
+    `.toolbar .format.${format}`
+  ) as HTMLElement;
 
   button.click();
 
@@ -130,6 +131,12 @@ const toolbar = async (
   await new Promise((resolve) => setTimeout(resolve, 0));
   await editor.updateComplete;
 };
+
+/** the switch between the rendered article and its markdown, which is a toolbar button of its own */
+const modeSwitch = (editor: MarkdownEditor): HTMLElement =>
+  editor.shadowRoot.querySelector(
+    '.toolbar .format[title="Markdown source"]'
+  ) as HTMLElement;
 
 const uploadFile = (name = 'shot.png'): File =>
   new File(['shot'], name, { type: 'image/png' });
@@ -535,18 +542,36 @@ describe(TAG, () => {
     });
 
     it('keeps content it cannot write back out from being edited', async () => {
-      const table = '| a | b |\n| --- | --- |\n| 1 | 2 |';
-      const editor = await getEditor(`intro\n\n${table}\n\nafter`);
+      // a link reference definition renders to nothing at all, so there is nothing on screen to edit and nothing to
+      // read back - it is held onto invisibly instead, since dropping it would lose it
+      const definition = '[docs]: https://example.com "The docs"';
+      const editor = await getEditor(`intro\n\n${definition}\n\nafter`);
 
       const kept = blocks(editor)[1];
-      assert.isOk(kept.querySelector('table'), 'the table still renders');
       assert.equal(
         kept.getAttribute('contenteditable'),
         'false',
-        'a table is not edited richly'
+        'a block that renders to nothing is not edited richly'
       );
+      assert.equal(kept.textContent, '', 'it shows nothing of its source');
 
       // editing around it leaves it exactly as it was authored
+      await caretIn(editor, 2, 'after'.length);
+      await type('!');
+      await editor.updateComplete;
+
+      assert.equal(editor.value, `intro\n\n${definition}\n\nafter!`);
+    });
+
+    it('edits a table as the content it is', async () => {
+      // a table is written back out as the markdown it came from, so it is an ordinary block rather than a locked one
+      const table = '| a | b |\n| --- | --- |\n| 1 | 2 |';
+      const editor = await getEditor(`intro\n\n${table}\n\nafter`);
+
+      const rendered = blocks(editor)[1];
+      assert.equal(rendered.tagName, 'TABLE');
+      assert.isNotOk(rendered.closest('[contenteditable="false"]'));
+
       await caretIn(editor, 2, 'after'.length);
       await type('!');
       await editor.updateComplete;
@@ -597,7 +622,7 @@ describe(TAG, () => {
       const editor = await getEditor('# Title\n\nhello world');
 
       await selectAcross(editor, [1, 6], [1, 11]);
-      await toolbar(editor, 'B');
+      await toolbar(editor, 'bold');
 
       assert.equal(editor.value, '# Title\n\nhello **world**');
       // and what is on screen is the bold word, not the markers around it
@@ -608,12 +633,12 @@ describe(TAG, () => {
       const editor = await getEditor('hello world');
 
       await caretIn(editor, 0, 2);
-      await toolbar(editor, 'H2');
+      await toolbar(editor, 'h2');
       assert.equal(editor.value, '## hello world');
       assert.equal(blocks(editor)[0].tagName, 'H2');
 
       await caretIn(editor, 0, 2);
-      await toolbar(editor, 'H2');
+      await toolbar(editor, 'h2');
       assert.equal(editor.value, 'hello world');
       assert.equal(blocks(editor)[0].tagName, 'P');
     });
@@ -622,7 +647,7 @@ describe(TAG, () => {
       const editor = await getEditor('one');
 
       await caretIn(editor, 0, 1);
-      await toolbar(editor, 'List');
+      await toolbar(editor, 'bullet');
 
       // the browser nests the list inside the block it was made from, which is not somewhere a list can live
       assert.equal(blocks(editor)[0].tagName, 'UL');
@@ -633,7 +658,7 @@ describe(TAG, () => {
       const editor = await getEditor('one');
 
       await caretIn(editor, 0, 1);
-      await toolbar(editor, 'Quote');
+      await toolbar(editor, 'quote');
 
       assert.equal(blocks(editor)[0].tagName, 'BLOCKQUOTE');
       assert.equal(editor.value, '> one');
@@ -643,7 +668,7 @@ describe(TAG, () => {
       const editor = await getEditor('run npm install now');
 
       await selectAcross(editor, [0, 4], [0, 15]);
-      await toolbar(editor, 'Code');
+      await toolbar(editor, 'code');
 
       assert.equal(editor.value, 'run `npm install` now');
       assert.isOk(blocks(editor)[0].querySelector('code'));
@@ -664,7 +689,7 @@ describe(TAG, () => {
       const editor = await getEditor('# Title\n\nlast');
       doc(editor).blur();
 
-      await toolbar(editor, 'H2');
+      await toolbar(editor, 'h2');
 
       // falls through to where the caret last was rather than doing nothing
       assert.equal(editor.value, '# Title\n\n## last');
@@ -672,15 +697,19 @@ describe(TAG, () => {
 
     it('toggles modes', async () => {
       const editor = await getEditor('# Hello');
-      const toggle = editor.shadowRoot.querySelector('.toggle') as HTMLElement;
+      assert.notInclude([...modeSwitch(editor).classList], 'on');
 
-      toggle.click();
+      modeSwitch(editor).click();
       await editor.updateComplete;
       assert.isTrue(editor.sourceMode);
 
-      toggle.click();
+      // the switch is a button like the rest of them, lit for as long as the mode it turns on is the one showing
+      assert.include([...modeSwitch(editor).classList], 'on');
+
+      modeSwitch(editor).click();
       await editor.updateComplete;
       assert.isFalse(editor.sourceMode);
+      assert.notInclude([...modeSwitch(editor).classList], 'on');
     });
 
     it('stays in reach while the article scrolls under it', async () => {
@@ -732,34 +761,41 @@ describe(TAG, () => {
         .join('\n\n');
       await editor.updateComplete;
 
-      const article = editor.doc;
-      assert.equal(getComputedStyle(article).overflowY, 'auto');
+      // the frame around the document is what scrolls, so the overlays inside it ride the article they point at
+      const frame = editor.shadowRoot.querySelector(
+        '.doc-frame'
+      ) as HTMLElement;
+      assert.equal(getComputedStyle(frame).overflowY, 'auto');
 
       // the editor is the height it was given rather than the height of the article, so nothing outside it scrolls
       assert.closeTo(editor.getBoundingClientRect().height, 200, 1);
-      assert.isAbove(article.scrollHeight, article.clientHeight);
+      assert.isAbove(frame.scrollHeight, frame.clientHeight);
 
       // and the toolbar sits above the part that scrolls, so it can't be scrolled away at all
       const chrome = editor.shadowRoot.querySelector('.chrome') as HTMLElement;
-      article.scrollTop = 300;
+      frame.scrollTop = 300;
       await new Promise((resolve) => requestAnimationFrame(resolve));
 
-      assert.isAbove(article.scrollTop, 0);
+      assert.isAbove(frame.scrollTop, 0);
       assert.isAtMost(
         chrome.getBoundingClientRect().bottom,
-        article.getBoundingClientRect().top + 1
+        frame.getBoundingClientRect().top + 1
       );
     });
   });
 
   describe('links', () => {
+    /** the popover the link under the caret is edited in, anchored on the link itself */
+    const linkbar = (editor: MarkdownEditor): HTMLElement =>
+      editor.shadowRoot.querySelector('.overlays .popover') as HTMLElement;
+
     it('offers a link to edit without showing its markdown', async () => {
       const editor = await getEditor('see the [docs](https://example.com) now');
 
       await caretIn(editor, 0, 10);
       await editor.updateComplete;
 
-      const bar = editor.shadowRoot.querySelector('.linkbar input');
+      const bar = linkbar(editor)?.querySelector('input');
       assert.isOk(bar, 'no link bar for a caret inside a link');
       assert.equal((bar as HTMLInputElement).value, 'https://example.com');
 
@@ -773,9 +809,7 @@ describe(TAG, () => {
       await caretIn(editor, 0, 10);
       await editor.updateComplete;
 
-      const bar = editor.shadowRoot.querySelector(
-        '.linkbar input'
-      ) as HTMLInputElement;
+      const bar = linkbar(editor).querySelector('input') as HTMLInputElement;
       bar.value = 'https://nyaruka.com';
       bar.dispatchEvent(new Event('input'));
       await editor.updateComplete;
@@ -789,13 +823,11 @@ describe(TAG, () => {
       await caretIn(editor, 0, 10);
       await editor.updateComplete;
 
-      (
-        editor.shadowRoot.querySelector('.linkbar .link-action') as HTMLElement
-      ).click();
+      (linkbar(editor).querySelector('.popover-action') as HTMLElement).click();
       await editor.updateComplete;
 
       assert.equal(editor.value, 'see the docs now');
-      assert.isNotOk(editor.shadowRoot.querySelector('.linkbar'));
+      assert.isNotOk(linkbar(editor));
     });
 
     it('shows no link bar when the caret is not in a link', async () => {
@@ -803,7 +835,7 @@ describe(TAG, () => {
       await caretIn(editor, 0, 4);
       await editor.updateComplete;
 
-      assert.isNotOk(editor.shadowRoot.querySelector('.linkbar'));
+      assert.isNotOk(linkbar(editor));
     });
 
     it('places the caret on a click rather than following the link', async () => {
@@ -858,14 +890,20 @@ describe(TAG, () => {
       await editor.updateComplete;
     };
 
-    const pickOption = async (
+    /** the size controls floated inside the clicked image, null when no image is picked */
+    const imagebar = (editor: MarkdownEditor): HTMLElement =>
+      editor.shadowRoot.querySelector(
+        '.overlays .image-actions'
+      ) as HTMLElement;
+
+    const pickSize = async (
       editor: MarkdownEditor,
       label: string
     ): Promise<void> => {
-      const option = [
-        ...editor.shadowRoot.querySelectorAll('.imagebar .option')
-      ].find((ele) => ele.textContent.trim() === label) as HTMLElement;
-      option.click();
+      const chip = [...imagebar(editor).querySelectorAll('.chip')].find(
+        (ele) => ele.textContent.trim() === label
+      ) as HTMLElement;
+      chip.click();
       await editor.updateComplete;
     };
 
@@ -893,37 +931,42 @@ describe(TAG, () => {
       assert.equal(img.getAttribute('class'), null);
     });
 
-    it('offers sizes and layouts when an image is clicked', async () => {
+    it('offers sizes when an image is clicked', async () => {
       const editor = await getEditor(`![shot](${IMAGE})`);
-      assert.isNotOk(editor.shadowRoot.querySelector('.imagebar'));
+      assert.isNotOk(imagebar(editor));
 
       await clickImage(editor);
 
-      const bar = editor.shadowRoot.querySelector('.imagebar');
+      const bar = imagebar(editor);
       assert.isOk(bar, 'no image bar for a clicked image');
       assert.deepEqual(
-        [...bar.querySelectorAll('.option')].map((ele) =>
-          ele.textContent.trim()
-        ),
-        ['Original', 'Small', 'Medium', 'Large', 'Block', 'Inline']
+        [...bar.querySelectorAll('.chip')].map((ele) => ele.textContent.trim()),
+        ['Original', 'Small', 'Medium', 'Large']
       );
+
+      // and the image itself is ringed, so it reads as the thing the sizes will act on
+      assert.isOk(editor.shadowRoot.querySelector('.overlays .image-ring'));
     });
 
-    it('writes the choices into the fragment and renders them live', async () => {
+    it('writes the choice into the fragment and renders it live', async () => {
       const editor = await getEditor(`![shot](${IMAGE})`);
       await clickImage(editor);
 
-      await pickOption(editor, 'Small');
+      await pickSize(editor, 'Small');
       assert.equal(editor.value, `![shot](${IMAGE}#size=small)`);
 
       const img = doc(editor).querySelector('img');
       assert.include([...img.classList], 'size-small');
       assert.equal(getComputedStyle(img).maxWidth, '200px');
 
-      await pickOption(editor, 'Inline');
-      assert.equal(editor.value, `![shot](${IMAGE}#size=small&layout=inline)`);
-      assert.include([...img.classList], 'layout-inline');
-      assert.equal(getComputedStyle(img).display, 'inline-block');
+      // the size showing is the one lit, so the bar says what the image already is
+      await pickSize(editor, 'Medium');
+      assert.equal(editor.value, `![shot](${IMAGE}#size=medium)`);
+      assert.equal(getComputedStyle(img).maxWidth, '400px');
+      assert.equal(
+        imagebar(editor).querySelector('.chip.on').textContent.trim(),
+        'Medium'
+      );
     });
 
     it('edits only the block the image is in', async () => {
@@ -932,38 +975,52 @@ describe(TAG, () => {
       const editor = await getEditor(`${other}\n\n![shot](${IMAGE})`);
 
       await clickImage(editor);
-      await pickOption(editor, 'Large');
+      await pickSize(editor, 'Large');
 
       assert.equal(editor.value, `${other}\n\n![shot](${IMAGE}#size=large)`);
     });
 
     it('takes an image back to a bare url', async () => {
-      const editor = await getEditor(
-        `![shot](${IMAGE}#size=medium&layout=inline)`
-      );
+      const editor = await getEditor(`![shot](${IMAGE}#size=medium)`);
       await clickImage(editor);
 
-      await pickOption(editor, 'Original');
-      assert.equal(editor.value, `![shot](${IMAGE}#layout=inline)`);
-
-      await pickOption(editor, 'Block');
+      await pickSize(editor, 'Original');
       assert.equal(editor.value, `![shot](${IMAGE})`);
 
       const img = doc(editor).querySelector('img');
       assert.equal(img.getAttribute('class'), null);
     });
 
+    it('leaves a layout in the fragment where the author put it', async () => {
+      // columns are how an article asks for layout now, but an image that was authored with one keeps it through
+      // every size the bar offers
+      const editor = await getEditor(
+        `![shot](${IMAGE}#size=medium&layout=inline)`
+      );
+      await clickImage(editor);
+
+      await pickSize(editor, 'Small');
+      assert.equal(editor.value, `![shot](${IMAGE}#size=small&layout=inline)`);
+
+      await pickSize(editor, 'Original');
+      assert.equal(editor.value, `![shot](${IMAGE}#layout=inline)`);
+
+      const img = doc(editor).querySelector('img');
+      assert.include([...img.classList], 'layout-inline');
+      assert.equal(getComputedStyle(img).display, 'inline-block');
+    });
+
     it('puts the options away on a click anywhere else', async () => {
       const editor = await getEditor(`![shot](${IMAGE})\n\nsome words`);
       await clickImage(editor);
-      assert.isOk(editor.shadowRoot.querySelector('.imagebar'));
+      assert.isOk(imagebar(editor));
 
       blocks(editor)[1].dispatchEvent(
         new MouseEvent('click', { bubbles: true, composed: true })
       );
       await editor.updateComplete;
 
-      assert.isNotOk(editor.shadowRoot.querySelector('.imagebar'));
+      assert.isNotOk(imagebar(editor));
     });
   });
 
@@ -1088,27 +1145,25 @@ describe(TAG, () => {
       assert.equal(editor.textArea.value, '# Hello\n\nwords here');
     });
 
-    it('still formats in source mode, where markdown is what the caret is in', async () => {
+    it('offers nothing in the toolbar but the way back', async () => {
       const editor = await getEditor('hello world');
+      assert.isAbove(
+        editor.shadowRoot.querySelectorAll('.toolbar .format').length,
+        1
+      );
+
       editor.sourceMode = true;
       await editor.updateComplete;
 
-      editor.textArea.setSelectionRange(6, 11);
-      await toolbar(editor, 'B');
+      // an author writing markdown writes the markers themselves, so a row of buttons that write them is only in
+      // the way - all that is left is the switch back to the rendered article
+      const buttons = [
+        ...editor.shadowRoot.querySelectorAll('.toolbar .format')
+      ];
+      assert.deepEqual(buttons, [modeSwitch(editor)]);
 
-      assert.equal(editor.value, 'hello **world**');
-    });
-
-    it('applies block formatting to every line of the selection in source mode', async () => {
-      const editor = await getEditor('one\ntwo\nthree');
-      editor.sourceMode = true;
-      await editor.updateComplete;
-
-      editor.textArea.setSelectionRange(1, 9);
-      await toolbar(editor, 'List');
-
-      // marking only the first line would leave one list item and two loose lines
-      assert.equal(editor.value, '* one\n* two\n* three');
+      // including the one that uploads an image, which is an icon of its own rather than a command
+      assert.isNotOk(editor.shadowRoot.querySelector('.toolbar > temba-icon'));
     });
   });
 
@@ -1305,7 +1360,7 @@ describe(TAG, () => {
       await editor.updateComplete;
 
       assert.isOk(
-        editor.shadowRoot.querySelector('.linkbar'),
+        editor.shadowRoot.querySelector('.overlays .popover'),
         'the caret is not in the link'
       );
 
@@ -1323,7 +1378,7 @@ describe(TAG, () => {
       await editor.updateComplete;
 
       assert.isOk(
-        editor.shadowRoot.querySelector('.imagebar'),
+        editor.shadowRoot.querySelector('.overlays .image-actions'),
         'no image bar for the clicked image'
       );
 
